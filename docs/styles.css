@@ -247,3 +247,10 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Testimonials */
+.quote { margin: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; }
+.quote p { font-size: 17px; color: var(--text); line-height: 1.6; }
+.quote p::before { content: "“"; display: block; font-size: 48px; line-height: .6; color: var(--accent); font-weight: 800; margin-bottom: 8px; }
+.quote footer { display: flex; flex-direction: column; font-size: 14px; color: var(--muted); }
+.quote footer strong { color: var(--text); }

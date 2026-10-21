@@ -269,6 +269,27 @@
       </div>
     </section>
 
+    <!-- Testimonials: paste only quotes the person has approved (see profile/testimonial-requests.md).
+         Cards still containing "[" are hidden, and the section stays hidden until one card is filled in. -->
+    <section id="testimonials" class="wrap section">
+      <p class="eyebrow">Testimonials</p>
+      <h2>What people I've worked with say</h2>
+      <div class="grid">
+        <blockquote class="card quote">
+          <p>[Approved quote]</p>
+          <footer><strong>[Full name]</strong><span>[Title], The Lottery Corporation</span></footer>
+        </blockquote>
+        <blockquote class="card quote">
+          <p>[Approved quote]</p>
+          <footer><strong>[Full name]</strong><span>[Title], Visa</span></footer>
+        </blockquote>
+        <blockquote class="card quote">
+          <p>[Approved quote]</p>
+          <footer><strong>[Full name]</strong><span>[Title], ANZ</span></footer>
+        </blockquote>
+      </div>
+    </section>
+
     <section class="section alt">
       <div class="wrap why">
         <div>
@@ -317,6 +338,9 @@
     // Hide links and text that still hold a [placeholder], so the live site never shows them
     document.querySelectorAll('a[href^="["]').forEach(a => a.remove());
     document.querySelectorAll('.footer p').forEach(p => { if (p.textContent.includes('[')) p.remove(); });
+    document.querySelectorAll('#testimonials .quote').forEach(q => { if (q.textContent.includes('[')) q.remove(); });
+    const testimonials = document.getElementById('testimonials');
+    if (!testimonials.querySelector('.quote')) testimonials.remove();
   </script>
 </body>
 </html>
