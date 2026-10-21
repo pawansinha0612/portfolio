@@ -3,22 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pawan Sinha — Performance & QA Automation Engineer</title>
-  <meta name="description" content="Pawan Sinha: Melbourne-based contract performance and QA automation engineer with 12+ years across banking, payments and gaming. Load testing (k6, JMeter, LoadRunner, Gatling), API testing and Playwright automation.">
-  <meta property="og:title" content="Pawan Sinha — Performance & QA Automation Engineer">
-  <meta property="og:description" content="I find the breaking point before your customers do. 12+ years testing high-traffic systems for ANZ, NAB, Visa and The Lottery Corporation.">
+  <title>Pawan Sinha — QA & Test Automation Engineer</title>
+  <meta name="description" content="Pawan Sinha: Melbourne-based QA and test automation engineer with 12+ years across banking, payments and gaming. Manual and functional testing, API testing, Playwright automation and specialist performance testing.">
+  <meta property="og:title" content="Pawan Sinha — QA & Test Automation Engineer">
+  <meta property="og:description" content="Ship software your users can trust. Manual, API, automation and performance testing from an engineer trusted by ANZ, NAB, Visa and The Lottery Corporation.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body data-booking-url="">
   <!--
     TO UPDATE:
     - Availability: set data-available-from="YYYY-MM-DD" on #availability (empty = "Available now").
     - Upwork: replace [YOUR_UPWORK_PROFILE_URL]. Links still holding a [placeholder] are hidden automatically.
     - ABN: replace [XX XXX XXX XXX] in the footer.
+    - Booking: paste your free Calendly link into data-booking-url on <body>, e.g. "https://calendly.com/pawansinhatech/30min".
+      Until then, "Book a call" buttons open a pre-filled email.
   -->
   <header class="nav">
     <div class="wrap nav-inner">
@@ -38,14 +41,14 @@
       <div class="wrap hero-grid">
         <div>
           <p id="availability" class="badge" data-available-from="">Available now for contracts</p>
-          <h1>I find the breaking point <span class="hl">before your customers do.</span></h1>
+          <h1>Ship software your users <span class="hl">can trust.</span></h1>
           <p class="lead">
-            Performance, API and test automation engineering for teams running high-traffic, business-critical systems.
-            For 12+ years I've helped banks, payment networks and gaming platforms launch with confidence,
-            whether it's payday, a sale, or a record Powerball jackpot.
+            End-to-end software testing, from manual and functional testing to API checks, Playwright automation
+            and load testing. For 12+ years I've tested business-critical systems for banks, payment networks
+            and gaming platforms. Now I bring that same rigour to startups and growing teams.
           </p>
           <div class="cta">
-            <a href="#contact" class="btn">Book a free 30-min call</a>
+            <a href="mailto:pawansinhatech@gmail.com?subject=Free%2030-min%20call&amp;body=Hi%20Pawan%2C%0A%0AI%27d%20like%20to%20book%20a%20call%20about%3A%20" class="btn js-book">Book a free 30-min call</a>
             <a href="#services" class="btn btn-ghost">See what I do</a>
           </div>
           <ul class="facts">
@@ -55,32 +58,20 @@
           </ul>
         </div>
 
-        <figure class="dash" aria-label="Illustration of a load test dashboard">
+        <figure class="dash" aria-label="Illustration of a full test run across every layer">
           <div class="dash-head">
             <span class="dots"><i></i><i></i><i></i></span>
-            <span class="mono">k6 run peak-draw.js</span>
+            <span class="mono">release-candidate · test run</span>
           </div>
           <div class="dash-body">
-            <div class="kpis">
-              <div><span class="k">Virtual users</span><span class="v">5,000</span></div>
-              <div><span class="k">p95 latency</span><span class="v ok">412 ms</span></div>
-              <div><span class="k">Error rate</span><span class="v ok">0.02%</span></div>
-            </div>
-            <svg viewBox="0 0 320 120" class="chart" role="img" aria-label="Latency stays flat as load ramps up">
-              <defs>
-                <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" stop-color="currentColor" stop-opacity=".28"/>
-                  <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="38" x2="320" y2="38" class="sla"/>
-              <text x="316" y="32" class="sla-label" text-anchor="end">SLA 800 ms</text>
-              <path class="load" d="M0 115 L60 95 L120 70 L180 45 L240 45 L320 45"/>
-              <path class="area" d="M0 98 C30 96 50 92 80 90 S140 84 170 82 S230 80 260 79 S300 78 320 78 L320 120 L0 120Z" fill="url(#g)"/>
-              <path class="lat" d="M0 98 C30 96 50 92 80 90 S140 84 170 82 S230 80 260 79 S300 78 320 78"/>
-            </svg>
-            <div class="legend"><span class="l-lat">p95 latency</span><span class="l-load">load</span></div>
-            <p class="mono pass">✓ thresholds passed · release gate: GREEN</p>
+            <ul class="runs">
+              <li><span class="r-name">Functional &amp; regression<small>Manual test cases · exploratory</small></span><span class="r-res">142 passed</span></li>
+              <li><span class="r-name">API tests<small>REST · contract · negative cases</small></span><span class="r-res">86 passed</span></li>
+              <li><span class="r-name">E2E automation<small>Playwright · Chromium · Firefox · WebKit</small></span><span class="r-res">54 passed</span></li>
+              <li><span class="r-name">Performance<small>k6 · 5,000 users · p95 412 ms</small></span><span class="r-res">SLA met</span></li>
+            </ul>
+            <div class="bar" aria-hidden="true"><i></i></div>
+            <p class="mono pass">✓ 282 checks passed · 0 blockers · release: GO</p>
           </div>
           <figcaption>Illustration</figcaption>
         </figure>
@@ -97,46 +88,47 @@
     </section>
 
     <section class="wrap stats">
-      <div><span class="num">12+</span><span>years in QA &amp; performance engineering</span></div>
+      <div><span class="num">12+</span><span>years in software testing &amp; QA</span></div>
+      <div><span class="num">4</span><span>layers covered: UI, functional, API, performance</span></div>
       <div><span class="num">3</span><span>regulated domains: banking, payments, gaming</span></div>
-      <div><span class="num">4</span><span>load tools mastered: k6, JMeter, LoadRunner, Gatling</span></div>
-      <div><span class="num">CI/CD</span><span>quality gates built into every release</span></div>
+      <div><span class="num">CI/CD</span><span>automated quality gates on every release</span></div>
     </section>
 
     <section id="services" class="wrap section">
       <p class="eyebrow">Services</p>
-      <h2>Ship faster without the 3 a.m. outage</h2>
-      <p class="section-lead">I fit in alongside your team, or I take a testing problem off your plate end to end.</p>
+      <h2>One tester for every layer of your product</h2>
+      <p class="section-lead">From a one-off test pass before launch to a fully automated pipeline, I cover what you need, so you don't have to hire three specialists.</p>
       <div class="grid">
         <article class="card">
-          <div class="icon">⚡</div>
-          <h3>Performance &amp; load testing</h3>
-          <p>Load, stress, soak, spike and scalability testing with realistic workload models. You find out how much traffic you can really handle, and what breaks first.</p>
+          <div class="icon">🧪</div>
+          <h3>Manual &amp; functional testing</h3>
+          <p>Test plans, test cases from your requirements, exploratory, regression, cross-browser and mobile testing, and UAT support. Clear, reproducible bug reports your developers can act on.</p>
         </article>
         <article class="card">
           <div class="icon">🔌</div>
           <h3>API testing</h3>
-          <p>Functional, contract and performance testing of REST APIs and microservices, generated straight from your OpenAPI/Swagger specs so coverage keeps up with your code.</p>
+          <p>Functional, negative, contract and integration testing of REST APIs and microservices with Postman and Playwright, generated from your OpenAPI/Swagger specs.</p>
         </article>
         <article class="card">
           <div class="icon">🎭</div>
           <h3>Test automation with Playwright</h3>
-          <p>Fast, reliable end-to-end and API test suites in Playwright that run on every pull request, with fewer flaky tests and fewer manual regression cycles.</p>
+          <p>Fast, maintainable UI and API test suites that run on every pull request. Fewer flaky tests, fewer manual regression cycles, faster releases.</p>
         </article>
-        <article class="card">
-          <div class="icon">🔍</div>
-          <h3>Bottleneck diagnosis</h3>
-          <p>Root-cause analysis with Dynatrace, Grafana, Kibana and Splunk: slow SQL, memory leaks, GC pressure, thread contention. You get a clear fix, not just a red graph.</p>
+        <article class="card specialist">
+          <p class="pill">My specialty</p>
+          <div class="icon">⚡</div>
+          <h3>Performance &amp; load testing</h3>
+          <p>Load, stress, soak and spike testing with k6, JMeter, LoadRunner and Gatling, plus root-cause analysis with Dynatrace and Grafana. Enterprise-grade, trusted by Visa and ANZ.</p>
         </article>
         <article class="card">
           <div class="icon">🚦</div>
           <h3>CI/CD quality gates</h3>
-          <p>Automated performance and regression runs in GitLab CI, Jenkins or GitHub Actions. Thresholds fail the build before a slow release reaches production.</p>
+          <p>Automated functional, API and performance checks in GitHub Actions, GitLab CI or Jenkins that stop broken or slow builds before they reach production.</p>
         </article>
         <article class="card">
           <div class="icon">🧭</div>
-          <h3>QA strategy &amp; uplift</h3>
-          <p>Test strategy, non-functional requirements, SLAs and release-readiness reporting that executives and engineers can both act on. Coaching for your team included.</p>
+          <h3>QA strategy &amp; setup</h3>
+          <p>No QA process yet? I'll set one up: test strategy, Jira/Zephyr workflows, release checklists and quality reporting, sized to suit your team.</p>
         </article>
       </div>
     </section>
@@ -145,7 +137,8 @@
       <div class="wrap">
         <p class="eyebrow">Selected work</p>
         <h2>Proven where failure is expensive</h2>
-        <div class="cases">
+        <p class="section-lead">My enterprise work has focused on performance engineering for systems that can't go down. I bring that same discipline to every functional, API and automation project.</p>
+        <div class="cases" style="margin-top:8px">
           <article class="case">
             <div class="case-meta">
               <span class="tag">Gaming &amp; Lottery</span>
@@ -207,38 +200,38 @@
       <h2>Pick the engagement that fits</h2>
       <div class="grid plans">
         <article class="card plan">
-          <h3>Performance health check</h3>
-          <p class="plan-sub">Fixed scope · 1–2 weeks</p>
+          <h3>Test &amp; bug report</h3>
+          <p class="plan-sub">Fixed price · a few days</p>
           <ul>
-            <li>Workload model of your key user journeys</li>
-            <li>Load and stress test against your SLAs</li>
-            <li>Bottleneck report with prioritised fixes</li>
-            <li>Reusable k6 scripts handed over</li>
+            <li>Functional and exploratory test of your app</li>
+            <li>Cross-browser and mobile checks</li>
+            <li>Prioritised bug report with steps and screenshots</li>
+            <li>Ideal before a launch or demo</li>
           </ul>
-          <a href="#contact" class="btn btn-ghost">Ask about a health check</a>
+          <a href="#contact" class="btn btn-ghost">Get your app tested</a>
         </article>
         <article class="card plan featured">
           <p class="pill">Most popular</p>
-          <h3>Launch &amp; peak readiness</h3>
-          <p class="plan-sub">Before a go-live, migration or big event</p>
+          <h3>Automation setup</h3>
+          <p class="plan-sub">Fixed scope · 1–3 weeks</p>
           <ul>
-            <li>Peak, spike and soak testing</li>
-            <li>Capacity and scalability sign-off</li>
-            <li>Go/no-go evidence for stakeholders</li>
-            <li>On call during launch day</li>
+            <li>Playwright UI and API test suite for key journeys</li>
+            <li>Runs automatically in your CI pipeline</li>
+            <li>Optional load test against your SLAs</li>
+            <li>Docs and handover so your team can extend it</li>
           </ul>
-          <a href="#contact" class="btn">Plan your launch</a>
+          <a href="#contact" class="btn">Automate your testing</a>
         </article>
         <article class="card plan">
-          <h3>Embedded contractor</h3>
-          <p class="plan-sub">Daily rate · ABN or via agency</p>
+          <h3>Ongoing QA partner</h3>
+          <p class="plan-sub">Hourly, part-time or full-time contract</p>
           <ul>
-            <li>Joins your squad and ceremonies</li>
-            <li>Performance, API and Playwright automation</li>
-            <li>CI/CD quality gates and dashboards</li>
-            <li>Upskills your team as we go</li>
+            <li>Joins your sprints as your tester</li>
+            <li>Manual, API, automation and performance testing</li>
+            <li>Release sign-off and quality reporting</li>
+            <li>ABN, Upwork or agency, whichever suits you</li>
           </ul>
-          <a href="#contact" class="btn btn-ghost">Discuss a contract</a>
+          <a href="#contact" class="btn btn-ghost">Discuss ongoing work</a>
         </article>
       </div>
     </section>
@@ -246,12 +239,12 @@
     <section class="section alt">
       <div class="wrap">
         <p class="eyebrow">How I work</p>
-        <h2>From "is it fast enough?" to evidence</h2>
+        <h2>From "is it ready?" to evidence</h2>
         <ol class="steps">
-          <li><span>01</span><h3>Discover</h3><p>Agree on goals, SLAs and real traffic patterns with your team and stakeholders.</p></li>
-          <li><span>02</span><h3>Model &amp; build</h3><p>Create workload models and scripts that are version-controlled, data-driven and CI-ready.</p></li>
-          <li><span>03</span><h3>Test &amp; observe</h3><p>Run tests with live dashboards and APM so every spike gets traced to its cause.</p></li>
-          <li><span>04</span><h3>Report &amp; hand over</h3><p>Plain-English risk summary, prioritised fixes, and tooling your team keeps.</p></li>
+          <li><span>01</span><h3>Discover</h3><p>Understand your product, users, risks and release goals, and agree on scope and success criteria.</p></li>
+          <li><span>02</span><h3>Plan &amp; build</h3><p>Write test cases and automation scripts that are version-controlled, data-driven and CI-ready.</p></li>
+          <li><span>03</span><h3>Test &amp; report bugs</h3><p>Run manual, API, automated and load tests, and log clear, reproducible defects as I go.</p></li>
+          <li><span>04</span><h3>Report &amp; hand over</h3><p>A plain-English quality summary, a go/no-go call, and tests your team keeps.</p></li>
         </ol>
       </div>
     </section>
@@ -260,6 +253,7 @@
       <p class="eyebrow">Toolkit</p>
       <h2>The right tool for the job, not a default</h2>
       <div class="toolkit">
+        <div><h3>Functional &amp; manual</h3><ul class="chips"><li>Test planning</li><li>Test case design</li><li>Exploratory</li><li>Regression</li><li>Cross-browser</li><li>UAT</li><li>Jira</li><li>Zephyr</li></ul></div>
         <div><h3>Performance</h3><ul class="chips"><li>k6</li><li>JMeter</li><li>LoadRunner / LRE</li><li>Gatling</li><li>TruClient</li></ul></div>
         <div><h3>Automation &amp; API</h3><ul class="chips"><li>Playwright</li><li>REST APIs</li><li>OpenAPI / Swagger</li><li>Postman</li><li>JavaScript / TypeScript</li><li>Java</li><li>Python</li></ul></div>
         <div><h3>Observability</h3><ul class="chips"><li>Dynatrace</li><li>Grafana + InfluxDB</li><li>Kibana</li><li>Splunk</li><li>New Relic</li><li>CloudWatch</li></ul></div>
@@ -297,8 +291,9 @@
           <h2>Senior expertise without the ramp-up</h2>
         </div>
         <ul class="ticks">
+          <li><strong>One tester, every layer.</strong> Manual, API, automation and performance from one person who sees the whole picture.</li>
           <li><strong>Enterprise-grade, startup-fast.</strong> I've worked under bank and payments-network rigour, and I deliver at a pace that suits smaller teams.</li>
-          <li><strong>I diagnose, not just measure.</strong> I go past "p95 is high" to the query, the thread pool or the config that's causing it.</li>
+          <li><strong>Bug reports developers love.</strong> Clear steps, evidence and root cause where I can find it, not just "it's broken".</li>
           <li><strong>Automation you keep.</strong> Scripts, pipelines and dashboards stay with your team after I leave.</li>
           <li><strong>Clear communication.</strong> Executives get risk in plain English and developers get actionable detail.</li>
           <li><strong>Australian timezone, ABN-ready.</strong> Easy to contract directly or through your preferred agency.</li>
@@ -308,10 +303,11 @@
 
     <section id="contact" class="contact">
       <div class="wrap contact-inner">
-        <h2>Have a launch, a slow system, or a flaky test suite?</h2>
+        <h2>Launching soon, shipping bugs, or stuck on manual regression?</h2>
         <p>Tell me what you're working on. I reply within one business day, and the first 30-minute call is free.</p>
         <div class="cta">
-          <a class="btn btn-light" href="mailto:pawansinhatech@gmail.com?subject=Project%20enquiry">pawansinhatech@gmail.com</a>
+          <a class="btn btn-light js-book" href="mailto:pawansinhatech@gmail.com?subject=Free%2030-min%20call">Book a free call</a>
+          <a class="btn btn-outline-light js-copy" href="mailto:pawansinhatech@gmail.com?subject=Project%20enquiry" data-copy="pawansinhatech@gmail.com">pawansinhatech@gmail.com</a>
           <a class="btn btn-outline-light" href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a>
           <a class="btn btn-outline-light" href="[YOUR_UPWORK_PROFILE_URL]" target="_blank" rel="noopener">Hire on Upwork</a>
         </div>
@@ -320,27 +316,10 @@
   </main>
 
   <footer class="footer wrap">
-    <p>© <span id="year"></span> Pawan Sinha · Performance &amp; QA Automation Engineer · Melbourne, Australia</p>
+    <p>© <span id="year"></span> Pawan Sinha · QA &amp; Test Automation Engineer · Melbourne, Australia</p>
     <p>ABN [XX XXX XXX XXX]</p>
   </footer>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    const badge = document.getElementById('availability');
-    const from = badge.dataset.availableFrom;
-    if (from && new Date(from) > new Date()) {
-      const d = new Date(from).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
-      badge.textContent = 'Available from ' + d;
-      badge.classList.add('later');
-    }
-
-    // Hide links and text that still hold a [placeholder], so the live site never shows them
-    document.querySelectorAll('a[href^="["]').forEach(a => a.remove());
-    document.querySelectorAll('.footer p').forEach(p => { if (p.textContent.includes('[')) p.remove(); });
-    document.querySelectorAll('#testimonials .quote').forEach(q => { if (q.textContent.includes('[')) q.remove(); });
-    const testimonials = document.getElementById('testimonials');
-    if (!testimonials.querySelector('.quote')) testimonials.remove();
-  </script>
+  <script src="main.js"></script>
 </body>
 </html>
