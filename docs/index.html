@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script>document.documentElement.classList.add('js')</script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
 </head>
 <body data-booking-url="">
   <!--
@@ -23,6 +24,8 @@
     - Booking: paste your free Calendly link into data-booking-url on <body>, e.g. "https://calendly.com/pawansinhatech/30min".
       Until then, "Book a call" buttons open a pre-filled email.
   -->
+  <div class="progress" aria-hidden="true"></div>
+  <div class="cursor-glow" aria-hidden="true"></div>
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
@@ -41,7 +44,7 @@
       <div class="wrap hero-grid">
         <div>
           <p id="availability" class="badge" data-available-from="">Available now for contracts</p>
-          <h1>Ship software your users <span class="hl">can trust.</span></h1>
+          <h1 class="split">Ship software your users <span class="hl">can trust.</span></h1>
           <p class="lead">
             End-to-end software testing, from manual and functional testing to API checks, Playwright automation
             and load testing. For 12+ years I've tested business-critical systems for banks, payment networks
@@ -58,7 +61,7 @@
           </ul>
         </div>
 
-        <figure class="dash" aria-label="Illustration of a full test run across every layer">
+        <figure class="dash" data-parallax="-0.08" aria-label="Illustration of a full test run across every layer">
           <div class="dash-head">
             <span class="dots"><i></i><i></i><i></i></span>
             <span class="mono">release-candidate · test run</span>
@@ -81,9 +84,11 @@
     <section class="trust">
       <div class="wrap">
         <p class="trust-label">Trusted by engineering teams at</p>
-        <ul class="trust-list">
-          <li>ANZ</li><li>NAB</li><li>Visa</li><li>The Lottery Corporation</li><li>IMS Health</li>
-        </ul>
+        <div class="marquee">
+          <ul class="trust-list marquee-track">
+            <li>ANZ</li><li>NAB</li><li>Visa</li><li>The Lottery Corporation</li><li>IMS Health</li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -92,6 +97,10 @@
       <div><span class="num">4</span><span>layers covered: UI, functional, API, performance</span></div>
       <div><span class="num">3</span><span>regulated domains: banking, payments, gaming</span></div>
       <div><span class="num">CI/CD</span><span>automated quality gates on every release</span></div>
+    </section>
+
+    <section class="wrap statement-wrap">
+      <p class="statement">For 12 years I've made sure software holds up when it matters most: on payday, at checkout, and on draw night. <span class="hl-static">Now I'll do the same for your product.</span></p>
     </section>
 
     <section id="services" class="wrap section">
@@ -238,16 +247,27 @@
 
     <section class="section alt">
       <div class="wrap">
-        <p class="eyebrow">How I work</p>
-        <h2>From "is it ready?" to evidence</h2>
-        <ol class="steps">
+        <div class="process">
+          <div class="process-head">
+            <p class="eyebrow">How I work</p>
+            <h2>From "is it ready?" to evidence</h2>
+            <p class="section-lead">A simple, transparent process, whether it's a three-day test pass or a six-month contract.</p>
+          </div>
+          <ol class="steps steps-pinned">
           <li><span>01</span><h3>Discover</h3><p>Understand your product, users, risks and release goals, and agree on scope and success criteria.</p></li>
           <li><span>02</span><h3>Plan &amp; build</h3><p>Write test cases and automation scripts that are version-controlled, data-driven and CI-ready.</p></li>
           <li><span>03</span><h3>Test &amp; report bugs</h3><p>Run manual, API, automated and load tests, and log clear, reproducible defects as I go.</p></li>
           <li><span>04</span><h3>Report &amp; hand over</h3><p>A plain-English quality summary, a go/no-go call, and tests your team keeps.</p></li>
-        </ol>
+          </ol>
+        </div>
       </div>
     </section>
+
+    <div class="big-marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>Manual testing</span><span>API testing</span><span>Playwright</span><span>Performance</span><span>k6</span><span>JMeter</span><span>Regression</span><span>CI/CD</span>
+      </div>
+    </div>
 
     <section id="toolkit" class="wrap section">
       <p class="eyebrow">Toolkit</p>
