@@ -1,0 +1,14 @@
+{
+  "my_name": "Pawan Sinha",
+  "headline": "Performance & QA Automation Engineer with 12+ years across banking, payments and gaming (ANZ, NAB, Visa, The Lottery Corporation)",
+  "skills": "performance and load testing (k6, JMeter, LoadRunner, Gatling), API testing, Playwright test automation, bottleneck diagnosis with Dynatrace/Grafana, and CI/CD quality gates",
+  "website": "https://pawansinha0612.github.io/portfolio/",
+  "upwork": "https://www.upwork.com/freelancers/[your-id]",
+  "linkedin": "https://www.linkedin.com/in/pawan-sinha-b5a356b6/",
+  "phone": "[04xx xxx xxx]",
+  "contract_end_date": "2026-12-19",
+  "available_from": "2026-12-22",
+  "notify_days_before": 30,
+  "auto_send": false,
+  "seconds_between_emails": 5
+}

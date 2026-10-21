@@ -1,0 +1,18 @@
+Subject: {my_name} — available for contract work from {available_from}
+Hi {first_name},
+
+{personal_note}I hope you're doing well. A quick heads-up: my current contract wraps up soon and I'm available for new work from {available_from}.
+
+I work as a {headline}. Areas I can help with: {skills}.
+
+If you or anyone in your network needs help, I'd really appreciate a reply or an introduction. Happy to share a CV or jump on a quick call.
+
+Portfolio: {website}
+LinkedIn:  {linkedin}
+Upwork:    {upwork}
+
+Thanks,
+{my_name}
+{phone}
+
+(If you'd rather not get these updates, just reply and let me know.)

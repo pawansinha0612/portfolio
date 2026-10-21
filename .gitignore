@@ -1,0 +1,17 @@
+# IDE
+.idea/
+*.iml
+
+# Notifier private data — never commit contacts or credentials
+notifier/config.json
+notifier/contacts.csv
+notifier/sent_log.json
+notifier/.env
+__pycache__/
+.DS_Store
+
+# Resume contains phone number; keep out of the public repo
+*.docx
+
+# Private notes (rate strategy etc.)
+profile/
