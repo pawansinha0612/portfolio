@@ -1,84 +1,118 @@
-# Pawan Sinha — Contractor Portfolio & Availability Notifier
+# pawansinha.com.au
+
+Portfolio website and tooling for **Pawan Sinha, QA & Test Automation Engineer** (Melbourne, ABN registered).
+
+**Live site:** https://pawansinha.com.au
 
 ```
-docs/        Portfolio website (plain HTML/CSS), hosted free on GitHub Pages
-profile/     Ready-to-paste Upwork profile (title, overview, skills, portfolio items)
-notifier/    Script that emails your network when your contract is about to end
+docs/        The website: plain HTML, CSS and JavaScript, no build step
+  index.html   Page content
+  styles.css   Design, layout and animation styles
+  main.js      Animations, scroll effects, booking button, placeholder hiding
+  CNAME        Tells GitHub Pages to serve the site at pawansinha.com.au
+notifier/    Script that emails your network when a contract is about to end
+profile/     Private notes (Upwork profile, testimonial drafts, roadmap). Git-ignored, never published.
 ```
 
-## 1. Publish the website (free)
+---
 
-1. Only two placeholders are left in `docs/index.html`: your Upwork URL and your ABN. Until you fill them in, they're hidden from the page. To preview the site, open the file in a browser.
-2. Create a **public** GitHub repo called `portfolio`, then push this folder to it:
-   ```bash
-   git add . && git commit -m "Initial portfolio"
-   git remote add origin https://github.com/pawansinha0612/portfolio.git
-   git push -u origin main
-   ```
-3. On GitHub, go to **Settings → Pages → Build from branch → `main` / `/docs`**.
-   The site is served at **https://pawansinha.com.au** (custom domain set by `docs/CNAME`).
-4. Domain `pawansinha.com.au` (registered with Hostinger). DNS records at Hostinger:
-   `A @ 185.199.108.153`, `.109.153`, `.110.153`, `.111.153` and `CNAME www pawansinha0612.github.io`.
+## How the site is hosted
 
-To show your availability, set `data-available-from="YYYY-MM-DD"` on the badge in `index.html`.
-Leave it empty to show "Available now".
+| Piece | Where | Cost |
+|---|---|---|
+| Domain `pawansinha.com.au` | Hostinger (registrar) | ~A$20/year |
+| Website files and hosting | GitHub Pages, from the `docs/` folder on `main` | Free |
+| HTTPS certificate | Issued automatically by GitHub Pages (Let's Encrypt) | Free |
 
-## 2. Availability notifier
+You don't need a Hostinger hosting plan. Hostinger only holds the domain and its DNS records.
+
+### DNS records (set in Hostinger → Domains → pawansinha.com.au → DNS / Nameservers)
+
+| Type | Name | Value |
+|---|---|---|
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+| CNAME | `www` | `pawansinha0612.github.io` |
+
+**Where these values come from:** the four IP addresses are GitHub Pages' official servers, published in GitHub's docs
+([Managing a custom domain for your GitHub Pages site](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain)).
+There are four for redundancy, so if one is down, browsers use another.
+- The **A records** point the bare domain (`pawansinha.com.au`) at GitHub.
+- The **CNAME** points `www.pawansinha.com.au` at your GitHub Pages address. GitHub then redirects `www` to the bare domain.
+- The `docs/CNAME` file tells GitHub which site to serve when a request for `pawansinha.com.au` arrives.
+
+Check the records from a terminal:
+```bash
+dig +short pawansinha.com.au          # should list the four 185.199.x.153 addresses
+dig +short www.pawansinha.com.au      # should show pawansinha0612.github.io
+```
+Or check worldwide at https://dnschecker.org/#A/pawansinha.com.au.
+
+### HTTPS
+In GitHub, go to **Settings → Pages** and tick **Enforce HTTPS** once the certificate is issued. If the box stays greyed out
+for more than an hour, remove the custom domain, Save, add `pawansinha.com.au` again, and Save. That restarts the certificate request.
+
+### Troubleshooting
+| Symptom | Cause | Fix |
+|---|---|---|
+| Hostinger parking page | Old DNS answer still cached (TTL up to 4 h) | Wait, switch Wi-Fi/mobile data, or flush DNS: `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` |
+| "Connection not private" | HTTPS certificate not issued yet | Wait, or re-add the custom domain (see above) |
+| Works on phone, not on work laptop | The company VPN/DNS caches longer | Disconnect the VPN or wait |
+| 404 from GitHub | `docs/CNAME` missing, or Pages not set to `main` + `/docs` | Check Settings → Pages |
+
+---
+
+## Updating the website
+
+1. Edit files in `docs/`. To preview, open `docs/index.html` in a browser.
+2. Commit and push to `main`. GitHub Pages republishes in about a minute.
+
+Things to change in `docs/index.html` (see the comment at the top of `<body>`):
+
+| What | Where |
+|---|---|
+| Availability badge | `data-available-from="YYYY-MM-DD"` on `#availability` (empty = "Available now") |
+| Booking button | `data-booking-url` on `<body>`: paste a Calendly link. Empty = pre-filled email |
+| Upwork link | Replace `[YOUR_UPWORK_PROFILE_URL]` |
+| ABN in footer | Replace `[XX XXX XXX XXX]` |
+| Testimonials | Fill in the cards in `#testimonials`. Only use quotes the person has approved |
+
+Anything still holding a `[placeholder]` is hidden automatically, so unfinished items never appear on the live site.
+
+**Animations** are in `main.js` and the "Motion" sections of `styles.css`: word reveals, smooth scrolling
+([Lenis](https://github.com/darkroomengineering/lenis)), marquees, scroll-filled statement, pinned process steps, cursor effects.
+They switch off for visitors who have reduced motion enabled in their device settings.
+
+---
+
+## Availability notifier
+
+Emails your contacts, one at a time and personalised, when your current contract is about to end.
 
 One-time setup:
 ```bash
 cd notifier
-cp config.example.json config.json      # your contract end date, links, skills
-cp contacts.example.csv contacts.csv    # the people to tell (kept out of git)
-cp .env.example .env                    # Gmail address + App Password (kept out of git)
+cp config.example.json config.json      # contract end date, links, skills
+cp contacts.example.csv contacts.csv    # people to tell
+cp .env.example .env                    # Gmail address + App Password
 ```
+`config.json`, `contacts.csv`, `.env` and `sent_log.json` are git-ignored. Your contacts and passwords never leave your machine.
 
-Everyday use:
 ```bash
-python3 notify.py status              # days left, who has been emailed
-python3 notify.py preview             # see the email exactly as it will be sent
-python3 notify.py send --dry-run      # list recipients, send nothing
-python3 notify.py send --tag recruiter  # recruiters first, for example
-python3 notify.py send                # everyone not yet emailed (asks to confirm)
+python3 notify.py status                 # days left, who has been emailed
+python3 notify.py preview                # see the email exactly as it will be sent
+python3 notify.py send --dry-run         # list recipients, send nothing
+python3 notify.py send --tag recruiter   # one group only
+python3 notify.py send                   # everyone not yet emailed (asks to confirm)
 ```
 
 - `contacts.csv` columns: `name, first_name, email, tags (separated by ;), personal_note, opt_out`.
-  A short `personal_note` makes each email feel personal. Set `opt_out` to `yes` when someone asks to stop.
-- Emails go one at a time, never as a mass CC. Nobody gets the same email twice for a contract.
-  When you sign a new contract, change `contract_end_date` and the next campaign starts fresh.
+- Nobody gets the same email twice for a contract. When you change `contract_end_date`, a new campaign starts.
 
-### Get a reminder automatically
-Run `check` once a day. When the notice window opens (`notify_days_before`) you get a macOS notification.
-If you set `"auto_send": true`, it sends the emails for you instead.
+Daily reminder (a macOS notification when the notice window opens, or automatic sending if `"auto_send": true`):
 ```bash
 crontab -e
-# add this line (runs at 9am daily):
 0 9 * * * /usr/bin/env python3 /Users/sinhap/portfolio/notifier/notify.py check >> /tmp/notify.log 2>&1
 ```
-
-## 3. Profile roadmap
-
-**Week 1: foundations**
-- Business email (Gmail, or Zoho Mail with your domain), a 1-page CV (PDF), and a professional headshot.
-- LinkedIn: headline like "Performance & QA Automation Engineer | k6 · JMeter · Playwright · API | Contractor".
-  Turn on *Open to work* (recruiters only) and add a *Services* section.
-- Publish this site.
-
-**Week 2: Upwork**
-- Title: specific, not generic. For example, "Flutter Developer | Mobile Apps, Analytics & Test Automation".
-- Overview: open with the client's problem and the result you deliver. Put your stack in line 3, not line 1.
-- Portfolio: 3–5 items with the same Problem → What I did → Result format as the website.
-  Use screenshots or diagrams, and anonymise clients if needed.
-- Take 1–2 skill tests, set a reasonable starting rate, and apply to small, well-scoped jobs first.
-  Early 5-star reviews matter more than early rates.
-- Ask past colleagues for testimonials. Upwork lets you request client testimonials from outside the platform.
-
-**Ongoing**
-- Register with 3–5 Australian IT contract agencies (for example Hays, Talent, Robert Walters, Paxus, Hudson).
-- Post on LinkedIn once or twice a week about things you've built or learned.
-- Keep `contacts.csv` growing: every recruiter, manager and colleague you meet.
-
-**ABN / admin checklist** (check details with an accountant)
-- Register for GST once you expect A$75k+ turnover a year. Many contractors register from the start.
-- Set up invoicing (Xero, MYOB, or a free template), a separate business bank account, and set aside money for tax and super.
-- Agencies often require **Professional Indemnity** and **Public Liability** insurance.
