@@ -75,8 +75,7 @@ Things to change in `docs/index.html` (see the comment at the top of `<body>`):
 |---|---|
 | Availability badge | `data-available-from="YYYY-MM-DD"` on `#availability` (empty = "Available now") |
 | Booking button | `data-booking-url` on `<body>`: paste a Calendly link. Empty = pre-filled email |
-| Upwork link | Replace `[YOUR_UPWORK_PROFILE_URL]` |
-| ABN in footer | Replace `[XX XXX XXX XXX]` |
+| Upwork link / ABN | Search for `upwork.com` / `ABN` in `index.html` |
 | Testimonials | Fill in the cards in `#testimonials`. Only use quotes the person has approved |
 
 Anything still holding a `[placeholder]` is hidden automatically, so unfinished items never appear on the live site.
