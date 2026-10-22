@@ -16,9 +16,9 @@ notifier/    Script that emails your network when your contract is about to end
    git push -u origin main
    ```
 3. On GitHub, go to **Settings → Pages → Build from branch → `main` / `/docs`**.
-   Your site goes live at `https://pawansinha0612.github.io/portfolio/`.
-4. Optional (~A$15–25/yr): buy a domain such as `pawansinha.dev` and add it under Settings → Pages → Custom domain.
-   This is the only cost, and it can wait.
+   The site is served at **https://pawansinha.com.au** (custom domain set by `docs/CNAME`).
+4. Domain `pawansinha.com.au` (registered with Hostinger). DNS records at Hostinger:
+   `A @ 185.199.108.153`, `.109.153`, `.110.153`, `.111.153` and `CNAME www pawansinha0612.github.io`.
 
 To show your availability, set `data-available-from="YYYY-MM-DD"` on the badge in `index.html`.
 Leave it empty to show "Available now".
