@@ -90,6 +90,31 @@ They switch off for visitors who have reduced motion enabled in their device set
 
 Emails your contacts, one at a time and personalised, when your current contract is about to end.
 
+### Option A (recommended): Google Sheet, no password anywhere
+
+`notifier/google-sheets/Code.gs` runs inside a Google Sheet and sends from your own Gmail via Google's sign-in consent. You never create or store a password.
+
+One-time setup:
+1. Create a new Google Sheet (e.g. "Availability notifier").
+2. **Extensions → Apps Script**, delete the sample code, paste `notifier/google-sheets/Code.gs`, save.
+3. Reload the sheet. An **Availability** menu appears. Run **Set up tabs** and click through Google's "Allow" screen. If you see "Google hasn't verified this app", click **Advanced → Go to … (unsafe)**. It is your own script.
+4. Fill the **Contacts** tab (`name, first_name, email, tags (separated by ;), personal_note, opt_out`). You can type them in, or let the script find them:
+   - **Availability → Import job contacts from Gmail** searches the last 3 years of mail for recruiting and testing keywords. It skips newsletters, job alerts, no-reply senders and job boards, plus anyone already in Contacts, and lists the people it finds in a **Found** tab. People you replied to are ticked already.
+   - Review the list and tick `keep` for the people you want, then run **Move ticked Found rows to Contacts**.
+   - **Availability → Import from Google Contacts** reads your saved contacts, including names, emails, phone numbers, companies and job titles. First turn on the People API: Apps Script → **Services (+)** → **People API** → **Add**. Job-related contacts that have an email are ticked automatically. Contacts with only a phone number are listed for reference and can't be emailed until you add an address.
+   - To change the search, add a `gmail_search` row to Profile with any Gmail search query.
+
+Each new contract:
+1. Edit the **Profile** tab with your new `contract_end_date`, `available_from`, headline, skills and wording. A new end date starts a fresh campaign, so everyone can be emailed again.
+2. Tick the people you want in **Found**. Then run **Availability → 1. Send test email to me**. This copies the ticked rows into Contacts, then sends one sample to `test_email` (or to your Google account if that's blank).
+3. **Availability → 2. Send to everyone** (or **2b** for one tag, e.g. `recruiter`).
+
+"Send to everyone" stays locked until you've test-sent the *current* Profile, so if you edit anything you have to send yourself a new test first. Every send is logged in the **Sent** tab, so nobody gets the same email twice. A personal Gmail account can send about 100 emails a day from a script. If you have more contacts, run the same menu item the next day and it continues where it stopped.
+
+Contacts are never removed by sending. To send a follow-up for the same contract, delete the relevant rows in **Sent** and run step 3 again.
+
+### Option B: local Python script (needs a Gmail App Password)
+
 One-time setup:
 ```bash
 cd notifier
