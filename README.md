@@ -139,5 +139,5 @@ python3 notify.py send                   # everyone not yet emailed (asks to con
 Daily reminder (a macOS notification when the notice window opens, or automatic sending if `"auto_send": true`):
 ```bash
 crontab -e
-0 9 * * * /usr/bin/env python3 /Users/sinhap/portfolio/notifier/notify.py check >> /tmp/notify.log 2>&1
+0 9 * * * /usr/bin/env python3 "$HOME/portfolio/notifier/notify.py" check >> /tmp/notify.log 2>&1
 ```
