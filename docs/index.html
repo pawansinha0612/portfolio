@@ -64,6 +64,7 @@
       <nav>
         <a href="#services">Services</a>
         <a href="#work">Work</a>
+        <a href="#projects">Projects</a>
         <a href="#engage">Engagements</a>
         <a href="#toolkit">Toolkit</a>
         <a href="#contact" class="btn btn-small">Hire me</a>
@@ -232,20 +233,22 @@
               <p><strong>Outcome:</strong> A full picture of performance from server to screen, with tuning recommendations delivered within the release window.</p>
             </div>
           </article>
-          <article class="case">
-            <div class="case-meta">
-              <span class="tag">Side project</span>
-              <h3>Melbourne Deal Finder</h3>
-              <p class="muted">2026 · runs daily</p>
-            </div>
-            <div class="case-body">
-              <h4>A Playwright scraper that refreshes itself every morning</h4>
-              <p><strong>Challenge:</strong> Finding good houses in western Melbourne meant checking the same listing searches every day, and most property portals block automated browsers.</p>
-              <p><strong>What I did:</strong> Built a Python and Playwright scanner that reads the structured page data, scores each listing as a buyer (including stamp duty and LMI estimates), and runs on a GitHub Actions schedule.</p>
-              <p><strong>Outcome:</strong> A results page that updates every morning with no manual work. <a href="/projects/deal-finder/">See today's results →</a></p>
-            </div>
-          </article>
         </div>
+      </div>
+    </section>
+
+    <section id="projects" class="wrap section">
+      <p class="eyebrow">Projects</p>
+      <h2>Things I've built</h2>
+      <p class="section-lead">Side projects where I use the same automation skills I bring to client work. Each one runs live.</p>
+      <div class="grid">
+        <a class="card project-card" href="/projects/deal-finder/">
+          <div class="icon">🏠</div>
+          <h3>Melbourne Deal Finder</h3>
+          <p>Every morning, a Playwright scraper on a GitHub Actions schedule scans Melbourne house listings and scores each one as a buyer. The results page updates itself with no manual work.</p>
+          <ul class="chips project-chips"><li>Python</li><li>Playwright</li><li>GitHub Actions</li></ul>
+          <span class="project-link">See today's results →</span>
+        </a>
       </div>
     </section>
 

@@ -397,6 +397,12 @@ html.lenis, html.lenis body { height: auto; }
   .steps-pinned li.active { transform: none; }
 }
 @media (max-width: 600px) {
-  .trust .wrap { flex-direction: column; align-items: stretch; gap: 12px; }
+  .trust .wrap { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; }
   .big-marquee { padding: 24px 0; }
 }
+
+/* Projects */
+.project-card { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; }
+.project-chips { margin: 14px 0 6px; }
+.project-chips li { font-size: 13px; padding: 4px 12px; }
+.project-link { margin-top: auto; padding-top: 8px; color: var(--accent); font-weight: 600; }

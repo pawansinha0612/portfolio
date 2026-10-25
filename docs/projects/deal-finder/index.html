@@ -21,6 +21,8 @@
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
 
+    .scan-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: -12px 0 8px; font-size: 14px; }
+    .scan-row .muted { flex: 1 1 320px; }
     .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
     .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
     .tile .v { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
@@ -121,6 +123,10 @@
         <p class="eyebrow">Live results</p>
         <h2>Today's scan</h2>
         <p class="section-lead">The filters start at the criteria I'm buying with. Change them to explore everything the scan found.</p>
+        <div class="scan-row">
+          <a class="btn btn-small" href="https://github.com/pawansinha0612/match-myHome/actions/workflows/daily-scan.yml" target="_blank" rel="noopener">Run a fresh scan ↗</a>
+          <span class="muted">Opens the scan job on GitHub. Click <b>Run workflow</b> there, wait about 3 minutes, then refresh this page. Only the repo owner can start it. Everyone else sees the 7am daily scan.</span>
+        </div>
 
         <div class="tiles" aria-live="polite">
           <div class="tile"><div class="v" id="t-scanned">–</div><div class="k">listings scanned</div></div>
