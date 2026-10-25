@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Melbourne Deal Finder — Pawan Sinha</title>
+  <meta name="description" content="A side project by Pawan Sinha: a Playwright scraper that scans Melbourne house listings every morning in GitHub Actions, scores them as a buyer and publishes the results here.">
+  <meta property="og:title" content="Melbourne Deal Finder — Pawan Sinha">
+  <meta property="og:description" content="Playwright + GitHub Actions: a daily, self-updating scan of Melbourne house listings, scored as a buyer.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/projects/deal-finder/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <link rel="canonical" href="https://pawansinha.com.au/projects/deal-finder/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    .project-hero { padding: 64px 16px 24px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
+    .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .tile .v { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .tile .k { color: var(--muted); font-size: 13px; }
+
+    .filters {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 16px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    }
+    .filters label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .filters input, .filters select {
+      font: inherit; font-size: 15px; color: var(--text); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; min-width: 0;
+    }
+    .filters .check { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; color: var(--text); }
+    .filters .actions { display: flex; align-items: end; }
+    .filters .actions button { width: 100%; cursor: pointer; font: inherit; font-weight: 600; }
+    .result-line { color: var(--muted); font-size: 14px; margin: 16px 0 12px; }
+
+    .listings { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .listing {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+      display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow);
+    }
+    .listing-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .listing h3 { margin: 0; font-size: 16px; line-height: 1.35; }
+    .listing h3 a { color: var(--text); text-decoration: none; }
+    .listing h3 a:hover { color: var(--accent); }
+    .score { text-align: right; flex: none; }
+    .score b { font-size: 26px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .score span { color: var(--muted); font-size: 13px; }
+    .price { font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+    .agent { color: var(--muted); font-size: 13px; font-style: italic; overflow-wrap: anywhere; }
+    .specs { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 14px; }
+    .specs b { color: var(--text); }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill-s { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--alt); color: var(--muted); }
+    .pill-s.ok { background: var(--ok-bg); color: var(--ok); }
+    .pill-s.warn { background: var(--warn-bg); color: var(--warn); }
+    .pill-s.new { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+    .bar { height: 6px; border-radius: 999px; background: var(--alt); overflow: hidden; display: flex; }
+    .bar i { display: block; height: 100%; }
+    .notice { background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 14px 18px; margin: 16px 0; }
+    .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+    .more { margin: 20px auto 0; display: block; cursor: pointer; font: inherit; font-weight: 600; }
+    .more[hidden] { display: none; }
+
+    .flow { list-style: none; padding: 0; margin: 28px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .flow li { border-top: 2px solid var(--accent); padding-top: 14px; }
+    .flow span { font: 600 13px "JetBrains Mono", monospace; color: var(--accent); }
+    .flow h3 { margin: 6px 0; font-size: 17px; }
+    .flow p { margin: 0; color: var(--muted); font-size: 15px; }
+    .prose { max-width: 720px; color: var(--muted); }
+    .prose strong { color: var(--text); }
+
+    @media (max-width: 900px) {
+      .tiles { grid-template-columns: repeat(2, 1fr); }
+      .flow { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .flow { grid-template-columns: 1fr; }
+      .listings { grid-template-columns: 1fr; }
+      .project-hero { padding-top: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav>
+        <a href="#listings">Live results</a>
+        <a href="#how">How it works</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Side project · Web automation</p>
+      <h1>Melbourne Deal Finder</h1>
+      <p class="lead">Every morning a GitHub Actions job starts headless Chromium with Playwright, scans homely.com.au for houses for sale in western Melbourne, and scores each one as a buyer. It flags new listings and publishes the results below. Nobody runs it by hand.</p>
+      <div class="meta-row">
+        <span class="tag">Python</span>
+        <span class="tag">Playwright</span>
+        <span class="tag">GitHub Actions</span>
+        <span class="tag">Scheduled CI</span>
+      </div>
+      <div class="cta">
+        <a class="btn" href="#listings">See today's results</a>
+        <a class="btn btn-ghost" href="https://github.com/pawansinha0612/match-myHome" target="_blank" rel="noopener">View the code</a>
+      </div>
+    </section>
+
+    <section id="listings" class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">Live results</p>
+        <h2>Today's scan</h2>
+        <p class="section-lead">The filters start at the criteria I'm buying with. Change them to explore everything the scan found.</p>
+
+        <div class="tiles" aria-live="polite">
+          <div class="tile"><div class="v" id="t-scanned">–</div><div class="k">listings scanned</div></div>
+          <div class="tile"><div class="v" id="t-match">–</div><div class="k">match the filters</div></div>
+          <div class="tile"><div class="v" id="t-new">–</div><div class="k">new since last scan</div></div>
+          <div class="tile"><div class="v" id="t-updated">–</div><div class="k" id="t-updated-k">last updated</div></div>
+        </div>
+
+        <form class="filters" id="filters">
+          <label>Min price
+            <input type="number" id="f-min" step="10000" min="0" inputmode="numeric">
+          </label>
+          <label>Max price
+            <input type="number" id="f-max" step="10000" min="0" inputmode="numeric">
+          </label>
+          <label>Min land (m²)
+            <input type="number" id="f-land" step="25" min="0" inputmode="numeric">
+          </label>
+          <label>Min bedrooms
+            <select id="f-beds">
+              <option value="0">Any</option><option value="2">2+</option><option value="3">3+</option>
+              <option value="4">4+</option><option value="5">5+</option>
+            </select>
+          </label>
+          <label>Suburb
+            <select id="f-suburb"><option value="">All suburbs</option></select>
+          </label>
+          <label>Sort by
+            <select id="f-sort">
+              <option value="score">Buyer score</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="land">Land size</option>
+              <option value="new">Newest first</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="f-avail"> Hide under offer / contract</label>
+          <label class="check"><input type="checkbox" id="f-priced"> Hide "price unknown"</label>
+          <div class="actions"><button type="button" class="btn btn-ghost btn-small" id="f-reset">Reset to my criteria</button></div>
+        </form>
+
+        <div id="notice"></div>
+        <p class="result-line" id="result-line">Loading today's scan…</p>
+        <div class="listings" id="cards"></div>
+        <button type="button" class="btn btn-ghost more" id="more" hidden>Show more</button>
+      </div>
+    </section>
+
+    <section id="how" class="wrap section">
+      <p class="eyebrow">How it works</p>
+      <h2>A scraper that keeps itself up to date</h2>
+      <p class="section-lead">I built this for my own house hunt. It also shows the same skills I use at work: browser automation, resilient parsing, and pipelines that run without anyone watching them.</p>
+
+      <ol class="flow">
+        <li><span>01 · 7am daily</span><h3>Scheduled run</h3><p>A cron-triggered GitHub Actions workflow installs Python and Playwright's Chromium on a fresh runner.</p></li>
+        <li><span>02 · Scrape</span><h3>Read the page data</h3><p>Instead of guessing at visible text, it reads the structured JSON that the site embeds in each search page.</p></li>
+        <li><span>03 · Score</span><h3>Score as a buyer</h3><p>It scores land, build, value and availability out of 100. It also estimates upfront cash, including VIC stamp duty and LMI.</p></li>
+        <li><span>04 · Publish</span><h3>Commit and serve</h3><p>The job commits a JSON feed back to the repo. This page reads it in your browser, so there's no server to maintain.</p></li>
+      </ol>
+
+      <div class="cases" style="margin-top:40px">
+        <article class="case">
+          <div class="case-meta">
+            <span class="tag">Resilience</span>
+            <h3>When the site changed</h3>
+          </div>
+          <div class="case-body">
+            <p><strong>Challenge:</strong> Domain and realestate.com.au block automated browsers before any content loads. Later, homely.com.au moved to a newer Next.js version and the original data source disappeared overnight.</p>
+            <p><strong>What I did:</strong> I tested each portal with headless Chromium to find one that serves real data. I parse the embedded JSON rather than the rendered HTML. When the page format changed, I added a decoder for the new streamed format and kept the old path as well.</p>
+            <p><strong>Outcome:</strong> When parsing fails, the scan shows a clear warning instead of crashing or quietly publishing an empty report. Bad upstream values, such as $1 prices or 34-hectare suburban blocks, are filtered out by sanity bounds.</p>
+          </div>
+        </article>
+        <article class="case">
+          <div class="case-meta">
+            <span class="tag">Honest data</span>
+            <h3>Known limits</h3>
+          </div>
+          <div class="case-body">
+            <p>The source has no build year and no independent valuation, so those parts of the score are neutral rather than guessed. Agent price text is often marketing copy, so the scanner extracts real dollar figures from it and falls back to the site's reference price. Treat the results as research, not advice, and check every listing at the source.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Need automation that keeps running?</h2>
+        <p>I build Playwright suites, API tests and CI pipelines that teams can trust.</p>
+        <div class="cta"><a class="btn btn-light" href="/#contact">Get in touch</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <p>© <span id="year"></span> Pawan Sinha · Listing data from homely.com.au, for personal research only.</p>
+    <p><a href="/">← Back to pawansinha.com.au</a></p>
+  </footer>
+
+  <script>
+  (() => {
+    const FEED_URL = 'https://raw.githubusercontent.com/pawansinha0612/match-myHome/main/reports/latest.json';
+    const PAGE_SIZE = 24;
+    const $ = id => document.getElementById(id);
+    const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
+    const el = (tag, cls, text) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+    $('year').textContent = new Date().getFullYear();
+
+    let feed = null, shown = PAGE_SIZE;
+
+    function setDefaults() {
+      const c = feed.criteria;
+      $('f-min').value = '';
+      $('f-max').value = c.budget_max;
+      $('f-land').value = c.min_land_sqm;
+      $('f-beds').value = String(Math.min(5, c.min_bedrooms || 0));
+      $('f-suburb').value = '';
+      $('f-sort').value = 'score';
+      $('f-avail').checked = false;
+      $('f-priced').checked = true;
+    }
+
+    function filtered() {
+      const min = Number($('f-min').value) || 0;
+      const max = Number($('f-max').value) || Infinity;
+      const land = Number($('f-land').value) || 0;
+      const beds = Number($('f-beds').value) || 0;
+      const suburb = $('f-suburb').value;
+      const hideTaken = $('f-avail').checked;
+      const hideUnpriced = $('f-priced').checked;
+      const out = feed.listings.filter(l => {
+        if (l.price_mid == null) { if (hideUnpriced) return false; }
+        else if (l.price_mid < min || l.price_mid > max) return false;
+        if ((l.land || 0) < land) return false;
+        if ((l.beds || 0) < beds) return false;
+        if (suburb && l.suburb !== suburb) return false;
+        if (hideTaken && /under (offer|contract)/i.test(l.status)) return false;
+        return true;
+      });
+      const by = {
+        'score': (a, b) => b.total - a.total,
+        'price-asc': (a, b) => (a.price_mid ?? Infinity) - (b.price_mid ?? Infinity),
+        'price-desc': (a, b) => (b.price_mid ?? -1) - (a.price_mid ?? -1),
+        'land': (a, b) => (b.land || 0) - (a.land || 0),
+        'new': (a, b) => (b.is_new - a.is_new) || (b.total - a.total),
+      }[$('f-sort').value];
+      return out.sort(by);
+    }
+
+    function card(l) {
+      const w = feed.weights, b = l.breakdown;
+      const c = el('article', 'listing');
+
+      const head = el('div', 'listing-head');
+      const h = el('h3');
+      const a = el('a', null, l.address);
+      if (l.url) { a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; }
+      h.append(a);
+      const s = el('div', 'score');
+      s.append(el('b', null, l.score), el('span', null, '/100'));
+      if (l.bonus) s.append(el('div', 'muted', '+' + l.bonus + ' west'));
+      head.append(h, s);
+
+      const pills = el('div', 'pills');
+      const st = l.status || 'Unknown';
+      pills.append(el('span', 'pill-s ' + (st === 'Available' ? 'ok' : /under/i.test(st) ? 'warn' : ''), st));
+      if (l.is_new) pills.append(el('span', 'pill-s new', 'New'));
+      if (l.is_new_home) pills.append(el('span', 'pill-s', 'New build'));
+      if (l.suburb) pills.append(el('span', 'pill-s', l.suburb));
+
+      const price = el('div', 'price',
+        l.price_low && l.price_high && l.price_low !== l.price_high ? fmt(l.price_low) + ' – ' + fmt(l.price_high)
+        : l.price_mid ? fmt(l.price_mid) : 'Price unknown');
+
+      const specs = el('div', 'specs');
+      [['Land', l.land ? l.land + ' m²' : '—'], ['Bed', l.beds ?? '—'], ['Bath', l.baths ?? '—'], ['Car', l.cars ?? '—']]
+        .forEach(([k, v]) => { const sp = el('span', null, k + ' '); sp.append(el('b', null, v)); specs.append(sp); });
+      if (l.price_mid) {
+        const up = el('span', null, 'Upfront ≈ '); up.append(el('b', null, fmt(l.upfront))); specs.append(up);
+      }
+
+      const bar = el('div', 'bar');
+      bar.title = `Land ${b.land}/${w.land_and_size} · Value ${b.value}/${w.value_vs_estimate} · Build ${b.build}/${w.build_age_condition} · Availability ${b.status}/${w.availability_status}`;
+      [[b.land, 'var(--accent)'], [b.value, 'var(--accent-2)'], [b.build, '#a78bfa'], [b.status, '#f59e0b']].forEach(([v, col]) => {
+        const i = el('i'); i.style.width = v + '%'; i.style.background = col; bar.append(i);
+      });
+
+      c.append(head, pills, price);
+      if (l.price_display && l.price_display !== price.textContent) c.append(el('div', 'agent', 'Agent: “' + l.price_display + '”'));
+      c.append(specs, bar);
+      return c;
+    }
+
+    function render() {
+      const list = filtered();
+      $('t-match').textContent = list.length;
+      $('result-line').textContent = list.length
+        ? `Showing ${Math.min(shown, list.length)} of ${list.length} matching listings. The score bar shows land, value, build and availability.`
+        : '';
+      const cards = $('cards');
+      cards.replaceChildren(...list.slice(0, shown).map(card));
+      if (!list.length) cards.append(el('p', 'empty', 'Nothing matches these filters. Try widening the price or land size.'));
+      $('more').hidden = list.length <= shown;
+    }
+
+    function rerender() { shown = PAGE_SIZE; render(); }
+
+    function init(data) {
+      feed = data;
+      const subs = [...new Set(feed.listings.map(l => l.suburb).filter(Boolean))].sort();
+      subs.forEach(s => $('f-suburb').append(new Option(s, s)));
+      $('t-scanned').textContent = feed.listings.length;
+      $('t-new').textContent = feed.listings.filter(l => l.is_new).length;
+      const gen = new Date(feed.generated_at);
+      const hours = (Date.now() - gen) / 36e5;
+      $('t-updated').textContent = hours < 1 ? 'Just now' : hours < 24 ? Math.round(hours) + 'h ago' : Math.round(hours / 24) + 'd ago';
+      $('t-updated-k').textContent = 'updated ' + gen.toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Australia/Melbourne' });
+      if (feed.fetch_failed) {
+        $('notice').append(el('div', 'notice', "Today's scan couldn't reach the listing site, so these results may be out of date. It will retry tomorrow morning."));
+      } else if (hours > 48) {
+        $('notice').append(el('div', 'notice', `This scan is ${Math.round(hours / 24)} days old. The daily job may have paused.`));
+      }
+      setDefaults();
+      render();
+      $('filters').addEventListener('input', rerender);
+      $('filters').addEventListener('submit', e => e.preventDefault());
+      $('f-reset').addEventListener('click', () => { setDefaults(); rerender(); });
+      $('more').addEventListener('click', () => { shown += PAGE_SIZE; render(); });
+    }
+
+    const override = new URLSearchParams(location.search).get('feed');
+    fetch(override && /^(\.|\/|http:\/\/localhost)/.test(override) ? override : FEED_URL, { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(init)
+      .catch(() => {
+        $('result-line').textContent = '';
+        $('notice').append(el('div', 'notice', "Couldn't load today's results right now. Please try again shortly."));
+      });
+  })();
+  </script>
+</body>
+</html>
