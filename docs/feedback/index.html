@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Share your feedback — Pawan Sinha</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .contact { min-height: calc(100vh - 64px); padding-top: 64px; }
+    .enquiry .check { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; line-height: 1.5; }
+    .enquiry .check input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; accent-color: #3fd6a3; }
+    .contact .hint { font-size: 15px; margin-top: 14px; }
+    .enquiry small { font-size: 13px; font-weight: 400; color: rgba(255,255,255,.6); }
+  </style>
+</head>
+<body>
+  <!-- Private page: sent directly to people I've worked with. Not linked from the site and not indexed.
+       Submissions go to the Testimonials tab of the enquiries Google Sheet; only rows marked approved = Yes are shown. -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav>
+        <a href="/" class="btn btn-small">Visit my website</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Thanks for sharing your feedback</h2>
+        <p>A few honest sentences about what we worked on together really help new clients decide to work with me.</p>
+        <p class="hint">Not sure what to write? Mention the project, what I did, and what difference it made to you or your team.</p>
+
+        <form id="feedback" class="enquiry" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" novalidate>
+          <input type="hidden" name="form" value="testimonial">
+          <label>Your name *<input name="name" autocomplete="name" required maxlength="200"></label>
+          <label><span>Your email * <small>(not shown publicly)</small></span><input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+          <label>Your job title<input name="title" autocomplete="organization-title" maxlength="200" placeholder="e.g. Engineering Manager"></label>
+          <label>Company<input name="company" autocomplete="organization" maxlength="200"></label>
+          <label>How we worked together
+            <select name="relationship">
+              <option>I managed Pawan</option>
+              <option>We worked in the same team</option>
+              <option>I was a client</option>
+              <option>Pawan managed or mentored me</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label><span>LinkedIn profile <small>(optional, not shown)</small></span><input name="linkedin" type="url" inputmode="url" maxlength="200" placeholder="https://linkedin.com/in/..."></label>
+          <label class="full">Your feedback *<textarea name="quote" required maxlength="1000" placeholder="What did we work on, and what difference did it make?"></textarea></label>
+          <label class="full check"><input type="checkbox" name="consent" value="yes" required> I'm happy for this feedback to be shown on pawansinha.com.au with my name, job title and company.</label>
+          <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+          <div class="enquiry-foot">
+            <button class="btn btn-light" type="submit">Send feedback</button>
+            <p class="enquiry-status" role="status" aria-live="polite"></p>
+          </div>
+          <p class="enquiry-note full">Pawan reviews every message before anything is published. Your email and LinkedIn are never shown.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById('feedback');
+      const status = form.querySelector('.enquiry-status');
+      const button = form.querySelector('button[type="submit"]');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!form.checkValidity()) {
+          const bad = form.querySelector(':invalid');
+          status.textContent = bad.type === 'checkbox'
+            ? 'Please tick the box so I can show your feedback on my website.'
+            : 'Please add your name, your email and your feedback.';
+          bad.focus();
+          return;
+        }
+        button.disabled = true;
+        status.textContent = 'Sending…';
+        try {
+          const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new URLSearchParams(new FormData(form)) });
+          const out = await res.json();
+          if (!out.ok) {
+            status.textContent = out.error || 'Something went wrong. Please try again.';
+            return;
+          }
+          form.reset();
+          status.textContent = 'Thank you! Your feedback has been sent. A confirmation is on its way to your inbox.';
+        } catch {
+          status.textContent = "Sorry, that didn't send. Please email it to pawansinha4u@gmail.com instead.";
+        } finally {
+          button.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

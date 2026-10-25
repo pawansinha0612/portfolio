@@ -15,9 +15,6 @@
   // Hide links and text that still hold a [placeholder], so the live site never shows them
   document.querySelectorAll('a[href^="["]').forEach(a => a.remove());
   document.querySelectorAll('.footer p').forEach(p => { if (p.textContent.includes('[')) p.remove(); });
-  document.querySelectorAll('#testimonials .quote').forEach(q => { if (q.textContent.includes('[')) q.remove(); });
-  const testimonials = document.getElementById('testimonials');
-  if (testimonials && !testimonials.querySelector('.quote')) testimonials.remove();
 
   // Analytics (GoatCounter): loads only when a code is set on <body>; data-track links count as events
   const gcCode = document.body.dataset.goatcounter;
@@ -70,6 +67,32 @@
         button.disabled = false;
       }
     });
+  }
+
+  // Testimonials: approved rows from the Google Sheet, shown once at least one exists
+  const testimonials = document.getElementById('testimonials');
+  if (testimonials && formLive) {
+    fetch(form.dataset.endpoint + '?view=testimonials')
+      .then(res => res.json())
+      .then(out => {
+        const list = testimonials.querySelector('.testimonial-list');
+        (out.testimonials || []).forEach(t => {
+          const card = document.createElement('blockquote');
+          card.className = 'card quote';
+          const p = document.createElement('p');
+          p.textContent = t.quote;
+          const foot = document.createElement('footer');
+          const name = document.createElement('strong');
+          name.textContent = t.name;
+          const role = document.createElement('span');
+          role.textContent = [t.title, t.company].filter(Boolean).join(', ');
+          foot.append(name, role);
+          card.append(p, foot);
+          list.appendChild(card);
+        });
+        if (list.children.length) testimonials.hidden = false;
+      })
+      .catch(() => {});
   }
 
   // Buttons tagged data-need pre-select that option in the form; without the form they fall back to email

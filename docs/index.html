@@ -341,25 +341,12 @@
       </div>
     </section>
 
-    <!-- Testimonials: paste only quotes the person has approved (see profile/testimonial-requests.md).
-         Cards still containing "[" are hidden, and the section stays hidden until one card is filled in. -->
-    <section id="testimonials" class="wrap section">
+    <!-- Testimonials: loaded from the Testimonials tab of the enquiries Google Sheet (rows with approved = Yes),
+         collected through /feedback/. The section stays hidden until there is at least one. -->
+    <section id="testimonials" class="wrap section" hidden>
       <p class="eyebrow">Testimonials</p>
       <h2>What people I've worked with say</h2>
-      <div class="grid">
-        <blockquote class="card quote">
-          <p>[Approved quote]</p>
-          <footer><strong>[Full name]</strong><span>[Title], The Lottery Corporation</span></footer>
-        </blockquote>
-        <blockquote class="card quote">
-          <p>[Approved quote]</p>
-          <footer><strong>[Full name]</strong><span>[Title], Visa</span></footer>
-        </blockquote>
-        <blockquote class="card quote">
-          <p>[Approved quote]</p>
-          <footer><strong>[Full name]</strong><span>[Title], ANZ</span></footer>
-        </blockquote>
-      </div>
+      <div class="grid testimonial-list"></div>
     </section>
 
     <section class="section alt">
