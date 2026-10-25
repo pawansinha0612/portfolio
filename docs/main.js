@@ -25,7 +25,7 @@
     const s = document.createElement('script');
     s.async = true;
     s.src = 'https://gc.zgo.at/count.js';
-    s.dataset.goatcounter = `https://${gcCode}.goatcounter.com/count`;
+    s.dataset.goatcounter = gcCode.includes('://') ? gcCode : `https://${gcCode}.goatcounter.com/count`;
     document.head.appendChild(s);
   }
   const track = name => {
