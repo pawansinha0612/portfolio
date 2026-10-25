@@ -48,13 +48,14 @@
   <script>document.documentElement.classList.add('js')</script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
 </head>
-<body data-booking-url="">
+<body data-booking-url="" data-goatcounter="">
   <!--
     TO UPDATE:
     - Availability: set data-available-from="YYYY-MM-DD" on #availability (empty = "Available now").
     - Links or text still holding a [placeholder] are hidden automatically.
-    - Booking: paste your free Calendly link into data-booking-url on <body>, e.g. "https://calendly.com/pawansinha4u/30min".
-      Until then, "Book a call" buttons open a pre-filled email.
+    - Booking: data-booking-url on <body>. Empty = "Book a call" goes to the enquiry form (or email if the form is off).
+    - Analytics: data-goatcounter on <body> (your GoatCounter code). Empty = no tracking.
+    - Enquiry form: data-endpoint on #enquiry. Empty = form hidden.
   -->
   <div class="progress" aria-hidden="true"></div>
   <div class="cursor-glow" aria-hidden="true"></div>
@@ -84,7 +85,7 @@
             and gaming platforms. Now I bring that same rigour to startups and growing teams.
           </p>
           <div class="cta">
-            <a href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call&amp;body=Hi%20Pawan%2C%0A%0AI%27d%20like%20to%20book%20a%20call%20about%3A%20" class="btn js-book">Book a free 30-min call</a>
+            <a href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call&amp;body=Hi%20Pawan%2C%0A%0AI%27d%20like%20to%20book%20a%20call%20about%3A%20" class="btn js-book" data-need="Free 30-min call" data-track="book-call-hero">Book a free 30-min call</a>
             <a href="#services" class="btn btn-ghost">See what I do</a>
           </div>
           <ul class="facts">
@@ -265,7 +266,7 @@
             <li>Prioritised bug report with steps and screenshots</li>
             <li>Ideal before a launch or demo</li>
           </ul>
-          <a href="#contact" class="btn btn-ghost">Get your app tested</a>
+          <a href="#contact" class="btn btn-ghost" data-need="Test &amp; bug report" data-track="plan-test">Get your app tested</a>
         </article>
         <article class="card plan featured">
           <p class="pill">Most popular</p>
@@ -277,7 +278,7 @@
             <li>Optional load test against your SLAs</li>
             <li>Docs and handover so your team can extend it</li>
           </ul>
-          <a href="#contact" class="btn">Automate your testing</a>
+          <a href="#contact" class="btn" data-need="Automation setup" data-track="plan-automation">Automate your testing</a>
         </article>
         <article class="card plan">
           <h3>Ongoing QA partner</h3>
@@ -288,8 +289,16 @@
             <li>Release sign-off and quality reporting</li>
             <li>ABN, Upwork or agency, whichever suits you</li>
           </ul>
-          <a href="#contact" class="btn btn-ghost">Discuss ongoing work</a>
+          <a href="#contact" class="btn btn-ghost" data-need="Ongoing QA partner" data-track="plan-ongoing">Discuss ongoing work</a>
         </article>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free, no obligation</p>
+          <h3>Not sure where to start? Get a free QA health check.</h3>
+          <p>Send me your website or app. Within two business days I'll send back a short report of the most important bugs and risks I find, and what I'd test first.</p>
+        </div>
+        <a href="#contact" class="btn" data-need="Free QA health check" data-track="health-check">Claim your free health check</a>
       </div>
     </section>
 
@@ -374,11 +383,44 @@
         <h2>Launching soon, shipping bugs, or stuck on manual regression?</h2>
         <p>Tell me what you're working on. I reply within one business day, and the first 30-minute call is free.</p>
         <div class="cta">
-          <a class="btn btn-light js-book" href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call">Book a free call</a>
-          <a class="btn btn-outline-light js-copy" href="mailto:pawansinha4u@gmail.com?subject=Project%20enquiry" data-copy="pawansinha4u@gmail.com">pawansinha4u@gmail.com</a>
-          <a class="btn btn-outline-light" href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a>
-          <a class="btn btn-outline-light" href="https://www.upwork.com/freelancers/~015b09c42e9ca95fc9" target="_blank" rel="noopener">Hire on Upwork</a>
+          <a class="btn btn-light js-book" href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call" data-need="Free 30-min call" data-track="book-call-contact">Book a free call</a>
+          <a class="btn btn-outline-light js-copy" href="mailto:pawansinha4u@gmail.com?subject=Project%20enquiry" data-copy="pawansinha4u@gmail.com" data-track="email">pawansinha4u@gmail.com</a>
+          <a class="btn btn-outline-light" href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener" data-track="linkedin">LinkedIn</a>
+          <a class="btn btn-outline-light" href="https://www.upwork.com/freelancers/~015b09c42e9ca95fc9" target="_blank" rel="noopener" data-track="upwork">Hire on Upwork</a>
         </div>
+
+        <form id="enquiry" class="enquiry" data-endpoint="" hidden novalidate>
+          <label>Your name *<input name="name" autocomplete="name" required maxlength="200"></label>
+          <label>Email *<input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+          <label>Company<input name="company" autocomplete="organization" maxlength="200"></label>
+          <label>Website or app<input name="website" type="url" inputmode="url" placeholder="https://" maxlength="200"></label>
+          <label>What do you need?
+            <select name="need">
+              <option>Free 30-min call</option>
+              <option>Free QA health check</option>
+              <option>Test &amp; bug report</option>
+              <option>Automation setup</option>
+              <option>Performance &amp; load testing</option>
+              <option>Ongoing QA partner</option>
+              <option>Something else</option>
+            </select>
+          </label>
+          <label>Timeline
+            <select name="timeline">
+              <option>As soon as possible</option>
+              <option>Within a month</option>
+              <option>In 1 to 3 months</option>
+              <option>Just exploring</option>
+            </select>
+          </label>
+          <label class="full">What are you working on? *<textarea name="message" required maxlength="3000" placeholder="Your product, what's worrying you, and any deadlines"></textarea></label>
+          <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+          <div class="enquiry-foot">
+            <button class="btn btn-light" type="submit">Send enquiry</button>
+            <p class="enquiry-status" role="status" aria-live="polite"></p>
+          </div>
+          <p class="enquiry-note full">I only use your details to reply to you. They're never shared or added to a mailing list.</p>
+        </form>
       </div>
     </section>
   </main>

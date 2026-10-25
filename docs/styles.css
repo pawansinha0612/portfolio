@@ -406,3 +406,38 @@ html.lenis, html.lenis body { height: auto; }
 .project-chips { margin: 14px 0 6px; }
 .project-chips li { font-size: 13px; padding: 4px 12px; }
 .project-link { margin-top: auto; padding-top: 8px; color: var(--accent); font-weight: 600; }
+
+/* Free health check offer */
+.offer {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px 32px;
+  margin-top: 32px; padding: 28px 32px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), color-mix(in srgb, var(--accent-2) 9%, var(--surface)));
+}
+.offer > div { flex: 1 1 420px; }
+.offer h3 { margin: 0 0 8px; font-size: 22px; line-height: 1.3; }
+.offer p:not(.eyebrow) { margin: 0; color: var(--muted); max-width: 620px; }
+
+/* Enquiry form */
+.enquiry { margin: 40px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; }
+.enquiry[hidden] { display: none; }
+.enquiry label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,.9); }
+.enquiry .full { grid-column: 1 / -1; }
+.enquiry input, .enquiry select, .enquiry textarea {
+  width: 100%; font: inherit; font-size: 16px; font-weight: 400; color: #fff;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.28); border-radius: 10px; padding: 11px 13px;
+}
+.enquiry select option { color: #121620; }
+.enquiry textarea { min-height: 130px; resize: vertical; }
+.enquiry ::placeholder { color: rgba(255,255,255,.5); }
+.enquiry :focus-visible { outline: 2px solid #3fd6a3; outline-offset: 1px; }
+.enquiry .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.enquiry-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.enquiry button { font: inherit; font-weight: 600; cursor: pointer; }
+.enquiry button:disabled { opacity: .6; cursor: progress; }
+.contact .enquiry-status { font-size: 15px; color: #fff; }
+.contact .enquiry-note { font-size: 13px; color: rgba(255,255,255,.6); }
+@media (max-width: 600px) {
+  .enquiry { grid-template-columns: 1fr; }
+  .offer { padding: 24px 20px; }
+}

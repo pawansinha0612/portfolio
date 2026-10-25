@@ -10,6 +10,7 @@ docs/        The website: plain HTML, CSS and JavaScript, no build step
   styles.css   Design, layout and animation styles
   main.js      Animations, scroll effects, booking button, placeholder hiding
   CNAME        Tells GitHub Pages to serve the site at pawansinha.com.au
+enquiry/     Google Apps Script backend for the site's enquiry form (saves to a Google Sheet, emails a notification)
 notifier/    Script that emails your network when a contract is about to end
 profile/     Private notes (Upwork profile, testimonial drafts, roadmap). Git-ignored, never published.
 ```

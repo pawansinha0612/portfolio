@@ -19,15 +19,79 @@
   const testimonials = document.getElementById('testimonials');
   if (testimonials && !testimonials.querySelector('.quote')) testimonials.remove();
 
-  // Booking buttons: open the Calendly link when set, otherwise keep the pre-filled email
+  // Analytics (GoatCounter): loads only when a code is set on <body>; data-track links count as events
+  const gcCode = document.body.dataset.goatcounter;
+  if (gcCode) {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.dataset.goatcounter = `https://${gcCode}.goatcounter.com/count`;
+    document.head.appendChild(s);
+  }
+  const track = name => {
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true });
+  };
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-track]');
+    if (a) track(a.dataset.track);
+  });
+
+  // Enquiry form: shown once its Apps Script URL is set; posts to the Google Sheet
+  const form = document.getElementById('enquiry');
+  const formLive = !!(form && form.dataset.endpoint);
+  if (formLive) {
+    form.hidden = false;
+    const status = form.querySelector('.enquiry-status');
+    const button = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        status.textContent = 'Please add your name, a valid email and a short message.';
+        form.querySelector(':invalid').focus();
+        return;
+      }
+      button.disabled = true;
+      status.textContent = 'Sending…';
+      const body = new URLSearchParams(new FormData(form));
+      body.append('page', location.href);
+      try {
+        const res = await fetch(form.dataset.endpoint, { method: 'POST', body });
+        const out = await res.json();
+        if (!out.ok) {
+          status.textContent = out.error || 'Something went wrong. Please try again.';
+          return;
+        }
+        form.reset();
+        status.textContent = "Thanks! I'll reply within one business day. A confirmation is on its way to your inbox.";
+        track('enquiry-sent');
+      } catch {
+        status.textContent = "Sorry, that didn't send. Please email me at pawansinha4u@gmail.com.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  // Buttons tagged data-need pre-select that option in the form; without the form they fall back to email
+  document.querySelectorAll('[data-need]').forEach(a => {
+    if (formLive) {
+      a.addEventListener('click', () => { form.elements.need.value = a.dataset.need; });
+    } else if (a.getAttribute('href') === '#contact' && a.dataset.need === 'Free QA health check') {
+      a.href = 'mailto:pawansinha4u@gmail.com?subject=Free%20QA%20health%20check&body=My%20website%20or%20app%3A%20';
+    }
+  });
+
+  // Booking buttons: the booking page (Calendly / Google Calendar) when set, else the form, else the pre-filled email
   const bookingUrl = document.body.dataset.bookingUrl;
-  if (bookingUrl) {
-    document.querySelectorAll('.js-book').forEach(a => {
+  document.querySelectorAll('.js-book').forEach(a => {
+    if (bookingUrl) {
       a.href = bookingUrl;
       a.target = '_blank';
       a.rel = 'noopener';
-    });
-  }
+    } else if (formLive) {
+      a.href = '#enquiry';
+    }
+  });
 
   // Email button: also copy the address, for visitors with no mail app set up
   document.querySelectorAll('.js-copy').forEach(a => {
