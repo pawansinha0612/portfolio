@@ -152,7 +152,7 @@
     <section class="wrap project-hero">
       <p class="eyebrow">Side project · Web automation</p>
       <h1>Melbourne Deal Finder</h1>
-      <p class="lead">Every morning a GitHub Actions job starts headless Chromium with Playwright, scans homely.com.au for houses for sale in western Melbourne, and scores each one as a buyer. It flags new listings and publishes the results below. Nobody runs it by hand.</p>
+      <p class="lead">Every morning a GitHub Actions job starts headless Chromium with Playwright, scans homely.com.au and view.com.au for houses for sale in western Melbourne, and scores each one as a buyer. It flags new listings and publishes the results below. Nobody runs it by hand.</p>
       <div class="meta-row">
         <span class="tag">Python</span>
         <span class="tag">Playwright</span>
@@ -235,7 +235,7 @@
           </div>
           <button type="submit" class="btn" id="an-btn" disabled>Analyse</button>
         </div>
-        <p class="an-hint">Properties from today's scan are matched by address or homely link. For anything else, paste the listing text so the price, beds and land size can be read from it. Everything runs in your browser.</p>
+        <p class="an-hint">Properties from today's scan are matched by address or listing link. For anything else, paste the listing text so the price, beds and land size can be read from it. Everything runs in your browser.</p>
       </form>
       <div id="an-result" aria-live="polite"></div>
     </section>
@@ -286,7 +286,7 @@
   </main>
 
   <footer class="footer wrap">
-    <p>© <span id="year"></span> Pawan Sinha · Listing data from homely.com.au, for personal research only.</p>
+    <p>© <span id="year"></span> Pawan Sinha · Listing data from homely.com.au and view.com.au, for personal research only.</p>
     <p><a href="/">← Back to pawansinha.com.au</a></p>
   </footer>
 
@@ -365,6 +365,7 @@
       if (l.is_new) pills.append(el('span', 'pill-s new', 'New'));
       if (l.is_new_home) pills.append(el('span', 'pill-s', 'New build'));
       if (l.suburb) pills.append(el('span', 'pill-s', l.suburb));
+      if (l.sources && l.sources.includes('view.com.au')) pills.append(el('span', 'pill-s', l.sources.length > 1 ? 'homely + view' : 'view.com.au'));
 
       const price = el('div', 'price',
         l.price_low && l.price_high && l.price_low !== l.price_high ? fmt(l.price_low) + ' – ' + fmt(l.price_high)
@@ -452,6 +453,7 @@
       + [...STREET_TYPES.keys()].sort((a, b) => b.length - a.length).join('|')
       + ")\\b\\.?,?\\s+[a-z][a-z' -]{1,30}?,?\\s+(?:vic|victoria)\\b,?\\s*(?:3\\d{3})?)", 'i');
     const HOMELY_URL_RE = /https?:\/\/(?:www\.)?homely\.com\.au\/homes\/[^\s"'<>]+/i;
+    const VIEW_URL_RE = /https?:\/\/(?:www\.)?view\.com\.au\/property\/[a-z]+\/([a-z-]+?)-(\d{4})\/(?:([a-z0-9-]+)-)?\d+\/?/i;
     const DOMAIN_URL_RE = /https?:\/\/(?:www\.)?domain\.com\.au\/([a-z0-9-]+?)-(\d{6,})\b/i;
     const REA_URL_RE = /https?:\/\/(?:www\.)?realestate\.com\.au\/property-[a-z+]+-([a-z]{2,3})-([a-z+-]+?)-(\d{6,})\b/i;
     // JS treats "²" as a non-word character, so these end in a lookahead, not \b.
@@ -504,6 +506,12 @@
         // homely slugs carry the full address: /homes/12-smith-street-truganina-vic-3029/123
         const slug = f.url.match(/\/homes\/([a-z0-9-]+)\/\d+/i);
         if (slug) f.address_guess = slug[1].replace(/-/g, ' ');
+      }
+      if ((m = text.match(VIEW_URL_RE))) {
+        // /property/vic/truganina-3029/5-appalachian-street-18246427/
+        f.url = m[0];
+        if (m[3]) f.address_guess = `${m[3].replace(/-/g, ' ')} ${m[1].replace(/-/g, ' ')} vic ${m[2]}`;
+        else f.suburb_guess = m[1].replace(/-/g, ' ');
       }
       if ((m = text.match(DOMAIN_URL_RE))) { f.address_guess = m[1].replace(/-/g, ' '); f.url = m[0]; }
       if ((m = text.match(REA_URL_RE))) { f.suburb_guess = m[2].replace(/[+-]/g, ' '); f.url = m[0]; }
@@ -771,6 +779,14 @@
           : { 'Auction scheduled': 'Auction: no cooling-off, so get finance and a building inspection done before the day.',
               'Under offer': 'Someone already has an offer in. You would be competing.',
               'Under contract': 'Effectively gone unless the contract falls over.' }[st] || '');
+
+      if (l.listed_on) {
+        const listed = new Date(l.listed_on + 'T00:00:00');
+        const days = Math.max(0, Math.floor((Date.now() - listed) / 864e5));
+        row('Days on market', `${days} day${days === 1 ? '' : 's'} (listed ${listed.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })})`,
+          'Under ~30 = fresh, 60+ = stale', days >= 60 ? GOOD : OK,
+          days >= 60 ? 'Long time listed. The vendor may take a lower offer.' : days < 30 ? 'Fresh listing, so less room to negotiate.' : '');
+      }
 
       // money
       const costs = computeCosts(mid || 0, cfg.depositPct);
