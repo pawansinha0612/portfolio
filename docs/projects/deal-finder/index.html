@@ -78,6 +78,52 @@
     .prose { max-width: 720px; color: var(--muted); }
     .prose strong { color: var(--text); }
 
+    :root { --bad: #b42318; --bad-bg: #fde8e6; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a80; --bad-bg: #3a1512; } }
+    .an-form {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .an-form textarea {
+      font: inherit; font-size: 15px; color: var(--text); background: var(--bg); min-height: 110px; resize: vertical;
+      border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; box-sizing: border-box;
+    }
+    .an-form textarea:focus, .an-opts input:focus { outline: none; border-color: var(--accent); }
+    .an-row { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; }
+    .an-opts { display: flex; flex-wrap: wrap; gap: 12px; flex: 1 1 auto; }
+    .an-opts label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .an-opts input {
+      font: inherit; font-size: 15px; color: var(--text); background: var(--bg); width: 110px;
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+    }
+    .an-form button { cursor: pointer; font: inherit; font-weight: 600; }
+    .an-form button:disabled { opacity: .6; cursor: wait; }
+    .an-hint { color: var(--muted); font-size: 13px; margin: 0; }
+    #an-result { margin-top: 20px; }
+    .verdict { border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; }
+    .verdict b { display: block; font-size: 20px; margin-bottom: 4px; }
+    .verdict.good { background: var(--ok-bg); color: var(--ok); }
+    .verdict.ok { background: var(--warn-bg); color: var(--warn); }
+    .verdict.bad { background: var(--bad-bg); color: var(--bad); }
+    .an-addr { font-size: 18px; margin: 0 0 4px; }
+    .an-src { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+    .an-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; font-size: 14px; }
+    .an-table th, .an-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .an-table th { background: var(--alt); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .an-table td:first-child { font-weight: 600; }
+    .an-table td.v { font-variant-numeric: tabular-nums; }
+    .an-table .note { color: var(--muted); }
+    .pill-s.bad { background: var(--bad-bg); color: var(--bad); }
+    .an-checks { margin-top: 16px; color: var(--muted); font-size: 14px; }
+    .an-checks ul { margin: 6px 0 0; padding-left: 20px; columns: 2; }
+    @media (max-width: 600px) {
+      .an-table thead { display: none; }
+      .an-table, .an-table tbody, .an-table tr, .an-table td { display: block; width: auto; }
+      .an-table tr { border-bottom: 1px solid var(--border); padding: 8px 0; }
+      .an-table td { border: 0; padding: 2px 12px; }
+      .an-checks ul { columns: 1; }
+    }
+
     @media (max-width: 900px) {
       .tiles { grid-template-columns: repeat(2, 1fr); }
       .flow { grid-template-columns: repeat(2, 1fr); }
@@ -95,6 +141,7 @@
       <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
       <nav>
         <a href="#listings">Live results</a>
+        <a href="#analyse">Check a property</a>
         <a href="#how">How it works</a>
         <a href="/#contact" class="btn btn-small">Hire me</a>
       </nav>
@@ -173,6 +220,24 @@
         <div class="listings" id="cards"></div>
         <button type="button" class="btn btn-ghost more" id="more" hidden>Show more</button>
       </div>
+    </section>
+
+    <section id="analyse" class="wrap section">
+      <p class="eyebrow">Check a property</p>
+      <h2>Should I buy this one?</h2>
+      <p class="section-lead">Paste a listing link, an address, or the listing text copied from any site. You get a factor-by-factor table and a verdict, measured against the filters above.</p>
+      <form class="an-form" id="an-form">
+        <textarea id="an-input" placeholder="e.g. 12 Example St, Truganina VIC 3029&#10;$680,000 – $720,000 · 4 bed 2 bath 2 car · land 448m²" aria-label="Listing link, address or text"></textarea>
+        <div class="an-row">
+          <div class="an-opts">
+            <label>Deposit %<input type="number" id="an-deposit" value="20" min="0" max="100" step="1" inputmode="decimal"></label>
+            <label>Interest rate %<input type="number" id="an-rate" value="6.0" min="0" max="20" step="0.05" inputmode="decimal"></label>
+          </div>
+          <button type="submit" class="btn" id="an-btn" disabled>Analyse</button>
+        </div>
+        <p class="an-hint">Properties from today's scan are matched by address or homely link. For anything else, paste the listing text so the price, beds and land size can be read from it. Everything runs in your browser.</p>
+      </form>
+      <div id="an-result" aria-live="polite"></div>
     </section>
 
     <section id="how" class="wrap section">
@@ -359,7 +424,466 @@
       $('filters').addEventListener('submit', e => e.preventDefault());
       $('f-reset').addEventListener('click', () => { setDefaults(); rerender(); });
       $('more').addEventListener('click', () => { shown += PAGE_SIZE; render(); });
+      $('an-btn').disabled = false;
     }
+
+    // ---- "Should I buy this one?" ------------------------------------------
+    // Browser port of analyze_property.py in the match-myHome repo. There is no
+    // server here and homely blocks cross-site requests, so instead of a live
+    // homely lookup it matches today's scan and reads the pasted text.
+    const STREET_TYPES = new Map(Object.entries({
+      st: 'street', street: 'street', rd: 'road', road: 'road',
+      ave: 'avenue', av: 'avenue', avenue: 'avenue', dr: 'drive', drive: 'drive',
+      ct: 'court', crt: 'court', court: 'court', cres: 'crescent', cr: 'crescent',
+      crescent: 'crescent', way: 'way', wy: 'way', bvd: 'boulevard',
+      blvd: 'boulevard', boulevard: 'boulevard', pl: 'place', place: 'place',
+      ln: 'lane', lane: 'lane', pde: 'parade', parade: 'parade',
+      cct: 'circuit', circuit: 'circuit', cl: 'close', close: 'close',
+      tce: 'terrace', terrace: 'terrace', gr: 'grove', gve: 'grove', grove: 'grove',
+      rise: 'rise', walk: 'walk', loop: 'loop', hwy: 'highway', highway: 'highway',
+      row: 'row', mews: 'mews', link: 'link', chase: 'chase', vista: 'vista',
+      esp: 'esplanade', esplanade: 'esplanade', sq: 'square', square: 'square',
+      gdns: 'gardens', gardens: 'gardens', pkwy: 'parkway', parkway: 'parkway',
+      track: 'track', trl: 'trail', trail: 'trail', view: 'view', glade: 'glade',
+    }));
+    const STREET_WORDS = new Set(STREET_TYPES.values());
+    const ADDRESS_RE = new RegExp(
+      "\\b((?:lot\\s*)?\\d+[a-z]?(?:\\s*/\\s*\\d+[a-z]?)?\\s+[a-z][a-z' -]{1,40}?\\s+(?:"
+      + [...STREET_TYPES.keys()].sort((a, b) => b.length - a.length).join('|')
+      + ")\\b\\.?,?\\s+[a-z][a-z' -]{1,30}?,?\\s+(?:vic|victoria)\\b,?\\s*(?:3\\d{3})?)", 'i');
+    const HOMELY_URL_RE = /https?:\/\/(?:www\.)?homely\.com\.au\/homes\/[^\s"'<>]+/i;
+    const DOMAIN_URL_RE = /https?:\/\/(?:www\.)?domain\.com\.au\/([a-z0-9-]+?)-(\d{6,})\b/i;
+    const REA_URL_RE = /https?:\/\/(?:www\.)?realestate\.com\.au\/property-[a-z+]+-([a-z]{2,3})-([a-z+-]+?)-(\d{6,})\b/i;
+    // JS treats "²" as a non-word character, so these end in a lookahead, not \b.
+    const AREA_UNIT = String.raw`\s*(?:m²|m2|sqm|sq\.?\s?m|square\s*met(?:re|er)s?)(?![a-z0-9])`;
+    const LAND_NEAR_RE = new RegExp(String.raw`land[^\d\n]{0,25}(\d[\d,]*(?:\.\d+)?)` + AREA_UNIT, 'i');
+    const AREA_RE = new RegExp(String.raw`(\d[\d,]*(?:\.\d+)?)` + AREA_UNIT, 'gi');
+    const BEDS_RE = /(\d{1,2})\s*(?:bed(?:room)?s?|br)\b|\bbed(?:room)?s?\s*[:\-]?\s*(\d{1,2})\b/i;
+    const BATHS_RE = /(\d{1,2})\s*(?:bath(?:room)?s?|ba)\b|\bbath(?:room)?s?\s*[:\-]?\s*(\d{1,2})\b/i;
+    const CARS_RE = /(\d{1,2})\s*(?:car(?:\s*spaces?)?|garage|parking)\b|\b(?:car(?:\s*spaces?)?|garage|parking)\s*[:\-]?\s*(\d{1,2})\b/i;
+    const BUILT_RE = /(?:built|constructed|year\s*built|build\s*year|completed)\D{0,15}((?:19|20)\d{2})/i;
+    const NON_PRICE_LINE_RE = /rent|p\/?w|per\s*week|duty|deposit|rates|levy|bond|saving|commission/i;
+    const NEW_HOME_RE = /house\s*and\s*land|off[- ]the[- ]plan|brand\s*new|display\s*home|\bnew\s*home\b/i;
+    const PRICE_TOKEN_RE = /\$\s?(\d[\d,]*(?:\.\d+)?)([kKmM])?\b|\b(\d{2,4})[kK]\b/g;
+    const WEST_SUBURBS = ['truganina', 'tarneit', 'point cook', 'werribee', 'williamstown',
+      'altona', 'altona north', 'altona meadows', 'laverton', 'hoppers crossing',
+      'wyndham vale', 'manor lakes', 'williams landing', 'seabrook', 'spotswood',
+      'newport', 'yarraville', 'footscray', 'maidstone', 'sunshine', 'st albans',
+      'deer park', 'caroline springs', 'melton', 'rockbank', 'aintree',
+      'plumpton', 'kealba', 'keilor', 'sydenham', 'taylors lakes', 'delahey'];
+    const CBD = { name: 'Melbourne CBD (Flinders Street Station)', lat: -37.8183, lon: 144.9671 };
+    const MAX_DRIVE_KM = 35;
+    const GOOD = 'good', OK = 'ok', BAD = 'bad', INFO = 'info', UNKNOWN = 'unknown';
+    const RATING_LABEL = { good: 'Good', ok: 'OK', bad: 'Concern', info: 'Info', unknown: 'Unknown' };
+
+    const money = v => v == null ? 'N/A' : fmt(v);
+    const titleCase = s => (s || '').replace(/\b[a-z]/g, c => c.toUpperCase());
+    const median = xs => {
+      const s = [...xs].sort((a, b) => a - b), m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    };
+    const priceMid = l => (l.price_low && l.price_high) ? (l.price_low + l.price_high) / 2 : (l.price_low || l.price_high || null);
+
+    function priceRange(text) {
+      const values = [];
+      for (const m of text.matchAll(PRICE_TOKEN_RE)) {
+        let num, suffix;
+        if (m[1]) { num = parseFloat(m[1].replace(/,/g, '')); suffix = (m[2] || '').toLowerCase(); }
+        else { num = parseFloat(m[3]); suffix = 'k'; }
+        if (suffix === 'k') num *= 1000; else if (suffix === 'm') num *= 1e6;
+        if (num >= 50000 && num <= 50e6) values.push(num);
+      }
+      return values.length ? [Math.min(...values), Math.max(...values)] : [null, null];
+    }
+
+    function parsePasted(text) {
+      const f = {};
+      let m = text.match(HOMELY_URL_RE);
+      if (m) {
+        f.url = m[0].replace(/[.,)]+$/, '');
+        // homely slugs carry the full address: /homes/12-smith-street-truganina-vic-3029/123
+        const slug = f.url.match(/\/homes\/([a-z0-9-]+)\/\d+/i);
+        if (slug) f.address_guess = slug[1].replace(/-/g, ' ');
+      }
+      if ((m = text.match(DOMAIN_URL_RE))) { f.address_guess = m[1].replace(/-/g, ' '); f.url = m[0]; }
+      if ((m = text.match(REA_URL_RE))) { f.suburb_guess = m[2].replace(/[+-]/g, ' '); f.url = m[0]; }
+
+      const body = text.replace(/https?:\/\/\S+/g, ' ');
+      if ((m = body.match(ADDRESS_RE))) f.address_guess = m[1].replace(/\s+/g, ' ').replace(/^[ ,]+|[ ,]+$/g, '');
+
+      const [lo, hi] = priceRange(body.split('\n').filter(ln => ln.includes('$') && !NON_PRICE_LINE_RE.test(ln)).join(' '));
+      if (lo) { f.price_low = lo; f.price_high = hi; }
+
+      let land = null;
+      if ((m = body.match(LAND_NEAR_RE))) land = parseFloat(m[1].replace(/,/g, ''));
+      else {
+        // No "land" label: the biggest area quoted is almost always the block.
+        const areas = [...body.matchAll(AREA_RE)].map(a => parseFloat(a[1].replace(/,/g, ''))).filter(a => a >= 80 && a <= 10000);
+        if (areas.length) land = Math.max(...areas);
+      }
+      if (land) f.land = Math.round(land);
+
+      for (const [k, re] of [['beds', BEDS_RE], ['baths', BATHS_RE], ['cars', CARS_RE]]) {
+        const mm = body.match(re);
+        if (mm) { const v = parseInt(mm[1] || mm[2], 10); if (v < 20) f[k] = v; }
+      }
+      if ((m = body.match(BUILT_RE)) && +m[1] >= 1900 && +m[1] <= new Date().getFullYear() + 2) f.build_year = +m[1];
+      if (NEW_HOME_RE.test(body)) f.is_new_home = true;
+
+      const low = body.toLowerCase();
+      if (/under contract|\bsold\b/.test(low)) f.status = 'Under contract';
+      else if (low.includes('under offer')) f.status = 'Under offer';
+      else if (low.includes('auction')) f.status = 'Auction scheduled';
+      return f;
+    }
+
+    function splitAddress(address) {
+      let t = (address || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean)
+        .map(x => STREET_TYPES.get(x) || x);
+      if (t[0] === 'lot') t = t.slice(1);
+      while (t.length && (['vic', 'victoria', 'australia'].includes(t[t.length - 1]) || /^\d{4}$/.test(t[t.length - 1]))) t.pop();
+      let cut = -1;
+      t.forEach((x, i) => { if (i > 0 && STREET_WORDS.has(x)) cut = i; });
+      return cut < 0 ? [t.join(' '), ''] : [t.slice(0, cut + 1).join(' '), t.slice(cut + 1).join(' ')];
+    }
+
+    function sameAddress(a, b) {
+      const [sa, ua] = splitAddress(a), [sb, ub] = splitAddress(b);
+      return !!sa && sa === sb && (!ua || !ub || ua === ub);
+    }
+
+    const sameUrl = (a, b) => !!a && !!b && a.replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase() === b.replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase();
+
+    function comparables(subject, pool) {
+      const priced = pool.filter(p => priceMid(p) && !sameAddress(p.address, subject.address));
+      const similar = priced.filter(p => subject.beds && p.beds && Math.abs(p.beds - subject.beds) <= 1);
+      const comps = similar.length >= 3 ? similar : priced;
+      if (!comps.length) return null;
+      const withLand = comps.filter(p => p.land);
+      return {
+        n: comps.length, similarBeds: comps === similar,
+        medianPrice: median(comps.map(priceMid)),
+        medianLand: withLand.length ? median(withLand.map(p => p.land)) : null,
+        medianPerSqm: withLand.length ? median(withLand.map(p => priceMid(p) / p.land)) : null,
+        prices: comps.map(priceMid),
+      };
+    }
+
+    function qualityScore(l, minLand, w, estimate) {
+      const land = Math.max(0, Math.min(w.land_and_size, ((l.land || 0) - minLand) / 250 * w.land_and_size));
+      const age = l.build_year ? new Date().getFullYear() - l.build_year : null;
+      const bm = w.build_age_condition;
+      const build = l.is_new_home ? bm : age == null ? bm * 0.5 : age <= 5 ? bm * 0.95 : age <= 10 ? bm * 0.8
+        : age <= 15 ? bm * 0.6 : age <= 20 ? bm * 0.4 : bm * 0.25;
+      const mid = priceMid(l), vm = w.value_vs_estimate;
+      const value = (!estimate || !mid) ? vm * 0.5 : Math.max(0, Math.min(vm, vm / 2 + (estimate - mid) / estimate * vm * 5));
+      const sm = w.availability_status;
+      const status = { 'available': sm, 'auction scheduled': sm * 0.8, 'under offer': sm * 0.2, 'under contract': 0 }[(l.status || '').toLowerCase()] ?? sm * 0.5;
+      const r1 = x => Math.round(x * 10) / 10;
+      return [Math.round(land + build + value + status), { land: r1(land), build: r1(build), value: r1(value), status: r1(status) }];
+    }
+
+    function standardDuty(p) {
+      if (p <= 25000) return p * 0.014;
+      if (p <= 130000) return 350 + (p - 25000) * 0.024;
+      if (p <= 960000) return 2870 + (p - 130000) * 0.06;
+      if (p <= 2000000) return p * 0.055;
+      return 110000 + (p - 2000000) * 0.065;
+    }
+    // VIC first-home-buyer concession: no duty to $600k, tapering to full duty at $750k.
+    function fhbDuty(p) {
+      const std = standardDuty(p);
+      if (p <= 600000) return [0, std];
+      if (p <= 750000) return [std * (1 - Math.min(1, Math.max(0, (750000 - p) / 150000))), std];
+      return [std, std];
+    }
+    const lmiRate = lvr => lvr <= 80 ? 0 : lvr <= 85 ? 0.010 : lvr <= 88 ? 0.015 : lvr <= 90 ? 0.020 : lvr <= 92 ? 0.027 : lvr <= 95 ? 0.035 : 0.045;
+
+    function computeCosts(price, depositPct) {
+      const deposit = price * depositPct / 100, loan = price - deposit;
+      const lvr = price > 0 ? loan / price * 100 : 0;
+      const [duty, stdDuty] = fhbDuty(price);
+      const lmi = loan * lmiRate(lvr) * 1.10;  // premium + 10% stamp duty on it
+      const other = 1600 + 500 + 220 + 130;    // conveyancing, building & pest, title, loan registration
+      return { deposit, loan, lvr: Math.round(lvr * 10) / 10, duty, stdDuty, lmi, other, total: deposit + duty + lmi + other };
+    }
+
+    function monthlyRepayment(loan, ratePct, years = 30) {
+      const r = ratePct / 100 / 12, n = years * 12;
+      if (loan <= 0) return 0;
+      return r === 0 ? loan / n : loan * r / (1 - Math.pow(1 + r, -n));
+    }
+
+    async function getJson(url) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 12000);
+      try {
+        const r = await fetch(url, { signal: ctl.signal });
+        return r.ok ? await r.json() : null;
+      } catch { return null; } finally { clearTimeout(timer); }
+    }
+
+    // Free, keyless OpenStreetMap services, the same ones the scanner uses.
+    async function geocode(q) {
+      const d = await getJson('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&q=' + encodeURIComponent(q));
+      return d && d.length ? { lat: +d[0].lat, lon: +d[0].lon } : null;
+    }
+    async function drive(from, to) {
+      const d = await getJson(`https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false`);
+      const r = d && d.routes && d.routes[0];
+      return r ? { km: Math.round(r.distance / 100) / 10, mins: Math.round(r.duration / 60) } : null;
+    }
+
+    function readCriteria() {
+      const c = feed.criteria;
+      const num = (id, fallback) => $(id).value === '' ? fallback : Number($(id).value);
+      return {
+        budgetMin: num('f-min', c.budget_min), budgetMax: num('f-max', c.budget_max),
+        minLand: num('f-land', c.min_land_sqm), minBeds: Number($('f-beds').value) || 0,
+        depositPct: num('an-deposit', 20), rate: num('an-rate', 6),
+      };
+    }
+
+    async function analyse(text) {
+      const cfg = readCriteria(), w = feed.weights;
+      const facts = parsePasted(text);
+      const sources = [];
+      const address = facts.address_guess;
+
+      let l = {};
+      const hit = feed.listings.find(e => sameUrl(e.url, facts.url) || (address && sameAddress(e.address, address)));
+      if (hit) {
+        l = { ...hit };
+        sources.push("Found in today's scan");
+      }
+
+      // What you pasted wins over the scan: it's what you're looking at.
+      const pastedKeys = ['price_low', 'price_high', 'land', 'beds', 'baths', 'cars', 'build_year', 'is_new_home', 'status'];
+      const used = pastedKeys.filter(k => k in facts);
+      used.forEach(k => { l[k] = facts[k]; });
+      const label = { price_low: 'price', price_high: null, land: 'land', beds: 'beds', baths: 'baths', cars: 'cars', build_year: 'build year', is_new_home: 'new build', status: 'status' };
+      const usedLabels = used.map(k => label[k]).filter(Boolean);
+      if (usedLabels.length) sources.push('Details you pasted (' + usedLabels.join(', ') + ')');
+
+      // Last resort for text with no street address ("Werribee house $650k"): a known suburb name.
+      const known = [...new Set([...feed.listings.map(e => (e.suburb || '').toLowerCase()), ...WEST_SUBURBS])]
+        .filter(Boolean).sort((a, b) => b.length - a.length);
+      const named = known.find(s => new RegExp('\\b' + s + '\\b', 'i').test(text));
+      const suburb = (l.suburb || splitAddress(l.address || address || '')[1] || facts.suburb_guess || named || '').toLowerCase();
+      l.address = l.address || (address ? titleCase(address) : suburb ? 'Property in ' + titleCase(suburb) : 'Unknown address');
+      l.url = l.url || facts.url;
+      const statusAssumed = !l.status;
+      if (statusAssumed) l.status = 'Available';
+
+      const pool = suburb ? feed.listings.filter(e => (e.suburb || '').toLowerCase() === suburb) : [];
+      if (!priceMid(l) && !l.land && !l.beds && !pool.length) {
+        return { error: "Couldn't find this property in today's scan or read any details from what you pasted. "
+          + 'Paste the listing text (price, beds, land size), or an address like "12 Smith St, Truganina VIC 3029".' };
+      }
+
+      let approx = false;
+      if (l.lat == null) {
+        let pt = address ? await geocode(l.address) : null;
+        if (!pt && suburb) { pt = await geocode(titleCase(suburb) + ', VIC, Australia'); approx = !!pt; }
+        if (pt) { l.lat = pt.lat; l.lon = pt.lon; }
+      }
+      const route = l.lat != null ? await drive(CBD, l) : null;
+
+      return buildReport(cfg, w, l, { statusAssumed, approx, route }, pool, suburb, sources);
+    }
+
+    function buildReport(cfg, w, l, extras, pool, suburb, sources) {
+      const rows = [];
+      const row = (factor, value, benchmark, rating, note = '') => rows.push({ factor, value, benchmark, rating, note });
+      const mid = priceMid(l);
+      const comps = pool.length ? comparables(l, pool) : null;
+      const subLabel = suburb ? titleCase(suburb) : 'this suburb';
+      // The suburb's comparable median stands in for a valuation in the value score.
+      const [score, bd] = qualityScore(l, cfg.minLand, w, comps && mid ? comps.medianPrice : null);
+      const bonus = WEST_SUBURBS.some(s => l.address.toLowerCase().includes(s)) ? 5 : 0;
+
+      // price vs budget
+      const range = `${money(cfg.budgetMin)}–${money(cfg.budgetMax)}`;
+      if (mid == null) {
+        row('Price vs your budget', l.price_display || 'Not stated', range, UNKNOWN,
+          'No price advertised. Ask the agent for the Statement of Information.');
+      } else {
+        const shown = l.price_low === l.price_high || !l.price_high ? money(mid) : `${money(l.price_low)}–${money(l.price_high)}`;
+        if (mid >= cfg.budgetMin && mid <= cfg.budgetMax) row('Price vs your budget', shown, range, GOOD, 'Inside your range.');
+        else if (mid < cfg.budgetMin) row('Price vs your budget', shown, range, GOOD, 'Under your range. Check why (size, condition, location).');
+        else if (mid <= cfg.budgetMax * 1.05) row('Price vs your budget', shown, range, OK, `${money(mid - cfg.budgetMax)} over budget at the mid-point. May be negotiable.`);
+        else row('Price vs your budget', shown, range, BAD, `${money(mid - cfg.budgetMax)} over your budget cap.`);
+      }
+
+      // price vs suburb
+      if (comps && mid) {
+        const diff = (mid - comps.medianPrice) / comps.medianPrice * 100;
+        const rank = Math.round(100 * comps.prices.filter(p => p < mid).length / comps.prices.length);
+        row('Price vs suburb (asking prices)', `${diff >= 0 ? '+' : ''}${diff.toFixed(0)}% vs median`,
+          `Median ${money(comps.medianPrice)} across ${comps.n} ${subLabel} listings${comps.similarBeds ? ' with similar beds' : ''}`,
+          diff <= -5 ? GOOD : diff >= 10 ? BAD : OK,
+          diff < 0 ? `Cheaper than ${100 - rank}% of comparables.` : `Dearer than ${rank}% of comparables.`);
+      } else {
+        const scanned = [...new Set(feed.listings.map(e => e.suburb).filter(Boolean))].sort().join(', ');
+        row('Price vs suburb (asking prices)', '—', 'No comparable listings in today\'s scan', UNKNOWN,
+          suburb && !pool.length ? `The daily scan covers ${scanned}.` : '');
+      }
+
+      // land
+      if (l.land) {
+        const bench = `Your minimum ${cfg.minLand}m²` + (comps && comps.medianLand ? ` · suburb median ${Math.round(comps.medianLand)}m²` : '');
+        if (l.land < cfg.minLand) row('Land size', `${l.land}m²`, bench, BAD, `${cfg.minLand - l.land}m² below your minimum.`);
+        else if (comps && comps.medianLand && l.land >= comps.medianLand * 1.1) row('Land size', `${l.land}m²`, bench, GOOD, 'Bigger block than most in the suburb.');
+        else row('Land size', `${l.land}m²`, bench, l.land >= cfg.minLand + 100 ? GOOD : OK, 'Meets your minimum.');
+        if (comps && comps.medianPerSqm && mid) {
+          const per = mid / l.land, d = (per - comps.medianPerSqm) / comps.medianPerSqm * 100;
+          row('Price per m² of land', `${money(per)}/m²`, `Suburb median ${money(comps.medianPerSqm)}/m²`,
+            d <= -8 ? GOOD : d >= 15 ? BAD : OK, `${Math.abs(d).toFixed(0)}% ${d < 0 ? 'below' : 'above'} the suburb's land rate.`);
+        }
+      } else {
+        row('Land size', 'Not stated', `Your minimum ${cfg.minLand}m²`, UNKNOWN, 'Check the title plan or Section 32 for the exact lot size.');
+      }
+
+      // rooms
+      const bedsBench = cfg.minBeds ? `Your minimum ${cfg.minBeds}` : 'No minimum set';
+      if (l.beds) row('Bedrooms', String(l.beds), bedsBench, l.beds >= cfg.minBeds ? GOOD : BAD,
+        l.beds >= cfg.minBeds ? '' : `${cfg.minBeds - l.beds} short of the minimum.`);
+      else row('Bedrooms', 'Not stated', bedsBench, UNKNOWN);
+      row('Bathrooms / car spaces', `${l.baths ?? '?'} / ${l.cars ?? '?'}`, '2+ / 2+ is typical for a family house',
+        (l.baths || 0) >= 2 && (l.cars || 0) >= 2 ? GOOD : l.baths ? OK : UNKNOWN);
+
+      // build
+      if (l.is_new_home) {
+        row('Build age', 'New / house-and-land', 'Newer = lower maintenance', GOOD,
+          'Check builder reputation, completion date and whether landscaping and driveway are included.');
+      } else if (l.build_year) {
+        const age = new Date().getFullYear() - l.build_year;
+        row('Build age', `Built ${l.build_year} (${age} yrs)`, 'Newer = lower maintenance', age <= 10 ? GOOD : age <= 20 ? OK : BAD);
+      } else {
+        row('Build age', 'Unknown', 'Newer = lower maintenance', UNKNOWN, 'Listings rarely state it. Try the "Build year / builder" search below.');
+      }
+
+      // status
+      const st = l.status;
+      row('Status', st, 'Available is best',
+        { 'Available': GOOD, 'Auction scheduled': OK, 'Under offer': BAD, 'Under contract': BAD }[st] || UNKNOWN,
+        extras.statusAssumed ? 'Assumed. Nothing said otherwise, so confirm with the agent.'
+          : { 'Auction scheduled': 'Auction: no cooling-off, so get finance and a building inspection done before the day.',
+              'Under offer': 'Someone already has an offer in. You would be competing.',
+              'Under contract': 'Effectively gone unless the contract falls over.' }[st] || '');
+
+      // money
+      const costs = computeCosts(mid || 0, cfg.depositPct);
+      if (mid) {
+        row('Upfront cash needed', money(costs.total),
+          `${cfg.depositPct}% deposit ${money(costs.deposit)} + duty ${money(costs.duty)} + LMI ${money(costs.lmi)} + fees ${money(costs.other)}`, INFO,
+          `Stamp duty assumes the first-home-buyer concession. Full standard duty would be ${money(costs.stdDuty)}.`);
+        row('Loan & repayments', `${money(monthlyRepayment(costs.loan, cfg.rate))}/month`,
+          `${money(costs.loan)} loan · ${cfg.rate}% · 30 yrs · LVR ${costs.lvr}%`, INFO,
+          'Principal and interest estimate. Check it against your lender\'s real rate.');
+      }
+
+      // location
+      if (extras.route) {
+        const { km, mins } = extras.route;
+        row('Drive to ' + CBD.name, `${extras.approx ? '~' : ''}${km} km · ${mins} min`, `Limit ${MAX_DRIVE_KM} km (no traffic)`,
+          km <= MAX_DRIVE_KM * 0.8 ? GOOD : km <= MAX_DRIVE_KM ? OK : BAD,
+          (extras.approx ? 'From the suburb centre, because the street address couldn\'t be mapped. ' : '') + 'Free-flow time. Add 30–60% at peak.');
+      } else {
+        row('Drive to ' + CBD.name, l.lat != null ? "Couldn't route" : "Couldn't place the address on a map", '', UNKNOWN);
+      }
+      row('West-side preference', bonus ? `Yes (+${bonus} bonus)` : 'No', 'Preference: western suburbs', bonus ? GOOD : OK);
+
+      row('Buyer score', `${score}/100` + (bonus ? ` (+${bonus} west)` : ''),
+        `land ${bd.land}/${w.land_and_size} · value ${bd.value}/${w.value_vs_estimate} · build ${bd.build}/${w.build_age_condition} · availability ${bd.status}/${w.availability_status}`,
+        score >= 70 ? GOOD : score >= 55 ? OK : BAD,
+        comps && mid ? "Value is scored against the suburb's asking-price median." : '');
+
+      return { address: l.address, url: l.url, sources, rows, verdict: makeVerdict(cfg, l, rows, score, mid), checks: checkLinks(l, suburb) };
+    }
+
+    function makeVerdict(cfg, l, rows, score, mid) {
+      const scored = rows.filter(r => r.factor !== 'Buyer score');
+      const pros = scored.filter(r => r.rating === GOOD).length;
+      const cons = scored.filter(r => r.rating === BAD).length;
+      const unknowns = rows.filter(r => r.rating === UNKNOWN).length;
+      const breakers = [];
+      if (mid && mid > cfg.budgetMax * 1.05) breakers.push('over budget');
+      if (l.land && l.land < cfg.minLand) breakers.push('land below your minimum');
+      if (l.beds && l.beds < cfg.minBeds) breakers.push('not enough bedrooms');
+      if (l.status === 'Under contract') breakers.push('already under contract');
+
+      let v;
+      if (breakers.length) v = { label: 'Skip', rating: BAD, summary: 'Fails your hard criteria: ' + breakers.join(', ') + '.' };
+      else if (score >= 60 && pros - 2 * cons >= 6) v = { label: 'Go for it: book an inspection', rating: GOOD, summary: 'Ticks your criteria and stacks up well against the suburb.' };
+      else if (pros - 2 * cons >= 2) v = { label: 'Worth a look', rating: OK, summary: 'Meets your criteria but nothing stands out. Inspect and negotiate on the weak points.' };
+      else v = { label: 'Probably pass', rating: BAD, summary: 'Meets the basics, but more factors work against it than for it.' };
+      if (unknowns >= 3) v.summary += ` ${unknowns} factors are unknown, so treat this as provisional.`;
+      return v;
+    }
+
+    // Things no free source answers reliably, handed over as searches.
+    function checkLinks(l, suburb) {
+      const g = q => 'https://www.google.com/search?q=' + encodeURIComponent(q);
+      const sub = titleCase(suburb);
+      const links = [
+        ['Past sales of this address', g(`"${l.address}" sold`)],
+        [`Recent sold prices in ${sub || 'the suburb'}`, g(`${sub} VIC houses sold last 3 months`)],
+        ['Flood / bushfire / heritage overlays (VicPlan)', 'https://mapshare.vic.gov.au/vicplan/'],
+        ['School zones (findmyschool.vic.gov.au)', 'https://www.findmyschool.vic.gov.au/'],
+        [`Crime statistics for ${sub || 'the suburb'}`, g(`${sub} crime statistics agency victoria`)],
+        ['Build year / builder', g(`"${l.address}" built year builder`)],
+      ];
+      if (l.lat != null) links.push(['Street view / surroundings', `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${l.lat},${l.lon}`]);
+      return links;
+    }
+
+    function showReport(res) {
+      const out = $('an-result');
+      if (res.error) { out.replaceChildren(el('div', 'notice', res.error)); return; }
+      const v = res.verdict;
+      const verdict = el('div', 'verdict ' + v.rating);
+      verdict.append(el('b', null, v.label), document.createTextNode(v.summary));
+
+      const h = el('h3', 'an-addr');
+      const a = el('a', null, res.address);
+      if (res.url) { a.href = res.url; a.target = '_blank'; a.rel = 'noopener'; h.append(a); } else h.textContent = res.address;
+      const src = el('p', 'an-src', res.sources.length ? 'Sources: ' + res.sources.join(' · ') : 'Not in today\'s scan, and no details were read from the paste.');
+
+      const table = el('table', 'an-table');
+      const thead = el('thead'), hr = el('tr');
+      ['Factor', 'This property', 'Benchmark', 'Rating', 'Note'].forEach(t => hr.append(el('th', null, t)));
+      thead.append(hr);
+      const tbody = el('tbody');
+      res.rows.forEach(r => {
+        const tr = el('tr');
+        const pill = el('td'); pill.append(el('span', 'pill-s ' + (r.rating === GOOD ? 'ok' : r.rating === OK ? 'warn' : r.rating === BAD ? 'bad' : ''), RATING_LABEL[r.rating]));
+        tr.append(el('td', null, r.factor), el('td', 'v', r.value), el('td', 'note', r.benchmark), pill, el('td', 'note', r.note));
+        tbody.append(tr);
+      });
+      table.append(thead, tbody);
+
+      const checks = el('div', 'an-checks', 'Check these yourself, because no free source covers them:');
+      const ul = el('ul');
+      res.checks.forEach(([label, url]) => {
+        const li = el('li'), link = el('a', null, label);
+        link.href = url; link.target = '_blank'; link.rel = 'noopener';
+        li.append(link); ul.append(li);
+      });
+      checks.append(ul);
+      out.replaceChildren(verdict, h, src, table, checks);
+    }
+
+    $('an-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const text = $('an-input').value.trim();
+      if (!text || !feed) return;
+      const btn = $('an-btn');
+      btn.disabled = true; btn.textContent = 'Analysing…';
+      try { showReport(await analyse(text)); }
+      catch (err) { showReport({ error: 'Something went wrong while analysing: ' + err.message }); }
+      finally { btn.disabled = false; btn.textContent = 'Analyse'; }
+    });
 
     const override = new URLSearchParams(location.search).get('feed');
     fetch(override && /^(\.|\/|http:\/\/localhost)/.test(override) ? override : FEED_URL, { cache: 'no-cache' })
