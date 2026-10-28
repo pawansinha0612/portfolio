@@ -1,7 +1,10 @@
 /*
  * Chat assistant: a scripted (not AI) helper that asks visitors why they're here and what they're
- * looking for, then saves the answers to the "Chat" tab of the enquiries Google Sheet.
+ * looking for.
+ *   - Hiring conversations are sent as a normal enquiry (Enquiries tab, email to Pawan, confirmation to the visitor).
+ *   - Everything else goes to the "Chat" tab of the enquiries Google Sheet.
  *
+ * data-mode="services" (home page) opens with Pawan's services; the default "prep" mode opens with interview prep.
  * Include on a page with:
  *   <link rel="stylesheet" href="/chat.css">
  *   <script src="/chat.js" data-endpoint="<Apps Script /exec URL>" data-booking-url="<Calendly URL>" defer></script>
@@ -11,6 +14,7 @@
   const script = document.currentScript;
   const ENDPOINT = script.dataset.endpoint || '';
   const BOOKING = script.dataset.bookingUrl || '';
+  const SERVICES = script.dataset.mode === 'services';
   const SEEN = 'chat-seen';
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -20,7 +24,7 @@
   };
 
   // Answers collected so far; posted once, when the conversation ends or the visitor leaves.
-  const answers = { reason: '', level: '', topics: '', missing: '', name: '', email: '', message: '' };
+  const answers = { reason: '', level: '', topics: '', missing: '', name: '', email: '', message: '', need: '', timeline: '' };
   let sent = false;
 
   // ----- UI -----
@@ -33,7 +37,9 @@
 
   const launch = el('button', 'chat-launch', '💬 Quick question?');
   launch.type = 'button';
-  const teaser = el('div', 'chat-teaser', "Hi! Preparing for an interview or hiring? Tell me what you're looking for and I'll point you to the right questions.");
+  const teaser = el('div', 'chat-teaser', SERVICES
+    ? "Hi! Need your app tested or sped up? Tell me what you're working on and Pawan will get back to you within a day."
+    : "Hi! Preparing for an interview or hiring? Tell me what you're looking for and I'll point you to the right questions.");
   teaser.hidden = true;
 
   const panel = el('section', 'chat-panel');
@@ -109,13 +115,41 @@
   const prep = () => window.prepPage;
 
   function start() {
+    if (SERVICES) {
+      say("Hi 👋 I'm an automated helper. Pawan is a Melbourne-based QA, test automation and performance engineer. What can he help you with?");
+      options([
+        ['Test my app or website', () => hiring('Test & bug report')],
+        ['Set up test automation', () => hiring('Automation setup')],
+        ['My app is slow / load testing', () => hiring('Performance & load testing')],
+        ['Ongoing QA support', () => hiring('Ongoing QA partner')],
+        ['Free QA health check', () => hiring('Free QA health check')],
+        ['Book a free 30-min call', book],
+        ['Interview prep', toPrep],
+        ['Just browsing', browsing],
+      ]);
+      return;
+    }
     say("Hi 👋 I'm an automated helper on Pawan's site. What brings you here today?");
     options([
       ['Preparing for an interview', interview],
-      ['Hiring a performance or QA engineer', hiring],
+      ['Hiring a performance or QA engineer', () => hiring('')],
       ['Learning performance testing', learning],
       ['Just browsing', browsing],
     ]);
+  }
+
+  function book() {
+    answers.reason = 'Booking';
+    if (BOOKING) {
+      finish(`Great! <a href="${BOOKING}" target="_blank" rel="noopener">Pick a time for a free 30-minute call</a>. It opens in a new tab.`);
+    } else {
+      hiring('Free 30-min call');
+    }
+  }
+
+  function toPrep() {
+    answers.reason = 'Interview prep';
+    finish('The <a href="/interview-prep/performance-testing/">performance testing interview questions</a> are grouped by experience, from 3 to 7+ years. Good luck!');
   }
 
   function interview() {
@@ -153,16 +187,25 @@
     }, 'Skip', 'email');
   }
 
-  function hiring() {
+  // Hiring ends as a real enquiry, so it uses the same "need" and "timeline" values as the home page form.
+  const NEEDS = [
+    ['Test my app and report bugs', 'Test & bug report'],
+    ['Set up test automation', 'Automation setup'],
+    ['Performance or load testing', 'Performance & load testing'],
+    ['Ongoing QA support', 'Ongoing QA partner'],
+    ['Something else', 'Something else'],
+  ];
+  const TIMELINES = ['As soon as possible', 'Within a month', 'In 1 to 3 months', 'Just exploring'];
+
+  function hiring(need) {
     answers.reason = 'Hiring';
+    if (need) { answers.need = need; return timeline(); }
     say('Great. What do you need help with?');
-    options([
-      'Load testing before a launch',
-      'Fixing a slow or unstable system',
-      'Setting up a performance framework or CI',
-      'Test automation or QA',
-      'Something else',
-    ].map(t => [t, () => { answers.topics = t; hiringName(); }]));
+    options(NEEDS.map(([label, value]) => [label, () => { answers.need = value; timeline(); }]));
+  }
+  function timeline() {
+    say('When do you need it?');
+    options(TIMELINES.map(t => [t, () => { answers.timeline = t; hiringName(); }]));
   }
   function hiringName() {
     say("What's your name?");
@@ -173,12 +216,12 @@
     ask('you@company.com', v => {
       if (!EMAIL_RE.test(v)) { say("That email doesn't look right. Please try again."); return hiringEmail(); }
       answers.email = v;
-      say('Anything else Pawan should know? For example your product, timeline or tools.');
+      say("Briefly, what are you working on? For example your product, the tools you use, or what's worrying you.");
       ask('A sentence or two', m => {
         answers.message = m;
-        finish('Thanks! Pawan will reply within one business day.' +
-          (BOOKING ? ` If you'd rather talk now, <a href="${BOOKING}" target="_blank" rel="noopener">book a free 30-minute call</a>.` : ''));
-      }, 'Nothing else');
+        finish("Thanks! Pawan will reply within one business day, and you'll get a confirmation email now." +
+          (BOOKING ? ` If you'd rather talk sooner, <a href="${BOOKING}" target="_blank" rel="noopener">book a free 30-minute call</a>.` : ''));
+      }, 'Skip');
     }, null, 'email');
   }
 
@@ -206,7 +249,15 @@
   }
 
   // ----- Saving -----
+  // A finished hiring chat is sent as an enquiry; anything else (or a hiring chat left part-way) as a chat row.
   function payload() {
+    if (answers.reason === 'Hiring' && answers.name && answers.email) {
+      return new URLSearchParams({
+        name: answers.name, email: answers.email, need: answers.need, timeline: answers.timeline,
+        message: answers.message || '(Sent from the chat, no details added)',
+        page: location.href + ' (chat)',
+      });
+    }
     const body = new URLSearchParams({ form: 'chat', page: location.href });
     Object.entries(answers).forEach(([k, v]) => body.append(k, v));
     return body;
