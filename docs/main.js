@@ -239,18 +239,8 @@
   window.addEventListener('resize', onScrollFx);
   onScrollFx();
 
-  // Pointer effects (mouse/trackpad only): cursor glow, card spotlight, magnetic buttons
+  // Pointer effects (mouse/trackpad only): card spotlight, magnetic buttons. The cursor glow is in glow.js.
   if (window.matchMedia('(pointer: fine)').matches) {
-    const glow = document.querySelector('.cursor-glow');
-    let gx = innerWidth / 2, gy = innerHeight / 2, tx = gx, ty = gy;
-    window.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; glow.classList.add('on'); }, { passive: true });
-    document.addEventListener('mouseleave', () => glow.classList.remove('on'));
-    (function follow() {
-      gx += (tx - gx) * 0.12; gy += (ty - gy) * 0.12;
-      glow.style.transform = `translate(${gx}px, ${gy}px)`;
-      requestAnimationFrame(follow);
-    })();
-
     document.querySelectorAll('.card, .case').forEach(card => {
       card.addEventListener('mousemove', e => {
         const r = card.getBoundingClientRect();

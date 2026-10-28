@@ -67,6 +67,7 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--hl); }
 .nav nav { display: flex; gap: 24px; align-items: center; }
 .nav nav a:not(.btn) { color: var(--muted); text-decoration: none; font-size: 15px; font-weight: 500; }
+.brand, .nav nav a { white-space: nowrap; }
 .nav nav a:not(.btn):hover { color: var(--text); }
 
 /* Buttons */
@@ -230,7 +231,11 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 .footer p { margin: 0; }
 
 /* Responsive */
+@media (max-width: 1080px) {
+  .nav nav { gap: 18px; }
+}
 @media (max-width: 900px) {
+  .nav nav .nav-extra { display: none; }
   .hero-grid, .why { grid-template-columns: 1fr; gap: 36px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }
@@ -329,8 +334,8 @@ html.lenis, html.lenis body { height: auto; }
 .progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 30; background: var(--hl); transform: scaleX(0); transform-origin: 0 50%; }
 
 /* Cursor glow */
-.cursor-glow { position: fixed; top: -220px; left: -220px; width: 440px; height: 440px; border-radius: 50%; pointer-events: none; z-index: 1;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent), transparent 65%);
+.cursor-glow { position: fixed; top: -90px; left: -90px; width: 180px; height: 180px; border-radius: 50%; pointer-events: none; z-index: 1;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
   opacity: 0; transition: opacity .4s ease; mix-blend-mode: multiply; }
 .cursor-glow.on { opacity: 1; }
 @media (prefers-color-scheme: dark) { .cursor-glow { mix-blend-mode: screen; } }
