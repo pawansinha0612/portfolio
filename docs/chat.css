@@ -1,0 +1,58 @@
+/* Chat assistant (chat.js). Uses the colour tokens from styles.css. */
+.chat-launch {
+  position: fixed; right: 20px; bottom: 20px; z-index: 40;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font: 600 15px Inter, system-ui, sans-serif; color: var(--accent-text); background: var(--accent);
+  border: 0; border-radius: 999px; padding: 12px 18px; box-shadow: 0 6px 24px rgba(16, 24, 40, .18);
+}
+.chat-launch:hover { filter: brightness(1.08); }
+.chat-launch[hidden] { display: none; }
+.chat-teaser {
+  position: fixed; right: 20px; bottom: 76px; z-index: 40; max-width: 260px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; font-size: 14px; box-shadow: var(--shadow); cursor: pointer;
+}
+.chat-teaser[hidden] { display: none; }
+
+.chat-panel {
+  position: fixed; right: 20px; bottom: 20px; z-index: 41;
+  width: 360px; max-width: calc(100vw - 32px); height: min(560px, calc(100vh - 40px));
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 12px 48px rgba(16, 24, 40, .22);
+}
+.chat-panel[hidden] { display: none; }
+.chat-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.chat-head b { display: block; font-size: 15px; }
+.chat-head span { color: var(--muted); font-size: 12px; }
+.chat-close { font: inherit; font-size: 22px; line-height: 1; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 4px 8px; }
+.chat-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-msg { max-width: 85%; padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.chat-msg.bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.chat-msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-text); border-bottom-right-radius: 4px; }
+.chat-msg a { color: inherit; font-weight: 600; }
+.chat-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat-opt {
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--accent);
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 999px; padding: 6px 12px;
+}
+.chat-opt:hover { background: var(--alt); }
+.chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); background: var(--surface); }
+.chat-form input {
+  flex: 1; min-width: 0; font: inherit; font-size: 14px; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+}
+.chat-form input:focus { outline: none; border-color: var(--accent); }
+.chat-form input:disabled { opacity: .5; }
+.chat-form button { cursor: pointer; font: inherit; font-weight: 600; }
+.chat-form button:disabled { opacity: .5; cursor: default; }
+.chat-note { color: var(--muted); font-size: 11px; text-align: center; padding: 0 12px 10px; background: var(--surface); margin: 0; }
+
+@media (max-width: 600px) {
+  .chat-launch { right: 16px; bottom: 16px; }
+  .chat-teaser { right: 16px; bottom: 72px; }
+  .chat-panel { right: 0; bottom: 0; width: 100vw; max-width: 100vw; height: 85vh; border-radius: 18px 18px 0 0; }
+}

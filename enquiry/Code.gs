@@ -13,6 +13,10 @@
  *   2. emailed to OWNER_EMAIL, and a thank-you sent to the person.
  * Rows set to approved = Yes are returned by GET ?view=testimonials and shown on the home page.
  *
+ * Chat assistant (docs/chat.js, on the interview prep page): each conversation is
+ *   1. added to the "Chat" tab (created automatically on first use),
+ *   2. emailed to OWNER_EMAIL when the visitor is hiring or left an email address.
+ *
  * Run setup() once from the editor, then deploy as a web app (Execute as: Me, Who has access: Anyone)
  * and paste the /exec URL into data-endpoint on the forms in docs/.
  */
@@ -28,6 +32,10 @@ const TESTIMONIAL_SHEET = 'Testimonials';
 const TESTIMONIAL_FIELDS = ['name', 'title', 'company', 'relationship', 'quote', 'email', 'linkedin'];
 const TESTIMONIAL_HEADERS = ['received', ...TESTIMONIAL_FIELDS, 'consent', 'approved'];
 
+const CHAT_SHEET = 'Chat';
+const CHAT_FIELDS = ['reason', 'level', 'topics', 'missing', 'name', 'email', 'message'];
+const CHAT_HEADERS = ['received', ...CHAT_FIELDS, 'page', 'status'];
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function setup() {
@@ -35,6 +43,15 @@ function setup() {
   dropdown(enquiries, ENQUIRY_HEADERS.length, ['New', 'Replied', 'Call booked', 'Won', 'Lost', 'Spam']);
   const testimonials = sheetWithHeaders(TESTIMONIAL_SHEET, TESTIMONIAL_HEADERS);
   dropdown(testimonials, TESTIMONIAL_HEADERS.length, ['Yes', 'No']);
+  chatSheet();
+}
+
+function chatSheet() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(CHAT_SHEET);
+  if (sh) return sh;
+  const created = sheetWithHeaders(CHAT_SHEET, CHAT_HEADERS);
+  dropdown(created, CHAT_HEADERS.length, ['New', 'Replied', 'Subscribed', 'Done']);
+  return created;
 }
 
 function sheetWithHeaders(name, headers) {
@@ -77,6 +94,7 @@ function doPost(e) {
   // Reply "ok" so the bot moves on.
   if (p.company_site) return json({ ok: true });
 
+  if (p.form === 'chat') return saveChat(p);
   return p.form === 'testimonial' ? saveTestimonial(p) : saveEnquiry(p);
 }
 
@@ -161,6 +179,28 @@ function saveTestimonial(p) {
       "If you'd like to change anything before it goes on my website, just reply to this email.\n\n" + signature(),
   });
 
+  return json({ ok: true });
+}
+
+function saveChat(p) {
+  const d = clean(p, CHAT_FIELDS, { message: 2000, missing: 500 });
+  if (!d.reason) return json({ ok: false });
+  if (d.email && !EMAIL_RE.test(d.email)) d.email = '';
+  if (d.email && isRepeat('chat', d.email)) return json({ ok: true });
+
+  chatSheet();
+  appendRow(CHAT_SHEET, [new Date(), ...CHAT_FIELDS.map(f => safe(d[f])), safe(String(p.page || '').slice(0, 300)), 'New']);
+
+  // Only email when there's something to act on: a hiring lead or someone who left an address.
+  if (d.reason === 'Hiring' || d.email) {
+    MailApp.sendEmail({
+      to: OWNER_EMAIL,
+      replyTo: d.email || OWNER_EMAIL,
+      subject: 'Chat: ' + d.reason + (d.name ? ' · ' + d.name : '') + (d.topics ? ' · ' + d.topics : ''),
+      body: CHAT_FIELDS.map(f => (f + ':          ').slice(0, 10) + (d[f] || '-')).join('\n') +
+        '\n\n— From the chat on ' + (p.page || 'pawansinha.com.au'),
+    });
+  }
   return json({ ok: true });
 }
 
