@@ -1,0 +1,83 @@
+# Publishes blog posts whose date has arrived, then shares the newest one on LinkedIn.
+# Runs every morning, and whenever post files change on main (for example when you merge a drafts pull request).
+name: Blog publish
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # 21:00 UTC = 8am Melbourne in summer (7am in winter)
+  push:
+    branches: [main]
+    paths: ['blog/posts/**', 'blog/build.py']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  issues: write
+
+concurrency:
+  group: blog-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install markdown
+
+      - name: Build the blog
+        run: python blog/build.py
+
+      - name: Commit and publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/blog docs/sitemap.xml
+          if git diff --cached --quiet; then
+            echo 'No blog changes today.'
+          else
+            git commit -m "Blog: publish $(TZ=Australia/Melbourne date +%Y-%m-%d)"
+            git push
+            # Ask GitHub Pages to rebuild (pushes made by Actions don't always trigger it).
+            curl -fsS -X POST -H "Authorization: Bearer ${{ github.token }}" -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/${{ github.repository }}/pages/builds" || echo 'Pages build request failed; it will publish on the next build.'
+          fi
+
+      - name: Share on LinkedIn
+        id: linkedin
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_AUTHOR: ${{ vars.LINKEDIN_AUTHOR }}
+          LINKEDIN_TOKEN_EXPIRES: ${{ vars.LINKEDIN_TOKEN_EXPIRES }}
+          LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
+        run: python blog/linkedin.py
+
+      - name: Record what was shared
+        if: always()
+        run: |
+          git add blog/linkedin-posted.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m 'Blog: record LinkedIn share'
+            git pull --rebase && git push
+          fi
+
+      - name: Remind me to renew the LinkedIn token
+        if: always() && steps.linkedin.outputs.token_problem != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROBLEM: ${{ steps.linkedin.outputs.token_problem }}
+        run: |
+          title='Renew the LinkedIn token for blog posting'
+          if [ -z "$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')" ]; then
+            gh issue create --title "$title" --body "The LinkedIn access token is **$PROBLEM**. Daily blog posts are still published on the website, but not shared on LinkedIn until you renew it.
+
+          1. On your Mac: \`LINKEDIN_CLIENT_ID=... LINKEDIN_CLIENT_SECRET=... python3 blog/linkedin_auth.py\`
+          2. Update the secret \`LINKEDIN_ACCESS_TOKEN\` and the variable \`LINKEDIN_TOKEN_EXPIRES\` in Settings → Secrets and variables → Actions.
+          3. Close this issue."
+          fi

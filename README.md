@@ -10,6 +10,8 @@ docs/        The website: plain HTML, CSS and JavaScript, no build step
   styles.css   Design, layout and animation styles
   main.js      Animations, scroll effects, booking button, placeholder hiding
   CNAME        Tells GitHub Pages to serve the site at pawansinha.com.au
+blog/        Daily blog: posts (Markdown), topic queue, AI drafting, page builder, LinkedIn sharing
+.github/     GitHub Actions: weekly blog drafts, daily blog publish
 enquiry/     Google Apps Script backend for the site's enquiry form (saves to a Google Sheet, emails a notification)
 notifier/    Script that emails your network when a contract is about to end
 profile/     Private notes (Upwork profile, testimonial drafts, roadmap). Git-ignored, never published.
@@ -86,6 +88,24 @@ Anything still holding a `[placeholder]` is hidden automatically, so unfinished 
 They switch off for visitors who have reduced motion enabled in their device settings.
 
 ---
+
+## Blog
+
+Posts live in `blog/posts/YYYY-MM-DD-slug.md` and are published to `docs/blog/` by `blog/build.py`.
+A post goes live on its `date` (Melbourne time), so approved posts come out one a day.
+
+| When | What runs | What it does |
+|---|---|---|
+| Sunday ~9am | `.github/workflows/blog-drafts.yml` | Drafts the next 7 topics from `blog/topics.md` with GitHub Models (free, no key) in the style of `blog/voice.md`, and opens a pull request |
+| You | Review the pull request | Edit, delete or re-date drafts, then merge to approve |
+| Daily ~8am | `.github/workflows/blog-publish.yml` | Builds the blog, commits `docs/blog/`, then shares the newest post on LinkedIn |
+
+- **Add topics:** add `- [ ] Title — angle` lines to `blog/topics.md`.
+- **Write a post yourself:** add a Markdown file in `blog/posts/` (see the format at the top of `blog/build.py`) and push.
+- **Preview locally:** `pip install markdown && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing.
+- **Run now:** GitHub → Actions → choose the workflow → Run workflow.
+- **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API, e.g. NVIDIA).
+- **LinkedIn:** run `blog/linkedin_auth.py` every ~60 days; the publish job opens an issue a week before the token expires.
 
 ## Availability notifier
 

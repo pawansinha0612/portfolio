@@ -1,0 +1,62 @@
+# Every week, drafts the next 7 blog posts with a free AI model (GitHub Models) and opens a pull request.
+# Review and edit the drafts, then merge: each post publishes on its own date (see blog-publish.yml).
+name: Blog drafts
+
+on:
+  schedule:
+    - cron: '0 22 * * 6'   # Saturday 22:00 UTC = Sunday 9am Melbourne in summer
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'How many posts to draft'
+        default: '7'
+
+permissions:
+  contents: write
+  pull-requests: write
+  models: read
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if last week's drafts are still waiting for review
+        id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          open=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("blog-drafts/"))] | length')
+          echo "open=$open" >> "$GITHUB_OUTPUT"
+          [ "$open" = 0 ] || echo '::notice::A blog drafts pull request is still open. Merge or close it first.'
+
+      - uses: actions/setup-python@v5
+        if: steps.pending.outputs.open == '0'
+        with:
+          python-version: '3.12'
+
+      - name: Draft posts
+        if: steps.pending.outputs.open == '0'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        run: |
+          pip install markdown
+          python blog/draft.py --count "${{ inputs.count || '7' }}"
+
+      - name: Open a pull request
+        if: steps.pending.outputs.open == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="blog-drafts/$(date +%Y-%m-%d-%H%M)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add blog/posts blog/topics.md
+          git commit -m 'Blog: draft next posts'
+          git push -u origin "$branch"
+          gh pr create --title "Blog drafts for review ($(date +%d\ %b))" --body-file blog/.draft-summary.md
