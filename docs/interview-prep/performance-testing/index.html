@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance Testing Interview Questions — Pawan Sinha</title>
+  <meta name="description" content="Performance testing and engineering interview questions with model answers, grouped by experience: basic (3–5 years), intermediate (5–7 years) and advanced (7+ years). k6, JMeter, LoadRunner, bottleneck analysis, JVM GC, AWR, CI/CD and capacity planning.">
+  <meta property="og:title" content="Performance Testing Interview Questions — Pawan Sinha">
+  <meta property="og:description" content="Model answers for performance testing interviews, from 3 to 7+ years of experience.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/interview-prep/performance-testing/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <link rel="canonical" href="https://pawansinha.com.au/interview-prep/performance-testing/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    .project-hero { padding: 64px 16px 24px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+
+    .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 20px; }
+    .level {
+      font: inherit; text-align: left; cursor: pointer; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px;
+    }
+    .level b { display: block; font-size: 17px; }
+    .level span { color: var(--muted); font-size: 13px; }
+    .level[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .level[aria-selected="true"] b { color: var(--accent); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 16px; }
+    .toolbar input {
+      flex: 1 1 260px; min-width: 0; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+    }
+    .toolbar input:focus { outline: none; border-color: var(--accent); }
+    .toolbar button { cursor: pointer; font: inherit; font-weight: 600; }
+    .progress-line { color: var(--muted); font-size: 14px; }
+
+    .qa-list { display: flex; flex-direction: column; gap: 10px; }
+    .qa { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+    .qa summary {
+      list-style: none; cursor: pointer; padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+      font-weight: 600; font-size: 16px; line-height: 1.45;
+    }
+    .qa summary::-webkit-details-marker { display: none; }
+    .qa summary::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 500; font-size: 20px; line-height: 1; }
+    .qa[open] summary::after { content: "−"; }
+    .qa .num { font: 600 13px "JetBrains Mono", monospace; color: var(--accent); flex: none; }
+    .qa.done .num::after { content: " ✓"; color: var(--ok); }
+    .qa-body { padding: 0 18px 16px; color: var(--muted); }
+    .qa-body strong { color: var(--text); }
+    .qa-body p { margin: 0 0 10px; }
+    .qa-body ul, .qa-body ol { margin: 0 0 10px; padding-left: 22px; }
+    .qa-body pre {
+      background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+      overflow-x: auto; font: 500 13px/1.55 "JetBrains Mono", monospace; color: var(--text); margin: 0 0 10px;
+    }
+    .qa-body code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .say {
+      border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0;
+      padding: 10px 14px; margin: 4px 0 10px; color: var(--text);
+    }
+    .say::before { content: "Say it like this"; display: block; font-size: 12px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .qa-foot { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
+    .topics { display: flex; flex-wrap: wrap; gap: 6px; }
+    .topic { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--alt); color: var(--muted); }
+    .mark { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+    .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+    .prose { max-width: 720px; color: var(--muted); }
+    .prose strong { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .levels { grid-template-columns: 1fr; }
+      .project-hero { padding-top: 40px; }
+      .qa summary { padding: 12px 14px; font-size: 15px; }
+      .qa-body { padding: 0 14px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav>
+        <a href="#questions">Questions</a>
+        <a href="#how">How to use</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Interview prep · Performance engineering</p>
+      <h1>Performance testing interview questions</h1>
+      <p class="lead">Questions I've been asked, or asked other candidates, over 12+ years of performance testing in banking, payments and gaming. Each one has a model answer you can adapt to your own projects. Pick your experience level to start.</p>
+      <div class="meta-row">
+        <span class="tag">k6</span>
+        <span class="tag">JMeter</span>
+        <span class="tag">LoadRunner</span>
+        <span class="tag">APM &amp; observability</span>
+        <span class="tag">JVM &amp; database tuning</span>
+        <span class="tag">CI/CD</span>
+      </div>
+    </section>
+
+    <section id="questions" class="wrap" style="padding: 8px 16px 48px;">
+      <div class="levels" role="tablist" aria-label="Experience level">
+        <button class="level" role="tab" data-level="basic" aria-selected="true"><b>Basic</b><span>3–5 years · concepts, metrics, scripting</span></button>
+        <button class="level" role="tab" data-level="intermediate" aria-selected="false"><b>Intermediate</b><span>5–7 years · bottlenecks, monitoring, CI/CD</span></button>
+        <button class="level" role="tab" data-level="advanced" aria-selected="false"><b>Advanced</b><span>7+ years · tuning, capacity, strategy</span></button>
+      </div>
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="Search questions and answers, e.g. pacing, GC, Kafka" aria-label="Search questions">
+        <button id="toggle-all" class="btn btn-ghost btn-small" type="button">Expand all</button>
+        <span id="progress" class="progress-line" aria-live="polite"></span>
+      </div>
+      <div id="list" class="qa-list"></div>
+    </section>
+
+    <section id="how" class="wrap section" style="padding-top: 24px;">
+      <p class="eyebrow">How to use this page</p>
+      <h2>Turn the answers into your own stories</h2>
+      <div class="prose">
+        <p><strong>Don't memorise the wording.</strong> Interviewers can tell. Learn the structure of each answer, then swap in a system, numbers and tools from your own work.</p>
+        <p><strong>Use STAR for "tell me about a time" questions:</strong> Situation, Task, Action, Result. Finish with the lesson. A good story takes 60 to 90 seconds to tell.</p>
+        <p><strong>Only claim what you did.</strong> If a platform team ran the Kubernetes runners and you consumed them, say so, and show you understand why each setting matters. Knowing it is not the same as having done it, and good interviewers can tell the difference.</p>
+        <p><strong>Tick "Practised"</strong> on each question once you can answer it out loud without looking. Your ticks are saved in this browser only.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <p>© <span id="year"></span> Pawan Sinha · QA &amp; Test Automation Engineer · Melbourne, Australia</p>
+    <p><a href="/">← Back to pawansinha.com.au</a></p>
+  </footer>
+
+  <script>
+  const QA = {
+  basic: [
+    { q: 'What is performance testing, and why do we need it?', t: ['Concepts'], a: `
+      <p>Performance testing checks how a system behaves under an expected or extreme load. It covers <strong>speed</strong> (response time), <strong>capacity</strong> (how much load it handles), <strong>stability</strong> (does it stay healthy over time) and <strong>scalability</strong> (does adding resources add capacity).</p>
+      <p>Functional tests show that a feature works for one user. Performance tests show that it still works for 10,000 users at once, at peak, after hours of running. Problems such as slow pages, timeouts at a sale launch or memory leaks only appear under load. Finding them in production costs far more than finding them in a test environment.</p>` },
+    { q: 'What types of performance tests are there?', t: ['Concepts'], a: `
+      <ul>
+        <li><strong>Load test:</strong> expected peak load for a set duration. Does it meet the NFRs?</li>
+        <li><strong>Stress test:</strong> push beyond peak until something breaks. Where is the breaking point and how does it fail?</li>
+        <li><strong>Spike test:</strong> a sudden jump in users (a sale opening, a draw closing). Does it absorb the jump and recover?</li>
+        <li><strong>Soak (endurance) test:</strong> steady load for hours. Finds memory leaks, connection leaks and growing queues.</li>
+        <li><strong>Scalability test:</strong> add load step by step, and add resources. Does throughput grow in line?</li>
+        <li><strong>Volume test:</strong> large data volumes, such as a big database or file. Do queries and batch jobs still perform?</li>
+        <li><strong>Breakpoint / capacity test:</strong> ramp slowly until the system can't keep up, to find its maximum throughput.</li>
+      </ul>` },
+    { q: 'What are the key metrics you look at in a performance test?', t: ['Metrics'], a: `
+      <ul>
+        <li><strong>Response time:</strong> average, and more importantly p90, p95 and p99.</li>
+        <li><strong>Throughput:</strong> requests or transactions per second (RPS/TPS).</li>
+        <li><strong>Error rate:</strong> the percentage of failed requests, broken down by error type.</li>
+        <li><strong>Concurrency:</strong> active virtual users or open connections.</li>
+        <li><strong>Server resources:</strong> CPU, memory, disk I/O, network, and for the JVM, heap and GC.</li>
+        <li><strong>Downstream resources:</strong> DB connections in use, thread pool usage, queue depth.</li>
+      </ul>
+      <p>The client-side numbers tell you <em>that</em> something is wrong. The server-side numbers tell you <em>why</em>.</p>` },
+    { q: 'Why use percentiles like p95 instead of the average response time?', t: ['Metrics'], a: `
+      <p>Averages hide pain. If 95 requests take 200 ms and 5 take 8 seconds, the average is about 590 ms, which looks fine. But 1 in 20 users waited 8 seconds.</p>
+      <p>p95 means 95% of requests were faster than this value. It describes what nearly all users experience. p99 shows the tail, which matters because one page often makes many calls, so a user is likely to hit at least one slow one.</p>
+      <div class="say">I set SLAs on p95 or p99, and I treat a healthy average with a bad p99 as a warning sign. It often points to periodic pauses such as garbage collection.</div>` },
+    { q: 'How are throughput, response time and concurrent users related?', t: ['Metrics', 'Workload'], a: `
+      <p>By <strong>Little's Law</strong>: <code>Concurrent users = Throughput × (Response time + Think time)</code>.</p>
+      <p>Example: you need 50 TPS, and each iteration has a 1 s response time plus 4 s of think time. You need 50 × 5 = 250 virtual users.</p>
+      <p>Use it in two ways. First, to size a test before you run it. Second, to sanity-check results. If you add users and throughput stops rising while response time climbs, the system is saturated.</p>` },
+    { q: 'What is a workload model, and how do you build one?', t: ['Workload'], a: `
+      <p>A workload model (WLM) describes the realistic mix of traffic you will simulate: which journeys, in what proportion, at what rate, and with how many users.</p>
+      <ol>
+        <li>Take production data from the peak hour: access logs, APM, Splunk/Kibana or Google Analytics.</li>
+        <li>List the business transactions and their hourly volumes, such as login 40%, search 35% and purchase 10%.</li>
+        <li>Apply growth: future peak = today's peak × the business growth factor, plus headroom.</li>
+        <li>Work out users, think time and pacing to hit those rates.</li>
+        <li>Get the business and architects to sign it off. It becomes the contract for the test.</li>
+      </ol>
+      <p>For a new product with no production data, build it from business forecasts and similar systems, and say clearly that it's an assumption.</p>` },
+    { q: 'What are think time and pacing? How do you calculate pacing?', t: ['Workload', 'Scripting'], a: `
+      <p><strong>Think time</strong> is the pause between steps <em>inside</em> a journey, to imitate a real user reading or typing. <strong>Pacing</strong> is the time from the start of one iteration to the start of the next. It controls how many iterations each user does per hour.</p>
+      <pre>Pacing (s) = (Test duration in s × Users) / Target iterations
+
+Target: 15 iterations per hour with 5 users
+Pacing = (3600 × 5) / 15 = 1200 s per iteration per user</pre>
+      <p>Pacing has to be longer than one iteration's own run time. If it isn't, you can't reach the target rate and need more users.</p>` },
+    { q: 'What are correlation and parameterisation?', t: ['Scripting'], a: `
+      <p><strong>Correlation</strong> means capturing dynamic values from a server response, such as a session ID, CSRF token, auth token or order ID, and passing them into later requests. Without it the recorded script replays stale values and fails. In LoadRunner you use <code>web_reg_save_param</code>, in JMeter a JSON or regex extractor, and in k6 you parse <code>res.json()</code>.</p>
+      <p><strong>Parameterisation</strong> means replacing hard-coded inputs, such as usernames or search terms, with data from a file or generator. Each virtual user then behaves like a different real user and doesn't just hit the cache.</p>` },
+    { q: 'What are NFRs, and how do you gather them?', t: ['Process'], a: `
+      <p>Non-functional requirements set the measurable performance targets. For example: "95% of login requests under 1 s at 200 TPS with an error rate below 0.1%."</p>
+      <p>I gather them from the business owners (peak volumes, growth, key journeys), the architects (design limits, dependencies) and production data. A good NFR is <strong>specific, measurable and tied to a load level</strong>. "The system should be fast" isn't an NFR. If nobody can give me numbers, I propose them from production baselines and industry norms and get them signed off.</p>` },
+    { q: 'Walk me through the performance testing life cycle.', t: ['Process'], a: `
+      <ol>
+        <li><strong>Requirements:</strong> gather NFRs and peak volumes.</li>
+        <li><strong>Test strategy:</strong> application overview, objectives, scope, infrastructure, workload model, environment, test scenarios, risks and references.</li>
+        <li><strong>Scripting:</strong> build the journeys, with correlation, parameterisation and checks.</li>
+        <li><strong>Test data and environment:</strong> create the data and confirm the environment is close to production.</li>
+        <li><strong>Execution:</strong> a smoke run first, then baseline, load, stress and soak.</li>
+        <li><strong>Analysis:</strong> correlate client metrics with server metrics, find bottlenecks, retest after fixes.</li>
+        <li><strong>Report:</strong> a test summary report with results against the NFRs, risks and a go/no-go recommendation, then sign-off.</li>
+      </ol>` },
+    { q: 'What is the difference between an open and a closed workload model?', t: ['Workload', 'k6'], a: `
+      <p><strong>Closed model:</strong> a fixed number of users loop through the script. If the system slows down, users wait, so fewer requests are sent. This hides the problem. k6 examples: <code>constant-vus</code>, <code>ramping-vus</code>.</p>
+      <p><strong>Open model:</strong> requests arrive at a fixed rate no matter how slow the system is, like real internet traffic. Slowness shows up as queues and errors, as it would in production. k6 examples: <code>constant-arrival-rate</code>, <code>ramping-arrival-rate</code>.</p>
+      <p>To prove you can handle a target TPS, use an arrival-rate (open) model.</p>` },
+    { q: 'In k6, what is the difference between checks and thresholds?', t: ['k6'], a: `
+      <p><strong>Checks</strong> are assertions on individual responses, such as "status is 200" or "body contains orderId". A failed check doesn't fail the test. It's recorded as a pass rate.</p>
+      <p><strong>Thresholds</strong> are pass/fail rules for the whole test. When one is breached, k6 exits with a non-zero code, which fails the CI pipeline.</p>
+      <pre>export const options = {
+  thresholds: {
+    http_req_duration: ['p(95)&lt;500'],
+    http_req_failed:   ['rate&lt;0.01'],
+    checks:            ['rate&gt;0.99'],
+  },
+};</pre>` },
+    { q: 'JMeter, k6 or LoadRunner: how do you choose?', t: ['Tools'], a: `
+      <ul>
+        <li><strong>LoadRunner:</strong> commercial and protocol-rich (Citrix, SAP, Oracle Forms, mainframe). It suits large enterprises with legacy protocols, but licences are expensive.</li>
+        <li><strong>JMeter:</strong> free, GUI-based and Java. It has many plugins and a large community, but it uses a lot of memory per thread and its XML scripts are awkward to review in Git.</li>
+        <li><strong>k6:</strong> free, written in Go, with tests in JavaScript or TypeScript. It's very light per virtual user, built for CI/CD, and developers find it easy to read. It also has a browser module for front-end metrics. It mainly covers HTTP, gRPC and WebSockets, plus extensions.</li>
+      </ul>
+      <p>I pick the tool for the protocol and the team: k6 for modern APIs and pipelines, LoadRunner when the protocol needs it, and JMeter when the team already knows it.</p>` },
+    { q: 'What do 429, 502, 503 and 504 errors usually mean during a load test?', t: ['Analysis'], a: `
+      <ul>
+        <li><strong>429 Too Many Requests:</strong> a rate limiter or API gateway is throttling you. Check whether this is expected, and whether the test is coming from too few IP addresses.</li>
+        <li><strong>502 Bad Gateway:</strong> the proxy or load balancer got a bad response from the app, often because an app instance crashed or restarted.</li>
+        <li><strong>503 Service Unavailable:</strong> the app or upstream service is overloaded or has no healthy instances, or a circuit breaker is open.</li>
+        <li><strong>504 Gateway Timeout:</strong> the proxy gave up waiting. The backend is too slow, often because of a saturated DB or thread pool.</li>
+      </ul>
+      <p>When errors start, note the exact load level. That point is your capacity limit.</p>` },
+    { q: 'How do you make sure your test results are valid?', t: ['Process', 'Analysis'], a: `
+      <ul>
+        <li>The environment matches production in scale, or you know the ratio (for example half the pods) and allow for it.</li>
+        <li>Run a warm-up first so caches, JIT compilation and connection pools settle, and leave it out of the analysis.</li>
+        <li>Use enough unique test data that you aren't only measuring the cache.</li>
+        <li>Make sure the load generator isn't the bottleneck: check its CPU and network.</li>
+        <li>Check for errors. Fast responses full of 500 errors aren't fast responses.</li>
+        <li>Make sure nothing else is running in the shared environment during your test window.</li>
+        <li>Repeat runs give similar numbers.</li>
+      </ul>` },
+  ],
+
+  intermediate: [
+    { q: 'How do you find a bottleneck? Walk me through your approach.', t: ['Analysis'], a: `
+      <ol>
+        <li><strong>Find the knee:</strong> the load level where response time climbs and throughput stops rising.</li>
+        <li><strong>Narrow the scope:</strong> is every transaction slow, or only some? All of them points to something shared (CPU, GC, network, the gateway). Only one points to that path's code or query.</li>
+        <li><strong>Walk the request path:</strong> client → CDN → load balancer → gateway → service → cache → queue → DB. Use APM traces (Dynatrace PurePath, AppDynamics) to see where the time goes.</li>
+        <li><strong>Check each resource for saturation:</strong> CPU, memory/GC, threads, connection pools, DB, disk, network.</li>
+        <li><strong>Prove it:</strong> change one thing, re-run the same workload, and compare.</li>
+      </ol>
+      <div class="say">High CPU isn't always the cause. It's often a symptom of something queueing somewhere else.</div>` },
+    { q: 'Response time is high but CPU is only about 45%. What do you check?', t: ['Analysis', 'Database'], a: `
+      <p>If CPU isn't the limit, something is <strong>waiting</strong>. I check:</p>
+      <ul>
+        <li><strong>Connection pools:</strong> a DB pool at its maximum with threads waiting for a connection.</li>
+        <li><strong>Thread pools:</strong> all worker threads busy, so requests queue.</li>
+        <li><strong>The database:</strong> slow queries, missing indexes, lock contention.</li>
+        <li><strong>Downstream calls:</strong> a slow third-party or internal API.</li>
+        <li><strong>Network and DNS, rate limits, sync logging.</strong></li>
+      </ul>
+      <div class="say">On a payments API, p95 went from 800 ms to 6 s at 400 users and throughput flattened at about 120 TPS. App CPU was 45%. APM showed 80% of the time in a single SELECT, and the DB pool (max 50) was full with threads waiting. We raised the pool to 150 and added a missing composite index. Throughput rose to about 210 TPS and p95 fell to 1.1 s. The fix wasn't more servers. It was finding the real constraint.</div>` },
+    { q: 'Which Linux and JVM commands do you use to investigate performance?', t: ['Tools', 'JVM'], a: `
+      <ul>
+        <li><code>top</code> / <code>htop</code>: live CPU and memory per process.</li>
+        <li><code>vmstat 1</code>: CPU, memory, swap and run queue over time.</li>
+        <li><code>iostat -x 1</code>: disk utilisation and wait time.</li>
+        <li><code>sar</code>: historical resource usage. <code>nmon -f -s 60 -c 60</code> records to a file.</li>
+        <li><code>ss</code> / <code>netstat</code>: connection counts, TIME_WAIT pile-ups, connection exhaustion.</li>
+        <li><code>free -m</code>: memory. <code>tail -f</code>, <code>grep</code>, <code>awk</code>: log analysis.</li>
+        <li><code>jstat -gcutil</code>: GC activity. <code>jstack</code>: thread dumps (look for BLOCKED or WAITING). <code>jmap</code>: heap dumps.</li>
+      </ul>` },
+    { q: 'What operations commonly make a web application CPU-bound?', t: ['Analysis'], a: `
+      <p>JSON and XML parsing and serialisation, encryption and JWT signing, compression, regular expressions, sorting large collections, heavy business rules, excessive logging, password hashing (BCrypt), image and PDF generation, and creating lots of objects, which drives garbage collection.</p>
+      <p>Many RUNNABLE threads in a thread dump plus high CPU usually means one of these is saturating the servers. A CPU profile or APM hotspot view shows which one.</p>` },
+    { q: 'What do you watch in a soak test? Give an example of something only a soak test caught.', t: ['Soak', 'Story'], a: `
+      <p>I watch <strong>trends, not snapshots</strong>: heap after GC, active DB connections, thread count, open file handles, queue depth, disk usage and response time per transaction.</p>
+      <div class="say">In an 8-hour soak at a steady 100 TPS, everything looked healthy for five and a half hours. Then response times spiked across every transaction and throughput collapsed. The clue was the active DB connection count. It climbed in a slow straight line and never came back down, which is the classic sign of a connection leak. I traced it to a rare flow (0.5% of traffic) that called an external service. About 2% of those calls timed out, and on that path an exception skipped <code>connection.close()</code>. That leaked about 0.01 connections per second, so it took hours to drain the 200-connection pool. The fix was try-with-resources, plus enabling the pool's leak-detection threshold.</div>
+      <pre>// Before: close() is skipped if getRate() throws
+conn = pool.getConnection();
+rate = fxService.getRate(...);
+save(conn, rate);
+conn.close();
+
+// After: the connection is always returned
+try (Connection conn = pool.getConnection()) {
+  save(conn, fxService.getRate(...));
+}</pre>
+      <p>The lesson: response time and error rate stay green until the collapse. The metric to watch is the trend in a resource that should be flat.</p>` },
+    { q: 'How do you investigate a memory leak with heap dumps?', t: ['JVM', 'Story'], a: `
+      <ol>
+        <li>Take <strong>two heap dumps</strong>: one after warm-up and one late in the soak. Trigger a GC first so only live objects are captured.</li>
+        <li><strong>Compare them.</strong> A class that grows out of proportion is your suspect.</li>
+        <li>Open the later dump in <strong>Eclipse MAT</strong>. Run the Leak Suspects report, then the Dominator Tree sorted by retained heap.</li>
+        <li><strong>Path to GC Roots</strong> shows why the objects can't be freed. Static fields, ThreadLocals and listeners are the usual culprits.</li>
+      </ol>
+      <div class="say">Memory grew about 50 MB an hour in a 6-hour soak. The Dominator Tree showed 50 pool threads holding 1.8 GB through ThreadLocal maps full of logging MDC entries. The code called <code>MDC.put()</code> for each request but never <code>MDC.clear()</code>, and pooled threads live forever. It was also a data issue: one request's orderId appeared in another request's logs. The fix was clearing MDC in a finally block, moving MDC handling into a servlet filter, and monitoring MDC size.</div>` },
+    { q: 'How do you put performance tests into a CI/CD pipeline?', t: ['CI/CD'], a: `
+      <ul>
+        <li><strong>Two modes:</strong> a short <em>sanity</em> run on every deploy (a few users for a few minutes, as a regression gate) and a full <em>load</em> run on a schedule or before release.</li>
+        <li><strong>Thresholds as gates:</strong> k6 exits non-zero when a threshold is breached, so the pipeline fails.</li>
+        <li><strong>Runner sized for load:</strong> for example a Kubernetes runner with a fixed CPU and memory limit, so the injector isn't the bottleneck.</li>
+        <li><strong>Secrets</strong> come from a vault at runtime and are never in the repo.</li>
+        <li><strong>Parallel scenarios</strong> each get their own block of test data, so they don't collide.</li>
+        <li><strong>Results:</strong> stream metrics to InfluxDB/Grafana or Elastic, and save the report as an artifact, even when the job fails.</li>
+      </ul>
+      <div class="say">Every CI file answers the same questions: when does it run, on which machine, with which tools, which settings and which secrets, then it runs the test and saves the results.</div>` },
+    { q: 'How do you correlate load test results with monitoring tools?', t: ['Observability'], a: `
+      <p>Align everything on <strong>time</strong> and <strong>tags</strong>:</p>
+      <ul>
+        <li>Send load-test metrics to the same place as app metrics (InfluxDB/Grafana, Elastic or Datadog), or add the test window as annotations.</li>
+        <li>Add a header such as <code>x-test-run-id</code> to requests so APM (Dynatrace, AppDynamics, New Relic) and logs (Splunk, Kibana) can be filtered to your traffic.</li>
+        <li>Build a dashboard per run: RPS, percentiles and errors next to CPU, heap, GC, pools and DB time.</li>
+      </ul>
+      <p><strong>The ELK stack:</strong> Elasticsearch stores and indexes, Logstash (or Beats) collects and transforms, and Kibana visualises. Logs flow from collect, to store, to dashboard.</p>` },
+    { q: 'Describe how you would structure a k6 framework.', t: ['k6', 'Framework'], a: `
+      <p>In four layers, each with one job:</p>
+      <ol>
+        <li><strong>API clients:</strong> generated from OpenAPI specs (for example with Grafana's <code>openapi-to-k6</code>). When an API changes, you regenerate the client instead of editing it by hand.</li>
+        <li><strong>Services:</strong> wrap the clients and add checks. Did we get the right status and the right data?</li>
+        <li><strong>Scenarios:</strong> the user journeys, such as log in, view the current draw, buy a ticket.</li>
+        <li><strong>Runners:</strong> decide how hard to push (users, duration, ramp-up) and what counts as a pass (thresholds).</li>
+      </ol>
+      <div class="say">The runner says how hard to push, the scenario says what to do, the service checks it worked, and the client makes the call.</div>` },
+    { q: 'k6 is written in Go. How does it run TypeScript tests?', t: ['k6'], a: `
+      <p>k6 is a Go binary with an embedded JavaScript engine. It doesn't use Node.js. From k6 v0.52 onwards, and in all of 1.x, it removes TypeScript types on the fly when it loads a <code>.ts</code> file, so there's no build step. We run <code>tsc --noEmit</code> in CI only to type-check.</p>
+      <p>On older k6 versions, teams bundled TypeScript to JavaScript first with Webpack or esbuild and Babel. Node is often still in the image, but only for helper scripts and npm packages.</p>` },
+    { q: 'How do you manage test data for large load tests?', t: ['Test data'], a: `
+      <ul>
+        <li>Give each virtual user its <strong>own data</strong>, using <code>exec.vu.idInTest</code> or the iteration number to index into a dataset.</li>
+        <li>When scenarios run in parallel, give each one an <strong>offset</strong> or range of accounts so they don't share users.</li>
+        <li>Create data in bulk ahead of time through APIs or the DB, not in the measured run.</li>
+        <li>Think about <strong>data that gets used up</strong>, such as one-time vouchers or balances. Reset it between runs.</li>
+        <li>Make the data volume close to production, or the DB tests itself on an empty table.</li>
+      </ul>` },
+    { q: 'Why put an API gateway or reverse proxy in front of services?', t: ['Architecture'], a: `
+      <p>A reverse proxy adds a layer that handles common concerns in one place: SSL termination, routing, load balancing, auth and security filtering, rate limiting, caching, compression and static content. That takes work off the app servers and gives you one point to control traffic.</p>
+      <p>For a performance engineer, each hop (CDN → load balancer → gateway → services → cache → queue → DB) is a place where time and limits pile up. Test and monitor each one, including the gateway's own connection limits and timeouts.</p>` },
+    { q: 'How do you performance test Kafka or MQ-based systems?', t: ['Messaging'], a: `
+      <p>Queues decouple systems. The producer doesn't wait for the consumer, which helps with spikes. But a "fast" API might only be queuing work. So measure end to end.</p>
+      <p><strong>Kafka:</strong> producer and consumer throughput, <strong>consumer lag</strong> (how far behind consumers are), partition balance, broker CPU, memory, disk and network.</p>
+      <p><strong>MQ (such as IBM MQ):</strong> queue depth, message age, wait time, consumer rate.</p>
+      <p>The key question: under peak load, does consumer lag or queue depth stay flat, or keep growing? If it keeps growing, the system can't keep up, even if the API responds quickly.</p>` },
+    { q: 'How do you test front-end (UI) performance? What are Core Web Vitals?', t: ['UI'], a: `
+      <ul>
+        <li><strong>LCP</strong> (Largest Contentful Paint): when the main content is visible. Good is under 2.5 s.</li>
+        <li><strong>INP</strong> (Interaction to Next Paint): how quickly the page responds to clicks and typing. Good is under 200 ms.</li>
+        <li><strong>CLS</strong> (Cumulative Layout Shift): how much the layout jumps around. Good is under 0.1.</li>
+        <li>Also <strong>FCP</strong> (first content, under 1.8 s) and <strong>TTFB</strong> (server responsiveness, under 800 ms).</li>
+      </ul>
+      <p>Tools: Lighthouse, WebPageTest, the k6 browser module (alongside protocol-level load) and real-user monitoring. Add custom timings for real actions such as search or login, and put thresholds on them.</p>
+      <div class="say">On a homepage, CLS was 0.52 because a prize panel filled in from an API after the page rendered, pushing the content below it down. Some images also had no width or height. We reserved space with a fixed-height placeholder and set image dimensions, and CLS fell into the good range. It mattered because the shifting area was where people tap to play.</div>` },
+    { q: 'Do FCP and LCP depend only on the user\'s device?', t: ['UI'], a: `
+      <p>No. They are a chain: <strong>server processing (TTFB)</strong> → <strong>network</strong> → <strong>downloading resources (page weight)</strong> → <strong>the browser parsing and painting</strong>. Only the last step depends on the device.</p>
+      <p>In a lab test the device stays the same, so if LCP rises from 3.2 s with one user to 5 s with ten, the server and network caused it. Watch out, though: running many browser users on one machine can max out that machine's CPU. Keep browser user counts low and generate the main load at the protocol level.</p>` },
+    { q: 'How do you know the load generator isn\'t the bottleneck?', t: ['Tools', 'Analysis'], a: `
+      <ul>
+        <li>Monitor the injector's CPU, memory and network. Keep CPU below about 70–80%.</li>
+        <li>Look for client-side warnings, such as k6 warning about too few pre-allocated VUs, or dropped iterations.</li>
+        <li>A rising <code>http_req_blocked</code> or <code>http_req_connecting</code> time can mean local port or DNS limits.</li>
+        <li>Spread the load across several generators and check that the total throughput scales in line.</li>
+        <li>Remember that k6 measures from the VU's point of view, including DNS, TCP, TLS and the client's own processing time.</li>
+      </ul>` },
+  ],
+
+  advanced: [
+    { q: 'How would you start performance engineering for a brand-new product?', t: ['Strategy'], a: `
+      <p>For a greenfield product I go from <strong>demand</strong> to <strong>design</strong> to <strong>proof</strong>:</p>
+      <ol>
+        <li>Understand the business demand: expected users, peak events, growth.</li>
+        <li>Review the architecture early, looking for synchronous chains, shared databases and missing caching.</li>
+        <li>Define NFRs and SLOs and get them signed off.</li>
+        <li>Build a capacity model and a workload model from forecasts.</li>
+        <li>Make sure observability (APM, logs, metrics, tracing) is built in from day one.</li>
+        <li>Test components early, in CI, on every deploy.</li>
+        <li>Then test full load, stress, spike, soak and resilience, including auto-scaling and failover.</li>
+        <li>Set baselines, then hold a production readiness review before go-live.</li>
+      </ol>` },
+    { q: 'What is on your production readiness checklist?', t: ['Strategy'], a: `
+      <ul>
+        <li>NFRs defined and met, with evidence.</li>
+        <li>Peak load and spike tested, and capacity confirmed with headroom.</li>
+        <li>Auto-scaling tested: it scales out fast enough and scales back in.</li>
+        <li>Disaster recovery and failover tested.</li>
+        <li>Monitoring dashboards in place, and alerts configured and tested.</li>
+        <li>Runbooks ready for the likely failure modes.</li>
+        <li>Known risks written down and accepted by the business.</li>
+      </ul>` },
+    { q: 'How do you approach capacity planning?', t: ['Capacity'], a: `
+      <ol>
+        <li>Measure capacity per unit: the maximum TPS one pod or instance sustains within SLA, from a breakpoint test.</li>
+        <li>Forecast peak demand: today's peak × growth × event multipliers (sales, draws, end of month).</li>
+        <li>Required instances = forecast peak ÷ capacity per instance, plus headroom (often 30–50%) and N+1 for failover.</li>
+        <li>Check shared limits that don't scale with pods: DB connections (pods × pool size), licences, downstream rate limits.</li>
+        <li>Review every quarter against what actually happened in production.</li>
+      </ol>
+      <p>A common trap: doubling the pods also doubles the DB connections, and the database becomes the new bottleneck.</p>` },
+    { q: 'Explain how G1GC works.', t: ['JVM'], a: `
+      <p>G1 splits the heap into equal-sized <strong>regions</strong> (1–32 MB). Each region is labelled Eden, Survivor, Old or Humongous, and the label can change over time. Older collectors had fixed young and old areas.</p>
+      <ul>
+        <li><strong>Young collection:</strong> stop-the-world, collects Eden and Survivor regions. Fast and frequent.</li>
+        <li><strong>Concurrent marking:</strong> runs while the application keeps running and finds which old regions are mostly garbage. It starts when old-generation use passes the IHOP threshold (45% by default).</li>
+        <li><strong>Mixed collection:</strong> collects young regions plus the old regions with the <em>most garbage first</em>, which is where the name comes from.</li>
+        <li><strong>Humongous objects:</strong> objects bigger than half a region get their own contiguous regions. They are expensive.</li>
+      </ul>
+      <p><code>-XX:MaxGCPauseMillis=200</code> is a soft target. G1 collects fewer regions per pause to meet it.</p>` },
+    { q: 'p99 latency is bad but the average is fine, in a sawtooth pattern. How do you diagnose it?', t: ['JVM', 'Story'], a: `
+      <p>A good average with a bad p99 means some requests are being <strong>frozen</strong>, not slowed. A sawtooth means something periodic. If every transaction type spikes at the same moment, the cause is global (stop-the-world GC), not one slow query.</p>
+      <div class="say">A Java 17 service at 1,000 RPS saw p99 rise from 220 ms to 800 ms against a 300 ms SLA after a feature grew payloads from 4 KB to 18 KB. The DB and downstream services were healthy. Latency spikes lined up with CPU spikes and GC pauses. The GC logs showed mixed GCs over 700 ms and new humongous allocations: the parsed object graphs had grown to about 4 MB, over half the 8 MB region size. We tuned G1 without changing the collector or the infrastructure.</div>
+      <pre>-XX:G1HeapRegionSize=32m              # larger regions absorb the big objects
+-XX:InitiatingHeapOccupancyPercent=35 # start marking earlier
+-XX:G1MixedGCCountTarget=16           # spread mixed GC work over more cycles
+-XX:G1ReservePercent=15               # more room to copy objects into</pre>
+      <p>Always prove a change by re-running the same workload and comparing the GC logs and p99.</p>` },
+    { q: 'How do you read an Oracle AWR report for a load test?', t: ['Database'], a: `
+      <ol>
+        <li>Limit the snapshots to the exact test window.</li>
+        <li>Compare <strong>DB Time with elapsed time</strong> to confirm the database is actually busy.</li>
+        <li><strong>Top foreground events</strong> show the type of problem: <code>db file scattered read</code> means full table scans, <code>db file sequential read</code> means index or single-block reads, and <code>enq: TX</code> means row-lock contention.</li>
+        <li><strong>SQL ordered by Elapsed Time</strong> finds the worst statement. <strong>By Executions</strong> exposes N+1 patterns. <strong>By Gets</strong> finds statements that read the most buffers.</li>
+        <li>Take the SQL_ID to <code>DBMS_XPLAN.DISPLAY_CURSOR</code> with ALLSTATS. Look for TABLE ACCESS FULL and big gaps between estimated and actual rows, which point to a missing index or stale statistics.</li>
+        <li>Fix it, re-run, and compare the two AWR reports to prove the change.</li>
+      </ol>
+      <p>If a SQL shows %CPU 18 and %IO 79, it's I/O-bound. Tuning the query or adding an index will help more than adding CPU.</p>` },
+    { q: 'How do you find an N+1 query problem?', t: ['Database', 'Story'], a: `
+      <p>An N+1 is when the code loads a parent record, then runs a separate query for each child. It's fine at low load. At high load, the database and connection pool become the bottleneck.</p>
+      <div class="say">A risk API had a p95 of 200 ms at baseline, rising to 1.8 s above 300 RPS. Dashboards suggested infrastructure because app CPU was high. A Dynatrace trace showed most of the time in the DB: one query ran 47 times per request. At 300 RPS the connection pool ran out, and the high CPU was threads waiting. A single JOIN fixed it, and p95 stayed under 250 ms at 500 RPS.</div>
+      <p>To spot it: look at the database call count per request in APM, and at "SQL ordered by Executions" in AWR.</p>` },
+    { q: 'You join a team with an existing performance framework. How do you tell if it\'s fit for purpose?', t: ['Framework', 'Strategy'], a: `
+      <p>I look at it through six lenses:</p>
+      <ol>
+        <li><strong>Coverage:</strong> does it test the journeys that carry business risk?</li>
+        <li><strong>Maintainability:</strong> is the code modular, and how long does adding a journey take?</li>
+        <li><strong>Data and environments:</strong> is the test data realistic, and is the environment close to production scale?</li>
+        <li><strong>Results:</strong> are the thresholds tied to real SLOs, and do results drive decisions?</li>
+        <li><strong>Integration:</strong> is it in CI/CD and owned by the squads, or run by hand by one person?</li>
+        <li><strong>Observability:</strong> can you link load results to app and infrastructure metrics?</li>
+      </ol>
+      <p>I spend the first one or two weeks understanding the current state before I recommend anything. I won't rip up something that works.</p>` },
+    { q: 'How do you report test results so stakeholders actually use them?', t: ['Reporting'], a: `
+      <p>One report per run that pulls everything together:</p>
+      <ul>
+        <li>From k6/InfluxDB: RPS curve, percentiles, error rate, a table per endpoint.</li>
+        <li>From APM: service flow, slowest methods, DB call counts.</li>
+        <li>From logs: error counts per service and the top errors.</li>
+        <li>From CI: pipeline, runner, branch and parameters. From the workload model: what we meant to test.</li>
+      </ul>
+      <p>Save it as a CI artifact and post it to Confluence. Stakeholders open one link and don't need logins to four tools. Engineers follow the linked dashboards to dig in. Making results easy to read drives adoption more than making tests easy to write.</p>` },
+    { q: 'What is coordinated omission?', t: ['Metrics', 'Tools'], a: `
+      <p>In a closed model, when the system stalls, the virtual users wait and send fewer requests. The slow period is therefore <em>under-sampled</em>, and the measured percentiles look better than what real users experienced.</p>
+      <p>To avoid it, use an arrival-rate (open) model so requests keep arriving at the planned rate. Watch for dropped iterations, and compare with server-side and real-user data. Also remember what client-side latency includes: DNS, TCP and TLS setup, the network round trip and the client's own processing.</p>` },
+    { q: 'How do you run load generators on Kubernetes?', t: ['CI/CD', 'Infrastructure'], a: `
+      <ul>
+        <li>A GitLab runner with the Kubernetes executor runs each job in a fresh pod, so the environment is clean every time.</li>
+        <li>Set <strong>requests</strong> (guaranteed) and <strong>limits</strong> (maximum) for CPU and memory, for example 8 CPU and 16 Gi, so the load generator has room.</li>
+        <li>Use <strong>tags</strong> and <strong>node selectors</strong> to pin load jobs to dedicated nodes, away from the system under test.</li>
+        <li>For more load, use the k6 Operator or split the load across pods with execution segments.</li>
+      </ul>
+      <p>Be honest about your role. If a platform team owns the Helm install and <code>config.toml</code>, say that you set the tags and resource limits from the pipeline side, and explain why each one matters.</p>` },
+    { q: 'Users report crashes in production. How do you approach it as a performance engineer?', t: ['Strategy', 'Analysis'], a: `
+      <ol>
+        <li>Read the logs, APM data and crash reports first. Is it server-side (5xx errors, out-of-memory, pod restarts) or client-side (JS errors, browser tab crashes)?</li>
+        <li>Reproduce server crashes with protocol-level load (k6 HTTP), not browser tests.</li>
+        <li>Run a <strong>stress test</strong> to find the breaking point, and a <strong>soak test</strong> if it crashes after running for a while.</li>
+        <li>Link the crash to resource metrics (heap, threads, connections) to find the root cause.</li>
+        <li>Fix, re-test with the same workload, and add the scenario to CI so it can't come back.</li>
+        <li>Use browser tests last, to check the user experience at a safe load.</li>
+      </ol>
+      <p>On the client side, a memory leak means the JavaScript heap keeps growing because objects such as detached DOM nodes or forgotten listeners stay referenced, until the browser kills the tab.</p>` },
+    { q: 'How do you validate auto-scaling and resilience?', t: ['Infrastructure', 'Strategy'], a: `
+      <ul>
+        <li><strong>Scale out:</strong> ramp up load and measure how long new pods take to become ready compared with how fast traffic rises. Slow start-up plus a sudden spike means errors before the new pods arrive.</li>
+        <li><strong>Scale in:</strong> make sure connections drain gracefully, with no errors when pods are removed.</li>
+        <li><strong>Limits:</strong> the HPA maximum, node capacity, and shared limits such as the DB that don't scale.</li>
+        <li><strong>Resilience:</strong> kill a pod, slow down a dependency, or fail an availability zone under load. Do timeouts, retries and circuit breakers protect the system, or do retries make the problem worse?</li>
+      </ul>` },
+    { q: 'How do SLOs and error budgets change performance testing?', t: ['Strategy'], a: `
+      <p>An <strong>SLO</strong> is a target such as "99.9% of requests under 500 ms over 30 days". The <strong>error budget</strong> is the 0.1% you are allowed to miss. Performance tests become a way to protect that budget: thresholds in CI match the SLOs, and a release that would use up too much of the budget is blocked.</p>
+      <p>It also changes the conversation with the business, from "is it fast?" to "how much risk are we willing to accept?"</p>` },
+    { q: 'How would you load test an AI or LLM-backed API?', t: ['AI', 'Strategy'], a: `
+      <p>LLM APIs behave differently from normal APIs. Each response is generated one token at a time, so response time depends on how long the output is.</p>
+      <ul>
+        <li>Measure <strong>time to first token</strong> (what users feel when streaming), <strong>tokens per second</strong> and total time, not just the HTTP duration.</li>
+        <li>Build the workload from a realistic mix of prompt and output lengths. Cost and latency scale with tokens.</li>
+        <li>Test the provider's rate limits (requests and tokens per minute), and how your app handles 429s and retries.</li>
+        <li>Watch the cost per test run. Use a mock or smaller model for most runs and the real model for a final check.</li>
+        <li>Check quality under load as well: timeouts and truncated responses count as failures.</li>
+      </ul>` },
+    { q: 'As a performance lead, how do you build and run a team?', t: ['Leadership'], a: `
+      <ul>
+        <li>Set clear goals with the business and measure progress against them.</li>
+        <li>Coach team members: pair on analysis, review scripts, rotate people through tools and domains.</li>
+        <li>Build on each person's strengths and plan around the gaps.</li>
+        <li>Move testing into the squads: shared frameworks and CI templates, with the performance team as experts and enablers rather than a gate at the end.</li>
+        <li>Resolve conflict with data: when dev and ops disagree on the cause, the trace and the metrics settle it.</li>
+      </ul>` },
+  ],
+  };
+
+  (() => {
+    const STORE = 'perf-prep-done';
+    const $ = id => document.getElementById(id);
+    let level = 'basic';
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem(STORE)) || {}; } catch { done = {}; }
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(done)); } catch {} };
+    const key = (lvl, i) => lvl + ':' + QA[lvl][i].q;
+
+    const fromHash = location.hash.slice(1);
+    if (QA[fromHash]) level = fromHash;
+
+    function render() {
+      const term = $('q').value.trim().toLowerCase();
+      const list = $('list');
+      list.textContent = '';
+      document.querySelectorAll('.level').forEach(b => b.setAttribute('aria-selected', b.dataset.level === level));
+      const items = QA[level];
+      let shown = 0;
+      items.forEach((item, i) => {
+        const text = (item.q + ' ' + item.a + ' ' + item.t.join(' ')).toLowerCase();
+        if (term && !text.includes(term)) return;
+        shown++;
+        const k = key(level, i);
+        const d = document.createElement('details');
+        d.className = 'qa' + (done[k] ? ' done' : '');
+        if (term) d.open = true;
+        d.innerHTML = `<summary><span class="num">Q${i + 1}</span><span></span></summary>
+          <div class="qa-body">${item.a}
+            <div class="qa-foot"><div class="topics">${item.t.map(t => `<span class="topic">${t}</span>`).join('')}</div>
+            <label class="mark"><input type="checkbox"> Practised</label></div></div>`;
+        d.querySelector('summary span:last-of-type').textContent = item.q;
+        const cb = d.querySelector('input');
+        cb.checked = !!done[k];
+        cb.addEventListener('change', () => {
+          if (cb.checked) done[k] = 1; else delete done[k];
+          d.classList.toggle('done', cb.checked);
+          save(); progress();
+        });
+        list.appendChild(d);
+      });
+      if (!shown) list.innerHTML = '<p class="empty">No questions match that search at this level. Try another level.</p>';
+      $('toggle-all').textContent = 'Expand all';
+      progress();
+    }
+
+    function progress() {
+      const n = QA[level].length;
+      const d = QA[level].filter((_, i) => done[key(level, i)]).length;
+      $('progress').textContent = `${n} questions · ${d} practised`;
+    }
+
+    document.querySelectorAll('.level').forEach(b => b.addEventListener('click', () => {
+      level = b.dataset.level;
+      history.replaceState(null, '', '#' + level);
+      render();
+    }));
+    $('q').addEventListener('input', render);
+    $('toggle-all').addEventListener('click', () => {
+      const all = [...document.querySelectorAll('.qa')];
+      const open = all.some(d => !d.open);
+      all.forEach(d => { d.open = open; });
+      $('toggle-all').textContent = open ? 'Collapse all' : 'Expand all';
+    });
+    $('year').textContent = new Date().getFullYear();
+    render();
+  })();
+  </script>
+</body>
+</html>
