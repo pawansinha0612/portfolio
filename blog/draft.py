@@ -37,9 +37,10 @@ SUMMARY = ROOT / 'blog' / '.draft-summary.md'  # pull request body, not committe
 
 BASE_URL = os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1'
 MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
-          'google/gemma-4-31b-it,mistralai/mistral-large-2-instruct').split(',') if m.strip()]
+          'google/gemma-4-31b-it,nvidia/nemotron-3-super-120b-a12b,openai/gpt-oss-20b').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
+unavailable = set()     # models the account can't use (HTTP 404); not tried again this run
 
 TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 
@@ -77,44 +78,73 @@ class ModelFailed(Exception):
     pass
 
 
+def read_stream(r, deadline):
+    """Collect the text of a streamed (server-sent events) chat reply."""
+    parts = []
+    for line in r:
+        if time.time() > deadline:
+            raise TimeoutError('took longer than 10 minutes')
+        line = line.decode(errors='replace').strip()
+        if not line.startswith('data:'):
+            continue
+        data = line[5:].strip()
+        if data == '[DONE]':
+            break
+        choices = json.loads(data).get('choices') or [{}]
+        parts.append((choices[0].get('delta') or {}).get('content') or '')
+    return ''.join(parts)
+
+
 def call_model(model, topic):
+    # Streamed, so a slow model keeps sending words instead of looking stuck and timing out.
     body = json.dumps({
         'model': model,
         'temperature': 0.7,
         'max_tokens': 4096,
+        'stream': True,
         'messages': [
             {'role': 'system', 'content': VOICE.read_text(encoding='utf-8')},
             {'role': 'user', 'content': FORMAT.format(topic=topic)},
         ],
     }).encode()
     req = urllib.request.Request(BASE_URL.rstrip('/') + '/chat/completions', data=body, headers={
-        'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json', 'Accept': 'application/json',
+        'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json',
+        'Accept': 'text/event-stream, application/json',
     })
-    for attempt in range(4):
+    for attempt in range(3):
+        status, ctype, raw = '?', '', ''
         try:
-            with urllib.request.urlopen(req, timeout=150) as r:
-                raw = r.read().decode(errors='replace')
+            with urllib.request.urlopen(req, timeout=120) as r:  # 120s is the longest gap allowed between words
                 status, ctype = r.status, r.headers.get('content-type', '')
-            return json.loads(raw)['choices'][0]['message']['content'] or ''
+                if 'event-stream' in ctype:
+                    text = read_stream(r, time.time() + 600)
+                else:  # some providers ignore "stream" and send the whole reply at once
+                    raw = r.read().decode(errors='replace')
+                    text = json.loads(raw)['choices'][0]['message']['content'] or ''
+            if not text.strip():
+                raise KeyError('empty reply')
+            return text
         except urllib.error.HTTPError as err:
             detail = err.read().decode(errors='replace')[:300]
             if err.code in (401, 403):
                 raise SystemExit(f'The AI service rejected the key (HTTP {err.code}). Check the AI_API_KEY secret. {detail}')
-            if err.code in (429, 500, 502, 503, 504) and attempt < 3:
+            if err.code == 404:
+                unavailable.add(model)
+            if err.code in (429, 500, 502, 503, 504) and attempt < 2:
                 wait = int(err.headers.get('retry-after') or 30 * (attempt + 1))
                 print(f'  HTTP {err.code}, waiting {wait}s')
                 time.sleep(wait)
                 continue
             raise ModelFailed(f'HTTP {err.code} {detail}')
-        except (json.JSONDecodeError, KeyError, IndexError, TypeError):
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError, AttributeError) as err:
             # The service answered, but not with a chat completion (empty body, HTML error page, etc.)
-            print(f'  unexpected reply: HTTP {status} {ctype!r}: {raw[:300]!r}')
-            if attempt < 3:
-                time.sleep(20 * (attempt + 1))
+            print(f'  unexpected reply ({err}): HTTP {status} {ctype!r}: {raw[:300]!r}')
+            if attempt < 2:
+                time.sleep(20)
                 continue
-            raise ModelFailed('no chat reply')
-        except (urllib.error.URLError, TimeoutError) as err:
-            if attempt < 1:  # a slow model rarely speeds up; move on to the next one quickly
+            raise ModelFailed(f'no usable reply ({err})')
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as err:
+            if attempt < 1:
                 print(f'  no answer from {model} ({err}), retrying once')
                 time.sleep(10)
                 continue
@@ -123,7 +153,7 @@ def call_model(model, topic):
 
 def ask_model(topic):
     global used_model
-    for model in [used_model] + [m for m in MODELS if m != used_model]:
+    for model in [m for m in dict.fromkeys([used_model] + MODELS) if m not in unavailable]:
         try:
             text = call_model(model, topic)
             used_model = model
