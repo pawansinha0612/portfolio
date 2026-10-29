@@ -37,7 +37,7 @@ SUMMARY = ROOT / 'blog' / '.draft-summary.md'  # pull request body, not committe
 
 BASE_URL = os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1'
 MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
-          'google/gemma-4-31b-it,mistralai/mistral-large-2-instruct,moonshotai/kimi-k2.6').split(',') if m.strip()]
+          'google/gemma-4-31b-it,mistralai/mistral-large-2-instruct').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
 
