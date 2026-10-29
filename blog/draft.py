@@ -130,6 +130,7 @@ def ask_model(topic):
             break
         except ModelFailed as err:
             print(f'  {model} failed ({err}); trying the next model')
+            print(f'::warning::{model} failed: {str(err)[:400]}')  # annotations are visible without opening the log
     else:
         raise ModelFailed(f'none of the models worked at {BASE_URL}: {", ".join(MODELS)}')
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.S)  # reasoning models may think out loud first
@@ -192,6 +193,7 @@ def main():
                 post = ask_model(topic)
         except (ModelFailed, ValueError, json.JSONDecodeError) as err:
             print(f'  skipped this topic ({err}); it stays in the queue for next time')
+            print(f'::warning::Skipped topic: {topic[:80]}')
             skipped.append(topic)
             continue
         path = write_post(post, date)
