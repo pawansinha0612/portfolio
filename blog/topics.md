@@ -6,13 +6,6 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 
 ## Queue
 
-- [x] Why p95 beats the average response time — averages hide slow users; worked example with numbers
-- [x] Load, stress, spike and soak tests explained — what each one finds, with a one-line rule for when to use it
-- [x] Mocking APIs in Playwright with page.route — test the UI when the backend is slow, broken or not built yet
-- [x] Using AI to write test cases: what works and what doesn't — prompts that help, where human review is essential
-- [x] Millicores vs CPU utilisation in Kubernetes — 1 CPU = 1000m; request vs limit vs node; why one pod can show 80%, 40% and 5%
-- [x] API testing checklist beyond status 200 — schema, negative cases, auth, idempotency, pagination, rate limits
-- [x] Testing on real mobile devices vs emulators — what emulators miss and a practical device-mix strategy
 - [ ] Bottleneck analysis as a method, not a guess — form a hypothesis, find the saturated resource with USE, prove it with one metric, fix, re-test and watch the bottleneck move
 - [ ] CDN performance beyond "it caches static files" — cache keys and Vary, TTL vs stale-while-revalidate, origin shield, hit ratio vs byte hit ratio, and why load tests that bypass the CDN mislead
 - [ ] Coordinated omission: why your load tool under-reports tail latency — closed-loop generators stall with the system; HdrHistogram correction, open-model arrival rates (k6 constant-arrival-rate, wrk2)
@@ -62,6 +55,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 
 ## Parked
 
+- Why p95 beats the average response time — averages hide slow users; worked example with numbers
+- Load, stress, spike and soak tests explained — what each one finds, with a one-line rule for when to use it
+- Mocking APIs in Playwright with page.route — test the UI when the backend is slow, broken or not built yet
+- Using AI to write test cases: what works and what doesn't — prompts that help, where human review is essential
+- Millicores vs CPU utilisation in Kubernetes — 1 CPU = 1000m; request vs limit vs node; why one pod can show 80%, 40% and 5%
+- API testing checklist beyond status 200 — schema, negative cases, auth, idempotency, pagination, rate limits
+- Testing on real mobile devices vs emulators — what emulators miss and a practical device-mix strategy
 - Your first k6 test in 15 minutes — script structure, checks vs thresholds, running it in CI
 - Flaky tests: finding the real cause — timing, test data, shared state, environment; fix vs quarantine
 - Contract testing explained simply — consumer-driven contracts and when they beat end-to-end tests
