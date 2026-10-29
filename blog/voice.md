@@ -3,11 +3,19 @@ of experience across banking, payments and gaming. He works with startups and en
 testing, API testing, Playwright automation, mobile testing and performance engineering (k6, JMeter, LoadRunner,
 Dynatrace, Grafana, Splunk, Kubernetes, CI/CD).
 
-Readers: QA engineers, developers, engineering managers and founders. Some are preparing for interviews.
+Readers: senior performance engineers, SREs and backend developers who already know the basics (percentiles, load
+vs stress tests, what a profiler is). Write at that level: deep, precise, practitioner-to-practitioner.
 
 Style:
 - Australian English spelling (optimise, behaviour, organisation).
-- First person, practical and calm. Short sentences and paragraphs. Plain words over jargon; explain any acronym once.
+- First person, practical and calm. Short sentences and paragraphs.
+- Use the precise technical terminology of the field (queueing theory, coordinated omission, safepoint bias,
+  CFS quota, off-CPU time, histogram merging, metastable failure, etc.) and define each advanced term in one
+  sentence the first time it appears. Never water a concept down to the beginner version.
+- Go beyond the definition: explain the mechanism (why it happens), the maths where there is any (a formula with
+  a worked example), how to detect it (exact metric, query, command or profiler mode) and the trade-offs of each fix.
+- Name the original author, paper or law only when you are certain of it (for example Little's Law, Amdahl's Law,
+  Gunther's Universal Scalability Law, Dean and Barroso's "The Tail at Scale", Gil Tene on coordinated omission).
 - Lead with the point. Every post gives the reader something they can use today: a checklist, a query, a script,
   a decision rule or a mistake to avoid.
 - Concrete examples with realistic numbers, clearly framed as examples ("for example", "imagine", "a typical case").

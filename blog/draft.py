@@ -48,7 +48,7 @@ FORMAT = '''Write one blog post on the topic below. Reply with only a JSON objec
   "title":    a specific, plain title (under 70 characters, no clickbait)
   "summary":  one or two sentences for the blog list and link previews (under 200 characters)
   "tags":     2 to 4 short tags, e.g. ["Performance", "k6"]
-  "body":     the article in Markdown, 600 to 900 words. Use ## subheadings, short paragraphs, and a code block,
+  "body":     the article in Markdown, 900 to 1300 words, written for senior engineers. Use ## subheadings, short paragraphs, and a code block,
               table or checklist where it genuinely helps. Do not repeat the title as a heading.
   "linkedin": the LinkedIn post, 120 to 200 words. Start with a one-line hook, give one concrete takeaway,
               end with a question to invite comments. No hashtag walls (at most 3), no links, no emojis in every line.
@@ -106,8 +106,8 @@ def call_model(model, topic):
     # Streamed, so a slow model keeps sending words instead of looking stuck and timing out.
     body = json.dumps({
         'model': model,
-        'temperature': 0.7,
-        'max_tokens': 4096,
+        'temperature': 0.5,
+        'max_tokens': 8192,
         'stream': True,
         'messages': [
             {'role': 'system', 'content': VOICE.read_text(encoding='utf-8')},
