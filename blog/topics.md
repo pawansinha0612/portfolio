@@ -5,13 +5,13 @@ Add new topics as `- [ ] Title idea — the angle or key point`. Reorder lines t
 
 ## Queue
 
-- [ ] Why p95 beats the average response time — averages hide slow users; worked example with numbers
-- [ ] Load, stress, spike and soak tests explained — what each one finds, with a one-line rule for when to use it
-- [ ] Mocking APIs in Playwright with page.route — test the UI when the backend is slow, broken or not built yet
-- [ ] Using AI to write test cases: what works and what doesn't — prompts that help, where human review is essential
-- [ ] Millicores vs CPU utilisation in Kubernetes — 1 CPU = 1000m; request vs limit vs node; why one pod can show 80%, 40% and 5%
-- [ ] API testing checklist beyond status 200 — schema, negative cases, auth, idempotency, pagination, rate limits
-- [ ] Testing on real mobile devices vs emulators — what emulators miss and a practical device-mix strategy
+- [x] Why p95 beats the average response time — averages hide slow users; worked example with numbers
+- [x] Load, stress, spike and soak tests explained — what each one finds, with a one-line rule for when to use it
+- [x] Mocking APIs in Playwright with page.route — test the UI when the backend is slow, broken or not built yet
+- [x] Using AI to write test cases: what works and what doesn't — prompts that help, where human review is essential
+- [x] Millicores vs CPU utilisation in Kubernetes — 1 CPU = 1000m; request vs limit vs node; why one pod can show 80%, 40% and 5%
+- [x] API testing checklist beyond status 200 — schema, negative cases, auth, idempotency, pagination, rate limits
+- [x] Testing on real mobile devices vs emulators — what emulators miss and a practical device-mix strategy
 - [ ] Little's Law for testers — sizing virtual users from target throughput and think time
 - [ ] Your first k6 test in 15 minutes — script structure, checks vs thresholds, running it in CI
 - [ ] Flaky tests: finding the real cause — timing, test data, shared state, environment; fix vs quarantine
