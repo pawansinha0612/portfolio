@@ -53,6 +53,13 @@ FORMAT = '''Write one blog post on the topic below. Reply with only a JSON objec
   "linkedin": the LinkedIn post, 120 to 200 words. Start with a one-line hook, give one concrete takeaway,
               end with a question to invite comments. No hashtag walls (at most 3), no links, no emojis in every line.
 
+Honesty rules (they matter more than style):
+- Never write as if the author personally did, saw or measured something ("in a recent test", "I caught",
+  "on my last project"). Use clearly hypothetical examples instead ("say a test sends 100 requests").
+- Never invent statistics, percentages of users, survey results, company names or quotes.
+- Every number in a worked example must add up; show the arithmetic.
+- Only use real tool APIs, options and commands. If unsure an option exists, leave it out.
+
 Topic: {topic}'''
 
 
@@ -114,7 +121,7 @@ def call_model(model, topic):
     for attempt in range(3):
         status, ctype, raw = '?', '', ''
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:  # 120s is the longest gap allowed between words
+            with urllib.request.urlopen(req, timeout=240) as r:  # longest wait for the first or next words
                 status, ctype = r.status, r.headers.get('content-type', '')
                 if 'event-stream' in ctype:
                     text = read_stream(r, time.time() + 600)
@@ -153,7 +160,7 @@ def call_model(model, topic):
 
 def ask_model(topic):
     global used_model
-    for model in [m for m in dict.fromkeys([used_model] + MODELS) if m not in unavailable]:
+    for model in [m for m in MODELS if m not in unavailable]:  # best model first, every topic
         try:
             text = call_model(model, topic)
             used_model = model
@@ -227,7 +234,7 @@ def main():
             skipped.append(topic)
             continue
         path = write_post(post, date)
-        made.append((date, post['title'], path.name))
+        made.append((date, post['title'], path.name, used_model))
         done.append((n, topic))
         date += dt.timedelta(days=1)
         if i < len(picked) - 1:
@@ -239,13 +246,13 @@ def main():
     remaining += len(skipped)
 
     skip_note = ('\n\nCould not draft (left in the queue): ' + '; '.join(skipped)) if skipped else ''
-    rows = '\n'.join(f'| {d.strftime("%a %d %b")} | {t} | `blog/posts/{n}` |' for d, t, n in made)
+    rows = '\n'.join(f'| {d.strftime("%a %d %b")} | {t} | `{m}` | `blog/posts/{n}` |' for d, t, n, m in made)
     low = f'\n\n⚠️ Only {remaining} topics left in `blog/topics.md`. Add more soon.' if remaining < 7 else ''
-    SUMMARY.write_text(f'''Drafted by `{used_model}`. Review each post, edit anything that isn't right, then **merge** to approve.
+    SUMMARY.write_text(f'''Drafted by AI. Check facts, numbers and code carefully (smaller backup models make more mistakes). Review each post, edit anything that isn't right, then **merge** to approve.
 Each post goes live on its date at about 8am Melbourne time and is shared on LinkedIn.
 
-| Publishes | Title | File |
-|---|---|---|
+| Publishes | Title | Model | File |
+|---|---|---|---|
 {rows}
 
 To skip a post, delete its file before merging. To change the date, edit `date:` in the file.{low}{skip_note}
