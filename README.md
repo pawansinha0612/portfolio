@@ -105,7 +105,7 @@ A post goes live on its `date` (Melbourne time), so approved posts come out one 
 - **Preview locally:** `pip install markdown && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing.
 - **Run now:** GitHub → Actions → choose the workflow → Run workflow.
 - **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API, e.g. NVIDIA).
-- **LinkedIn:** run `blog/linkedin_auth.py` every ~60 days; the publish job opens an issue a week before the token expires.
+- **LinkedIn:** every ~60 days run Actions → **LinkedIn token** (`.github/workflows/linkedin-token.yml`): once for the sign-in link, once with the code from `/linkedin-callback/`. It saves the token itself; the publish job opens an issue a week before expiry.
 
 ## Availability notifier
 

@@ -4,7 +4,7 @@ Posts at most one article per run: the newest published post from the last 3 day
 Shared posts are recorded in blog/linkedin-posted.json so nothing is posted twice.
 
 Environment (GitHub secrets/variables):
-    LINKEDIN_ACCESS_TOKEN    from blog/linkedin_auth.py (lasts 60 days). If empty, this script does nothing.
+    LINKEDIN_ACCESS_TOKEN    set by the "LinkedIn token" workflow (lasts 60 days). If empty, this script does nothing.
     LINKEDIN_AUTHOR          optional, urn:li:person:... (looked up from the token if empty)
     LINKEDIN_TOKEN_EXPIRES   optional, YYYY-MM-DD; a warning issue is opened 7 days before
     LINKEDIN_VERSION         optional, LinkedIn API version YYYYMM (default below)
@@ -54,7 +54,7 @@ def api(method, path, body=None, rest=True):
         detail = err.read().decode(errors='replace')[:500]
         if err.code == 401:
             output('token_problem', 'expired')
-            raise SystemExit('LinkedIn says the access token is invalid or expired. Run blog/linkedin_auth.py for a new one.')
+            raise SystemExit('LinkedIn says the access token is invalid or expired. Run the "LinkedIn token" workflow for a new one.')
         raise SystemExit(f'LinkedIn API error: HTTP {err.code} {detail}')
 
 
@@ -89,7 +89,7 @@ def check_expiry():
         return
     days = (dt.date.fromisoformat(exp) - today()).days
     if days <= 7:
-        print(f'::warning::The LinkedIn token expires in {days} day(s) ({exp}). Run blog/linkedin_auth.py.')
+        print(f'::warning::The LinkedIn token expires in {days} day(s) ({exp}). Run the "LinkedIn token" workflow.')
         output('token_problem', 'expiring')
 
 

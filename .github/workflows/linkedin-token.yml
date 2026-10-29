@@ -1,0 +1,50 @@
+# Connects (or reconnects, every ~60 days) LinkedIn for the daily blog, all from the browser.
+# Run it once with the code box empty to get the sign-in link, then again with the code from
+# https://pawansinha.com.au/linkedin-callback/. The new token is saved into this repo's secrets.
+#
+# Needs: variable LINKEDIN_CLIENT_ID, secrets LINKEDIN_CLIENT_SECRET and SECRETS_ADMIN_TOKEN
+# (a fine-grained personal access token for this repo with Secrets and Variables: read and write).
+name: LinkedIn token
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Code from the LinkedIn sign-in page (leave empty to get the sign-in link)'
+        required: false
+
+permissions:
+  issues: write
+
+jobs:
+  token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign-in link
+        if: inputs.code == ''
+        env:
+          LINKEDIN_CLIENT_ID: ${{ vars.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+        run: python3 blog/linkedin_auth.py --link
+
+      - name: Save the new token
+        if: inputs.code != ''
+        env:
+          LINKEDIN_CLIENT_ID: ${{ vars.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+          GH_TOKEN: ${{ secrets.SECRETS_ADMIN_TOKEN }}
+          CODE: ${{ inputs.code }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo '::error::Add the SECRETS_ADMIN_TOKEN secret first (see the top of this workflow).'; exit 1; fi
+          python3 blog/linkedin_auth.py --code "$CODE"
+
+      - name: Close the renewal reminder
+        if: inputs.code != '' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for n in $(gh issue list --state open --search 'Renew the LinkedIn token in:title' --json number --jq '.[].number'); do
+            gh issue close "$n" --comment 'Renewed by the LinkedIn token workflow.'
+          done

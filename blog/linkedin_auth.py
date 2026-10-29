@@ -1,35 +1,72 @@
-"""Get a LinkedIn access token for the blog's daily posting (run on your own computer, every ~60 days).
+"""Get a LinkedIn access token for the blog's daily posting. Needed once, then every ~60 days.
 
-1. In your LinkedIn developer app, under Auth, add this redirect URL:  http://localhost:8765/callback
-2. Run (Client ID and Client Secret are on the app's Auth tab):
-       LINKEDIN_CLIENT_ID=xxx LINKEDIN_CLIENT_SECRET=yyy python3 blog/linkedin_auth.py
-3. Sign in and approve in the browser window that opens.
-4. Copy the three values it prints into GitHub (Settings → Secrets and variables → Actions).
+Easiest (any computer or phone, nothing to install): GitHub → Actions → "LinkedIn token" → Run workflow
+with the code box empty, open the sign-in link it shows, approve, copy the code from the page you land on,
+then run the workflow again with that code. The workflow saves the new token into GitHub for you.
 
-Nothing is saved to disk. Uses only the Python standard library.
+On your own computer instead:
+    LINKEDIN_CLIENT_ID=xxx LINKEDIN_CLIENT_SECRET=yyy python3 blog/linkedin_auth.py
+It opens LinkedIn, waits for the approval on http://localhost:8765/callback and prints the values to add in
+GitHub (Settings → Secrets and variables → Actions).
+
+Both redirect URLs must be listed in the LinkedIn app (Auth tab):
+    https://pawansinha.com.au/linkedin-callback/
+    http://localhost:8765/callback
+
+Workflow modes (used by .github/workflows/linkedin-token.yml):
+    python3 blog/linkedin_auth.py --link            print the sign-in link
+    python3 blog/linkedin_auth.py --code CODE       exchange the code and save it to GitHub with the gh CLI
+
+Uses only the Python standard library.
 """
+import argparse
 import datetime as dt
 import http.server
 import json
 import os
 import secrets
+import subprocess
+import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
 
 CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '').strip()
 CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '').strip()
-REDIRECT = 'http://localhost:8765/callback'
+LOCAL_REDIRECT = 'http://localhost:8765/callback'
+WEB_REDIRECT = 'https://pawansinha.com.au/linkedin-callback/'
 SCOPES = 'openid profile w_member_social'
 
 
-def main():
-    if not CLIENT_ID or not CLIENT_SECRET:
-        raise SystemExit('Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET first (see the top of this file).')
-    state = secrets.token_urlsafe(16)
-    auth_url = 'https://www.linkedin.com/oauth/v2/authorization?' + urllib.parse.urlencode({
-        'response_type': 'code', 'client_id': CLIENT_ID, 'redirect_uri': REDIRECT, 'state': state, 'scope': SCOPES,
+def auth_url(redirect, state):
+    return 'https://www.linkedin.com/oauth/v2/authorization?' + urllib.parse.urlencode({
+        'response_type': 'code', 'client_id': CLIENT_ID, 'redirect_uri': redirect, 'state': state, 'scope': SCOPES,
     })
+
+
+def exchange(code, redirect):
+    """Swap a sign-in code for an access token; returns (token, expiry date, person URN, name)."""
+    body = urllib.parse.urlencode({
+        'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirect,
+        'client_id': CLIENT_ID, 'client_secret': CLIENT_SECRET,
+    }).encode()
+    try:
+        with urllib.request.urlopen(urllib.request.Request('https://www.linkedin.com/oauth/v2/accessToken', data=body)) as r:
+            token = json.load(r)
+    except urllib.error.HTTPError as err:
+        raise SystemExit(f'LinkedIn rejected the code (HTTP {err.code}): {err.read().decode(errors="replace")[:300]}\n'
+                         'Codes work once and expire after a few minutes. Get a fresh one and try again.')
+    access = token['access_token']
+    expires = dt.date.today() + dt.timedelta(seconds=int(token.get('expires_in', 0)))
+    req = urllib.request.Request('https://api.linkedin.com/v2/userinfo', headers={'Authorization': f'Bearer {access}'})
+    with urllib.request.urlopen(req) as r:
+        me = json.load(r)
+    return access, expires, f'urn:li:person:{me["sub"]}', me.get('name', '?')
+
+
+def local_flow():
+    state = secrets.token_urlsafe(16)
+    url = auth_url(LOCAL_REDIRECT, state)
     result = {}
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -44,8 +81,8 @@ def main():
         def log_message(self, *args):
             pass
 
-    print('Opening LinkedIn in your browser. If it does not open, visit:\n' + auth_url)
-    webbrowser.open(auth_url)
+    print('Opening LinkedIn in your browser. If it does not open, visit:\n' + url)
+    webbrowser.open(url)
     with http.server.HTTPServer(('localhost', 8765), Handler) as server:
         while 'code' not in result and 'error' not in result:
             server.handle_request()
@@ -55,28 +92,53 @@ def main():
     if result.get('state') != state:
         raise SystemExit('State mismatch; please run the script again.')
 
-    body = urllib.parse.urlencode({
-        'grant_type': 'authorization_code', 'code': result['code'], 'redirect_uri': REDIRECT,
-        'client_id': CLIENT_ID, 'client_secret': CLIENT_SECRET,
-    }).encode()
-    with urllib.request.urlopen(urllib.request.Request('https://www.linkedin.com/oauth/v2/accessToken', data=body)) as r:
-        token = json.load(r)
-    access = token['access_token']
-    expires = dt.date.today() + dt.timedelta(seconds=int(token.get('expires_in', 0)))
-
-    req = urllib.request.Request('https://api.linkedin.com/v2/userinfo', headers={'Authorization': f'Bearer {access}'})
-    with urllib.request.urlopen(req) as r:
-        me = json.load(r)
-
+    access, expires, author, name = exchange(result['code'], LOCAL_REDIRECT)
     print(f'''
-Signed in as {me.get("name", "?")}. Add these in GitHub → your portfolio repo → Settings → Secrets and variables → Actions:
+Signed in as {name}. Add these in GitHub → your portfolio repo → Settings → Secrets and variables → Actions:
 
   Secret    LINKEDIN_ACCESS_TOKEN   = {access}
-  Variable  LINKEDIN_AUTHOR         = urn:li:person:{me["sub"]}
+  Variable  LINKEDIN_AUTHOR         = {author}
   Variable  LINKEDIN_TOKEN_EXPIRES  = {expires.isoformat()}
 
 The token expires on {expires.strftime("%d %B %Y")}. GitHub will open an issue (and email you) a week before.
 ''')
+
+
+def save_to_github(code):
+    access, expires, author, name = exchange(code.strip(), WEB_REDIRECT)
+    print(f'::add-mask::{access}')
+    subprocess.run(['gh', 'secret', 'set', 'LINKEDIN_ACCESS_TOKEN'], input=access, text=True, check=True)
+    subprocess.run(['gh', 'variable', 'set', 'LINKEDIN_AUTHOR', '--body', author], check=True)
+    subprocess.run(['gh', 'variable', 'set', 'LINKEDIN_TOKEN_EXPIRES', '--body', expires.isoformat()], check=True)
+    return name, expires
+
+
+def summary(text):
+    print(text)
+    path = os.environ.get('GITHUB_STEP_SUMMARY')
+    if path:
+        with open(path, 'a') as f:
+            f.write(text + '\n')
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--link', action='store_true', help='print the sign-in link for the website callback')
+    ap.add_argument('--code', help='exchange this code and save the token to GitHub')
+    args = ap.parse_args()
+    if not CLIENT_ID or not CLIENT_SECRET:
+        raise SystemExit('Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET first (see the top of this file).')
+
+    if args.code:
+        name, expires = save_to_github(args.code)
+        summary(f'### ✅ LinkedIn connected\nSigned in as **{name}**. The token is saved and lasts until '
+                f'**{expires.strftime("%d %B %Y")}**. GitHub will remind you a week before.')
+    elif args.link:
+        summary(f'### Step 1 of 2: sign in to LinkedIn\n[**Open this link**]({auth_url(WEB_REDIRECT, "blog")}), '
+                'click **Allow**, then copy the code shown on the page you land on.\n\n'
+                '### Step 2 of 2\nRun this workflow again and paste the code into the box.')
+    else:
+        local_flow()
 
 
 if __name__ == '__main__':
