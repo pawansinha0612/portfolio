@@ -79,19 +79,30 @@ def ask_model(topic):
     }).encode()
     req = urllib.request.Request(BASE_URL.rstrip('/') + '/chat/completions', data=body, headers={
         'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json', 'Accept': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
     })
     for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=180) as r:
-                text = json.load(r)['choices'][0]['message']['content']
+                raw = r.read().decode(errors='replace')
+                status, ctype = r.status, r.headers.get('content-type', '')
+            text = json.loads(raw)['choices'][0]['message']['content']
             break
         except urllib.error.HTTPError as err:
-            if err.code == 429 and attempt < 3:
+            if err.code in (429, 500, 502, 503, 504) and attempt < 3:
                 wait = int(err.headers.get('retry-after') or 30 * (attempt + 1))
-                print(f'  rate limited, waiting {wait}s')
+                print(f'  HTTP {err.code}, waiting {wait}s')
                 time.sleep(wait)
                 continue
             raise SystemExit(f'AI request failed: HTTP {err.code} {err.read().decode(errors="replace")[:500]}')
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError):
+            # The service answered, but not with a chat completion (empty body, HTML error page, etc.)
+            print(f'  unexpected reply from {BASE_URL}: HTTP {status} {ctype!r}: {raw[:300]!r}')
+            if attempt < 3:
+                time.sleep(20 * (attempt + 1))
+                continue
+            raise SystemExit(f'The AI service at {BASE_URL} (model {MODEL}) did not return a chat reply. '
+                             'Check the model name, or set AI_MODEL / AI_BASE_URL to another provider.')
     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
     post = json.loads(text[text.index('{'):text.rindex('}') + 1])
     for key in ('title', 'summary', 'body', 'linkedin'):
