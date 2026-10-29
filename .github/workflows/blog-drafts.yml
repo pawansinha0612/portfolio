@@ -41,6 +41,7 @@ jobs:
           AI_BASE_URL: ${{ vars.AI_BASE_URL }}
           AI_MODEL: ${{ vars.AI_MODEL }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          PYTHONUNBUFFERED: '1'   # show progress in the log as it happens
         run: |
           pip install markdown
           python blog/draft.py --count "${{ inputs.count || '7' }}"
