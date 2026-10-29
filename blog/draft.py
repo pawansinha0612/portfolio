@@ -37,7 +37,7 @@ SUMMARY = ROOT / 'blog' / '.draft-summary.md'  # pull request body, not committe
 
 BASE_URL = os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1'
 MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
-          'moonshotai/kimi-k2.6,mistralai/mistral-large-2-instruct,google/gemma-4-31b-it').split(',') if m.strip()]
+          'google/gemma-4-31b-it,mistralai/mistral-large-2-instruct,moonshotai/kimi-k2.6').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
 
@@ -92,7 +92,7 @@ def call_model(model, topic):
     })
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with urllib.request.urlopen(req, timeout=150) as r:
                 raw = r.read().decode(errors='replace')
                 status, ctype = r.status, r.headers.get('content-type', '')
             return json.loads(raw)['choices'][0]['message']['content'] or ''
@@ -114,11 +114,11 @@ def call_model(model, topic):
                 continue
             raise ModelFailed('no chat reply')
         except (urllib.error.URLError, TimeoutError) as err:
-            if attempt < 3:
-                print(f'  network problem ({err}), retrying')
-                time.sleep(30)
+            if attempt < 1:  # a slow model rarely speeds up; move on to the next one quickly
+                print(f'  no answer from {model} ({err}), retrying once')
+                time.sleep(10)
                 continue
-            raise ModelFailed(str(err))
+            raise ModelFailed(f'too slow or unreachable: {err}')
 
 
 def ask_model(topic):
@@ -131,8 +131,7 @@ def ask_model(topic):
         except ModelFailed as err:
             print(f'  {model} failed ({err}); trying the next model')
     else:
-        raise SystemExit(f'None of the models worked at {BASE_URL}: {", ".join(MODELS)}. '
-                         'Pick current model IDs and set them in the AI_MODEL variable.')
+        raise ModelFailed(f'none of the models worked at {BASE_URL}: {", ".join(MODELS)}')
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.S)  # reasoning models may think out loud first
     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
     post = json.loads(text[text.index('{'):text.rindex('}') + 1])
@@ -182,21 +181,32 @@ def main():
         raise SystemExit('No unticked topics left in blog/topics.md. Add some "- [ ] topic" lines.')
 
     date = first_free_date()
-    made = []
-    for i, (_, topic) in enumerate(picked):
+    made, done, skipped = [], [], []
+    for i, (n, topic) in enumerate(picked):
         print(f'Drafting: {topic}')
         try:
-            post = ask_model(topic)
-        except (ValueError, json.JSONDecodeError) as err:  # one retry for a malformed reply
-            print(f'  bad reply ({err}), retrying once')
-            post = ask_model(topic)
+            try:
+                post = ask_model(topic)
+            except (ValueError, json.JSONDecodeError) as err:  # one retry for a malformed reply
+                print(f'  bad reply ({err}), retrying once')
+                post = ask_model(topic)
+        except (ModelFailed, ValueError, json.JSONDecodeError) as err:
+            print(f'  skipped this topic ({err}); it stays in the queue for next time')
+            skipped.append(topic)
+            continue
         path = write_post(post, date)
         made.append((date, post['title'], path.name))
+        done.append((n, topic))
         date += dt.timedelta(days=1)
         if i < len(picked) - 1:
             time.sleep(5)  # stay well inside the free rate limits
-    mark_done(lines, picked)
+    if not made:
+        raise SystemExit('No posts could be drafted. Check the messages above; to change models set the AI_MODEL '
+                         'variable (IDs: https://integrate.api.nvidia.com/v1/models).')
+    mark_done(lines, done)
+    remaining += len(skipped)
 
+    skip_note = ('\n\nCould not draft (left in the queue): ' + '; '.join(skipped)) if skipped else ''
     rows = '\n'.join(f'| {d.strftime("%a %d %b")} | {t} | `blog/posts/{n}` |' for d, t, n in made)
     low = f'\n\n⚠️ Only {remaining} topics left in `blog/topics.md`. Add more soon.' if remaining < 7 else ''
     SUMMARY.write_text(f'''Drafted by `{used_model}`. Review each post, edit anything that isn't right, then **merge** to approve.
@@ -206,7 +216,7 @@ Each post goes live on its date at about 8am Melbourne time and is shared on Lin
 |---|---|---|
 {rows}
 
-To skip a post, delete its file before merging. To change the date, edit `date:` in the file.{low}
+To skip a post, delete its file before merging. To change the date, edit `date:` in the file.{low}{skip_note}
 ''', encoding='utf-8')
     print(f'Drafted {len(made)} post(s); {remaining} topics left.')
 
