@@ -5,11 +5,14 @@ blog/build.py then publishes one a day on its scheduled date.
 
 Topics come from blog/topics.md (the first unticked "- [ ]" lines). The writing style comes from blog/voice.md.
 
-The model is any OpenAI-compatible chat API. Default: GitHub Models, free inside GitHub Actions with no key.
-To switch, set these (as repository variables/secrets):
-    AI_BASE_URL  e.g. https://integrate.api.nvidia.com/v1 (NVIDIA)
-    AI_MODEL     e.g. meta/llama-3.3-70b-instruct
-    AI_API_KEY   the provider's key (defaults to GITHUB_TOKEN for GitHub Models)
+The model is any OpenAI-compatible chat API. Default: NVIDIA's free hosted models (build.nvidia.com).
+(GitHub Models was the first choice but GitHub retired it on 30 July 2026.)
+Settings (repository variables/secrets):
+    AI_API_KEY   the provider's key (secret). For NVIDIA: build.nvidia.com → Get API Key (starts with nvapi-)
+    AI_BASE_URL  optional, default https://integrate.api.nvidia.com/v1
+                 e.g. Google Gemini: https://generativelanguage.googleapis.com/v1beta/openai
+    AI_MODEL     optional, comma-separated; each is tried in turn if the one before fails.
+                 Model IDs for NVIDIA: https://integrate.api.nvidia.com/v1/models
 
     python3 blog/draft.py --count 7
 """
@@ -32,9 +35,11 @@ TOPICS = ROOT / 'blog' / 'topics.md'
 VOICE = ROOT / 'blog' / 'voice.md'
 SUMMARY = ROOT / 'blog' / '.draft-summary.md'  # pull request body, not committed
 
-BASE_URL = os.environ.get('AI_BASE_URL') or 'https://models.github.ai/inference'
-MODEL = os.environ.get('AI_MODEL') or 'openai/gpt-4.1'
-API_KEY = os.environ.get('AI_API_KEY') or os.environ.get('GITHUB_TOKEN', '')
+BASE_URL = os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1'
+MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
+          'moonshotai/kimi-k2.6,mistralai/mistral-large-2-instruct,google/gemma-4-31b-it').split(',') if m.strip()]
+API_KEY = os.environ.get('AI_API_KEY', '').strip()
+used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
 
 TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 
@@ -68,10 +73,15 @@ def first_free_date():
     return max([today()] + dates) + dt.timedelta(days=1)
 
 
-def ask_model(topic):
+class ModelFailed(Exception):
+    pass
+
+
+def call_model(model, topic):
     body = json.dumps({
-        'model': MODEL,
+        'model': model,
         'temperature': 0.7,
+        'max_tokens': 4096,
         'messages': [
             {'role': 'system', 'content': VOICE.read_text(encoding='utf-8')},
             {'role': 'user', 'content': FORMAT.format(topic=topic)},
@@ -79,30 +89,51 @@ def ask_model(topic):
     }).encode()
     req = urllib.request.Request(BASE_URL.rstrip('/') + '/chat/completions', data=body, headers={
         'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json', 'Accept': 'application/json',
-        'X-GitHub-Api-Version': '2022-11-28',
     })
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(req, timeout=180) as r:
+            with urllib.request.urlopen(req, timeout=300) as r:
                 raw = r.read().decode(errors='replace')
                 status, ctype = r.status, r.headers.get('content-type', '')
-            text = json.loads(raw)['choices'][0]['message']['content']
-            break
+            return json.loads(raw)['choices'][0]['message']['content'] or ''
         except urllib.error.HTTPError as err:
+            detail = err.read().decode(errors='replace')[:300]
+            if err.code in (401, 403):
+                raise SystemExit(f'The AI service rejected the key (HTTP {err.code}). Check the AI_API_KEY secret. {detail}')
             if err.code in (429, 500, 502, 503, 504) and attempt < 3:
                 wait = int(err.headers.get('retry-after') or 30 * (attempt + 1))
                 print(f'  HTTP {err.code}, waiting {wait}s')
                 time.sleep(wait)
                 continue
-            raise SystemExit(f'AI request failed: HTTP {err.code} {err.read().decode(errors="replace")[:500]}')
+            raise ModelFailed(f'HTTP {err.code} {detail}')
         except (json.JSONDecodeError, KeyError, IndexError, TypeError):
             # The service answered, but not with a chat completion (empty body, HTML error page, etc.)
-            print(f'  unexpected reply from {BASE_URL}: HTTP {status} {ctype!r}: {raw[:300]!r}')
+            print(f'  unexpected reply: HTTP {status} {ctype!r}: {raw[:300]!r}')
             if attempt < 3:
                 time.sleep(20 * (attempt + 1))
                 continue
-            raise SystemExit(f'The AI service at {BASE_URL} (model {MODEL}) did not return a chat reply. '
-                             'Check the model name, or set AI_MODEL / AI_BASE_URL to another provider.')
+            raise ModelFailed('no chat reply')
+        except (urllib.error.URLError, TimeoutError) as err:
+            if attempt < 3:
+                print(f'  network problem ({err}), retrying')
+                time.sleep(30)
+                continue
+            raise ModelFailed(str(err))
+
+
+def ask_model(topic):
+    global used_model
+    for model in [used_model] + [m for m in MODELS if m != used_model]:
+        try:
+            text = call_model(model, topic)
+            used_model = model
+            break
+        except ModelFailed as err:
+            print(f'  {model} failed ({err}); trying the next model')
+    else:
+        raise SystemExit(f'None of the models worked at {BASE_URL}: {", ".join(MODELS)}. '
+                         'Pick current model IDs and set them in the AI_MODEL variable.')
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.S)  # reasoning models may think out loud first
     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
     post = json.loads(text[text.index('{'):text.rindex('}') + 1])
     for key in ('title', 'summary', 'body', 'linkedin'):
@@ -143,7 +174,7 @@ def main():
     ap.add_argument('--count', type=int, default=7)
     args = ap.parse_args()
     if not API_KEY:
-        raise SystemExit('No API key: run inside GitHub Actions (GITHUB_TOKEN) or set AI_API_KEY.')
+        raise SystemExit('No AI key: add the AI_API_KEY secret (free from build.nvidia.com → Get API Key).')
     POSTS.mkdir(parents=True, exist_ok=True)
 
     lines, picked, remaining = next_topics(args.count)
@@ -168,7 +199,7 @@ def main():
 
     rows = '\n'.join(f'| {d.strftime("%a %d %b")} | {t} | `blog/posts/{n}` |' for d, t, n in made)
     low = f'\n\n⚠️ Only {remaining} topics left in `blog/topics.md`. Add more soon.' if remaining < 7 else ''
-    SUMMARY.write_text(f'''Drafted by `{MODEL}`. Review each post, edit anything that isn't right, then **merge** to approve.
+    SUMMARY.write_text(f'''Drafted by `{used_model}`. Review each post, edit anything that isn't right, then **merge** to approve.
 Each post goes live on its date at about 8am Melbourne time and is shared on LinkedIn.
 
 | Publishes | Title | File |

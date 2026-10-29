@@ -96,7 +96,7 @@ A post goes live on its `date` (Melbourne time), so approved posts come out one 
 
 | When | What runs | What it does |
 |---|---|---|
-| Sunday ~9am | `.github/workflows/blog-drafts.yml` | Drafts the next 7 topics from `blog/topics.md` with GitHub Models (free, no key) in the style of `blog/voice.md`, and opens a pull request |
+| Sunday ~9am | `.github/workflows/blog-drafts.yml` | Drafts the next 7 topics from `blog/topics.md` with a free NVIDIA-hosted model (secret `AI_API_KEY` from build.nvidia.com; GitHub Models was retired 30 Jul 2026) in the style of `blog/voice.md`, and opens a pull request |
 | You | Review the pull request | Edit, delete or re-date drafts, then merge to approve |
 | Daily ~8am | `.github/workflows/blog-publish.yml` | Builds the blog, commits `docs/blog/`, then shares the newest post on LinkedIn |
 

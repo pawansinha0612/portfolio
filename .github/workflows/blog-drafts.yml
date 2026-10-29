@@ -1,4 +1,4 @@
-# Every week, drafts the next 7 blog posts with a free AI model (GitHub Models) and opens a pull request.
+# Every week, drafts the next 7 blog posts with a free AI model (NVIDIA's hosted models; key in the AI_API_KEY secret) and opens a pull request.
 # Review and edit the drafts, then merge: each post publishes on its own date (see blog-publish.yml).
 name: Blog drafts
 
@@ -14,7 +14,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  models: read
 
 jobs:
   draft:
@@ -39,7 +38,6 @@ jobs:
       - name: Draft posts
         if: steps.pending.outputs.open == '0'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
           AI_BASE_URL: ${{ vars.AI_BASE_URL }}
           AI_MODEL: ${{ vars.AI_MODEL }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
