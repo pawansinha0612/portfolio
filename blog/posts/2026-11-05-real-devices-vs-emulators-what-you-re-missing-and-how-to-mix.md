@@ -1,59 +1,75 @@
 ---
-title: Real Devices vs Emulators: What You’re Missing and How to Mix Them
+title: Real devices vs emulators: what you miss and how to mix them
 date: 2026-11-05
-summary: Learn the gaps emulators leave in mobile testing and a device‑mix strategy you can start using today.
-tags: Testing, Mobile, Device
+summary: Emulators are fast and cheap, but they miss real hardware, networks, interruptions and OEM quirks. A practical way to split testing between the two.
+tags: Mobile testing, Test strategy
 linkedin: |
-  Do you think your mobile tests are thorough just because they run on emulators? The key is to include a small, representative device mix that covers OS versions, hardware tiers and network types. If you only test on emulators, you’ll miss real‑world crashes, performance drops and permission failures that show up on actual phones. Start with a core set of high‑end and mid‑range devices for each major OS, add a legacy device for older users, and rotate network conditions. What device mix strategy has worked best for your team?
+  Emulators and simulators are brilliant for fast feedback. They're also very good at hiding the bugs your users will actually hit.
+
+  What they miss: real CPU and GPU performance on cheaper phones, thermal throttling, real camera, biometrics and Bluetooth, flaky mobile networks, interruptions like calls and notifications, and manufacturers' own tweaks to Android, such as aggressive battery savers that kill background work.
+
+  A practical split: run most automated tests on emulators in CI for speed, run a smoke suite on a small set of real devices before release, and choose those devices from your analytics, not from what's on the team's desks.
+
+  Include at least one low-end Android phone. It's usually where the performance bugs live.
+
+  How do you choose which real devices to test on?
 ---
-Real devices give the only way to see how your app behaves in the real world. Emulators help you check logic, but they hide a lot of subtle bugs. Below is a quick audit of what emulators miss and a device‑mix strategy you can use straight away.
+Emulators (Android) and simulators (iOS) make mobile testing fast: no hardware to manage, quick resets, easy to run in CI. But your users don't run your app on an emulator. Here's what emulators miss, and a practical way to mix them with real devices.
 
-Why Emulators Fall Short
+## What emulators and simulators miss
 
-Emulators run on your laptop and mimic an OS, but they cannot reproduce hardware quirks. For example, a phone with a low‑end GPU will drop frames at 30 fps, while an emulator shows 60 fps. Battery behaviour, thermal throttling and background‑process limits are also invisible.
+**Real performance.** An emulator runs on a powerful laptop or CI machine. A budget Android phone has a much slower CPU and GPU and less memory. Scrolling that's smooth on an emulator can stutter on a real low-end device, and the operating system may kill your app in the background when memory runs low.
 
-What Real Devices Add
+**Heat and battery.** Real phones slow down when they get hot and limit background work when the battery is low or battery saver is on. Emulators don't.
 
-A real device will show you network latency, packet loss and the behaviour of Wi‑Fi versus mobile data. It will surface storage limits, local‑storage quotas and how the OS handles app suspension. If your app uses fingerprint or face‑ID, only a real device can exercise that flow.
+**Manufacturer differences.** Samsung, Xiaomi, Oppo and others modify Android. Some are aggressive about stopping background tasks, which can break notifications, uploads and alarms. An emulator runs stock Android.
 
-Performance and UX
+**Hardware features.** Camera, real GPS movement, Bluetooth, NFC, fingerprint and face unlock, and sensors can only be partly simulated. Payment flows using NFC or biometrics need real hardware.
 
-UI responsiveness is affected by the actual rendering pipeline. Emulators often tap into a host GPU that is faster than the one in the phone. This means a button that feels instant on an emulator may lag on a device with a 120 Hz display.
+**Real networks.** Emulators can throttle bandwidth, but they don't reproduce a train going through a tunnel, a switch from Wi-Fi to mobile data mid-request, or a captive portal on public Wi-Fi.
 
-Security and Permissions
+**Interruptions.** Incoming calls, notifications, permission prompts mid-flow, low-storage warnings, and the app being backgrounded and restored. These cause a surprising number of real crashes.
 
-Real devices enforce permission prompts, sandbox boundaries and OS‑level encryption. Emulators may allow you to grant all permissions automatically, masking failures that only appear when the user denies a request.
+## What emulators are great for
 
-A Practical Device‑Mix Strategy
+- Fast feedback on every pull request.
+- Functional and UI logic tests across many screen sizes and OS versions.
+- Easy resets to a clean state, and parallel runs.
+- Early development, before features are stable enough to justify real-device time.
 
-Start with a core set of devices that cover the most common combinations of OS, screen size and network. The table below shows a simple mix you can adopt.
+The goal isn't to choose one. It's to use each for what it does well.
 
-```
-| Category          | Devices (example)                          | Rationale                          |
-|-------------------|--------------------------------------------|------------------------------------|
-| Core Android      | Pixel 6 (Android 13), Samsung Galaxy S22  | Latest OS, high‑end hardware       |
-| Legacy Android    | Google Nexus 5 (Android 9), OnePlus 6      | Popular mid‑range, older OS       |
-| Core iOS          | iPhone 14, iPhone SE (iOS 17)              | Latest OS, varied screen density  |
-| Legacy iOS       | iPhone 8 (iOS 14), iPhone XR (iOS 15)     | Still in use by 30 % of users       |
-| Network Mix      | 4G, 5G, Wi‑Fi, LTE‑Advanced                | Different latencies and loss rates |
-```
+## A practical device mix
 
-Device‑mix checklist
+Choose real devices from **your own analytics** (Google Play Console, App Store Connect, or your analytics tool), not from guesses. A starting point:
 
-Add a checklist to your sprint board:
-- [ ] Identify the top 5 OS versions in use across your user base.
-- [ ] Select one high‑end and one mid‑range device per OS.
-- [ ] Include at least one device that runs a different network type.
-- [ ] Rotate devices every sprint to surface new regressions.
+| Slot | What to pick | Why |
+|---|---|---|
+| Popular Android | The most-used Android model among your users | Covers the biggest group |
+| Low-end Android | An inexpensive phone with limited RAM | Finds performance and memory issues |
+| Other manufacturer | A popular non-Samsung, non-Pixel brand in your market | Finds OEM battery and background quirks |
+| Oldest supported Android | Your minimum supported OS version | Finds API and compatibility issues |
+| Current iPhone | Recent model on the latest iOS | Covers most iOS users |
+| Older or small iPhone | Oldest iOS version you support, small screen | Layout and compatibility |
 
-Integrating into CI/CD
+That's six devices, which is enough to catch most real-device-only bugs for many apps. Revisit the list every few months as your users' devices change.
 
-You can run quick UI tests on emulators for speed, but push a subset of smoke tests to a device farm. Use a cloud provider that gives you the mix you need. For example, a 10‑hour build can run 50 test cases on emulators and 5 on real devices. The key is to keep the device‑run time short enough to avoid delays, yet long enough to catch the bugs that matter.
+## How to split the testing
 
-Avoiding the “Emulator Only” trap
+1. **Every pull request:** automated tests on emulators and simulators in CI.
+2. **Daily or before release:** a smoke suite of critical journeys (sign-in, the main flow, payment) on real devices, either your own or a cloud device farm such as BrowserStack, Sauce Labs or AWS Device Farm.
+3. **Before major releases:** exploratory testing on real devices, with poor network conditions, interruptions and low battery.
+4. **After release:** watch crash reporting (for example Firebase Crashlytics) by device model and OS. It shows which devices to add to your mix.
 
-When you rely solely on emulators, you may miss crashes caused by low memory, overheating or background‑task limits. A quick sanity check is to trigger a low‑memory warning on a real device and observe the app’s response. If the app still crashes only on a device, you’ve found a gap.
+## Quick checklist for real-device sessions
 
-Conclusion
+- [ ] Test on the slowest device in your mix, not just the newest.
+- [ ] Switch between Wi-Fi and mobile data during a key action.
+- [ ] Background the app mid-flow and come back after a few minutes.
+- [ ] Deny a permission, then grant it later from Settings.
+- [ ] Turn on battery saver and check notifications and background tasks.
+- [ ] Rotate the screen and change the font size.
 
-Emulators are still invaluable for early development and quick feedback loops. But real devices are essential for catching the behaviour that only manifests in the wild. By adopting a small, representative device mix you can keep test coverage high without inflating costs or cycle time.
+## Takeaway
+
+Run most of your automation on emulators for speed, and keep a small, data-driven set of real devices for the bugs that only real hardware, networks and users reveal. Always include a low-end Android phone.

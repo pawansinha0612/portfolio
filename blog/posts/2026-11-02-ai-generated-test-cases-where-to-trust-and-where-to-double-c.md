@@ -1,17 +1,21 @@
 ---
-title: AI‑Generated Test Cases: Where to Trust and Where to Double‑Check
+title: Using AI to write test cases: where to trust it and where to check
 date: 2026-11-02
-summary: Discover which AI prompts yield reliable test cases and why human review is still essential. A practical guide for QA teams to use AI effectively.
-tags: QA, AI, Test Automation
+summary: AI drafts test cases fast, but it only knows what you tell it. Prompts that work, what it gets wrong, and a review checklist.
+tags: AI, QA, Test design
 linkedin: |
-  AI can write a test case in seconds, but does it get it right? 
-  In my experience, a clear prompt like “Write a functional test for POST /orders with {customerId, items} and 201 success” produces usable skeletons. 
-  The trick is to remember that AI can’t infer business logic it isn’t told. That’s why I always run a quick checklist: data types, edge cases, status codes, and compliance flags. 
-  If the test touches a rule or a state, I bring it back to the team for a deeper look. 
-  When you’ve used AI for test creation, what’s the one thing that still needs a human hand?
+  AI can write twenty test cases in the time it takes to write one. The catch: it only knows what you put in the prompt.
+
+  Give it the endpoint, the fields, the validation rules and the expected status codes, and you get a useful first draft of positive, negative and boundary cases.
+
+  Leave out the business rules, and it will confidently invent them.
+
+  A simple rule for review: if a test checks *what* the system does (fields, formats, status codes), a quick check is usually enough. If it checks *why* (a business rule, a calculation, a state change), a person who knows the domain has to review it.
+
+  Where has AI helped your test design the most, and where has it got things wrong?
 ---
 ## Why use AI to write test cases?
-I’ve seen teams hand‑craft thousands of test cases each sprint. AI can draft a first version quickly, saving time on boilerplate. It’s not a replacement; it’s another tool in the kit.
+Writing test cases is often repetitive: the same positive, negative and boundary patterns applied to field after field. AI can draft that first version quickly. It's not a replacement for test design, but it is a useful drafting tool.
 
 ## What AI can do well
 AI excels at
@@ -22,7 +26,7 @@ AI excels at
 When the prompt is specific, the output is often usable right away.
 
 ## What AI struggles with
-1. **Business logic that isn’t in the prompt** – AI has no memory of your domain rules.
+1. **Business logic that isn't in the prompt.** It doesn't know your domain rules, and it may invent plausible-looking ones.
 2. **Contextual dependencies** – tests that depend on previous steps or data states.
 3. **Regulatory or compliance checks** – you must verify that the test meets legal standards.
 
@@ -57,8 +61,9 @@ Any missing detail invites guesswork.
 | Test description is clear | Easy to maintain | Read aloud to a teammate |
 | No duplicate steps | Avoids wasted effort | Compare with existing test suite |
 | Compliance fields are included | Meets legal standards | Consult the compliance checklist |
-|
-If any row flags a red flag, bring it back to the team.
+| No invented rules or limits | AI fills gaps with guesses | Trace each expected result to a requirement |
+
+If any row raises a concern, bring the test back to the team.
 
 ## When to trust the AI output
 * Simple CRUD operations where the schema is static.
@@ -94,7 +99,7 @@ The AI will likely generate a payload and steps, but it will not know the actual
 ## Decision rule for acceptance
 1. **Does the test cover a technical requirement only?** – Accept after syntax check.
 2. **Does the test involve a business rule or state?** – Review and adjust.
-3. **Is the test data realistic?** – Validate against production or staging data.
+3. **Is the test data realistic?** – Check it against the spec and your test environment data. Never paste real customer data into an AI tool.
 4. **Does the test meet compliance?** – Flag for compliance team.
 
 Follow this flow in a pull‑request review or a dedicated test‑case audit.

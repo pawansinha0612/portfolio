@@ -1,80 +1,112 @@
 ---
-title: Load, Stress, Spike and Soak Tests: What They Reveal
+title: Load, stress, spike and soak tests: what each one finds
 date: 2026-10-31
-summary: Learn the purpose of load, stress, spike and soak tests, and a quick rule for when to use each. Apply these checks to keep your services stable.
-tags: Testing, Performance, LoadTesting
+summary: Four performance test types, four different questions. What each one finds, a one-line rule for when to use it, and a k6 example.
+tags: Performance, Load testing, k6
 linkedin: |
-  Today I wanted to cut through the jargon around performance testing. The simple rule: pick the test that matches the risk you care about – normal load, extreme limits, sudden bursts, or long‑term endurance. For example, a banking app under 10 000 concurrent users is a load test; a flash sale on an e‑commerce site is a spike test. Which type of test do you run first in your projects?
+  "We ran a performance test" doesn't say much. Which one?
+
+  Load test: can we handle the traffic we expect?
+  Stress test: where do we break, and how badly?
+  Spike test: what happens when traffic jumps suddenly?
+  Soak test: does anything degrade over hours?
+
+  Each one finds different problems. A load test won't find a memory leak that takes six hours to appear. A soak test won't tell you what happens when a marketing email lands and traffic triples in a minute.
+
+  A simple rule: load test every release, spike test anything with a known event or launch, soak test before big releases and after memory-related changes, and stress test to know your real capacity and how the system fails.
+
+  Which of the four gets skipped most often on your projects?
 ---
-## Quick Takeaway
-I test four main types of performance tests. Each one finds a different flaw and I use a one‑line rule to decide which to run.
+"We did performance testing" can mean very different things. Load, stress, spike and soak tests each ask a different question, and each finds problems the others miss. Here's what each one is for, with a one-line rule for when to use it.
 
-## Load Testing
-A load test simulates a normal, expected number of users or transactions over a period of time. It answers the question: *Will the system handle the anticipated traffic without crashing?*
+## Load test: can we handle normal peak traffic?
 
-**Rule of thumb:** Run a load test when you need to verify that the system meets the agreed‑upon performance targets for a typical user load.
+A load test runs the system at the traffic you expect at your busiest normal time, for long enough to see stable behaviour (often 30–60 minutes at steady state).
 
-Example: A banking app expects 10 000 concurrent users during peak hours. I run a load test with 10 000 virtual users for 30 minutes to confirm response times stay below the target of 2 seconds.
+**What it finds:** response times and error rates against your targets, and resource use (CPU, memory, connections) at realistic volume.
 
-## Stress Testing
-Stress testing pushes the system beyond its normal operational capacity until it fails. It shows where the breaking point is, how the system recovers, and whether it fails gracefully.
+**Rule:** run it for every significant release, against the expected peak plus some headroom.
 
-**Rule of thumb:** Use a stress test when you want to discover the upper limits of your infrastructure and the behaviour under extreme load.
+Example: an online store expects 2,000 concurrent users at its evening peak. The load test ramps to 2,000 users, holds for 45 minutes and checks that p95 stays under 1 second with an error rate under 1%.
 
-Example: I ramp up the previous banking app to 25 000 users until the API rate‑limits kick in or latency spikes beyond 5 seconds, then analyse the failure points.
+## Stress test: where and how do we break?
 
-## Spike Testing
-A spike test injects a sudden, short‑lived surge in traffic. It checks if the system can handle abrupt spikes without a crash.
+A stress test keeps increasing load beyond the expected peak until something gives: response times climb, errors appear, or a resource runs out.
 
-**Rule of thumb:** Perform a spike test when your service is likely to receive unexpected traffic bursts, such as a flash sale or a news event.
+**What it finds:** your real capacity, the first bottleneck (database connections, thread pools, CPU, a downstream service), and whether the system fails gracefully (clear errors, recovery afterwards) or badly (timeouts everywhere, no recovery).
 
-Example: A gaming platform might see a 50 % jump in concurrent users for 2 minutes during a live event. I simulate that spike to see if the servers hold up.
+**Rule:** run it when you need to know your capacity and failure behaviour, for example before a launch or when planning infrastructure.
 
-## Soak Testing
-Also called endurance testing, a soak test runs the system under a moderate load for an extended period (hours or days). It looks for memory leaks, resource exhaustion, or performance drift.
+## Spike test: what happens when traffic jumps suddenly?
 
-**Rule of thumb:** Use a soak test when you need to confirm long‑term stability under sustained usage.
+A spike test takes the system from normal load to a much higher load within seconds or a minute, holds briefly, then drops back.
 
-Example: I keep the banking app at 5 000 users for 48 hours to watch for memory growth or slow‑down.
+**What it finds:** whether auto-scaling reacts fast enough, how queues and connection pools behave under a sudden surge, and whether the system recovers once the spike passes.
 
-## Quick Comparison Table
-| Test Type | Typical Scenario | What It Finds | Rule of Thumb |
-|-----------|------------------|---------------|---------------|
-| Load | Expected peak traffic | Meets performance targets | Verify normal load performance |
-| Stress | Unknown limits | Upper limit, failure mode | Discover breaking points |
-| Spike | Sudden traffic surge | Graceful handling of bursts | Test for abrupt spikes |
-| Soak | Long‑term operations | Memory leaks, resource drift | Confirm endurance |
+**Rule:** run it when traffic can jump quickly, such as a ticket release, a sale, a push notification or a TV mention.
 
-## Simple k6 Script
-Below is a minimal k6 script that you can tweak for a load test. It runs 10 000 virtual users for 30 minutes.
+## Soak test: does anything degrade over time?
+
+A soak (endurance) test runs a moderate, realistic load for hours, sometimes overnight or longer.
+
+**What it finds:** memory leaks, connection leaks, growing queues, disks filling with logs, and slowdowns that only appear after hours of running.
+
+**Rule:** run it before major releases and after changes to caching, connection handling or memory-heavy code.
+
+## Quick comparison
+
+| Test | Load shape | Main question | Typical finding |
+|---|---|---|---|
+| Load | Ramp to expected peak, hold | Do we meet targets at normal peak? | Slow transactions, high resource use |
+| Stress | Keep increasing past peak | Where is the limit and how do we fail? | First bottleneck, poor failure handling |
+| Spike | Sudden jump, short hold, drop | Do we survive surges and recover? | Slow scaling, exhausted pools |
+| Soak | Moderate load for hours | Does anything degrade over time? | Memory and connection leaks |
+
+## The same idea in k6
+
+The test type is mostly about the shape of the load. In k6 that's the `stages` option. A load test:
+
 ```javascript
 import http from 'k6/http';
 import { sleep } from 'k6';
-export let options = {
+
+export const options = {
   stages: [
-    { duration: '5m', target: 10000 }, // ramp up
-    { duration: '20m', target: 10000 }, // steady state
-    { duration: '5m', target: 0 }      // ramp down
+    { duration: '10m', target: 2000 }, // ramp up
+    { duration: '45m', target: 2000 }, // steady state
+    { duration: '5m', target: 0 },     // ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'] // 95% under 2s
-  }
+    http_req_duration: ['p(95)<1000'],
+    http_req_failed: ['rate<0.01'],
+  },
 };
 
 export default function () {
-  http.get('https://example.com/api');
+  http.get('https://test.example.com/products');
   sleep(1);
 }
 ```
-Adjust the `stages` and `thresholds` to match your target load and performance goals.
 
-## Checklist for Choosing the Right Test
-- [ ] Do you need to confirm that everyday traffic works? → Load test.
-- [ ] Do you need to know the system’s limit or how it fails? → Stress test.
-- [ ] Will traffic ever spike suddenly? → Spike test.
-- [ ] Do you care about long‑term stability? → Soak test.
+For a spike test, change the stages to something like:
 
-## Putting It All Together
-In practice, I run a small load test first. If it passes, I add a spike test to mimic real‑world bursts. If the system behaves correctly, I run a soak test to ensure no leaks appear over time. Only if a problem surfaces do I push to a stress test to see how far the system can go.
+```javascript
+stages: [
+  { duration: '5m', target: 500 },   // normal load
+  { duration: '30s', target: 5000 }, // sudden spike
+  { duration: '5m', target: 5000 },  // hold
+  { duration: '30s', target: 500 },  // back to normal
+  { duration: '5m', target: 500 },   // check recovery
+],
+```
 
-By following these one‑line rules, you can pick the right test quickly and keep your services reliable without over‑engineering your test plan.
+A soak test holds a moderate target for hours. A stress test keeps adding stages with higher targets until thresholds fail.
+
+## A sensible order
+
+1. **Load test** first. If you don't meet targets at normal peak, nothing else matters yet.
+2. **Stress test** to find your capacity and the first bottleneck.
+3. **Spike test** if your traffic can surge.
+4. **Soak test** before big releases, ideally overnight.
+
+Whatever the type, monitor the servers and dependencies during the run, not just the response times. The test tells you something is wrong; the monitoring tells you why.
