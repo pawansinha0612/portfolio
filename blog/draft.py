@@ -40,7 +40,7 @@ MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
           'google/gemma-4-31b-it,nvidia/nemotron-3-super-120b-a12b,openai/gpt-oss-20b').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
-unavailable = set()     # models the account can't use (HTTP 404); not tried again this run
+unavailable = set()     # models that 404 or time out; not tried again this run
 
 TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 
@@ -151,10 +151,7 @@ def call_model(model, topic):
                 continue
             raise ModelFailed(f'no usable reply ({err})')
         except (urllib.error.URLError, TimeoutError, ConnectionError) as err:
-            if attempt < 1:
-                print(f'  no answer from {model} ({err}), retrying once')
-                time.sleep(10)
-                continue
+            unavailable.add(model)  # one timeout costs minutes; don't spend them again on every topic
             raise ModelFailed(f'too slow or unreachable: {err}')
 
 
