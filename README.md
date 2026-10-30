@@ -103,10 +103,15 @@ Anything still holding a `[placeholder]` is hidden automatically, so unfinished 
 
 **Menu and footer.** Every public page has the same top menu (Services, Work, Resources, Blog, Hire me) and the same
 footer. They are copied into `docs/index.html`, `docs/tools/index.html`, `docs/interview-prep/performance-testing/index.html`,
-`docs/projects/deal-finder/index.html` and the blog template in `blog/build.py`. To add or rename a menu item, change it in
-all five. Keep the top menu to five items; new pages go in the footer columns or the home page's Resources section.
+`docs/projects/deal-finder/index.html`, the blog template in `blog/build.py` and the service-page template in
+`services/build.py`. To add or rename a menu item, change it in all six. Keep the top menu to five items; new pages go in the footer columns or the home page's Resources section.
 On phones the menu folds into the ☰ button (`docs/menu.js`). Long pages put their own jump links in the row of pills
 under the menu (`<nav class="subnav">`), not in the top menu.
+
+**Service pages.** Each service card on the home page opens `/services/<name>/`: what I do, the experience behind it,
+how we'd work, FAQs, and three ways to get in touch (free call, project brief, interview invite). The pages are built from
+the data in `services/build.py`: edit it, run `python3 services/build.py`, commit `docs/services/`. Only put real work
+there; add new projects to a service's `highlights` as you finish them.
 
 **Animations** are in `main.js` and the "Motion" sections of `styles.css`: word reveals, smooth scrolling
 ([Lenis](https://github.com/darkroomengineering/lenis)), marquees, scroll-filled statement, pinned process steps, cursor effects.

@@ -309,11 +309,14 @@ def feed(posts):
       <pubDate>{format_datetime(dt.datetime.combine(p["date"], dt.time(8), TZ))}</pubDate>
       <description>{e(p["summary"])}</description>
     </item>''' for p in posts[:30])
+    # feed.xsl makes the feed readable when someone opens it in a browser instead of a feed reader.
     return f'''<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<?xml-stylesheet type="text/xsl" href="/blog/feed.xsl"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Pawan Sinha — Blog</title>
     <link>{SITE}/blog/</link>
+    <atom:link href="{SITE}/blog/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
 {items}
