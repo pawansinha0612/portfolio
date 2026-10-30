@@ -45,11 +45,12 @@ unavailable = set()     # models that 404 or time out; not tried again this run
 TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 
 FORMAT = '''Write one blog post on the topic below. Reply with only a JSON object, no code fences, with these keys:
-  "title":    a specific, plain title (under 70 characters, no clickbait)
+  "title":    a catchy, problem-led title (under 70 characters) that the article pays off
   "summary":  one or two sentences for the blog list and link previews (under 200 characters)
   "tags":     2 to 4 short tags, e.g. ["Performance", "k6"]
   "body":     the article in Markdown, 900 to 1300 words, written for senior engineers. Use ## subheadings, short paragraphs, and a code block,
               table or checklist where it genuinely helps. Do not repeat the title as a heading.
+              Open with a 2-4 sentence hypothetical scenario where something goes wrong, then explain.
   "linkedin": the LinkedIn post, 120 to 200 words. Start with a one-line hook, give one concrete takeaway,
               end with a question to invite comments. No hashtag walls (at most 3), no links, no emojis in every line.
 
