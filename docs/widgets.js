@@ -11,7 +11,7 @@
 .widget .w-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px;margin-bottom:14px}\
 .widget label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}\
 .widget .w-row{display:flex;justify-content:space-between;gap:8px}\
-.widget .w-row b{color:var(--text);font-variant-numeric:tabular-nums}\
+.widget .w-row b{color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}\
 .widget input[type=range]{width:100%;accent-color:var(--accent)}\
 .widget input[type=number]{width:100%;box-sizing:border-box;font:inherit;color:var(--text);background:var(--alt);border:1px solid var(--border);border-radius:8px;padding:6px 8px}\
 .widget label.w-check{flex-direction:row;align-items:center;gap:8px;color:var(--text)}\
@@ -132,6 +132,11 @@
     })));
   }
 
+  // Draw at the container's real width (320–640) so chart text stays readable on phones.
+  function chartWidth(host) {
+    return Math.round(Math.min(640, Math.max(320, host.clientWidth || 640)));
+  }
+
   function niceTicks(min, max, n) {
     var span = max - min || 1, step = Math.pow(10, Math.floor(Math.log10(span / n)));
     [1, 2, 5, 10].some(function (m) { if (span / (step * m) <= n) { step *= m; return true; } return false; });
@@ -142,7 +147,7 @@
 
   // Line chart. o: {xMin,xMax,yMin,yMax,logY,xTicks:[[v,label]],yFmt,xTitle,yTitle,series:[{pts,color,dash,width}],hLines:[{y,color,label}],points:[{x,y,color,label}]}
   function lineChart(host, o) {
-    var W = 640, H = 270, L = 58, R = 16, T = 14, B = 42;
+    var W = chartWidth(host), H = 270, L = 74, R = 16, T = 14, B = 42;
     var ly = o.logY ? Math.log10 : function (v) { return v; };
     var X = function (v) { return L + (v - o.xMin) / (o.xMax - o.xMin) * (W - L - R); };
     var Y = function (v) {
@@ -180,7 +185,7 @@
 
   // Grouped bar chart. o: {cats:[], series:[{label,color,vals:[]}], yMax, logY, yMin, yFmt, hLines:[{y,color,label}], yTitle}
   function barChart(host, o) {
-    var W = 640, H = 250, L = 58, R = 16, T = 14, B = 34;
+    var W = chartWidth(host), H = 250, L = 74, R = 16, T = 14, B = 34;
     var yMin = o.logY ? o.yMin : 0;
     var Y = function (v) {
       var r = o.logY
@@ -204,7 +209,14 @@
         var v = se.vals[ci], y = Y(v);
         svg.appendChild(s('rect', { x: x0 + si * bw + 1, y: y, width: bw - 2, height: Math.max(H - B - y, 0), rx: 3 }, { fill: se.color }));
       });
-      svg.appendChild(s('text', { x: L + gw * ci + gw / 2, y: H - B + 18, 'text-anchor': 'middle', text: cat }));
+      var cx = L + gw * ci + gw / 2, words = cat.split(' ');
+      if (gw < 140 && words.length > 1) {   // two lines when categories are narrow
+        var mid = Math.ceil(words.length / 2);
+        svg.appendChild(s('text', { x: cx, y: H - B + 15, 'text-anchor': 'middle', text: words.slice(0, mid).join(' ') }));
+        svg.appendChild(s('text', { x: cx, y: H - B + 29, 'text-anchor': 'middle', text: words.slice(mid).join(' ') }));
+      } else {
+        svg.appendChild(s('text', { x: cx, y: H - B + 18, 'text-anchor': 'middle', text: cat }));
+      }
     });
     (o.hLines || []).forEach(function (l) {
       svg.appendChild(s('line', { x1: L, x2: W - R, y1: Y(l.y), y2: Y(l.y), 'stroke-dasharray': '5 4' }, { stroke: l.color, strokeWidth: 1.5 }));
@@ -322,8 +334,8 @@
       var n = Math.floor((T - S) / I), m = Math.max(1, Math.floor(S / I));
       var rep = new Float64Array(n + 1), act = new Float64Array(n + m), i;
       for (i = 0; i < n; i++) { rep[i] = r; act[i] = r; }
-      rep[n] = S + r;
-      for (i = 0; i < m; i++) act[n + i] = S - i * I + r;
+      rep[n] = S;
+      for (i = 0; i < m; i++) act[n + i] = S - i * I;
       rep.sort(); act.sort();
       var mean = function (a) { var t = 0; for (var k = 0; k < a.length; k++) t += a[k]; return t / a.length; };
       var ps = [0.5, 0.9, 0.99, 0.999, 0.9999, 1];
