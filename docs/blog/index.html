@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Blog — Pawan Sinha</title>
-  <meta name="description" content="Practical posts on QA, test automation, API, mobile and performance testing, and AI in testing.">
+  <meta name="description" content="Deep dives on performance engineering, load testing and capacity planning, with interactive calculators.">
   <meta property="og:title" content="Blog — Pawan Sinha">
-  <meta property="og:description" content="Practical posts on QA, test automation, API, mobile and performance testing, and AI in testing.">
+  <meta property="og:description" content="Deep dives on performance engineering, load testing and capacity planning, with interactive calculators.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pawansinha.com.au/blog/">
   <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
@@ -47,6 +47,10 @@
     .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
     .post-cta p { margin: 0 0 14px; color: var(--muted); }
     .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
     @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
   </style>
 </head>
@@ -56,6 +60,7 @@
       <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
       <nav>
         <a href="/blog/">Blog</a>
+        <a href="/tools/">Calculators</a>
         <a href="/interview-prep/performance-testing/">Interview prep</a>
         <a href="/#contact" class="btn btn-small">Hire me</a>
       </nav>
@@ -64,11 +69,25 @@
   <main class="wrap" style="padding: 0;">
     <section class="blog-hero">
       <p class="eyebrow">Blog</p>
-      <h1>Notes on testing, quality and performance</h1>
-      <p class="lead">Practical posts on QA, test automation, API, mobile and performance testing, and using AI in testing. A new one most days.</p>
+      <h1>Performance engineering, in depth</h1>
+      <p class="lead">Deep dives on performance engineering: bottlenecks, load testing, caching, databases, load balancers, cloud and capacity planning. Most posts come with an interactive calculator. A new one every day.</p>
     </section>
     <section class="post-list">
       <p class="empty">The first post is on its way. Check back soon.</p>
+    </section>
+    <section class="blog-index-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
     </section>
   </main>
   <footer class="footer wrap">
@@ -76,6 +95,7 @@
     <p><a href="/blog/feed.xml">RSS</a> · <a href="/">pawansinha.com.au</a></p>
   </footer>
   <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
   <script src="/glow.js" defer></script>
 </body>
 </html>
