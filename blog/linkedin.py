@@ -24,6 +24,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -68,17 +69,55 @@ def api(method, path, body=None, rest=True, token=None):
         raise ApiError(err.code, err.read().decode(errors='replace')[:500])
 
 
+def upload_thumbnail(owner, post, token=None):
+    """Upload the post's share image (docs/blog/<slug>/og.png from build.py); returns an image URN or None."""
+    path = ROOT / 'docs' / 'blog' / post['slug'] / 'og.png'
+    if not path.exists():
+        return None
+    _, _, res = api('POST', '/rest/images?action=initializeUpload',
+                    {'initializeUploadRequest': {'owner': owner}}, token=token)
+    upload_url, image = res['value']['uploadUrl'], res['value']['image']
+    req = urllib.request.Request(upload_url, data=path.read_bytes(), method='PUT',
+                                 headers={'Authorization': f'Bearer {token or TOKEN}'})
+    urllib.request.urlopen(req, timeout=60).close()
+    for _ in range(10):  # wait until LinkedIn has processed the upload
+        try:
+            _, _, info = api('GET', '/rest/images/' + urllib.parse.quote(image, safe=''), token=token)
+            if info.get('status') == 'AVAILABLE':
+                break
+        except ApiError:
+            pass
+        time.sleep(3)
+    return image
+
+
 def share(author, post, token=None):
-    """Publish the post's LinkedIn text with a link card; returns the new post's id."""
-    _, headers, _ = api('POST', '/rest/posts', {
+    """Publish the post's LinkedIn text with a link card (and its share image); returns the new post's id."""
+    try:
+        thumbnail = upload_thumbnail(author, post, token)
+    except (ApiError, urllib.error.URLError, KeyError) as err:
+        if getattr(err, 'code', None) == 401:
+            raise
+        print(f'::warning::Could not upload the share image ({err}); posting without it.')
+        thumbnail = None
+    article = {'source': url(post), 'title': post['title'], 'description': post['summary']}
+    body = {
         'author': author,
         'commentary': little_text(post['linkedin'] or post['summary']),
         'visibility': 'PUBLIC',
         'distribution': {'feedDistribution': 'MAIN_FEED', 'targetEntities': [], 'thirdPartyDistributionChannels': []},
-        'content': {'article': {'source': url(post), 'title': post['title'], 'description': post['summary']}},
+        'content': {'article': dict(article, thumbnail=thumbnail) if thumbnail else article},
         'lifecycleState': 'PUBLISHED',
         'isReshareDisabledByAuthor': False,
-    }, token=token)
+    }
+    try:
+        _, headers, _ = api('POST', '/rest/posts', body, token=token)
+    except ApiError as err:
+        if not thumbnail or err.code == 401:
+            raise
+        print(f'::warning::LinkedIn refused the post with the image ({err}); posting without it.')
+        body['content'] = {'article': article}
+        _, headers, _ = api('POST', '/rest/posts', body, token=token)
     return headers.get('x-restli-id') or headers.get('X-RestLi-Id') or 'posted'
 
 

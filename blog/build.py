@@ -2,7 +2,7 @@
 
 A post goes live once its `date` (Melbourne time) is today or earlier, so merged drafts publish one a day.
 
-    pip install markdown
+    pip install markdown pillow   # pillow makes the per-post share images (blog/og.py)
     python3 blog/build.py                  # what the daily GitHub Action runs
     python3 blog/build.py --include-future # preview every post locally (don't commit the output)
 
@@ -28,6 +28,11 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import markdown
+
+try:  # per-post share images need Pillow; without it every post uses the site's default image
+    import og
+except ImportError:
+    og = None
 
 ROOT = Path(__file__).resolve().parent.parent
 POSTS = ROOT / 'blog' / 'posts'
@@ -105,7 +110,10 @@ HEAD = '''<!doctype html>
   <meta property="og:description" content="{desc}">
   <meta property="og:type" content="{og_type}">
   <meta property="og:url" content="{url}">
-  <meta property="og:image" content="{site}/og-image.png">
+  <meta property="og:image" content="{image}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="{image}">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="{url}">
   <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="{site}/blog/feed.xml">
@@ -175,8 +183,9 @@ def tags_html(tags):
     return '<div class="tags">' + ''.join(f'<span class="tag">{e(t)}</span>' for t in tags) + '</div>' if tags else ''
 
 
-def page(title, desc, page_url, og_type, body):
-    return (HEAD.format(title=e(title), desc=e(desc), url=page_url, og_type=og_type, site=SITE)
+def page(title, desc, page_url, og_type, body, image=None):
+    return (HEAD.format(title=e(title), desc=e(desc), url=page_url, og_type=og_type, site=SITE,
+                        image=image or SITE + '/og-image.png')
             + body + FOOT.format(year=today().year))
 
 
@@ -206,7 +215,8 @@ def post_page(p):
     </aside>
     <script type="application/ld+json">{ld}</script>
 {widgets}'''
-    return page(p['title'] + ' — Pawan Sinha', p['summary'], url(p), 'article', body)
+    image = url(p) + 'og.png' if (OUT / p['slug'] / 'og.png').exists() else None
+    return page(p['title'] + ' — Pawan Sinha', p['summary'], url(p), 'article', body, image)
 
 
 def index_page(posts):
@@ -279,6 +289,8 @@ def main():
             d.rmdir()
     for p in posts:
         (OUT / p['slug']).mkdir(exist_ok=True)
+        if og:
+            og.save(p, OUT / p['slug'] / 'og.png')
         (OUT / p['slug'] / 'index.html').write_text(post_page(p), encoding='utf-8')
     (OUT / 'index.html').write_text(index_page(posts), encoding='utf-8')
     (OUT / 'feed.xml').write_text(feed(posts), encoding='utf-8')

@@ -127,6 +127,13 @@ A post goes live on its `date` (Melbourne time), so approved posts come out one 
 calculator or simulator. `build.py` adds the script only to posts that contain one. RSS readers see the fallback text.
 Existing widgets: `bottleneck`, `cdn`, `omission`, `threads`, `lb`, `capacity`, `cache`. New ones are added to `widgets.js`.
 
+### Share images
+
+Each post gets its own 1200×630 share image (title, tags, your name and domain) from `blog/og.py`, written to
+`docs/blog/<slug>/og.png` when the blog is built. Google, chat apps and LinkedIn link previews show it, and the
+LinkedIn post uploads it as its picture. Fonts are in `blog/fonts` (open-source licences included).
+Preview one: `python3 blog/og.py blog/posts/<file>.md preview.png`.
+
 ### Recurring jobs for you
 
 | How often | What | How |
@@ -177,7 +184,7 @@ Beyond LinkedIn:
 ### Other tasks
 
 - **Write a post yourself:** add a Markdown file in `blog/posts/` (format at the top of `blog/build.py`) and push.
-- **Preview locally:** `pip install markdown && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing (otherwise future posts go live early).
+- **Preview locally:** `pip install markdown pillow && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing (otherwise future posts go live early).
 - **Run a job now:** GitHub → Actions → choose the workflow → Run workflow.
 - **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API).
 

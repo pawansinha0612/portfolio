@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pip install markdown
+      - run: pip install markdown pillow
 
       - name: Build the blog
         run: python blog/build.py
