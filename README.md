@@ -223,15 +223,20 @@ Beyond LinkedIn:
 
 - [ ] **Switch on the weekly email digest** (5 min): steps under *Weekly email digest* below.
 - [ ] **Get job radar emails** (1 min): private repo → **Watch → All activity**.
-- [ ] **Sell the k6 starter kit** (15 min): Gumroad, then replace `[k6-kit-url]` in `docs/index.html`. Steps in the private repo's `products/k6-starter-kit/LISTING.md`.
+- [ ] **Sell the k6 starter kit** (15 min): Gumroad, then replace `[k6-kit-url]` in `docs/index.html` and `docs/shop/index.html`. Steps in the private repo's `products/k6-starter-kit/LISTING.md`.
 - [ ] **LinkedIn company page**: waiting on LinkedIn's approval. Then follow *Company page on LinkedIn* below.
-- [ ] **Check your employment contract** before selling Perf Advisor: the intellectual property and side-business clauses. Ask HR or a lawyer if unsure.
-- [ ] **Sell Perf Advisor** (20 min): Gumroad, then replace `[perf-advisor-url]` in `docs/index.html`. Steps in the private repo's `products/perf-advisor/LISTING.md`. Upload `Getting Started.pdf` as a free preview.
+- [ ] **Sell Perf Advisor** (20 min): Gumroad, then replace both `[perf-advisor-url]` in `docs/perf-advisor/index.html` (until then its buy buttons send you an email). Steps in the private repo's `products/perf-advisor/LISTING.md`. Upload `Getting Started.pdf` as a free preview.
 - [ ] **Try Perf Advisor's extras once with real accounts** before advertising them: Slack, Jira, GitLab or GitHub, and the AI chat (needs an Anthropic API key). Optional: run the Windows starter once on a Windows PC.
 - [ ] **Read your six service pages** (`/services/...`) and correct anything that isn't quite right. Edit `services/build.py`, run `python3 services/build.py`. The manual-testing and API pages are thinner because the CV is mostly performance work: add real functional or API projects there if you have them.
 - [ ] **Dry-run the portfolio template** (20 min): follow its `Getting Started.pdf` once with a spare GitHub account or a test repository, to check the upload and Pages steps match what GitHub shows today.
 - [ ] **Sell the portfolio template** (15 min): Gumroad at US$5, then replace both `[portfolio-template-url]` in `docs/portfolio-template/index.html`. Steps in the private repo's `products/portfolio-template/LISTING.md`. Until then, its buy buttons send you an email.
 - [ ] **Send a test email to hello@pawansinha.com.au** and check it reaches Gmail. The website now shows this address instead of Gmail.
+
+- [ ] **Fill in the recruiter page** (`docs/hire/index.html`): replace `[right-to-work]`, `[day-rate]` and `[permanent]` (for example "Australian citizen", "A$900–1,100 a day", "Yes, for senior roles"). For a CV download, add `docs/cv.pdf` and set the `[cv-url]` link to `/cv.pdf`. Rows and links still holding a `[placeholder]` stay hidden. If your availability changes, set `data-available-from` here and in `docs/index.html`.
+- [ ] **Collect 3–4 testimonials**: send the messages in `profile/testimonial-requests.md`. They appear on the home page once approved in the sheet.
+- [ ] **Add numbers to the case studies** (`CASES` in `services/build.py`, and the Work section of `docs/index.html`): peak load handled, response times, defects caught, time saved.
+- [ ] **Promote the peak-readiness load test** (`/peak-readiness/`) on LinkedIn before Click Frenzy and Black Friday. Checklist sign-ups arrive as enquiries with need "Peak-readiness checklist".
+- [ ] **GoatCounter goals**: in the GoatCounter dashboard, events are named after `data-track` (for example `peak-checklist-sent`, `hire-invite`, `shop-perf-advisor`), plus `email /page/`, `book-call /page/` and `buy /page/`. Every page is counted now.
 
 Tick these off here when done.
 

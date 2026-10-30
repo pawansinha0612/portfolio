@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop: performance testing tools and templates</title>
+  <meta name="description" content="Perf Advisor, the k6 Performance Test Starter Kit, a portfolio website template and mock performance testing interviews, from Pawan Sinha.">
+  <meta property="og:title" content="Shop: performance testing tools and templates">
+  <meta property="og:description" content="Perf Advisor, the k6 Performance Test Starter Kit, a portfolio website template and mock performance testing interviews, from Pawan Sinha.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/shop/">
+  <meta property="og:image" content="https://pawansinha.com.au/perf-advisor/img/roles.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/shop/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .shop .card { display: flex; flex-direction: column; }
+    .shop .card p { flex: 1; }
+    .shop .card p.price-tag { flex: none; }
+    .shop .price-tag { font-size: 24px; font-weight: 800; color: var(--text); margin: 4px 0 14px; }
+    .shop .price-tag small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+    .shop .card .cta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+<main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Shop</span></nav>
+        <p class="eyebrow">Shop</p>
+        <h1>Tools and templates <span class="hl">I use myself.</span></h1>
+        <p class="lead">Ready-made products from 12 years of performance and QA work, plus one-to-one interview practice. Buy once, download straight away, and email me if you get stuck.</p>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="grid shop">
+        <article class="card">
+          <div class="icon">🧭</div>
+          <h3>Perf Advisor</h3>
+          <p class="price-tag">A$129<small>one-off</small></p>
+          <p>A self-hosted app for the whole team: is this change risky, does it need a load test, how long will testing take? It writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.</p>
+          <ul class="chips project-chips"><li>k6</li><li>OpenAPI</li><li>Team tool</li></ul>
+          <div class="cta"><a class="btn" href="/perf-advisor/" data-track="shop-perf-advisor">See Perf Advisor</a></div>
+        </article>
+
+        <article class="card">
+          <div class="icon">📦</div>
+          <h3>k6 Performance Test Starter Kit</h3>
+          <p class="price-tag">A$49<small>one-off</small></p>
+          <p>The framework I set up on day one: open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. Run realistic load tests within the hour.</p>
+          <ul class="chips project-chips"><li>k6</li><li>CI/CD</li><li>Grafana</li></ul>
+          <div class="cta"><a class="btn" href="[k6-kit-url]" data-buy="k6 Performance Test Starter Kit" target="_blank" rel="noopener" data-track="shop-k6-kit">Get the kit</a></div>
+        </article>
+
+        <article class="card">
+          <div class="icon">🖥️</div>
+          <h3>Portfolio Website Template</h3>
+          <p class="price-tag">US$5<small>one-off</small></p>
+          <p>This website's design as a template for freelancers and job seekers: service pages, case studies, blog and contact. No coding, free hosting on GitHub Pages, live in about 20 minutes.</p>
+          <ul class="chips project-chips"><li>GitHub Pages</li><li>No code</li></ul>
+          <div class="cta"><a class="btn" href="/portfolio-template/" data-track="shop-template">See the template</a><a class="btn btn-ghost" href="/portfolio-template/demo/" target="_blank" rel="noopener">Live demo</a></div>
+        </article>
+
+        <article class="card">
+          <div class="icon">🎤</div>
+          <h3>Mock performance testing interview</h3>
+          <p class="price-tag">60 min<small>price confirmed by email</small></p>
+          <p>Practise at your level, the way senior interviewers run it: scenario questions, follow-ups and a design question. Honest feedback on each answer and a written list of what to work on.</p>
+          <ul class="chips project-chips"><li>Interview prep</li><li>Feedback</li></ul>
+          <div class="cta"><a class="btn" href="/?need=Interview%20coaching#contact" data-track="shop-mock-interview">Request a session</a><a class="btn btn-ghost" href="/interview-prep/performance-testing/">Free questions</a></div>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap svc-split">
+        <div>
+          <p class="eyebrow">Buying</p>
+          <h2>Simple and safe</h2>
+          <ul class="ticks">
+            <li>Paid through Gumroad, with cards, PayPal and Apple Pay.</li>
+            <li>Instant download, with a step-by-step guide in every product.</li>
+            <li>Questions before or after you buy: <a href="mailto:hello@pawansinha.com.au?subject=Shop%20question">hello@pawansinha.com.au</a>.</li>
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">Need more than a product?</p>
+          <h2>Hire me to do it with you</h2>
+          <p>I set up load tests, automation and quality gates for teams, and can roll out any of these products with you.</p>
+          <div class="cta"><a class="btn" href="/#services" data-track="shop-services">See services</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+    // Unset shop links ([...-url]) become "email me to buy"; anything else still holding a [placeholder] is hidden.
+    document.querySelectorAll('a[href^="["]').forEach(a => {
+      if (!a.dataset.buy) return a.closest('[data-optional]') ? a.closest('[data-optional]').remove() : a.remove();
+      a.href = 'mailto:hello@pawansinha.com.au?subject=' + encodeURIComponent('Buy ' + a.dataset.buy);
+      a.removeAttribute('target');
+      a.textContent = 'Email me to buy';
+    });
+    document.querySelectorAll('[data-optional]').forEach(el => { if (el.textContent.includes('[')) el.remove(); });
+  </script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

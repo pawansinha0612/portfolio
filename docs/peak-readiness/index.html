@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peak-readiness load test for Black Friday and Christmas</title>
+  <meta name="description" content="A fixed-scope load test that shows how much Black Friday, Click Frenzy and Christmas traffic your online store can take, and what to fix first. Free checklist.">
+  <meta property="og:title" content="Peak-readiness load test for Black Friday and Christmas">
+  <meta property="og:description" content="A fixed-scope load test that shows how much Black Friday, Click Frenzy and Christmas traffic your online store can take, and what to fix first. Free checklist.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/peak-readiness/">
+  <meta property="og:image" content="https://pawansinha.com.au/portfolio-template/img/service.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/peak-readiness/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .price { font-size: 15px; color: var(--muted); margin: 14px 0 0; }
+    .lead-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 18px; align-items: end; }
+    .lead-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+    .lead-form input { font: inherit; font-size: 16px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; min-width: 0; }
+    .lead-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .lead-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .lead-form button { font: inherit; font-weight: 600; cursor: pointer; }
+    .lead-status { grid-column: 1 / -1; margin: 4px 0 0; font-size: 15px; color: var(--muted); }
+    .lead-status:empty { display: none; }
+    .lead-box { padding: 28px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), color-mix(in srgb, var(--accent-2) 9%, var(--surface))); }
+    .lead-box h2 { margin-top: 0; }
+    @media (max-width: 760px) { .lead-form { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+<main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Peak-readiness load test</span></nav>
+        <p class="eyebrow">Black Friday · Cyber Monday · Click Frenzy · Christmas · EOFY</p>
+        <h1>Will your site hold up on <span class="hl">your biggest sales day?</span></h1>
+        <p class="lead">Peak weeks bring several times your normal traffic, all at once. If checkout slows or falls over, you lose the sales you spent all year marketing for. A peak-readiness load test tells you, before the day, how much traffic your site can really take and what to fix first.</p>
+        <div class="cta">
+          <a class="btn js-book" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="peak-book-call">Book a free 30-min call</a>
+          <a class="btn btn-ghost" href="#checklist" data-track="peak-checklist-jump">Get the free checklist</a>
+        </div>
+        <p class="price">Fixed scope and price, agreed before we start · results in about 5 business days</p>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <p class="eyebrow">Sound familiar?</p>
+      <h2>Signs you need one this year</h2>
+      <div class="grid">
+        <article class="card"><div class="icon">📣</div><h3>A big campaign is booked</h3><p>Marketing has the emails and ads ready, but nobody knows how many shoppers the site can take.</p></article>
+        <article class="card"><div class="icon">🐢</div><h3>Last peak was slow</h3><p>Pages crawled or checkout errored at the busiest hour, and the cause was never pinned down.</p></article>
+        <article class="card"><div class="icon">🔧</div><h3>A lot changed since</h3><p>New platform, new payment provider, new search or new hosting since your last peak.</p></article>
+        <article class="card"><div class="icon">🤷</div><h3>"It autoscales"</h3><p>Maybe. But databases, payment gateways and third-party scripts don't scale with it.</p></article>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap svc-split">
+        <div>
+          <p class="eyebrow">What you get</p>
+          <h2>Peak-readiness load test</h2>
+          <ul class="ticks">
+            <li><strong>Traffic forecast:</strong> your peak hour, built from last year's numbers and this year's campaign plans.</li>
+            <li><strong>Realistic shopper journeys:</strong> browse, search, add to cart and checkout, scripted in k6.</li>
+            <li><strong>Load, spike and soak tests</strong> at your forecast peak and beyond, to find the breaking point.</li>
+            <li><strong>Bottlenecks traced to the cause:</strong> the slow query, the exhausted pool, the third-party script.</li>
+            <li><strong>Go/no-go report</strong> in plain English: how much headroom you have and a prioritised fix list.</li>
+            <li><strong>Retest after fixes</strong>, so you go into the day with evidence, not hope.</li>
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">How it works</p>
+          <h2>About a week, start to finish</h2>
+          <ol class="steps">
+            <li><span>01</span><h3>Free 30-min call</h3><p>Your site, your peak dates and what worries you. You get a fixed price the same day.</p></li>
+            <li><span>02</span><h3>Model and script</h3><p>Traffic forecast and shopper journeys, agreed with you.</p></li>
+            <li><span>03</span><h3>Test and diagnose</h3><p>Run at peak and beyond, in a safe window you choose.</p></li>
+            <li><span>04</span><h3>Report and retest</h3><p>Go/no-go, fix list, and a retest once fixes are in.</p></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="checklist" class="wrap section">
+      <div class="lead-box">
+        <p class="eyebrow">Free download</p>
+        <h2>The one-page peak-readiness checklist</h2>
+        <p>The 24 checks I run before any big sales event: traffic, testing, infrastructure, third parties, release freeze and the day itself. Leave your email and it opens straight away.</p>
+        <form class="lead-form" id="lead" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" novalidate>
+          <label>Your name<input name="name" autocomplete="name" required maxlength="200"></label>
+          <label>Work email<input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+          <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+          <button class="btn" type="submit" data-track="peak-checklist">Get the checklist</button>
+          <p class="lead-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap svc-split">
+        <div>
+          <p class="eyebrow">Why me</p>
+          <h2>Peaks are what I test</h2>
+          <p>For 12 years I've load tested systems that can't fall over: draw-night spikes at The Lottery Corporation, high-volume card payments at Visa, and digital banking at ANZ and NAB. <a href="/services/performance-testing/">More about my performance testing.</a></p>
+        </div>
+        <div>
+          <p class="eyebrow">Questions</p>
+          <h2>Common questions</h2>
+          <div class="faq">
+            <details><summary>Is it too late before Black Friday?</summary><p>Usually not. A focused test of your key journeys takes about a week. The sooner we talk, the more time you have to fix what it finds.</p></details>
+            <details><summary>Will testing affect real customers?</summary><p>We test a staging copy where possible, or production in a quiet window you choose, with a kill switch and you watching.</p></details>
+            <details><summary>We're on Shopify, BigCommerce or a SaaS platform. Is it still worth it?</summary><p>Yes. The platform scales, but your apps, custom code, search, payment and third-party scripts often don't. We test what you control and agree limits with the platform's terms.</p></details>
+            <details><summary>What does it cost?</summary><p>A fixed price, agreed after a free call, based on how many journeys and environments we test. No day-rate surprises.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Go into peak season with evidence</h2>
+        <p>Book a free call. You'll get a fixed price the same day.</p>
+        <div class="cta">
+          <a class="btn btn-light js-book" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="peak-book-call-bottom">Book a free 30-min call</a>
+          <a class="btn btn-outline-light" href="/?need=Peak-readiness%20load%20test#contact" data-track="peak-brief">Send a brief instead</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+    // Checklist form: saves the lead to the enquiries sheet, then opens the checklist (even if saving fails).
+    (() => {
+      const form = document.getElementById('lead');
+      const status = form.querySelector('.lead-status');
+      const open = () => {
+        status.innerHTML = 'Thanks! <a href="/peak-readiness/checklist/" target="_blank" rel="noopener">Open the checklist</a> (it also opened in a new tab).';
+        window.open('/peak-readiness/checklist/', '_blank', 'noopener');
+      };
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const { name, email } = form.elements;
+        if (!name.value.trim() || !email.checkValidity() || !email.value.trim()) {
+          status.textContent = 'Please add your name and a valid email address.';
+          return;
+        }
+        const body = new URLSearchParams(new FormData(form));
+        body.append('need', 'Peak-readiness checklist');
+        body.append('message', 'Downloaded the peak-readiness checklist.');
+        body.append('page', location.href);
+        form.querySelector('button').disabled = true;
+        try { await fetch(form.dataset.endpoint, { method: 'POST', body }); } catch (_) {}
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'peak-checklist-sent', title: 'peak-checklist-sent', event: true });
+        open();
+      });
+    })();
+  </script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

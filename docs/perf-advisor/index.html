@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perf Advisor — load test decisions, k6 tests and reports</title>
+  <meta name="description" content="A self-hosted web app that tells your team whether a change needs load testing, estimates the effort, writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.">
+  <meta property="og:title" content="Perf Advisor — load test decisions, k6 tests and reports">
+  <meta property="og:description" content="A self-hosted web app that tells your team whether a change needs load testing, estimates the effort, writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.">
+  <meta property="og:type" content="product">
+  <meta property="og:url" content="https://pawansinha.com.au/perf-advisor/">
+  <meta property="og:image" content="https://pawansinha.com.au/perf-advisor/img/roles.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/perf-advisor/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .shots { display: grid; grid-template-columns: 3fr 1fr; gap: 18px; align-items: start; margin-top: 8px; }
+    .shots img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); display: block; }
+    .shots figure { margin: 0; }
+    .shots figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .price { font-size: 15px; color: var(--muted); margin: 14px 0 0; }
+    .price strong { font-size: 28px; color: var(--text); margin-right: 6px; }
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
+    .gallery img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); display: block; }
+    .gallery figure { margin: 0; }
+    .gallery figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    @media (max-width: 760px) { .gallery { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .shots { grid-template-columns: 1fr; } .shots figure:last-child img { max-width: 260px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/#projects">Products</a><span aria-hidden="true">/</span><span aria-current="page">Perf Advisor</span></nav>
+        <p class="eyebrow">For QA, delivery and performance teams</p>
+        <h1>Should this change be <span class="hl">load tested?</span></h1>
+        <p class="lead">Every release raises the same questions, and they land on one busy performance engineer. Perf Advisor answers them consistently: it scores the risk, estimates the effort, writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.</p>
+        <div class="cta">
+          <a class="btn" href="[perf-advisor-url]" target="_blank" rel="noopener" data-track="perf-advisor-buy">Get Perf Advisor for A$129</a>
+          <a class="btn btn-ghost" href="#what" data-track="perf-advisor-more">See what it does</a>
+        </div>
+        <p class="price"><strong>A$129</strong>one-off · self-hosted · your data never leaves your machines</p>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="shots">
+        <figure><img src="img/roles.jpg" alt="Perf Advisor's start screen with four roles" width="1600" height="1000" loading="lazy"><figcaption>Pick a role. Each one sees the tools it needs.</figcaption></figure>
+        <figure><img src="img/phone-dark.jpg" alt="Perf Advisor on a phone in dark mode" width="493" height="1067" loading="lazy"><figcaption>Works on a phone, in dark mode.</figcaption></figure>
+      </div>
+      <div class="gallery">
+        <figure><img src="img/risk.jpg" alt="Risk check result" width="1200" height="875" loading="lazy"><figcaption>Risk check in plain English.</figcaption></figure>
+        <figure><img src="img/k6-code.jpg" alt="Generated k6 test code" width="1200" height="1103" loading="lazy"><figcaption>k6 test written from your OpenAPI spec.</figcaption></figure>
+        <figure><img src="img/report.jpg" alt="Results report with a verdict" width="1200" height="1040" loading="lazy"><figcaption>Results report with a clear verdict.</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="what" class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">Four roles, one tool</p>
+        <h2>Everyone gets the answer they need</h2>
+        <div class="grid">
+          <article class="card"><div class="icon">💼</div><h3>Business stakeholders</h3><p>A seven-question risk check: CRITICAL, MODERATE or LOW, with every point explained and a ready-to-send message to the engineers.</p></article>
+          <article class="card"><div class="icon">📅</div><h3>Test managers</h3><p>An effort estimate: days for one or two engineers, sprints, a task breakdown, a sprint plan and the risks to the plan.</p></article>
+          <article class="card"><div class="icon">🛠️</div><h3>Engineers</h3><p>A four-question load test decision, and a change impact map of what calls their service and what it depends on.</p></article>
+          <article class="card"><div class="icon">⚡</div><h3>Performance engineers</h3><p>All of that, plus the k6 generator and the one-click results report.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <p class="eyebrow">What's inside</p>
+      <h2>Built the way a performance engineer would</h2>
+      <div class="grid">
+        <article class="card"><div class="icon">🧩</div><h3>k6 tests from OpenAPI</h3><p>OpenAPI 3 or Swagger 2, JSON or YAML. Pick a journey's operations and get a runnable k6 TypeScript test, with request bodies built from your schemas.</p></article>
+        <article class="card"><div class="icon">📈</div><h3>Load done properly</h3><p>Open-model arrival-rate executor, VUs sized with Little's Law, and shapes for load, stress, spike, soak and breakpoint tests.</p></article>
+        <article class="card"><div class="icon">🎯</div><h3>Thresholds that catch problems</h3><p>p95 and p99 targets, error rate per endpoint, and a dropped-iterations check so the test never quietly sends less load than you asked for.</p></article>
+        <article class="card"><div class="icon">📄</div><h3>Reports in one click</h3><p>Upload k6's summary and get a PASS, PASS WITH RISKS or FAIL report with KPIs and a per-endpoint table. Download or print to PDF.</p></article>
+        <article class="card"><div class="icon">🔗</div><h3>Share and integrate</h3><p>Drafted emails, Slack and Jira text for every result. Optional Slack posts, Jira tickets, and GitHub or GitLab pull requests.</p></article>
+        <article class="card"><div class="icon">🔒</div><h3>Private by default</h3><p>Everything is processed in the browser and nothing is stored on the server. Run it on a laptop, an internal server or Docker.</p></article>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap svc-split">
+        <div>
+          <p class="eyebrow">Who it's for</p>
+          <h2>Teams that share one performance engineer</h2>
+          <ul class="ticks">
+            <li>Teams with one or two performance engineers and many squads asking for their time.</li>
+            <li>Test managers and delivery leads who need consistent estimates.</li>
+            <li>QA and development teams starting with k6 who want a sound load model from day one.</li>
+            <li>Consultancies that want a repeatable way to scope performance work.</li>
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">Questions</p>
+          <h2>Common questions</h2>
+          <div class="faq">
+            <details><summary>Is it a hosted service?</summary><p>No. You run it yourself on a laptop, an internal server or Docker. Setup takes about 15 minutes, with a step-by-step guide.</p></details>
+            <details><summary>Does it run the load test?</summary><p>No. It writes the k6 test; you run it with k6 on your machines or in CI. Then upload the summary for the report.</p></details>
+            <details><summary>Can we change the rules?</summary><p>Yes. Risk weights, the decision rule, effort tables, default targets and load shapes live in short, commented files with unit tests.</p></details>
+            <details><summary>What do I need?</summary><p>Node.js 22 or Docker. The generated tests run on k6 v1.0 or later with no extensions.</p></details>
+            <details><summary>Want help rolling it out?</summary><p>I can set it up for your team and tune the rules. Email <a href="mailto:hello@pawansinha.com.au?subject=Perf%20Advisor">hello@pawansinha.com.au</a> or <a href="/services/performance-testing/">see my performance testing service</a>.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Stop answering the same question every sprint</h2>
+        <p>A$129, one-off. Self-hosted. Ready in about 15 minutes.</p>
+        <div class="cta">
+          <a class="btn btn-light" href="[perf-advisor-url]" target="_blank" rel="noopener" data-track="perf-advisor-buy-bottom">Get Perf Advisor for A$129</a>
+          <a class="btn btn-outline-light" href="mailto:hello@pawansinha.com.au?subject=Perf%20Advisor%20question">Ask a question</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+    // Until the shop link replaces [perf-advisor-url], the buy buttons send an email instead.
+    document.querySelectorAll('a[href="[perf-advisor-url]"]').forEach(a => {
+      a.href = 'mailto:hello@pawansinha.com.au?subject=Buy%20Perf%20Advisor';
+      a.removeAttribute('target');
+      a.textContent = 'Email me to buy (A$129)';
+    });
+  </script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

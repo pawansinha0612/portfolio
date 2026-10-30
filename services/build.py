@@ -305,7 +305,9 @@ FOOTER = f'''  <footer class="site-footer">
         <a href="/#services">Services</a>
         <a href="/#engage">Engagements</a>
         <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
         <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
       </div>
       <div>
         <h2>Free resources</h2>
@@ -319,6 +321,8 @@ FOOTER = f'''  <footer class="site-footer">
         <a href="/#projects">Projects</a>
         <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
         <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
       </div>
     </div>
     <div class="wrap footer-bottom">

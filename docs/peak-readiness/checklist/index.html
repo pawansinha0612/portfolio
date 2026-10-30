@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peak-readiness checklist</title>
+  <meta name="description" content="Checks to run before Black Friday, Click Frenzy, Christmas or any big launch.">
+  <meta property="og:title" content="Peak-readiness checklist">
+  <meta property="og:description" content="Checks to run before Black Friday, Click Frenzy, Christmas or any big launch.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/peak-readiness/checklist/">
+  <meta property="og:image" content="https://pawansinha.com.au/perf-advisor/img/roles.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/peak-readiness/checklist/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .sheet { max-width: 900px; }
+    .sheet .cols { columns: 2 320px; column-gap: 40px; }
+    .sheet section { break-inside: avoid; margin: 0 0 22px; }
+    .sheet h2 { font-size: 17px; margin: 0 0 8px; color: var(--accent); }
+    .sheet ul { list-style: none; margin: 0; padding: 0; }
+    .sheet li { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; font-size: 15px; line-height: 1.45; }
+    .sheet .box { flex: none; width: 16px; height: 16px; margin-top: 3px; border: 2px solid var(--muted); border-radius: 4px; }
+    .sheet .foot { margin-top: 10px; font-size: 14px; color: var(--muted); }
+    @media print {
+      .nav, .site-footer, .no-print { display: none !important; }
+      body { background: #fff; color: #000; }
+      .svc-hero { padding: 0 0 10px; }
+      .sheet li { font-size: 12px; padding: 2px 0; }
+      .sheet h2 { font-size: 14px; }
+      @page { margin: 14mm; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+<main>
+    <section class="hero svc-hero">
+      <div class="wrap sheet">
+        <p class="eyebrow">Free checklist · pawansinha.com.au</p>
+        <h1>Peak-readiness checklist</h1>
+        <p class="lead">23 checks to run before Black Friday, Click Frenzy, Christmas or any big launch.</p>
+        <div class="cta no-print"><button class="btn" type="button" onclick="print()">Print or save as PDF</button><a class="btn btn-ghost" href="/peak-readiness/">Get it done for you</a></div>
+      </div>
+    </section>
+    <section class="wrap section sheet">
+      <div class="cols"><section><h2>Traffic and targets</h2><ul><li><span class="box" aria-hidden="true"></span>Peak hour forecast from last year's analytics plus this year's campaign plans</li><li><span class="box" aria-hidden="true"></span>Response time targets agreed for home, search, product, cart and checkout</li><li><span class="box" aria-hidden="true"></span>Error rate target agreed (for example under 1% at peak)</li><li><span class="box" aria-hidden="true"></span>Marketing send times known, so you can plan for the email-blast spike</li></ul></section><section><h2>Testing</h2><ul><li><span class="box" aria-hidden="true"></span>Load test of the key shopper journeys at forecast peak</li><li><span class="box" aria-hidden="true"></span>Spike test: traffic jumps from normal to peak within a minute</li><li><span class="box" aria-hidden="true"></span>Soak test at peak for 1–2 hours to catch leaks and slow build-up</li><li><span class="box" aria-hidden="true"></span>Breaking point found, so you know your real headroom</li><li><span class="box" aria-hidden="true"></span>Retest after every fix, on the release that will go live</li></ul></section><section><h2>Infrastructure</h2><ul><li><span class="box" aria-hidden="true"></span>Autoscaling limits, warm-up time and cloud account quotas checked</li><li><span class="box" aria-hidden="true"></span>Database connections, slow queries and indexes reviewed under load</li><li><span class="box" aria-hidden="true"></span>CDN caching rules confirmed for images, scripts and product pages</li><li><span class="box" aria-hidden="true"></span>Rate limits and bot protection tested, so they don't block real shoppers</li></ul></section><section><h2>Third parties</h2><ul><li><span class="box" aria-hidden="true"></span>Payment gateway, fraud check and tax services told your expected volume</li><li><span class="box" aria-hidden="true"></span>Search, reviews, chat and tag scripts load without blocking checkout</li><li><span class="box" aria-hidden="true"></span>A fallback plan if a third party slows down (timeouts, feature switches)</li></ul></section><section><h2>Release and monitoring</h2><ul><li><span class="box" aria-hidden="true"></span>Code and config freeze dates agreed before peak week</li><li><span class="box" aria-hidden="true"></span>Dashboards for traffic, response time, errors and orders per minute</li><li><span class="box" aria-hidden="true"></span>Alerts set on the numbers that matter, sent to people who will act</li><li><span class="box" aria-hidden="true"></span>Rollback plan tested, not just written</li></ul></section><section><h2>On the day</h2><ul><li><span class="box" aria-hidden="true"></span>Named people on call, with a shared chat channel</li><li><span class="box" aria-hidden="true"></span>Holding page and queue plan ready if traffic beats the forecast</li><li><span class="box" aria-hidden="true"></span>A quick review the week after, while it's fresh, for next year</li></ul></section></div>
+      <p class="foot">Not sure about any of these? I run fixed-price peak-readiness load tests: pawansinha.com.au/peak-readiness · hello@pawansinha.com.au</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/menu.js" defer></script>
+</body>
+</html>

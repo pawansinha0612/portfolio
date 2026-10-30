@@ -16,22 +16,10 @@
   document.querySelectorAll('a[href^="["]').forEach(a => a.remove());
   document.querySelectorAll('.footer p').forEach(p => { if (p.textContent.includes('[')) p.remove(); });
 
-  // Analytics (GoatCounter): loads only when a code is set on <body>; data-track links count as events
-  const gcCode = document.body.dataset.goatcounter;
-  if (gcCode) {
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://gc.zgo.at/count.js';
-    s.dataset.goatcounter = gcCode.includes('://') ? gcCode : `https://${gcCode}.goatcounter.com/count`;
-    document.head.appendChild(s);
-  }
+  // Analytics loads in menu.js (every page); this counts home-page form events
   const track = name => {
     if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true });
   };
-  document.addEventListener('click', e => {
-    const a = e.target.closest('[data-track]');
-    if (a) track(a.dataset.track);
-  });
 
   // Enquiry form: shown once its Apps Script URL is set; posts to the Google Sheet
   const form = document.getElementById('enquiry');
