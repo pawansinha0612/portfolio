@@ -139,14 +139,17 @@
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
-      <nav>
-        <a href="#listings">Live results</a>
-        <a href="#analyse">Check a property</a>
-        <a href="#how">How it works</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
         <a href="/#contact" class="btn btn-small">Hire me</a>
       </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
     </div>
   </header>
+  <nav class="subnav wrap" aria-label="On this page"><a href="#listings">Live results</a><a href="#analyse">Check a property</a><a href="#how">How it works</a></nav>
 
   <main>
     <section class="wrap project-hero">
@@ -285,9 +288,38 @@
     </section>
   </main>
 
-  <footer class="footer wrap">
-    <p>© <span id="year"></span> Pawan Sinha · Listing data from homely.com.au and view.com.au, for personal research only.</p>
-    <p><a href="/">← Back to pawansinha.com.au</a></p>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/#contact">Book a free call</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+      </div>
+    </div>
+    <p class="footer-note wrap">Listing data from homely.com.au and view.com.au, for personal research only.</p>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
   </footer>
 
   <script>
@@ -302,7 +334,6 @@
       if (text != null) e.textContent = text;
       return e;
     };
-    $('year').textContent = new Date().getFullYear();
 
     let feed = null, shown = PAGE_SIZE;
 
@@ -912,5 +943,6 @@
   })();
   </script>
   <script src="../../glow.js" defer></script>
+  <script src="/menu.js" defer></script>
 </body>
 </html>

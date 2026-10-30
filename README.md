@@ -101,6 +101,13 @@ Things to change in `docs/index.html` (see the comment at the top of `<body>`):
 
 Anything still holding a `[placeholder]` is hidden automatically, so unfinished items never appear on the live site.
 
+**Menu and footer.** Every public page has the same top menu (Services, Work, Resources, Blog, Hire me) and the same
+footer. They are copied into `docs/index.html`, `docs/tools/index.html`, `docs/interview-prep/performance-testing/index.html`,
+`docs/projects/deal-finder/index.html` and the blog template in `blog/build.py`. To add or rename a menu item, change it in
+all five. Keep the top menu to five items; new pages go in the footer columns or the home page's Resources section.
+On phones the menu folds into the ☰ button (`docs/menu.js`). Long pages put their own jump links in the row of pills
+under the menu (`<nav class="subnav">`), not in the top menu.
+
 **Animations** are in `main.js` and the "Motion" sections of `styles.css`: word reveals, smooth scrolling
 ([Lenis](https://github.com/darkroomengineering/lenis)), marquees, scroll-filled statement, pinned process steps, cursor effects.
 They switch off for visitors who have reduced motion enabled in their device settings.
@@ -213,6 +220,10 @@ Beyond LinkedIn:
 - [ ] **Get job radar emails** (1 min): private repo → **Watch → All activity**.
 - [ ] **Sell the k6 starter kit** (15 min): Gumroad, then replace `[k6-kit-url]` in `docs/index.html`. Steps in the private repo's `products/k6-starter-kit/LISTING.md`.
 - [ ] **LinkedIn company page**: waiting on LinkedIn's approval. Then follow *Company page on LinkedIn* below.
+- [ ] **Check your employment contract** before selling Perf Advisor: the intellectual property and side-business clauses. Ask HR or a lawyer if unsure.
+- [ ] **Sell Perf Advisor** (20 min): Gumroad, then replace `[perf-advisor-url]` in `docs/index.html`. Steps in the private repo's `products/perf-advisor/LISTING.md`. Upload `Getting Started.pdf` as a free preview.
+- [ ] **Try Perf Advisor's extras once with real accounts** before advertising them: Slack, Jira, GitLab or GitHub, and the AI chat (needs an Anthropic API key). Optional: run the Windows starter once on a Windows PC.
+- [ ] **Send a test email to hello@pawansinha.com.au** and check it reaches Gmail. The website now shows this address instead of Gmail.
 
 Tick these off here when done.
 

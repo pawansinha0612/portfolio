@@ -24,7 +24,7 @@
     "name": "Pawan Sinha — QA & Test Automation",
     "url": "https://pawansinha.com.au/",
     "image": "https://pawansinha.com.au/og-image.png",
-    "email": "pawansinha4u@gmail.com",
+    "email": "hello@pawansinha.com.au",
     "description": "Manual and functional testing, API testing, Playwright test automation and performance testing for startups and enterprises.",
     "areaServed": ["AU", "Worldwide"],
     "address": { "@type": "PostalAddress", "addressLocality": "Melbourne", "addressRegion": "VIC", "addressCountry": "AU" },
@@ -64,17 +64,14 @@
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
-      <nav>
+      <nav id="site-menu" aria-label="Main">
         <a href="#services">Services</a>
-        <a href="#work" class="nav-extra">Work</a>
-        <a href="#projects" class="nav-extra">Projects</a>
-        <a href="#resources">Interview prep</a>
-        <a href="/tools/">Calculators</a>
+        <a href="#work">Work</a>
+        <a href="#resources">Resources</a>
         <a href="/blog/">Blog</a>
-        <a href="#engage" class="nav-extra">Engagements</a>
-        <a href="#toolkit" class="nav-extra">Toolkit</a>
         <a href="#contact" class="btn btn-small">Hire me</a>
       </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
     </div>
   </header>
 
@@ -90,7 +87,7 @@
             and gaming platforms. Now I bring that same rigour to startups and growing teams.
           </p>
           <div class="cta">
-            <a href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call&amp;body=Hi%20Pawan%2C%0A%0AI%27d%20like%20to%20book%20a%20call%20about%3A%20" class="btn js-book" data-need="Free 30-min call" data-track="book-call-hero">Book a free 30-min call</a>
+            <a href="mailto:hello@pawansinha.com.au?subject=Free%2030-min%20call&amp;body=Hi%20Pawan%2C%0A%0AI%27d%20like%20to%20book%20a%20call%20about%3A%20" class="btn js-book" data-need="Free 30-min call" data-track="book-call-hero">Book a free 30-min call</a>
             <a href="#services" class="btn btn-ghost">See what I do</a>
           </div>
           <ul class="facts">
@@ -243,66 +240,6 @@
       </div>
     </section>
 
-    <section id="projects" class="wrap section">
-      <p class="eyebrow">Projects</p>
-      <h2>Things I've built</h2>
-      <p class="section-lead">Side projects where I use the same automation skills I bring to client work. Each one runs live.</p>
-      <div class="grid">
-        <a class="card project-card" href="/projects/deal-finder/">
-          <div class="icon">🏠</div>
-          <h3>Melbourne Deal Finder</h3>
-          <p>Every morning, a Playwright scraper on a GitHub Actions schedule scans Melbourne house listings and scores each one as a buyer. The results page updates itself with no manual work.</p>
-          <ul class="chips project-chips"><li>Python</li><li>Playwright</li><li>GitHub Actions</li></ul>
-          <span class="project-link">See today's results →</span>
-        </a>
-        <!-- k6 starter kit: replace [k6-kit-url] with the Gumroad product link to show this card -->
-        <a class="card project-card" href="[k6-kit-url]" target="_blank" rel="noopener" data-track="k6-kit">
-          <div class="icon">📦</div>
-          <h3>k6 Performance Test Starter Kit</h3>
-          <p>The framework I'd set up on day one: open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. Clone it and run realistic load tests within the hour.</p>
-          <ul class="chips project-chips"><li>k6</li><li>CI/CD</li><li>Grafana</li></ul>
-          <span class="project-link">Get the kit →</span>
-        </a>
-        <!-- Perf Advisor: replace [perf-advisor-url] with the Gumroad product link to show this card -->
-        <a class="card project-card" href="[perf-advisor-url]" target="_blank" rel="noopener" data-track="perf-advisor">
-          <div class="icon">🧭</div>
-          <h3>Perf Advisor</h3>
-          <p>A self-hosted app for the whole team: is this change risky, does it need a load test, how long will testing take? It writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.</p>
-          <ul class="chips project-chips"><li>k6</li><li>OpenAPI</li><li>Risk scoring</li></ul>
-          <span class="project-link">Get Perf Advisor →</span>
-        </a>
-      </div>
-    </section>
-
-    <section id="resources" class="wrap section">
-      <p class="eyebrow">Free resources</p>
-      <h2>Interview prep, blog and calculators</h2>
-      <p class="section-lead">Interview questions with model answers, deep dives on performance engineering, and calculators for load testing and capacity planning.</p>
-      <div class="grid">
-        <a class="card project-card" href="/interview-prep/performance-testing/">
-          <div class="icon">⚡</div>
-          <h3>Performance testing &amp; engineering</h3>
-          <p>From load-test basics to GC tuning, AWR analysis and capacity planning. Pick your level: basic (3–5 years), intermediate (5–7) or advanced (7+). Mock interviews available.</p>
-          <ul class="chips project-chips"><li>k6</li><li>JMeter</li><li>LoadRunner</li><li>APM</li></ul>
-          <span class="project-link">Start practising →</span>
-        </a>
-        <a class="card project-card" href="/blog/">
-          <div class="icon">✍️</div>
-          <h3>Blog</h3>
-          <p>Deep dives on bottlenecks, load testing, caching, load balancers, cloud and capacity planning, most with an interactive calculator. A new one every day.</p>
-          <ul class="chips project-chips"><li>Performance</li><li>Capacity</li><li>Cloud</li><li>Databases</li></ul>
-          <span class="project-link">Read the latest →</span>
-        </a>
-        <a class="card project-card" href="/tools/">
-          <div class="icon">🧮</div>
-          <h3>Performance calculators</h3>
-          <p>Size virtual users, thread pools and capacity, and see what CDNs, caches and load balancers do under load. Free, with your own numbers.</p>
-          <ul class="chips project-chips"><li>Little's Law</li><li>Capacity</li><li>Simulators</li></ul>
-          <span class="project-link">Open the calculators →</span>
-        </a>
-      </div>
-    </section>
-
     <section id="engage" class="wrap section">
       <p class="eyebrow">Ways to work together</p>
       <h2>Pick the engagement that fits</h2>
@@ -427,13 +364,73 @@
       </div>
     </section>
 
+    <section id="projects" class="wrap section">
+      <p class="eyebrow">Projects</p>
+      <h2>Things I've built</h2>
+      <p class="section-lead">Side projects where I use the same automation skills I bring to client work. Each one runs live.</p>
+      <div class="grid">
+        <a class="card project-card" href="/projects/deal-finder/">
+          <div class="icon">🏠</div>
+          <h3>Melbourne Deal Finder</h3>
+          <p>Every morning, a Playwright scraper on a GitHub Actions schedule scans Melbourne house listings and scores each one as a buyer. The results page updates itself with no manual work.</p>
+          <ul class="chips project-chips"><li>Python</li><li>Playwright</li><li>GitHub Actions</li></ul>
+          <span class="project-link">See today's results →</span>
+        </a>
+        <!-- k6 starter kit: replace [k6-kit-url] with the Gumroad product link to show this card -->
+        <a class="card project-card" href="[k6-kit-url]" target="_blank" rel="noopener" data-track="k6-kit">
+          <div class="icon">📦</div>
+          <h3>k6 Performance Test Starter Kit</h3>
+          <p>The framework I'd set up on day one: open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. Clone it and run realistic load tests within the hour.</p>
+          <ul class="chips project-chips"><li>k6</li><li>CI/CD</li><li>Grafana</li></ul>
+          <span class="project-link">Get the kit →</span>
+        </a>
+        <!-- Perf Advisor: replace [perf-advisor-url] with the Gumroad product link to show this card -->
+        <a class="card project-card" href="[perf-advisor-url]" target="_blank" rel="noopener" data-track="perf-advisor">
+          <div class="icon">🧭</div>
+          <h3>Perf Advisor</h3>
+          <p>A self-hosted app for the whole team: is this change risky, does it need a load test, how long will testing take? It writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.</p>
+          <ul class="chips project-chips"><li>k6</li><li>OpenAPI</li><li>Risk scoring</li></ul>
+          <span class="project-link">Get Perf Advisor →</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="resources" class="wrap section">
+      <p class="eyebrow">Free resources</p>
+      <h2>Interview prep, blog and calculators</h2>
+      <p class="section-lead">Interview questions with model answers, deep dives on performance engineering, and calculators for load testing and capacity planning.</p>
+      <div class="grid">
+        <a class="card project-card" href="/interview-prep/performance-testing/">
+          <div class="icon">⚡</div>
+          <h3>Performance testing &amp; engineering</h3>
+          <p>From load-test basics to GC tuning, AWR analysis and capacity planning. Pick your level: basic (3–5 years), intermediate (5–7) or advanced (7+). Mock interviews available.</p>
+          <ul class="chips project-chips"><li>k6</li><li>JMeter</li><li>LoadRunner</li><li>APM</li></ul>
+          <span class="project-link">Start practising →</span>
+        </a>
+        <a class="card project-card" href="/blog/">
+          <div class="icon">✍️</div>
+          <h3>Blog</h3>
+          <p>Deep dives on bottlenecks, load testing, caching, load balancers, cloud and capacity planning, most with an interactive calculator. A new one every day.</p>
+          <ul class="chips project-chips"><li>Performance</li><li>Capacity</li><li>Cloud</li><li>Databases</li></ul>
+          <span class="project-link">Read the latest →</span>
+        </a>
+        <a class="card project-card" href="/tools/">
+          <div class="icon">🧮</div>
+          <h3>Performance calculators</h3>
+          <p>Size virtual users, thread pools and capacity, and see what CDNs, caches and load balancers do under load. Free, with your own numbers.</p>
+          <ul class="chips project-chips"><li>Little's Law</li><li>Capacity</li><li>Simulators</li></ul>
+          <span class="project-link">Open the calculators →</span>
+        </a>
+      </div>
+    </section>
+
     <section id="contact" class="contact">
       <div class="wrap contact-inner">
         <h2>Launching soon, shipping bugs, or stuck on manual regression?</h2>
         <p>Tell me what you're working on. I reply within one business day, and the first 30-minute call is free.</p>
         <div class="cta">
-          <a class="btn btn-light js-book" href="mailto:pawansinha4u@gmail.com?subject=Free%2030-min%20call" data-need="Free 30-min call" data-track="book-call-contact">Book a free call</a>
-          <a class="btn btn-outline-light js-copy" href="mailto:pawansinha4u@gmail.com?subject=Project%20enquiry" data-copy="pawansinha4u@gmail.com" data-track="email">pawansinha4u@gmail.com</a>
+          <a class="btn btn-light js-book" href="mailto:hello@pawansinha.com.au?subject=Free%2030-min%20call" data-need="Free 30-min call" data-track="book-call-contact">Book a free call</a>
+          <a class="btn btn-outline-light js-copy" href="mailto:hello@pawansinha.com.au?subject=Project%20enquiry" data-copy="hello@pawansinha.com.au" data-track="email">hello@pawansinha.com.au</a>
           <a class="btn btn-outline-light" href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener" data-track="linkedin">LinkedIn</a>
           <a class="btn btn-outline-light" href="https://www.upwork.com/freelancers/~015b09c42e9ca95fc9" target="_blank" rel="noopener" data-track="upwork">Hire on Upwork</a>
         </div>
@@ -475,13 +472,42 @@
     </section>
   </main>
 
-  <footer class="footer wrap">
-    <p>© <span id="year"></span> Pawan Sinha · QA &amp; Test Automation Engineer · Melbourne, Australia</p>
-    <p>ABN 43 627 514 346</p>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="#services">Services</a>
+        <a href="#engage">Engagements</a>
+        <a href="#work">Case studies</a>
+        <a href="#contact">Book a free call</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
   </footer>
 
   <script src="main.js"></script>
   <script src="chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
   <script src="glow.js" defer></script>
+  <script src="/menu.js" defer></script>
 </body>
 </html>

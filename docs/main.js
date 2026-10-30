@@ -1,7 +1,7 @@
 (() => {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  document.getElementById('year').textContent = new Date().getFullYear();
+  const yearEl = document.getElementById('year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // Availability badge
   const badge = document.getElementById('availability');
@@ -62,7 +62,7 @@
         status.textContent = "Thanks! I'll reply within one business day. A confirmation is on its way to your inbox.";
         track('enquiry-sent');
       } catch {
-        status.textContent = "Sorry, that didn't send. Please email me at pawansinha4u@gmail.com.";
+        status.textContent = "Sorry, that didn't send. Please email me at hello@pawansinha.com.au.";
       } finally {
         button.disabled = false;
       }
@@ -104,7 +104,7 @@
     if (formLive) {
       a.addEventListener('click', () => { form.elements.need.value = a.dataset.need; });
     } else if (a.getAttribute('href') === '#contact' && a.dataset.need === 'Free QA health check') {
-      a.href = 'mailto:pawansinha4u@gmail.com?subject=Free%20QA%20health%20check&body=My%20website%20or%20app%3A%20';
+      a.href = 'mailto:hello@pawansinha.com.au?subject=Free%20QA%20health%20check&body=My%20website%20or%20app%3A%20';
     }
   });
 

@@ -161,25 +161,56 @@ HEAD = '''<!doctype html>
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
-      <nav>
-        <a href="/blog/">Blog</a>
-        <a href="/tools/">Calculators</a>
-        <a href="/interview-prep/performance-testing/">Interview prep</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/" aria-current="page">Blog</a>
         <a href="/#contact" class="btn btn-small">Hire me</a>
       </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
     </div>
   </header>
   <main class="wrap" style="padding: 0;">
 '''
 
 FOOT = '''  </main>
-  <footer class="footer wrap">
-    <p>© {year} Pawan Sinha · QA &amp; Test Automation Engineer · Melbourne, Australia</p>
-    <p><a href="/blog/feed.xml">RSS</a> · <a href="/">pawansinha.com.au</a></p>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/#contact">Book a free call</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© {year} Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
   </footer>
   <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
   <script src="/subscribe.js" defer></script>
   <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
 </body>
 </html>
 '''
