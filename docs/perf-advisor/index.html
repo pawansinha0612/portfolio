@@ -24,6 +24,8 @@
     .shots figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
     .price { font-size: 15px; color: var(--muted); margin: 14px 0 0; }
     .price strong { font-size: 28px; color: var(--text); margin-right: 6px; }
+    .demo-video { margin: 8px 0 0; }
+    .demo-video video { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); background: #0f172a; }
     .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
     .gallery img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); display: block; }
     .gallery figure { margin: 0; }
@@ -56,13 +58,39 @@
         <p class="lead">Every release raises the same questions, and they land on one busy performance engineer. Perf Advisor answers them consistently: it scores the risk, estimates the effort, writes the k6 test from your OpenAPI spec and turns the results into a report anyone can read.</p>
         <div class="cta">
           <a class="btn" href="[perf-advisor-url]" target="_blank" rel="noopener" data-track="perf-advisor-buy">Get Perf Advisor for A$129</a>
-          <a class="btn btn-ghost" href="#what" data-track="perf-advisor-more">See what it does</a>
+          <a class="btn btn-ghost" href="#demo" data-track="perf-advisor-demo">Watch the 1-minute demo</a>
         </div>
         <p class="price"><strong>A$129</strong>one-off · self-hosted · your data never leaves your machines</p>
       </div>
     </section>
 
+    <section id="demo" class="wrap section">
+      <p class="eyebrow">See it in action</p>
+      <h2>One minute: decision, k6 test, report</h2>
+      <p class="section-lead">A real run: decide whether a checkout change needs a load test, generate the k6 test from an OpenAPI spec, then turn the results into a report.</p>
+      <figure class="demo-video">
+        <video controls playsinline preload="none" poster="img/demo-poster.jpg" width="1280" height="800" data-track="perf-advisor-video">
+          <source src="demo.mp4" type="video/mp4">
+          Your browser can't play this video. <a href="demo.mp4">Download it</a>.
+        </video>
+      </figure>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">How a team uses it</p>
+        <h2>From "is this risky?" to a signed-off report</h2>
+        <ol class="steps">
+          <li><span>01</span><h3>Ask</h3><p>Anyone answers a few plain questions about the change. Perf Advisor says whether it needs a load test, and why.</p></li>
+          <li><span>02</span><h3>Plan</h3><p>The test manager gets an effort estimate and sprint plan for one or two engineers.</p></li>
+          <li><span>03</span><h3>Build</h3><p>The performance engineer picks the journey from the OpenAPI spec and downloads a runnable k6 test.</p></li>
+          <li><span>04</span><h3>Report</h3><p>After the run, upload k6's summary and share a PASS, PASS WITH RISKS or FAIL report.</p></li>
+        </ol>
+      </div>
+    </section>
+
     <section class="wrap section">
+      <p class="eyebrow">Screens</p>
       <div class="shots">
         <figure><img src="img/roles.jpg" alt="Perf Advisor's start screen with four roles" width="1600" height="1000" loading="lazy"><figcaption>Pick a role. Each one sees the tools it needs.</figcaption></figure>
         <figure><img src="img/phone-dark.jpg" alt="Perf Advisor on a phone in dark mode" width="493" height="1067" loading="lazy"><figcaption>Works on a phone, in dark mode.</figcaption></figure>
