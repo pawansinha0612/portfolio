@@ -9,7 +9,13 @@ Environment (GitHub secrets/variables):
     LINKEDIN_TOKEN_EXPIRES   optional, YYYY-MM-DD; a warning issue is opened 7 days before
     LINKEDIN_VERSION         optional, LinkedIn API version YYYYMM (default below)
 
-Writes token_problem=expired|expiring to $GITHUB_OUTPUT so the workflow can open a reminder issue.
+Company page (optional, needs LinkedIn's Community Management API on a separate app):
+    LINKEDIN_PAGE_ACCESS_TOKEN   set by the "LinkedIn token" workflow with account = page. If empty, the page is skipped.
+    LINKEDIN_PAGE_URN            urn:li:organization:<page id> (the number in the page's admin URL)
+    LINKEDIN_PAGE_TOKEN_EXPIRES  optional, YYYY-MM-DD
+
+Writes token_problem / page_token_problem = expired|expiring to $GITHUB_OUTPUT so the workflow can open a reminder issue.
+A page failure never stops the personal share.
 """
 import datetime as dt
 import json
@@ -27,6 +33,8 @@ from build import load, today, url  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 POSTED = ROOT / 'blog' / 'linkedin-posted.json'
 TOKEN = os.environ.get('LINKEDIN_ACCESS_TOKEN', '').strip()
+PAGE_TOKEN = os.environ.get('LINKEDIN_PAGE_ACCESS_TOKEN', '').strip()
+PAGE_URN = os.environ.get('LINKEDIN_PAGE_URN', '').strip()
 VERSION = os.environ.get('LINKEDIN_VERSION') or '202609'
 
 
@@ -37,8 +45,14 @@ def output(key, value):
             f.write(f'{key}={value}\n')
 
 
-def api(method, path, body=None, rest=True):
-    headers = {'Authorization': f'Bearer {TOKEN}'}
+class ApiError(Exception):
+    def __init__(self, code, detail):
+        super().__init__(f'HTTP {code} {detail}')
+        self.code = code
+
+
+def api(method, path, body=None, rest=True, token=None):
+    headers = {'Authorization': f'Bearer {token or TOKEN}'}
     if rest:
         headers.update({'LinkedIn-Version': VERSION, 'X-Restli-Protocol-Version': '2.0.0'})
     data = None
@@ -51,11 +65,21 @@ def api(method, path, body=None, rest=True):
             text = r.read().decode() or '{}'
             return r.status, dict(r.headers), json.loads(text)
     except urllib.error.HTTPError as err:
-        detail = err.read().decode(errors='replace')[:500]
-        if err.code == 401:
-            output('token_problem', 'expired')
-            raise SystemExit('LinkedIn says the access token is invalid or expired. Run the "LinkedIn token" workflow for a new one.')
-        raise SystemExit(f'LinkedIn API error: HTTP {err.code} {detail}')
+        raise ApiError(err.code, err.read().decode(errors='replace')[:500])
+
+
+def share(author, post, token=None):
+    """Publish the post's LinkedIn text with a link card; returns the new post's id."""
+    _, headers, _ = api('POST', '/rest/posts', {
+        'author': author,
+        'commentary': little_text(post['linkedin'] or post['summary']),
+        'visibility': 'PUBLIC',
+        'distribution': {'feedDistribution': 'MAIN_FEED', 'targetEntities': [], 'thirdPartyDistributionChannels': []},
+        'content': {'article': {'source': url(post), 'title': post['title'], 'description': post['summary']}},
+        'lifecycleState': 'PUBLISHED',
+        'isReshareDisabledByAuthor': False,
+    }, token=token)
+    return headers.get('x-restli-id') or headers.get('X-RestLi-Id') or 'posted'
 
 
 def little_text(text):
@@ -83,50 +107,77 @@ def wait_until_live(page_url, minutes=10):
     return False
 
 
-def check_expiry():
-    exp = os.environ.get('LINKEDIN_TOKEN_EXPIRES', '').strip()
+def check_expiry(var, problem_key, workflow_hint):
+    exp = os.environ.get(var, '').strip()
     if not exp:
         return
     days = (dt.date.fromisoformat(exp) - today()).days
     if days <= 7:
-        print(f'::warning::The LinkedIn token expires in {days} day(s) ({exp}). Run the "LinkedIn token" workflow.')
-        output('token_problem', 'expiring')
+        print(f'::warning::{workflow_hint} expires in {days} day(s) ({exp}). Run the "LinkedIn token" workflow.')
+        output(problem_key, 'expiring')
 
 
-def main():
-    if not TOKEN:
-        print('LINKEDIN_ACCESS_TOKEN not set; skipping LinkedIn.')
-        return
-    check_expiry()
-
-    posted = json.loads(POSTED.read_text()) if POSTED.exists() else {}
+def share_personal(posted):
     recent = [p for p in load() if p['slug'] not in posted and p['date'] >= today() - dt.timedelta(days=3)]
     if not recent:
-        print('Nothing new to share on LinkedIn.')
+        print('Nothing new to share on your profile.')
         return
     post = recent[0]  # load() is newest first
-
     if not wait_until_live(url(post)):
         raise SystemExit(f'{url(post)} is not live yet; it will be shared on the next run.')
 
     author = os.environ.get('LINKEDIN_AUTHOR', '').strip()
-    if not author:
-        _, _, me = api('GET', '/v2/userinfo', rest=False)
-        author = f'urn:li:person:{me["sub"]}'
+    try:
+        if not author:
+            _, _, me = api('GET', '/v2/userinfo', rest=False)
+            author = f'urn:li:person:{me["sub"]}'
+        post_id = share(author, post)
+    except ApiError as err:
+        if err.code == 401:
+            output('token_problem', 'expired')
+            raise SystemExit('LinkedIn says the access token is invalid or expired. Run the "LinkedIn token" workflow.')
+        raise SystemExit(f'LinkedIn API error: {err}')
+    posted[post['slug']] = {'date': today().isoformat(), 'id': post_id}
+    save(posted)
+    print(f'Shared on your LinkedIn profile: {post["title"]} ({post_id})')
 
-    _, headers, _ = api('POST', '/rest/posts', {
-        'author': author,
-        'commentary': little_text(post['linkedin'] or post['summary']),
-        'visibility': 'PUBLIC',
-        'distribution': {'feedDistribution': 'MAIN_FEED', 'targetEntities': [], 'thirdPartyDistributionChannels': []},
-        'content': {'article': {'source': url(post), 'title': post['title'], 'description': post['summary']}},
-        'lifecycleState': 'PUBLISHED',
-        'isReshareDisabledByAuthor': False,
-    })
-    share = headers.get('x-restli-id') or headers.get('X-RestLi-Id') or 'posted'
-    posted[post['slug']] = {'date': today().isoformat(), 'id': share}
+
+def share_page(posted):
+    if not PAGE_TOKEN or not PAGE_URN:
+        print('Company page not connected (LINKEDIN_PAGE_ACCESS_TOKEN / LINKEDIN_PAGE_URN); skipping the page.')
+        return
+    check_expiry('LINKEDIN_PAGE_TOKEN_EXPIRES', 'page_token_problem', 'The LinkedIn company page token')
+    # The newest post already on the profile but not yet on the page.
+    todo = [p for p in load() if p['slug'] in posted and 'page_id' not in posted[p['slug']]
+            and p['date'] >= today() - dt.timedelta(days=3)]
+    if not todo:
+        print('Nothing new to share on the company page.')
+        return
+    post = todo[0]
+    try:
+        post_id = share(PAGE_URN, post, token=PAGE_TOKEN)
+    except ApiError as err:
+        if err.code == 401:
+            output('page_token_problem', 'expired')
+        print(f'::warning::Company page share failed ({err}). The profile share is unaffected.')
+        return
+    posted[post['slug']]['page_id'] = post_id
+    save(posted)
+    print(f'Shared on the company page: {post["title"]} ({post_id})')
+
+
+def save(posted):
     POSTED.write_text(json.dumps(posted, indent=2) + '\n')
-    print(f'Shared on LinkedIn: {post["title"]} ({share})')
+
+
+def main():
+    posted = json.loads(POSTED.read_text()) if POSTED.exists() else {}
+    if TOKEN:
+        check_expiry('LINKEDIN_TOKEN_EXPIRES', 'token_problem', 'The LinkedIn token')
+        share_personal(posted)
+    else:
+        print('LINKEDIN_ACCESS_TOKEN not set; skipping your profile.')
+    share_page(posted)
 
 
 if __name__ == '__main__':

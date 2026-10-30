@@ -133,9 +133,31 @@ Existing widgets: `bottleneck`, `cdn`, `omission`, `threads`, `lb`, `capacity`, 
 |---|---|---|
 | Weekly | Merge the drafts PR | See above |
 | When `blog/topics.md` runs low (the PR warns under 7 left) | Add topics | Add `- [ ] Title — angle` lines under **Queue**. Lines under **Parked** are skipped |
-| Every ~60 days (next: late Dec 2026) | Renew the LinkedIn token | GitHub opens an issue **"Renew the LinkedIn token…"**. Run Actions → **LinkedIn token** with the code empty, open the sign-in link, then run it again with the code from `/linkedin-callback/` |
+| Every ~60 days (next: late Dec 2026) | Renew the LinkedIn token (and the company page token, once connected) | GitHub opens an issue **"Renew the LinkedIn token…"**. Run Actions → **LinkedIn token** with the code empty, open the sign-in link, then run it again with the code from `/linkedin-callback/` |
 | When GitHub emails about it | Renew `SECRETS_ADMIN_TOKEN` | Fine-grained token for this repo with Secrets and Variables read/write |
 | If drafting fails | Check the NVIDIA key and models | Actions → Blog drafts → the run's warnings. Free models change. Set variable `AI_MODEL` to a working model ID |
+
+### Company page on LinkedIn (optional, needs LinkedIn approval)
+
+Posts go to your personal profile automatically. They also go to the **Pawan Sinha Consulting** page once that is
+connected. Until then the page step is skipped, and a page problem never blocks the profile post.
+
+1. https://www.linkedin.com/developers/apps → **Create app**, for example "Pawan Sinha Page Publisher". Link the
+   Pawan Sinha Consulting page, upload the logo, then **Verify** the app from the page (Settings tab).
+   It must be a separate app: LinkedIn only grants the page permission to an app that has no other products.
+2. **Products** tab → **Community Management API** → **Request access**. Fill in the form: business name and ABN,
+   website, and the use case "publish my own company page's blog posts automatically, one admin, my own page only".
+   LinkedIn reviews it by hand. It can take days or weeks and may be declined.
+3. Once approved: **Auth** tab → add the redirect URL `https://pawansinha.com.au/linkedin-callback/`.
+4. GitHub → Settings → Secrets and variables → Actions:
+   - Variable `LINKEDIN_PAGE_CLIENT_ID` and secret `LINKEDIN_PAGE_CLIENT_SECRET` from that app's Auth tab.
+   - Variable `LINKEDIN_PAGE_URN` = `urn:li:organization:` followed by the page's number, which is in the page's
+     admin address (`linkedin.com/company/NUMBER/admin/`).
+5. Actions → **LinkedIn token** → Run workflow with account **page** and the code empty → open the sign-in link →
+   approve → run it again with account **page** and the code. The page token lasts about 60 days. GitHub opens a
+   "Renew the LinkedIn company page token" issue when it needs renewing.
+
+Until then, reshare each post to the page by hand: on the post, **Repost** and switch to posting as the page.
 
 ### Growing impressions
 

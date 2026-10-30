@@ -4,6 +4,8 @@
 #
 # Needs: variable LINKEDIN_CLIENT_ID, secrets LINKEDIN_CLIENT_SECRET and SECRETS_ADMIN_TOKEN
 # (a fine-grained personal access token for this repo with Secrets and Variables: read and write).
+# Company page (account = page): variable LINKEDIN_PAGE_CLIENT_ID and secret LINKEDIN_PAGE_CLIENT_SECRET from the
+# separate LinkedIn app that has the Community Management API.
 name: LinkedIn token
 
 on:
@@ -12,6 +14,11 @@ on:
       code:
         description: 'Code from the LinkedIn sign-in page (leave empty to get the sign-in link)'
         required: false
+      account:
+        description: 'Which LinkedIn account to connect'
+        type: choice
+        options: [personal, page]
+        default: personal
 
 permissions:
   issues: write
@@ -27,24 +34,29 @@ jobs:
         env:
           LINKEDIN_CLIENT_ID: ${{ vars.LINKEDIN_CLIENT_ID }}
           LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
-        run: python3 blog/linkedin_auth.py --link
+          LINKEDIN_PAGE_CLIENT_ID: ${{ vars.LINKEDIN_PAGE_CLIENT_ID }}
+          LINKEDIN_PAGE_CLIENT_SECRET: ${{ secrets.LINKEDIN_PAGE_CLIENT_SECRET }}
+        run: python3 blog/linkedin_auth.py --link ${{ inputs.account == 'page' && '--page' || '' }}
 
       - name: Save the new token
         if: inputs.code != ''
         env:
           LINKEDIN_CLIENT_ID: ${{ vars.LINKEDIN_CLIENT_ID }}
           LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+          LINKEDIN_PAGE_CLIENT_ID: ${{ vars.LINKEDIN_PAGE_CLIENT_ID }}
+          LINKEDIN_PAGE_CLIENT_SECRET: ${{ secrets.LINKEDIN_PAGE_CLIENT_SECRET }}
           GH_TOKEN: ${{ secrets.SECRETS_ADMIN_TOKEN }}
           CODE: ${{ inputs.code }}
         run: |
           if [ -z "$GH_TOKEN" ]; then echo '::error::Add the SECRETS_ADMIN_TOKEN secret first (see the top of this workflow).'; exit 1; fi
-          python3 blog/linkedin_auth.py --code "$CODE"
+          python3 blog/linkedin_auth.py --code "$CODE" ${{ inputs.account == 'page' && '--page' || '' }}
 
       - name: Close the renewal reminder
         if: inputs.code != '' && success()
         env:
           GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.account == 'page' && 'Renew the LinkedIn company page token' || 'Renew the LinkedIn token' }}
         run: |
-          for n in $(gh issue list --state open --search 'Renew the LinkedIn token in:title' --json number --jq '.[].number'); do
+          for n in $(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[].number'); do
             gh issue close "$n" --comment 'Renewed by the LinkedIn token workflow.'
           done

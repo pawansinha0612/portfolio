@@ -56,6 +56,9 @@ jobs:
           LINKEDIN_AUTHOR: ${{ vars.LINKEDIN_AUTHOR }}
           LINKEDIN_TOKEN_EXPIRES: ${{ vars.LINKEDIN_TOKEN_EXPIRES }}
           LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
+          LINKEDIN_PAGE_ACCESS_TOKEN: ${{ secrets.LINKEDIN_PAGE_ACCESS_TOKEN }}
+          LINKEDIN_PAGE_URN: ${{ vars.LINKEDIN_PAGE_URN }}
+          LINKEDIN_PAGE_TOKEN_EXPIRES: ${{ vars.LINKEDIN_PAGE_TOKEN_EXPIRES }}
         run: python blog/linkedin.py
 
       - name: Record what was shared
@@ -80,4 +83,19 @@ jobs:
           1. Open Actions → **LinkedIn token** → Run workflow (leave the code empty) and open the sign-in link it shows.
           2. Approve on LinkedIn, copy the code from the page you land on, and run the workflow again with that code.
           3. That's it: the workflow saves the new token and closes this issue. Works from any computer or phone."
+          fi
+
+      - name: Remind me to renew the LinkedIn company page token
+        if: always() && steps.linkedin.outputs.page_token_problem != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROBLEM: ${{ steps.linkedin.outputs.page_token_problem }}
+        run: |
+          title='Renew the LinkedIn company page token'
+          if [ -z "$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')" ]; then
+            gh issue create --title "$title" --body "The company page token is **$PROBLEM**. Posts still go to the website and your profile, but not to the page until you renew it.
+
+          1. Open Actions → **LinkedIn token** → Run workflow with account **page** and the code empty, then open the sign-in link it shows.
+          2. Approve on LinkedIn, copy the code from the page you land on, and run the workflow again with account **page** and that code.
+          3. The workflow saves the new token and closes this issue."
           fi

@@ -16,6 +16,8 @@ Both redirect URLs must be listed in the LinkedIn app (Auth tab):
 Workflow modes (used by .github/workflows/linkedin-token.yml):
     python3 blog/linkedin_auth.py --link            print the sign-in link
     python3 blog/linkedin_auth.py --code CODE       exchange the code and save it to GitHub with the gh CLI
+Add --page to either for the company page app (Community Management API, its own client ID and secret:
+LINKEDIN_PAGE_CLIENT_ID / LINKEDIN_PAGE_CLIENT_SECRET). It saves LINKEDIN_PAGE_ACCESS_TOKEN instead.
 
 Uses only the Python standard library.
 """
@@ -36,11 +38,14 @@ CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '').strip()
 LOCAL_REDIRECT = 'http://localhost:8765/callback'
 WEB_REDIRECT = 'https://pawansinha.com.au/linkedin-callback/'
 SCOPES = 'openid profile w_member_social'
+PAGE_SCOPES = 'w_organization_social'
+page_mode = False  # set by --page: use the company page app and save the page token
 
 
 def auth_url(redirect, state):
     return 'https://www.linkedin.com/oauth/v2/authorization?' + urllib.parse.urlencode({
-        'response_type': 'code', 'client_id': CLIENT_ID, 'redirect_uri': redirect, 'state': state, 'scope': SCOPES,
+        'response_type': 'code', 'client_id': CLIENT_ID, 'redirect_uri': redirect, 'state': state,
+        'scope': PAGE_SCOPES if page_mode else SCOPES,
     })
 
 
@@ -58,6 +63,8 @@ def exchange(code, redirect):
                          'Codes work once and expire after a few minutes. Get a fresh one and try again.')
     access = token['access_token']
     expires = dt.date.today() + dt.timedelta(seconds=int(token.get('expires_in', 0)))
+    if page_mode:  # the page app has no sign-in scopes, so there is no profile to look up
+        return access, expires, None, 'your company page'
     req = urllib.request.Request('https://api.linkedin.com/v2/userinfo', headers={'Authorization': f'Bearer {access}'})
     with urllib.request.urlopen(req) as r:
         me = json.load(r)
@@ -107,6 +114,10 @@ The token expires on {expires.strftime("%d %B %Y")}. GitHub will open an issue (
 def save_to_github(code):
     access, expires, author, name = exchange(code.strip(), WEB_REDIRECT)
     print(f'::add-mask::{access}')
+    if page_mode:
+        subprocess.run(['gh', 'secret', 'set', 'LINKEDIN_PAGE_ACCESS_TOKEN'], input=access, text=True, check=True)
+        subprocess.run(['gh', 'variable', 'set', 'LINKEDIN_PAGE_TOKEN_EXPIRES', '--body', expires.isoformat()], check=True)
+        return name, expires
     subprocess.run(['gh', 'secret', 'set', 'LINKEDIN_ACCESS_TOKEN'], input=access, text=True, check=True)
     subprocess.run(['gh', 'variable', 'set', 'LINKEDIN_AUTHOR', '--body', author], check=True)
     subprocess.run(['gh', 'variable', 'set', 'LINKEDIN_TOKEN_EXPIRES', '--body', expires.isoformat()], check=True)
@@ -125,10 +136,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--link', action='store_true', help='print the sign-in link for the website callback')
     ap.add_argument('--code', help='exchange this code and save the token to GitHub')
+    ap.add_argument('--page', action='store_true', help='company page app instead of your personal profile')
     args = ap.parse_args()
+    global CLIENT_ID, CLIENT_SECRET, page_mode
+    if args.page:
+        page_mode = True
+        CLIENT_ID = os.environ.get('LINKEDIN_PAGE_CLIENT_ID', '').strip()
+        CLIENT_SECRET = os.environ.get('LINKEDIN_PAGE_CLIENT_SECRET', '').strip()
+        if not CLIENT_ID or not CLIENT_SECRET:
+            raise SystemExit('Set the LINKEDIN_PAGE_CLIENT_ID variable and LINKEDIN_PAGE_CLIENT_SECRET secret first '
+                             '(from the company page app\'s Auth tab).')
     if not CLIENT_ID or not CLIENT_SECRET:
         raise SystemExit('Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET first (see the top of this file).')
 
+    if args.page and not (args.code or args.link):
+        raise SystemExit('--page works with --link or --code (the browser flow), not the local flow.')
     if args.code:
         name, expires = save_to_github(args.code)
         summary(f'### ✅ LinkedIn connected\nSigned in as **{name}**. The token is saved and lasts until '
@@ -136,7 +158,8 @@ def main():
     elif args.link:
         summary(f'### Step 1 of 2: sign in to LinkedIn\n[**Open this link**]({auth_url(WEB_REDIRECT, "blog")}), '
                 'click **Allow**, then copy the code shown on the page you land on.\n\n'
-                '### Step 2 of 2\nRun this workflow again and paste the code into the box.')
+                '### Step 2 of 2\nRun this workflow again and paste the code into the box'
+                + (', with account **page** selected again.' if page_mode else '.'))
     else:
         local_flow()
 
