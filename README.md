@@ -53,6 +53,24 @@ dig +short www.pawansinha.com.au      # should show pawansinha0612.github.io
 ```
 Or check worldwide at https://dnschecker.org/#A/pawansinha.com.au.
 
+### Business email (`hello@pawansinha.com.au`)
+
+Email to any address at `@pawansinha.com.au` is forwarded to your Gmail by **ImprovMX** (free plan, log in at
+https://app.improvmx.com with your Gmail). It's receive-only: replies you send come from your Gmail address.
+LinkedIn's developer forms accept it as a business email.
+
+| Type | Name | Value | Priority |
+|---|---|---|---|
+| MX | `@` | `mx1.improvmx.com` | 10 |
+| MX | `@` | `mx2.improvmx.com` | 20 |
+| TXT | `@` | `v=spf1 include:spf.improvmx.com ~all` | |
+
+These sit in Hostinger DNS next to the website records. Don't delete them, or mail to the domain stops arriving.
+- **Check:** `dig +short MX pawansinha.com.au` should list both ImprovMX servers.
+- **Mail not arriving:** check Gmail's Spam folder, then the ImprovMX dashboard for a red warning (it re-checks the records).
+- **Send as hello@ from Gmail (optional):** this needs an SMTP server. ImprovMX only offers that on its paid plan, so use a
+  free SMTP provider, or keep replying from Gmail.
+
 ### HTTPS
 In GitHub, go to **Settings → Pages** and tick **Enforce HTTPS** once the certificate is issued. If the box stays greyed out
 for more than an hour, remove the custom domain, Save, add `pawansinha.com.au` again, and Save. That restarts the certificate request.
