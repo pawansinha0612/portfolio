@@ -28,7 +28,8 @@
 .widget .w-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin:2px 0 0}\
 .widget .w-legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}\
 .widget table{margin:10px 0 0;font-size:14px}\
-.widget td,.widget th{font-variant-numeric:tabular-nums}';
+.widget td,.widget th{font-variant-numeric:tabular-nums;padding:4px 14px 4px 0;text-align:left}\
+.widget .w-code{margin:4px 0 0;background:var(--alt);border:1px solid var(--border);border-radius:10px;padding:12px 14px;overflow-x:auto;font:500 13px/1.6 "JetBrains Mono",ui-monospace,monospace;color:var(--text)}';
 
   var SVGNS = 'http://www.w3.org/2000/svg';
   var C = { a: 'var(--accent)', b: 'var(--accent-2)', w: 'var(--warn)', m: 'var(--muted)', g: 'var(--border)' };
@@ -285,6 +286,44 @@
     update();
   };
 
+  W.vusers = function (node) {
+    var f = frame(node, 'How many virtual users do I need?', 'Little\'s Law: concurrent users = throughput × (response time + think time). Enter your target and get a k6 scenario sized for it.');
+    var u = function () { update(); };
+    var rate = range(f, { label: 'Target throughput', min: 1, max: 2000, value: 50, show: function (v) { return fmt(v) + ' iterations/s'; } }, u);
+    var resp = range(f, { label: 'Response time per iteration (all requests)', min: 50, max: 10000, step: 50, value: 800, show: ms }, u);
+    var think = range(f, { label: 'Think time per iteration', min: 0, max: 60, step: 0.5, value: 5, show: function (v) { return fmt(v, 1) + ' s'; } }, u);
+    var st = stats(f.out, [['closed', 'Closed model: virtual users'], ['hour', 'Iterations per hour'], ['pre', 'Open model: preAllocatedVUs'], ['max', 'Open model: maxVUs']]);
+    var code = h('pre', { class: 'w-code' });
+    f.out.appendChild(code);
+    var say = note(f.out);
+    function update() {
+      var x = rate(), r = resp() / 1000, z = think();
+      var closed = Math.ceil(x * (r + z));
+      var pre = Math.max(1, Math.ceil(x * r * 1.2));       // busy VUs at normal latency, plus 20%
+      var max = Math.max(pre, Math.ceil(x * r * 5));        // room for latency to grow 5× before iterations drop
+      st.closed(fmt(closed));
+      st.hour(fmt(x * 3600));
+      st.pre(fmt(pre));
+      st.max(fmt(max));
+      code.textContent =
+        "export const options = {\n" +
+        "  scenarios: {\n" +
+        "    target_load: {\n" +
+        "      executor: 'constant-arrival-rate',\n" +
+        "      rate: " + x + ",\n" +
+        "      timeUnit: '1s',\n" +
+        "      duration: '30m',\n" +
+        "      preAllocatedVUs: " + pre + ",\n" +
+        "      maxVUs: " + max + ",\n" +
+        "    },\n" +
+        "  },\n" +
+        "  thresholds: { dropped_iterations: ['count==0'] },\n" +
+        "};";
+      say('A closed-model tool (fixed users with think time) needs ' + fmt(closed) + ' users to reach ' + fmt(x) + ' iterations/s, and only while response time stays at ' + ms(resp()) + '. An arrival-rate test keeps the rate fixed even when the system slows down, so think time is not needed to hit the target.');
+    }
+    update();
+  };
+
   W.cdn = function (node) {
     var f = frame(node, 'Hit ratio vs origin load', 'Origin traffic = edge traffic × (1 − hit ratio). Move the slider and watch how fast origin load grows.');
     var u = function () { update(); };
@@ -355,7 +394,7 @@
           { pts: av.map(function (v, k) { return [k, v]; }), color: C.w },
         ],
       });
-      say('The tool recorded ' + fmt(n + 1) + ' samples; users would have sent ' + fmt(n + m) + '. Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.', av[2] / rv[2] > 2);
+      say('The tool recorded ' + fmt(n + 1) + ' samples. Users would have sent ' + fmt(n + m) + '. Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.', av[2] / rv[2] > 2);
     }
     update();
   };

@@ -95,6 +95,10 @@
       .catch(() => {});
   }
 
+  // A link like /?need=Interview%20coaching#contact pre-selects that option (used from other pages)
+  const wanted = new URLSearchParams(location.search).get('need');
+  if (formLive && wanted && [...form.elements.need.options].some(o => o.value === wanted)) form.elements.need.value = wanted;
+
   // Buttons tagged data-need pre-select that option in the form; without the form they fall back to email
   document.querySelectorAll('[data-need]').forEach(a => {
     if (formLive) {

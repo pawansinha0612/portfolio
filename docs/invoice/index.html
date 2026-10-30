@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoice — Pawan Sinha</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Private tool: not linked from the site and not indexed. Everything typed here stays in this browser (localStorage). */
+    .inv-head { padding: 40px 16px 8px; }
+    .inv-head h1 { font-size: clamp(26px, 4vw, 34px); margin: 0 0 6px; }
+    .inv-head p:not(.eyebrow) { margin: 0; color: var(--muted); max-width: 680px; }
+    .inv { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 28px; align-items: start; padding: 24px 16px 64px; }
+    .editor { display: flex; flex-direction: column; gap: 16px; }
+    .editor fieldset { margin: 0; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px 16px; background: var(--surface); display: grid; gap: 10px; }
+    .editor legend { font-weight: 700; font-size: 14px; padding: 0 6px; }
+    .editor label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .editor input, .editor textarea, .editor select { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; font-weight: 400; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+    .editor textarea { min-height: 64px; resize: vertical; }
+    .editor input:focus-visible, .editor textarea:focus-visible, .editor select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .check { display: flex !important; flex-direction: row; align-items: center; gap: 8px; color: var(--text) !important; }
+    .check input { width: auto; }
+    .line { display: grid; grid-template-columns: 1fr 64px 92px 30px; gap: 6px; align-items: end; }
+    .line + .line { padding-top: 8px; border-top: 1px dashed var(--border); }
+    .line .desc { grid-column: 1 / -1; }
+    .icon-btn { border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 8px; height: 38px; cursor: pointer; font: inherit; }
+    .icon-btn:hover { color: var(--text); border-color: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .actions button { font: inherit; font-weight: 600; cursor: pointer; }
+    .hint { font-size: 13px; color: var(--muted); margin: 0; }
+    .history { font-size: 14px; }
+    .history table { width: 100%; border-collapse: collapse; }
+    .history td { padding: 6px 4px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+
+    /* The invoice itself: always black on white, like paper */
+    .paper { position: sticky; top: 84px; background: #fff; color: #1a1f2b; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 44px 44px 36px; font-size: 14px; line-height: 1.5; }
+    .paper h2 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+    .p-top { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+    .p-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+    .p-brand i { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #2557d6, #12a77a); display: inline-block; }
+    .p-muted { color: #5a6273; }
+    .p-meta { text-align: right; }
+    .p-meta div { font-variant-numeric: tabular-nums; }
+    .p-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+    .p-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #2557d6; margin-bottom: 4px; }
+    .p-lines { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+    .p-lines th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #5a6273; border-bottom: 2px solid #1a1f2b; padding: 8px 6px; }
+    .p-lines td { padding: 10px 6px; border-bottom: 1px solid #e3e6ec; vertical-align: top; font-variant-numeric: tabular-nums; }
+    .p-lines .amt { text-align: right; white-space: nowrap; }
+    .p-totals { margin-left: auto; width: min(320px, 100%); font-variant-numeric: tabular-nums; }
+    .p-totals div { display: flex; justify-content: space-between; padding: 6px 6px; }
+    .p-totals .grand { border-top: 2px solid #1a1f2b; margin-top: 4px; font-weight: 800; font-size: 18px; }
+    .p-pay { margin-top: 28px; padding-top: 18px; border-top: 1px solid #e3e6ec; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .p-note { white-space: pre-wrap; }
+
+    @media (max-width: 900px) { .inv { grid-template-columns: 1fr; } .paper { position: static; } }
+    @media (max-width: 600px) { .paper { padding: 26px 20px; } .p-parties, .p-pay { grid-template-columns: 1fr; } .p-meta { text-align: left; } }
+    @media print {
+      @page { margin: 14mm; }
+      body { background: #fff; }
+      .nav, .inv-head, .editor, .footer { display: none !important; }
+      .inv { display: block; padding: 0; }
+      .paper { border: 0; box-shadow: none; border-radius: 0; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav><a href="/" class="btn btn-small btn-ghost">Back to the website</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap inv-head">
+      <p class="eyebrow">Private tool</p>
+      <h1>Invoice</h1>
+      <p>Fill in the left side and the invoice updates on the right. <strong>Print / save as PDF</strong> gives you a PDF to email. Your details, bank account and invoice history are saved in this browser only. Nothing is sent anywhere.</p>
+    </section>
+
+    <div class="wrap inv">
+      <form class="editor" id="editor" autocomplete="off">
+        <fieldset>
+          <legend>Your business</legend>
+          <div class="pair">
+            <label>Your name<input id="me_name"></label>
+            <label>Business name<input id="me_business" placeholder="Optional"></label>
+          </div>
+          <div class="pair">
+            <label>ABN<input id="me_abn"></label>
+            <label>Email<input id="me_email" type="email"></label>
+          </div>
+          <label>Address<textarea id="me_address" placeholder="Street, suburb, state, postcode"></textarea></label>
+          <label class="check"><input id="gst" type="checkbox"> Registered for GST (adds 10% GST and titles it a tax invoice)</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Payment details</legend>
+          <label>Account name<input id="bank_name"></label>
+          <div class="pair">
+            <label>BSB<input id="bank_bsb" inputmode="numeric"></label>
+            <label>Account number<input id="bank_acc" inputmode="numeric"></label>
+          </div>
+          <label>Payment terms (days)<input id="terms" type="number" min="0" max="120"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Client</legend>
+          <label>Client or company name<input id="cl_name"></label>
+          <div class="pair">
+            <label>Client ABN<input id="cl_abn" placeholder="Optional"></label>
+            <label>Attention / contact<input id="cl_attn" placeholder="Optional"></label>
+          </div>
+          <label>Client address or email<textarea id="cl_address"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Invoice</legend>
+          <div class="pair">
+            <label>Invoice number<input id="number"></label>
+            <label>Invoice date<input id="date" type="date"></label>
+          </div>
+          <label>Reference or PO number<input id="ref" placeholder="Optional"></label>
+          <div id="lines"></div>
+          <button class="icon-btn" type="button" id="add-line">+ Add a line</button>
+          <label>Notes<textarea id="notes" placeholder="Optional, e.g. performance testing for release 4.2"></textarea></label>
+        </fieldset>
+
+        <div class="actions">
+          <button class="btn" type="button" id="print">Print / save as PDF</button>
+          <button class="btn btn-ghost" type="button" id="next">Start the next invoice</button>
+        </div>
+        <p class="hint">Printing records the invoice in the history below. Starting the next invoice keeps your details and moves to the next number.</p>
+
+        <fieldset class="history">
+          <legend>Invoices issued in this browser</legend>
+          <div id="history"><p class="hint">None yet.</p></div>
+        </fieldset>
+      </form>
+
+      <article class="paper" id="paper" aria-label="Invoice preview">
+        <div class="p-top">
+          <div>
+            <div class="p-brand"><i></i><span id="pv_brand"></span></div>
+            <div id="pv_me" class="p-muted"></div>
+          </div>
+          <div class="p-meta">
+            <h2 id="pv_title">Invoice</h2>
+            <div>No. <strong id="pv_number"></strong></div>
+            <div>Date: <span id="pv_date"></span></div>
+            <div>Due: <strong id="pv_due"></strong></div>
+            <div id="pv_ref"></div>
+          </div>
+        </div>
+        <div class="p-parties">
+          <div><div class="p-label">Bill to</div><div id="pv_client"></div></div>
+          <div><div class="p-label">From</div><div id="pv_from"></div></div>
+        </div>
+        <table class="p-lines">
+          <thead><tr><th>Description</th><th class="amt">Qty</th><th class="amt">Rate</th><th class="amt">Amount</th></tr></thead>
+          <tbody id="pv_lines"></tbody>
+        </table>
+        <div class="p-totals">
+          <div><span id="pv_sub_label">Subtotal</span><span id="pv_sub"></span></div>
+          <div id="pv_gst_row"><span>GST (10%)</span><span id="pv_gst"></span></div>
+          <div class="grand"><span>Total (AUD)</span><span id="pv_total"></span></div>
+        </div>
+        <div class="p-pay">
+          <div><div class="p-label">How to pay</div><div id="pv_bank"></div></div>
+          <div><div class="p-label">Notes</div><div id="pv_notes" class="p-note"></div></div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="footer wrap">
+    <p>© <span id="year"></span> Pawan Sinha</p>
+    <p>Private page · not indexed</p>
+  </footer>
+
+  <script>
+  (() => {
+    const KEY = 'invoice-tool-v1';
+    const $ = id => document.getElementById(id);
+    const money = n => n.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
+    const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+    const FIELDS = ['me_name', 'me_business', 'me_abn', 'me_email', 'me_address', 'bank_name', 'bank_bsb', 'bank_acc', 'terms',
+      'cl_name', 'cl_abn', 'cl_attn', 'cl_address', 'number', 'date', 'ref', 'notes'];
+    const defaults = { me_name: 'Pawan Sinha', me_abn: '43 627 514 346', me_email: 'hello@pawansinha.com.au', terms: 14,
+      number: 'INV-0001', date: today(), gst: false, lines: [{ desc: 'Performance testing services', qty: 5, unit: 'days', rate: 0 }], history: [] };
+
+    let state;
+    try { state = Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { state = Object.assign({}, defaults); }
+    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+
+    FIELDS.forEach(f => { $(f).value = state[f] ?? ''; $(f).addEventListener('input', () => { state[f] = $(f).value; save(); render(); }); });
+    $('gst').checked = !!state.gst;
+    $('gst').addEventListener('change', () => { state.gst = $('gst').checked; save(); render(); });
+
+    function drawLines() {
+      const box = $('lines');
+      box.innerHTML = '';
+      state.lines.forEach((l, i) => {
+        const row = document.createElement('div');
+        row.className = 'line';
+        row.innerHTML = `<label class="desc">Description<input data-k="desc"></label>
+          <label>Qty<input data-k="qty" type="number" min="0" step="any"></label>
+          <label>Rate (ex GST)<input data-k="rate" type="number" min="0" step="any"></label>
+          <button class="icon-btn" type="button" aria-label="Remove line" title="Remove line">×</button>`;
+        row.querySelectorAll('input').forEach(inp => {
+          inp.value = l[inp.dataset.k] ?? '';
+          inp.addEventListener('input', () => { l[inp.dataset.k] = inp.type === 'number' ? parseFloat(inp.value) || 0 : inp.value; save(); render(); });
+        });
+        row.querySelector('button').addEventListener('click', () => { state.lines.splice(i, 1); if (!state.lines.length) state.lines.push({ desc: '', qty: 1, rate: 0 }); save(); drawLines(); render(); });
+        box.appendChild(row);
+      });
+    }
+    $('add-line').addEventListener('click', () => { state.lines.push({ desc: '', qty: 1, rate: 0 }); save(); drawLines(); render(); });
+
+    const text = (el, s) => { el.textContent = s; };
+    const lines = arr => arr.filter(Boolean).join('\n');
+    function totals() {
+      const sub = state.lines.reduce((t, l) => t + (Number(l.qty) || 0) * (Number(l.rate) || 0), 0);
+      const gst = state.gst ? Math.round(sub * 0.1 * 100) / 100 : 0;
+      return { sub, gst, total: sub + gst };
+    }
+    function dueDate() {
+      if (!state.date) return '';
+      const d = new Date(state.date + 'T00:00:00');
+      d.setDate(d.getDate() + (parseInt(state.terms, 10) || 0));
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function render() {
+      const t = totals();
+      text($('pv_title'), state.gst ? 'Tax invoice' : 'Invoice');
+      text($('pv_brand'), state.me_business || state.me_name || 'Your business');
+      $('pv_me').style.whiteSpace = 'pre-line';
+      text($('pv_me'), lines([state.me_abn && 'ABN ' + state.me_abn, state.me_email]));
+      text($('pv_number'), state.number || '');
+      text($('pv_date'), fmtDate(state.date));
+      text($('pv_due'), dueDate());
+      text($('pv_ref'), state.ref ? 'Reference: ' + state.ref : '');
+      $('pv_client').style.whiteSpace = 'pre-line';
+      text($('pv_client'), lines([state.cl_name, state.cl_attn && 'Attn: ' + state.cl_attn, state.cl_abn && 'ABN ' + state.cl_abn, state.cl_address]) || 'Client details');
+      $('pv_from').style.whiteSpace = 'pre-line';
+      text($('pv_from'), lines([state.me_business ? state.me_business + ' (' + state.me_name + ')' : state.me_name, state.me_abn && 'ABN ' + state.me_abn, state.me_address, state.me_email]));
+      const body = $('pv_lines');
+      body.innerHTML = '';
+      state.lines.forEach(l => {
+        const amount = (Number(l.qty) || 0) * (Number(l.rate) || 0);
+        const tr = document.createElement('tr');
+        [l.desc || '', String(l.qty ?? ''), money(Number(l.rate) || 0), money(amount)].forEach((v, i) => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          if (i) td.className = 'amt';
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+      text($('pv_sub_label'), state.gst ? 'Subtotal (ex GST)' : 'Subtotal');
+      text($('pv_sub'), money(t.sub));
+      $('pv_gst_row').style.display = state.gst ? '' : 'none';
+      text($('pv_gst'), money(t.gst));
+      text($('pv_total'), money(t.total));
+      $('pv_bank').style.whiteSpace = 'pre-line';
+      text($('pv_bank'), lines([
+        'Bank transfer by ' + dueDate(),
+        state.bank_name && 'Account name: ' + state.bank_name,
+        state.bank_bsb && 'BSB: ' + state.bank_bsb,
+        state.bank_acc && 'Account: ' + state.bank_acc,
+        'Reference: ' + (state.number || ''),
+      ]));
+      text($('pv_notes'), lines([state.notes, state.gst ? 'The total includes GST.' : 'No GST has been charged. The supplier is not registered for GST.']));
+      drawHistory();
+    }
+
+    function drawHistory() {
+      const box = $('history');
+      if (!state.history.length) { box.innerHTML = '<p class="hint">None yet.</p>'; return; }
+      const table = document.createElement('table');
+      state.history.slice().reverse().forEach(h => {
+        const tr = document.createElement('tr');
+        [h.number, h.client, fmtDate(h.date), money(h.total)].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        table.appendChild(tr);
+      });
+      box.innerHTML = '';
+      box.appendChild(table);
+    }
+
+    $('print').addEventListener('click', () => {
+      const t = totals();
+      state.history = state.history.filter(h => h.number !== state.number);
+      state.history.push({ number: state.number, client: state.cl_name || '', date: state.date, total: t.total });
+      save();
+      render();
+      window.print();
+    });
+    $('next').addEventListener('click', () => {
+      const m = String(state.number || '').match(/^(.*?)(\d+)$/);
+      state.number = m ? m[1] + String(Number(m[2]) + 1).padStart(m[2].length, '0') : (state.number || 'INV') + '-2';
+      state.date = today();
+      ['cl_name', 'cl_abn', 'cl_attn', 'cl_address', 'ref', 'notes'].forEach(f => { state[f] = ''; });
+      state.lines = [{ desc: '', qty: 1, rate: 0 }];
+      save();
+      FIELDS.forEach(f => { $(f).value = state[f] ?? ''; });
+      drawLines();
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+    drawLines();
+    render();
+  })();
+  </script>
+</body>
+</html>

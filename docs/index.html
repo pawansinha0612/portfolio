@@ -67,8 +67,9 @@
       <nav>
         <a href="#services">Services</a>
         <a href="#work" class="nav-extra">Work</a>
-        <a href="#projects">Projects</a>
+        <a href="#projects" class="nav-extra">Projects</a>
         <a href="#resources">Interview prep</a>
+        <a href="/tools/">Calculators</a>
         <a href="/blog/">Blog</a>
         <a href="#engage" class="nav-extra">Engagements</a>
         <a href="#toolkit" class="nav-extra">Toolkit</a>
@@ -254,27 +255,42 @@
           <ul class="chips project-chips"><li>Python</li><li>Playwright</li><li>GitHub Actions</li></ul>
           <span class="project-link">See today's results →</span>
         </a>
+        <!-- k6 starter kit: replace [k6-kit-url] with the Gumroad product link to show this card -->
+        <a class="card project-card" href="[k6-kit-url]" target="_blank" rel="noopener" data-track="k6-kit">
+          <div class="icon">📦</div>
+          <h3>k6 Performance Test Starter Kit</h3>
+          <p>The framework I'd set up on day one: open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. Clone it and run realistic load tests within the hour.</p>
+          <ul class="chips project-chips"><li>k6</li><li>CI/CD</li><li>Grafana</li></ul>
+          <span class="project-link">Get the kit →</span>
+        </a>
       </div>
     </section>
 
     <section id="resources" class="wrap section">
       <p class="eyebrow">Free resources</p>
-      <h2>Interview prep and blog</h2>
-      <p class="section-lead">Interview questions with model answers, grouped by experience level, and practical posts from 12+ years of testing.</p>
+      <h2>Interview prep, blog and calculators</h2>
+      <p class="section-lead">Interview questions with model answers, deep dives on performance engineering, and calculators for load testing and capacity planning.</p>
       <div class="grid">
         <a class="card project-card" href="/interview-prep/performance-testing/">
           <div class="icon">⚡</div>
           <h3>Performance testing &amp; engineering</h3>
-          <p>From load-test basics to GC tuning, AWR analysis and capacity planning. Pick your level: basic (3–5 years), intermediate (5–7) or advanced (7+).</p>
+          <p>From load-test basics to GC tuning, AWR analysis and capacity planning. Pick your level: basic (3–5 years), intermediate (5–7) or advanced (7+). Mock interviews available.</p>
           <ul class="chips project-chips"><li>k6</li><li>JMeter</li><li>LoadRunner</li><li>APM</li></ul>
           <span class="project-link">Start practising →</span>
         </a>
         <a class="card project-card" href="/blog/">
           <div class="icon">✍️</div>
           <h3>Blog</h3>
-          <p>Short, practical posts on QA, test automation, API, mobile and performance testing, and using AI in testing. A new one most days.</p>
-          <ul class="chips project-chips"><li>Testing</li><li>Performance</li><li>AI</li><li>Mobile</li></ul>
+          <p>Deep dives on bottlenecks, load testing, caching, load balancers, cloud and capacity planning, most with an interactive calculator. A new one every day.</p>
+          <ul class="chips project-chips"><li>Performance</li><li>Capacity</li><li>Cloud</li><li>Databases</li></ul>
           <span class="project-link">Read the latest →</span>
+        </a>
+        <a class="card project-card" href="/tools/">
+          <div class="icon">🧮</div>
+          <h3>Performance calculators</h3>
+          <p>Size virtual users, thread pools and capacity, and see what CDNs, caches and load balancers do under load. Free, with your own numbers.</p>
+          <ul class="chips project-chips"><li>Little's Law</li><li>Capacity</li><li>Simulators</li></ul>
+          <span class="project-link">Open the calculators →</span>
         </a>
       </div>
     </section>
@@ -316,6 +332,18 @@
             <li>ABN, Upwork or agency, whichever suits you</li>
           </ul>
           <a href="#contact" class="btn btn-ghost" data-need="Ongoing QA partner" data-track="plan-ongoing">Discuss ongoing work</a>
+        </article>
+        <article class="card plan specialist">
+          <p class="pill">My specialty</p>
+          <h3>Go-live load test</h3>
+          <p class="plan-sub">Fixed scope · 1–2 weeks</p>
+          <ul>
+            <li>Workload model from your real traffic and forecast</li>
+            <li>Load, stress and soak tests at your peak, in k6</li>
+            <li>Bottlenecks traced to root cause with APM</li>
+            <li>Go/no-go report with capacity headroom</li>
+          </ul>
+          <a href="#contact" class="btn btn-ghost" data-need="Performance &amp; load testing" data-track="plan-performance">Plan your load test</a>
         </article>
       </div>
       <div class="offer">
@@ -415,6 +443,7 @@
               <option>Automation setup</option>
               <option>Performance &amp; load testing</option>
               <option>Ongoing QA partner</option>
+              <option>Interview coaching</option>
               <option>Something else</option>
             </select>
           </label>

@@ -184,7 +184,9 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 .case-body strong { color: var(--text); }
 .tag { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 3px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; }
 
-/* Plans */
+/* Plans: four across on desktop, two on tablets, one on phones */
+.plans { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.plans .btn { white-space: nowrap; font-size: 15px; padding-left: 10px; padding-right: 10px; }
 .plan { display: flex; flex-direction: column; position: relative; }
 .plan-sub { font-size: 14px; margin-bottom: 14px !important; }
 .plan ul { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; }
@@ -233,13 +235,16 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 /* Responsive */
 @media (max-width: 1080px) {
   .nav nav { gap: 18px; }
+  .nav nav .nav-extra { display: none; }
 }
 @media (max-width: 900px) {
-  .nav nav .nav-extra { display: none; }
   .hero-grid, .why { grid-template-columns: 1fr; gap: 36px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }
   .case { grid-template-columns: 1fr; gap: 12px; }
+}
+@media (max-width: 720px) {
+  .nav nav { gap: 13px; }
 }
 @media (max-width: 600px) {
   .nav nav a:not(.btn) { display: none; }

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance Testing Calculators — Pawan Sinha</title>
+  <meta name="description" content="Free performance engineering calculators: virtual users from Little's Law, capacity planning, thread pool sizing, bottleneck tier, coordinated omission, load balancer simulation, CDN hit ratio and cold-cache load.">
+  <meta property="og:title" content="Performance Testing Calculators — Pawan Sinha">
+  <meta property="og:description" content="Free, interactive calculators for load testing and capacity planning. Size virtual users, thread pools and capacity, and see what caches, CDNs and load balancers do under load.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 820px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .jump { list-style: none; padding: 0; margin: 24px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .jump a { display: inline-block; padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 500; color: var(--text); text-decoration: none; }
+    .jump a:hover { border-color: var(--accent); color: var(--accent); }
+    .tool { max-width: 820px; padding: 48px 16px 8px; scroll-margin-top: 80px; }
+    .tool + .tool { border-top: 1px solid var(--border); }
+    .tool h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 8px; line-height: 1.25; }
+    .tool > p:not(.eyebrow) { color: var(--muted); margin: 0; max-width: 680px; }
+    .tool .widget { margin-top: 20px; }
+    .tool .widget > h4, .tool .widget > .w-sub { display: none; }  /* the section heading above already says it */
+    .deep-dive { display: inline-block; margin: 0 0 16px; font-weight: 600; text-decoration: none; }
+    .deep-dive[hidden] { display: none; }
+    .tools-end { max-width: 820px; padding: 32px 16px 72px; }
+    .tools-end .offer { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav>
+        <a href="/blog/">Blog</a>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tools · Performance engineering</p>
+      <h1>Performance testing calculators</h1>
+      <p class="lead">The arithmetic behind load testing and capacity planning, as calculators you can try with your own numbers. Each one starts from a realistic example. Change the sliders and the result updates straight away.</p>
+      <ul class="jump" aria-label="Calculators on this page">
+        <li><a href="#virtual-users">Virtual users</a></li>
+        <li><a href="#capacity">Capacity model</a></li>
+        <li><a href="#bottleneck">Bottleneck tier</a></li>
+        <li><a href="#thread-pool">Thread pool size</a></li>
+        <li><a href="#coordinated-omission">Coordinated omission</a></li>
+        <li><a href="#load-balancer">Load balancer</a></li>
+        <li><a href="#cdn">CDN hit ratio</a></li>
+        <li><a href="#cache">Cold cache</a></li>
+      </ul>
+    </section>
+
+    <section id="virtual-users" class="wrap tool">
+      <p class="eyebrow">Load test design</p>
+      <h2>How many virtual users do I need?</h2>
+      <p>Turn a target throughput into a user count with Little's Law, and get a ready-to-paste k6 arrival-rate scenario sized for it.</p>
+      <div class="widget" data-widget="vusers"><p><em>This calculator needs JavaScript.</em></p></div>
+    </section>
+
+    <section id="capacity" class="wrap tool">
+      <p class="eyebrow">Capacity planning</p>
+      <h2>From business forecast to pods and connections</h2>
+      <p>Orders per day become requests per second, cores, pods and database connections. It flags the moment your plan exceeds the database's connection limit.</p>
+      <div class="widget" data-widget="capacity"><p><em>This calculator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/greenfield-performance-engineering-before-the-first-line-of-code/" hidden>Read the deep dive: greenfield performance engineering →</a>
+    </section>
+
+    <section id="bottleneck" class="wrap tool">
+      <p class="eyebrow">Bottleneck analysis</p>
+      <h2>Which tier caps your throughput?</h2>
+      <p>Service demand per tier sets the ceiling. Enter cores and CPU cost per request for each tier and see where throughput flattens.</p>
+      <div class="widget" data-widget="bottleneck"><p><em>This calculator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/bottleneck-analysis-is-a-method-not-a-guess/" hidden>Read the deep dive: bottleneck analysis →</a>
+    </section>
+
+    <section id="thread-pool" class="wrap tool">
+      <p class="eyebrow">Concurrency</p>
+      <h2>Thread pool sizing</h2>
+      <p>Size a pool from cores, compute time and wait time, cross-check it with Little's Law, and see when the connection pool behind it becomes the real limit.</p>
+      <div class="widget" data-widget="threads"><p><em>This calculator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/thread-pool-sizing-from-first-principles/" hidden>Read the deep dive: thread pool sizing →</a>
+    </section>
+
+    <section id="coordinated-omission" class="wrap tool">
+      <p class="eyebrow">Measurement</p>
+      <h2>Coordinated omission simulator</h2>
+      <p>See how a closed-loop load tool under-reports tail latency when the system stalls, and how far the real p99 is from the reported one.</p>
+      <div class="widget" data-widget="omission"><p><em>This simulator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/" hidden>Read the deep dive: coordinated omission →</a>
+    </section>
+
+    <section id="load-balancer" class="wrap tool">
+      <p class="eyebrow">Load balancing</p>
+      <h2>Load balancer algorithm simulator</h2>
+      <p>Send identical traffic through round robin, random, power of two choices and least outstanding requests, with optional GC pauses, and compare the tail latency.</p>
+      <div class="widget" data-widget="lb"><p><em>This simulator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/load-balancer-algorithms-under-real-load/" hidden>Read the deep dive: load balancer algorithms →</a>
+    </section>
+
+    <section id="cdn" class="wrap tool">
+      <p class="eyebrow">Edge and CDN</p>
+      <h2>CDN hit ratio and origin load</h2>
+      <p>Origin traffic is edge traffic × (1 − hit ratio). Find the lowest hit ratio your origin can survive, and what a purge-all would send it.</p>
+      <div class="widget" data-widget="cdn"><p><em>This calculator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/cdn-performance-is-more-than-caching-static-files/" hidden>Read the deep dive: CDN performance →</a>
+    </section>
+
+    <section id="cache" class="wrap tool">
+      <p class="eyebrow">Caching</p>
+      <h2>Cold-cache cliff and stampede</h2>
+      <p>What your database receives when the cache is cold, and how many identical queries one expiring hot key sends at once.</p>
+      <div class="widget" data-widget="cache"><p><em>This calculator needs JavaScript.</em></p></div>
+      <a class="deep-dive" href="/blog/caching-strategies-and-how-they-fail-under-load/" hidden>Read the deep dive: caching failure modes →</a>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Need the real numbers?</p>
+          <h3>Get a capacity plan for your system</h3>
+          <p>Calculators give you the shape. A workload model from your own traffic, a load test that proves it and a clear go/no-go give you the answer.</p>
+        </div>
+        <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="tools-book">Book a free 30-min call</a>
+      </div>
+
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <p>© <span id="year"></span> Pawan Sinha · QA &amp; Test Automation Engineer · Melbourne, Australia</p>
+    <p><a href="/">← Back to pawansinha.com.au</a></p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    // Show a "deep dive" link only once its blog post is live (posts publish one a day).
+    document.querySelectorAll('.deep-dive').forEach(a => {
+      fetch(a.getAttribute('href'), { method: 'HEAD' }).then(r => { if (r.ok) a.hidden = false; }).catch(() => {});
+    });
+  </script>
+  <script src="/widgets.js" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+</body>
+</html>

@@ -150,6 +150,10 @@ HEAD = '''<!doctype html>
     .post-cta h2 {{ margin: 0 0 6px; font-size: 20px; }}
     .post-cta p {{ margin: 0 0 14px; color: var(--muted); }}
     .empty {{ color: var(--muted); }}
+    .post-sub {{ max-width: 720px; margin: 0 16px; }}
+    .post-sub .subscribe {{ margin: 0 0 64px; }}
+    .blog-index-sub {{ max-width: 800px; padding: 0 16px; }}
+    .blog-index-sub .subscribe {{ margin: 0 0 64px; }}
     @media (max-width: 600px) {{ .blog-hero {{ padding-top: 40px; }} .article {{ font-size: 16px; }} }}
   </style>
 </head>
@@ -159,6 +163,7 @@ HEAD = '''<!doctype html>
       <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
       <nav>
         <a href="/blog/">Blog</a>
+        <a href="/tools/">Calculators</a>
         <a href="/interview-prep/performance-testing/">Interview prep</a>
         <a href="/#contact" class="btn btn-small">Hire me</a>
       </nav>
@@ -173,12 +178,27 @@ FOOT = '''  </main>
     <p><a href="/blog/feed.xml">RSS</a> · <a href="/">pawansinha.com.au</a></p>
   </footer>
   <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
   <script src="/glow.js" defer></script>
 </body>
 </html>
 '''
 
 e = html.escape
+
+# Weekly digest signup. Hidden until the Apps Script backend says it can take signups (docs/subscribe.js).
+SUBSCRIBE = '''<form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>'''
 
 
 def tags_html(tags):
@@ -213,7 +233,10 @@ def post_page(p):
       <h2>Need this done on your project?</h2>
       <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
       <a class="btn btn-small" href="/#contact">Get in touch</a>
-      <a class="btn btn-ghost btn-small" href="/interview-prep/performance-testing/">Interview prep questions</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      {SUBSCRIBE}
     </aside>
     <script type="application/ld+json">{ld}</script>
 {widgets}'''
@@ -233,14 +256,17 @@ def index_page(posts):
         cards = '      <p class="empty">The first post is on its way. Check back soon.</p>'
     body = f'''    <section class="blog-hero">
       <p class="eyebrow">Blog</p>
-      <h1>Notes on testing, quality and performance</h1>
-      <p class="lead">Practical posts on QA, test automation, API, mobile and performance testing, and using AI in testing. A new one most days.</p>
+      <h1>Performance engineering, in depth</h1>
+      <p class="lead">Deep dives on performance engineering: bottlenecks, load testing, caching, databases, load balancers, cloud and capacity planning. Most posts come with an interactive calculator. A new one every day.</p>
     </section>
     <section class="post-list">
 {cards}
     </section>
+    <section class="blog-index-sub">
+      {SUBSCRIBE}
+    </section>
 '''
-    return page('Blog — Pawan Sinha', 'Practical posts on QA, test automation, API, mobile and performance testing, and AI in testing.',
+    return page('Blog — Pawan Sinha', 'Deep dives on performance engineering, load testing and capacity planning, with interactive calculators.',
                 SITE + '/blog/', 'website', body)
 
 
@@ -257,7 +283,7 @@ def feed(posts):
   <channel>
     <title>Pawan Sinha — Blog</title>
     <link>{SITE}/blog/</link>
-    <description>Practical posts on QA, test automation and performance engineering.</description>
+    <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
 {items}
   </channel>

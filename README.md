@@ -207,6 +207,43 @@ Beyond LinkedIn:
 - **Run a job now:** GitHub → Actions → choose the workflow → Run workflow.
 - **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API).
 
+## Ways the site earns
+
+| What | Where | How it works |
+|---|---|---|
+| Performance calculators | `/tools/` (`docs/tools/index.html`) | Eight calculators from `docs/widgets.js`. Free tools bring engineers in from Google, and each page ends with "Book a free 30-min call". A "Read the deep dive" link appears under each one once its blog post is live |
+| Go-live load test package | Home → Ways to work together | The fourth plan card. Its button pre-selects "Performance & load testing" in the enquiry form |
+| Mock interviews | Bottom of `/interview-prep/performance-testing/` | "Request a mock interview" opens the home page form with **Interview coaching** pre-selected (`/?need=Interview%20coaching#contact`). You reply with your price and a time |
+| k6 starter kit | Home → Projects | The card stays hidden until you put the Gumroad link in place of `[k6-kit-url]` in `docs/index.html` (search for `k6-kit-url`). The kit itself is in the private repo under `products/k6-starter-kit/` |
+| Weekly email digest | Bottom of every blog post, the blog list and `/tools/` | See below |
+
+### Weekly email digest (needs one Apps Script update from you)
+
+Readers subscribe with their email. Every Sunday at 9am Melbourne time, your Google Sheet emails them the week's posts,
+with a one-click unsubscribe link in every email. Subscribers are listed in a new **Subscribers** tab.
+
+The signup form stays hidden until the Apps Script backend is updated, so nothing is broken in the meantime. To switch it on:
+
+1. Open the **Website enquiries** Google Sheet → **Extensions → Apps Script**.
+2. Replace everything in `Code.gs` with `enquiry/Code.gs` from this repo, then **Save**.
+3. Choose `setup` in the function list at the top and click **Run**. Approve the new permissions (it now reads your blog's
+   RSS feed and sets a weekly timer). This creates the Subscribers tab and the Sunday trigger.
+4. **Deploy → Manage deployments** → the pencil icon → **Version: New version** → **Deploy**. This keeps the same web
+   address, so the website needs no change.
+5. Check: open your web app address with `?view=subscribe` on the end. It should show `"subscribe":true`.
+   The signup forms then appear on the site.
+
+To preview a digest without emailing anyone, set `PREVIEW_ONLY = true` in Code.gs, run `sendWeeklyDigest`, and check
+your inbox. Set it back to `false` afterwards. A personal Google account can send about 100 emails a day from a script,
+so move to a mailing service if the list grows past that.
+
+### Invoice tool (private)
+
+`/invoice/` is not linked anywhere and tells search engines not to index it. Fill in the form, then **Print / save as
+PDF**. Your business details, bank account and invoice history are saved only in the browser you use. It switches
+between *Invoice* and *Tax invoice* (with 10% GST) with one tick box. Check the wording with your accountant once you
+register for GST.
+
 ## Availability notifier
 
 Emails your contacts, one at a time and personalised, when your current contract is about to end.
