@@ -7,6 +7,12 @@
     <atom:link href="https://pawansinha.com.au/blog/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
-
+    <item>
+      <title>Your bottleneck isn&#x27;t where you think it is</title>
+      <link>https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/</link>
+      <guid>https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/</guid>
+      <pubDate>Sat, 31 Oct 2026 08:00:00 +1100</pubDate>
+      <description>Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.</description>
+    </item>
   </channel>
 </rss>

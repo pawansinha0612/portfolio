@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your bottleneck isn&#x27;t where you think it is — Pawan Sinha</title>
+  <meta name="description" content="Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.">
+  <meta property="og:title" content="Your bottleneck isn&#x27;t where you think it is — Pawan Sinha">
+  <meta property="og:description" content="Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; }
+    .article pre code { background: none; padding: 0; font-size: inherit; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your bottleneck isn&#x27;t where you think it is</h1>
+        <div class="post-meta"><span>31 October 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Bottlenecks</span><span class="tag">Capacity Planning</span></div></div>
+      </header>
+      <div class="article">
+<p>The dashboards are green. CPU sits at 55%, memory is fine, the database looks bored. And p99 has just gone from 180 ms to 4 seconds.</p>
+<p>Someone in the incident channel types the sentence that has burned more engineering hours than any bug: "Let's just double the connection pool and see."</p>
+<p>Sometimes that works. More often it moves the queue somewhere else and the tail gets worse. My rule is blunt: <strong>no change goes in until you can name the saturated resource and show the number that proves it.</strong> Here is the method behind that rule.</p>
+<h2>Start with service demand, not dashboards</h2>
+<p>Every system has a throughput ceiling set by its most constrained resource. The operational laws make this concrete:</p>
+<ul>
+<li><strong>Utilisation Law:</strong> U = X × D, where X is throughput and D is the <em>service demand</em> (the total busy time one request needs from that resource).</li>
+<li><strong>Bottleneck bound:</strong> X_max = capacity / D_max. The resource with the largest demand relative to its capacity caps the whole system.</li>
+</ul>
+<p>A worked example. Say each request costs 20 ms of CPU in the API tier, which runs 3 pods with 2 cores each, and 8 ms of CPU on a database with 8 cores.</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Capacity</th>
+<th>Demand per request</th>
+<th>Max throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API</td>
+<td>6 cores</td>
+<td>0.020 core-s</td>
+<td>6 / 0.020 = <strong>300 req/s</strong></td>
+</tr>
+<tr>
+<td>Database</td>
+<td>8 cores</td>
+<td>0.008 core-s</td>
+<td>8 / 0.008 = 1,000 req/s</td>
+</tr>
+</tbody>
+</table>
+<p>The API tier caps the system at 300 req/s. Tuning the database here buys nothing. At 240 req/s the API tier sits at U = 240 × 0.020 / 6 = 0.8, which is already where queueing delay starts to bite.</p>
+<p>You can get demand numbers cheaply: divide CPU-seconds consumed during a steady test by the number of requests served. Do this before any tuning conversation.</p>
+<p>Try it with your own numbers. Change the cores and CPU cost per request for each tier and watch where the ceiling lands:</p>
+<div class="widget" data-widget="bottleneck"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>Use RED to find the service, USE to find the resource</h2>
+<p><strong>RED</strong> (Rate, Errors, Duration, from Tom Wilkie) tells you <em>which service</em> is slow. Traces tell you which span on the critical path owns the time. Then the <strong>USE method</strong> (Utilisation, Saturation, Errors, from Brendan Gregg) tells you <em>which resource</em> inside it is the problem.</p>
+<p>The column that matters most is saturation: work that is <em>waiting</em>. Utilisation alone misleads. A connection pool at 100% utilisation is fine if nobody waits for a connection. A CPU at 55% average can still be throttled every 100 ms period.</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Utilisation</th>
+<th>Saturation (the real signal)</th>
+<th>Errors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU</td>
+<td>busy % per core / container</td>
+<td>run-queue length (<code>vmstat</code> r &gt; cores), CFS throttled periods</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>used vs limit</td>
+<td>major page faults, swapping, GC frequency</td>
+<td>OOM kills</td>
+</tr>
+<tr>
+<td>Disk</td>
+<td><code>iostat</code> %util</td>
+<td><code>aqu-sz</code>, <code>r_await</code>/<code>w_await</code></td>
+<td>I/O errors</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>bytes vs link or instance limit</td>
+<td>retransmits, drops, accept-queue overflows</td>
+<td>resets</td>
+</tr>
+<tr>
+<td>Thread pool</td>
+<td>active / max</td>
+<td>queued tasks, time in queue</td>
+<td>rejections</td>
+</tr>
+<tr>
+<td>Connection pool</td>
+<td>active / max</td>
+<td>pending acquirers, acquire time</td>
+<td>acquire timeouts</td>
+</tr>
+</tbody>
+</table>
+<p>Software resources (pools, locks, semaphores, rate limits) are resources too. In practice they are the bottleneck more often than hardware.</p>
+<h2>The experiment: stepped, open-model load</h2>
+<p>The single most useful test for bottleneck analysis is a <strong>stepped arrival-rate test</strong>. Hold each load level long enough to reach steady state, and use an open model so the load generator does not slow down when the system does (otherwise you get coordinated omission and a flattering result).</p>
+<pre><code class="language-javascript">import http from 'k6/http';
+
+export const options = {
+  scenarios: {
+    steps: {
+      executor: 'ramping-arrival-rate',
+      startRate: 50,
+      timeUnit: '1s',
+      preAllocatedVUs: 200,
+      maxVUs: 1000,
+      stages: [
+        { target: 100, duration: '1m' }, { target: 100, duration: '5m' },
+        { target: 200, duration: '1m' }, { target: 200, duration: '5m' },
+        { target: 300, duration: '1m' }, { target: 300, duration: '5m' },
+      ],
+    },
+  },
+  thresholds: { http_req_duration: ['p(99)&lt;500'] },
+};
+
+export default function () {
+  http.get(`${__ENV.BASE_URL}/api/orders`);
+}
+</code></pre>
+<p>Plot achieved throughput against offered load, and p99 against offered load. The knee is where throughput stops tracking offered load and latency turns upward. <strong>The bottleneck is the resource whose saturation metric rises at that knee.</strong> Also watch k6's <code>dropped_iterations</code>: if it is non-zero, the generator ran out of VUs and your offered load was lower than you think.</p>
+<p>Two queries that settle a lot of arguments:</p>
+<pre><code class="language-promql"># Fraction of CFS periods in which the container was throttled
+sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{container=&quot;api&quot;}[5m]))
+  /
+sum by (pod) (rate(container_cpu_cfs_periods_total{container=&quot;api&quot;}[5m]))
+
+# Threads waiting for a database connection (HikariCP via Micrometer)
+max by (pod) (hikaricp_connections_pending)
+</code></pre>
+<h2>Prove it, then falsify it</h2>
+<p>A hypothesis must predict something: "the API tier's CPU is the bottleneck, so throttled periods will climb at the knee, and adding one core per pod in a test (9 cores / 0.020 = 450) will move the ceiling from about 300 to about 450 req/s, unless something else saturates first." If you can relieve the suspected resource in a test environment and the knee moves as predicted, you have proof. If it does not move, you were wrong, and you found out cheaply.</p>
+<h2>Fix one thing, then watch the bottleneck move</h2>
+<p>Change one thing. Re-run the <em>identical</em> workload. Expect the bottleneck to move, and expect the gain to be smaller than the arithmetic suggests, because the next constraint is usually close behind. Sometimes the fix makes things worse: a bigger connection pool lifts the app tier's throughput and pushes the database into lock contention, so p99 rises.</p>
+<h2>When nothing looks saturated</h2>
+<p>If latency rises and every utilisation graph looks calm, the time is being spent <strong>waiting</strong>, off-CPU:</p>
+<ul>
+<li>lock contention and synchronised sections</li>
+<li>pool acquisition (threads, connections, HTTP clients)</li>
+<li>GC pauses (check the GC log, not the CPU graph)</li>
+<li>downstream calls and their retries</li>
+<li>CPU throttling hidden by a one-minute average</li>
+<li>the load generator itself (check its CPU and network)</li>
+</ul>
+<p>Short bursts are the other blind spot. A one-minute average of 60% CPU can contain ten seconds at 100%. Look at saturation counters, which accumulate, rather than averaged utilisation.</p>
+<h2>Checklist</h2>
+<ol>
+<li>Define the symptom precisely: which endpoint, which percentile, at what arrival rate.</li>
+<li>Estimate service demand per tier and compute the expected ceiling.</li>
+<li>Use RED and traces to locate the service and span, then USE to locate the resource.</li>
+<li>Run a stepped open-model test and find the knee.</li>
+<li>Name the resource whose saturation rises at the knee, and predict what relieving it will do.</li>
+<li>Change one thing, re-run the same test, and record where the bottleneck moved.</li>
+</ol>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your bottleneck isn't where you think it is", "description": "Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.", "datePublished": "2026-10-31", "url": "https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
