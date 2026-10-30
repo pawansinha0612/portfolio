@@ -1,5 +1,5 @@
 ---
-title: Coordinated omission: why your load tool under-reports tail latency
+title: Your load test is lying about p99
 date: 2026-11-02
 summary: A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.
 tags: Performance, Load Testing, Latency
@@ -16,7 +16,11 @@ linkedin: |
 
   #PerformanceEngineering #LoadTesting #Latency
 ---
-**Coordinated omission** is a measurement error where the load generator and the system under test slow down together, so the worst latencies are never recorded. Gil Tene named it, and it is still present in a large share of load test reports. It does not make results a little optimistic. It can understate tail latency by several orders of magnitude.
+Your load test report says p99 is 1 ms. Clean run, green thresholds, ready for sign-off.
+
+During that same run, the service froze for 10 seconds. The real p99 was about 9 seconds. The tool didn't lie on purpose. It simply stopped asking questions at the exact moment the answers got bad.
+
+That is **coordinated omission**, a term from Gil Tene, and it is sitting quietly in a lot of load test reports right now. It doesn't make results a little optimistic. It can understate tail latency by several orders of magnitude.
 
 ## The mechanism
 

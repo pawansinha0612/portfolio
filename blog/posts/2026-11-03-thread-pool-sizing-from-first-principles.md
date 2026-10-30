@@ -1,5 +1,5 @@
 ---
-title: Thread pool sizing from first principles
+title: Why 500 threads made it slower
 date: 2026-11-03
 summary: Size thread pools with Little's Law and the wait-to-compute ratio, bound queues by your latency budget, and read thread dumps for what threads are waiting on. Plus what changes with virtual threads.
 tags: Performance, Java, Concurrency
@@ -18,7 +18,11 @@ linkedin: |
 
   #Java #PerformanceEngineering #Concurrency
 ---
-A thread pool is a queueing system: a fixed number of servers (threads) in front of a queue. That means it can be sized with arithmetic instead of folklore, and its failure modes can be predicted. Here is how I approach it.
+Traffic climbs, latency follows. Someone opens the config, finds `maxThreads: 200`, and says the obvious thing: "Make it 500, to be safe."
+
+The deploy goes out and p99 gets *worse*. CPU has barely moved. A thread dump shows hundreds of threads parked, all waiting for one of 10 database connections.
+
+A thread pool is a queueing system: a fixed number of servers (threads) in front of a queue. That means it can be sized with arithmetic instead of folklore, and its failure modes can be predicted before they page you.
 
 ## Little's Law gives you the floor
 

@@ -1,5 +1,5 @@
 ---
-title: Bottleneck analysis is a method, not a guess
+title: Your bottleneck isn't where you think it is
 date: 2026-10-31
 summary: Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.
 tags: Performance, Bottlenecks, Capacity Planning
@@ -16,9 +16,11 @@ linkedin: |
 
   #PerformanceEngineering #SRE #CapacityPlanning
 ---
-Most performance investigations that go wrong do so at the first step: someone changes something before they know what is saturated. A bigger pool, more pods, a new index. Sometimes it helps. Often it moves the queue somewhere else and makes the tail worse.
+The dashboards are green. CPU sits at 55%, memory is fine, the database looks bored. And p99 has just gone from 180 ms to 4 seconds.
 
-My rule is blunt: **no change goes in until you can name the saturated resource and show the number that proves it.** Here is the method behind that rule.
+Someone in the incident channel types the sentence that has burned more engineering hours than any bug: "Let's just double the connection pool and see."
+
+Sometimes that works. More often it moves the queue somewhere else and the tail gets worse. My rule is blunt: **no change goes in until you can name the saturated resource and show the number that proves it.** Here is the method behind that rule.
 
 ## Start with service demand, not dashboards
 

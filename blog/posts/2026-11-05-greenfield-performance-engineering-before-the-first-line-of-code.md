@@ -1,5 +1,5 @@
 ---
-title: Greenfield performance engineering: before the first line of code
+title: The week-2 decisions that sink your week-38 load test
 date: 2026-11-05
 summary: The cheapest performance work happens before anything is built. Measurable NFRs from business numbers, latency budgets per hop, a capacity model, an architecture risk review and a test strategy that grows with the system.
 tags: Performance, Architecture, Capacity Planning
@@ -19,7 +19,11 @@ linkedin: |
 
   #PerformanceEngineering #SoftwareArchitecture #CapacityPlanning
 ---
-Performance engineering usually arrives late: a load test in the weeks before go-live, against an architecture that can no longer change. On a greenfield project you get the rare chance to do the opposite. The work below costs days at the start and saves months later.
+Week 38 of a 40-week project. The first full-scale load test starts, and at 30% of target traffic the database starts refusing connections. The fix is an architecture change. There are two weeks left.
+
+The decision that caused it was made in week 2, when nobody had numbers.
+
+Performance engineering usually arrives late, against an architecture that can no longer change. A greenfield project is the rare chance to do the opposite. The work below costs days at the start and saves months at the end.
 
 ## 1. NFRs you can test, derived from business numbers
 

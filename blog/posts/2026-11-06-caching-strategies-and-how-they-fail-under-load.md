@@ -1,5 +1,5 @@
 ---
-title: Caching strategies and how they fail under load
+title: When the cache fails, the database pays
 date: 2026-11-06
 summary: Cache-aside, read-through, write-through and write-behind compared by failure mode, then the failures that matter at scale: stampedes, synchronised expiry, hot keys, cold starts, penetration, stale-write races and eviction churn.
 tags: Performance, Caching, Redis
@@ -18,7 +18,11 @@ linkedin: |
 
   #PerformanceEngineering #Redis #Caching
 ---
-Caches are usually added for performance and then forgotten until they cause an incident. The pattern you choose decides how you fail, and at scale the failures that matter are not "the cache is a bit slow" but sudden shifts of load onto the system the cache was protecting.
+Monday, 9:02 am. A routine Redis failover: thirty seconds of reconnects, nothing dramatic. Then the database, which normally handles 1,000 queries a second, receives 20,000. It falls over, and takes the application with it.
+
+The cache was never just an optimisation. It had quietly become a load-bearing wall.
+
+The caching pattern you choose decides how you fail, and at scale the failures that matter are not "the cache is a bit slow" but sudden shifts of load onto the system the cache was protecting.
 
 ## The patterns, compared by how they fail
 

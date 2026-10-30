@@ -1,5 +1,5 @@
 ---
-title: CDN performance is more than caching static files
+title: One CDN purge can take down your origin
 date: 2026-11-01
 summary: Origin load scales with (1 − hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.
 tags: Performance, CDN, Caching
@@ -16,7 +16,11 @@ linkedin: |
 
   #PerformanceEngineering #CDN #WebPerformance
 ---
-Most teams treat the CDN as a box that makes static files fast. It does that, but from a performance engineering point of view the CDN is a **load-bearing part of the capacity model**. It decides how much traffic your origin sees, and it fails in ways that are easy to miss until a busy day.
+Launch morning. The new campaign goes live, and someone helpfully purges the whole CDN so the new banner shows everywhere at once. Thirty seconds later the origin, which normally serves 500 requests a second, is taking 10,000. The site goes down in the one hour it most needed to stay up.
+
+Nothing was broken. The CDN did exactly what it was told.
+
+Most teams treat the CDN as a box that makes static files fast. From a performance engineering point of view it is the **first tier of your capacity model**. It decides how much traffic your origin sees, and it fails in ways that stay invisible until a busy day.
 
 ## The number that matters: origin load ∝ (1 − hit ratio)
 

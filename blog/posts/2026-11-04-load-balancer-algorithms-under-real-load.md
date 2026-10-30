@@ -1,5 +1,5 @@
 ---
-title: Load balancer algorithms under real load
+title: One GC pause, everyone's p99
 date: 2026-11-04
 summary: Round robin assumes every request costs the same. It doesn't. Least outstanding requests, power of two choices, the connection-level imbalance that L4 hides, slow start, draining, and how to load test the balancer itself.
 tags: Performance, Load Balancing, Kubernetes
@@ -16,7 +16,11 @@ linkedin: |
 
   #PerformanceEngineering #Kubernetes #SRE
 ---
-A load balancer's algorithm is rarely chosen deliberately. It is whatever the default was. Under light, uniform traffic, that hardly matters. Under real load, with uneven request costs, pauses and long-lived connections, the algorithm decides whether one slow backend stays a local problem or becomes everyone's p99.
+One of your four pods hits a 500 ms garbage collection pause. Nothing unusual; it happens every few seconds. But p99 just jumped across the whole service, for every user.
+
+The pause didn't do that. Your load balancer did. It kept sending that frozen pod a quarter of all traffic, because round robin was the default and nobody ever changed it.
+
+Under light, uniform traffic the algorithm hardly matters. Under real load, with uneven request costs, pauses and long-lived connections, it decides whether one slow backend stays a local problem or becomes everyone's p99.
 
 ## The algorithms, and what each assumes
 
