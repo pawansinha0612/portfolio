@@ -525,3 +525,9 @@ html.lenis, html.lenis body { height: auto; }
   .svc-split { grid-template-columns: 1fr; gap: 40px; }
   .svc-options { grid-template-columns: 1fr; }
 }
+
+/* Hero link to the portfolio template */
+.hero-product { margin: 18px 0 0; font-size: 14px; }
+.hero-product a { color: var(--muted); text-decoration: none; border-bottom: 1px dashed currentColor; }
+.hero-product a:hover { color: var(--accent); }
+.hero-product strong { color: var(--accent); }
