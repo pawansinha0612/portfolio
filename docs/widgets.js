@@ -467,7 +467,7 @@
         '</tbody></table>';
       table.innerHTML = rows;
       var rr = res[0][1], lo = res[3][1];
-      say('Round robin p99 is ' + fmt(rr / Math.max(lo, 0.1), 1) + '× the least-outstanding p99 here. One balancer with perfect information is modelled; with many balancer instances, least-outstanding can herd, which power of two choices avoids.');
+      say('Round robin p99 is ' + fmt(rr / Math.max(lo, 0.1), 1) + '× the least-outstanding p99 here. One balancer with perfect information is modelled. With many balancer instances, least-outstanding can herd, which power of two choices avoids.');
     }
     update();
   };
