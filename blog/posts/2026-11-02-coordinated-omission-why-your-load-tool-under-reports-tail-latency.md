@@ -14,6 +14,8 @@ linkedin: |
 
   Quick check on existing results: did achieved throughput dip at the same moment latency spiked? If so, your percentiles are flattering you.
 
+  The article has an interactive simulator: set your own stall length and compare reported vs real p99.
+
   #PerformanceEngineering #LoadTesting #Latency
 ---
 Your load test report says p99 is 1 ms. Clean run, green thresholds, ready for sign-off.

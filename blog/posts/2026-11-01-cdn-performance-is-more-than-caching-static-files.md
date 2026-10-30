@@ -14,6 +14,8 @@ linkedin: |
 
   Do you size your origin for the normal hit ratio, or for a cold cache?
 
+  The article has an interactive calculator: move the hit ratio and watch your origin run out of headroom.
+
   #PerformanceEngineering #CDN #WebPerformance
 ---
 Launch morning. The new campaign goes live, and someone helpfully purges the whole CDN so the new banner shows everywhere at once. Thirty seconds later the origin, which normally serves 500 requests a second, is taking 10,000. The site goes down in the one hour it most needed to stay up.

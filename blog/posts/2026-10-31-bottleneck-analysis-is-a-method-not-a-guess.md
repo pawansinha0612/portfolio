@@ -14,6 +14,8 @@ linkedin: |
 
   What's the first saturation metric you look at when p99 starts climbing?
 
+  The article has an interactive calculator: put in your own cores and CPU cost per request and see which tier caps you.
+
   #PerformanceEngineering #SRE #CapacityPlanning
 ---
 The dashboards are green. CPU sits at 55%, memory is fine, the database looks bored. And p99 has just gone from 180 ms to 4 seconds.

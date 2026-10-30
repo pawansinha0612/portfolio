@@ -16,6 +16,8 @@ linkedin: |
 
   Which of these has your load test actually exercised?
 
+  The article has an interactive calculator: see what a cold cache does to your database.
+
   #PerformanceEngineering #Redis #Caching
 ---
 Monday, 9:02 am. A routine Redis failover: thirty seconds of reconnects, nothing dramatic. Then the database, which normally handles 1,000 queries a second, receives 20,000. It falls over, and takes the application with it.

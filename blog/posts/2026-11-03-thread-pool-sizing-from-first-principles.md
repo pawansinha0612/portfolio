@@ -16,6 +16,8 @@ linkedin: |
 
   How do you size your pools today: formula, load test or the default?
 
+  The article has an interactive calculator: size your own pool and see when the connection pool becomes the real limit.
+
   #Java #PerformanceEngineering #Concurrency
 ---
 Traffic climbs, latency follows. Someone opens the config, finds `maxThreads: 200`, and says the obvious thing: "Make it 500, to be safe."

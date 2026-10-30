@@ -17,6 +17,8 @@ linkedin: |
 
   When does performance engineering start on your projects: design, build, or the week before go-live?
 
+  The article has an interactive capacity model: put in your own forecast and see where it breaks.
+
   #PerformanceEngineering #SoftwareArchitecture #CapacityPlanning
 ---
 Week 38 of a 40-week project. The first full-scale load test starts, and at 30% of target traffic the database starts refusing connections. The fix is an architecture change. There are two weeks left.

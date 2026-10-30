@@ -14,6 +14,8 @@ linkedin: |
 
   Which algorithm does your edge balancer use, and did someone choose it on purpose?
 
+  The article has a live simulator: switch on GC pauses and watch what each algorithm does to p99.
+
   #PerformanceEngineering #Kubernetes #SRE
 ---
 One of your four pods hits a 500 ms garbage collection pause. Nothing unusual. It happens every few seconds. But p99 just jumped across the whole service, for every user.
