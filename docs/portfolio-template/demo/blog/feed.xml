@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="https://pawansinha.com.au/portfolio-template/demo/blog/feed.xml" rel="self" type="application/atom+xml" /><link href="https://pawansinha.com.au/portfolio-template/demo/" rel="alternate" type="text/html" hreflang="en" /><updated>2026-10-30T22:11:22+11:00</updated><id>https://pawansinha.com.au/portfolio-template/demo/blog/feed.xml</id><title type="html">Alex Taylor — Freelance Software Engineer</title><subtitle>Alex Taylor builds fast, reliable web apps for startups and growing teams. Available for freelance and contract work.</subtitle><entry><title type="html">Why I write about my work</title><link href="https://pawansinha.com.au/portfolio-template/demo/blog/2026/01/welcome/" rel="alternate" type="text/html" title="Why I write about my work" /><published>2026-01-15T00:00:00+11:00</published><updated>2026-01-15T00:00:00+11:00</updated><id>https://pawansinha.com.au/portfolio-template/demo/blog/2026/01/welcome</id><content type="html" xml:base="https://pawansinha.com.au/portfolio-template/demo/blog/2026/01/welcome/"><![CDATA[<p>This is a sample blog post. Each post is a file in the <code class="language-plaintext highlighter-rouge">_posts</code> folder named
+<code class="language-plaintext highlighter-rouge">YEAR-MONTH-DAY-title.md</code>. Write in plain text; leave a blank line between paragraphs.</p>
+
+<h2 id="headings-start-with">Headings start with</h2>
+
+<p>Lists start with a dash:</p>
+
+<ul>
+  <li>Share what you learn</li>
+  <li>Show how you think</li>
+  <li>Give recruiters something to read</li>
+</ul>]]></content><author><name></name></author><summary type="html"><![CDATA[This is a sample blog post. Each post is a file in the _posts folder named YEAR-MONTH-DAY-title.md. Write in plain text; leave a blank line between paragraphs.]]></summary></entry></feed>

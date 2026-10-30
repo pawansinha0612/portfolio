@@ -228,6 +228,9 @@ Beyond LinkedIn:
 - [ ] **Check your employment contract** before selling Perf Advisor: the intellectual property and side-business clauses. Ask HR or a lawyer if unsure.
 - [ ] **Sell Perf Advisor** (20 min): Gumroad, then replace `[perf-advisor-url]` in `docs/index.html`. Steps in the private repo's `products/perf-advisor/LISTING.md`. Upload `Getting Started.pdf` as a free preview.
 - [ ] **Try Perf Advisor's extras once with real accounts** before advertising them: Slack, Jira, GitLab or GitHub, and the AI chat (needs an Anthropic API key). Optional: run the Windows starter once on a Windows PC.
+- [ ] **Read your six service pages** (`/services/...`) and correct anything that isn't quite right. Edit `services/build.py`, run `python3 services/build.py`. The manual-testing and API pages are thinner because the CV is mostly performance work: add real functional or API projects there if you have them.
+- [ ] **Dry-run the portfolio template** (20 min): follow its `Getting Started.pdf` once with a spare GitHub account or a test repository, to check the upload and Pages steps match what GitHub shows today.
+- [ ] **Sell the portfolio template** (15 min): Gumroad at US$5, then replace both `[portfolio-template-url]` in `docs/portfolio-template/index.html`. Steps in the private repo's `products/portfolio-template/LISTING.md`. Until then, its buy buttons send you an email.
 - [ ] **Send a test email to hello@pawansinha.com.au** and check it reaches Gmail. The website now shows this address instead of Gmail.
 
 Tick these off here when done.

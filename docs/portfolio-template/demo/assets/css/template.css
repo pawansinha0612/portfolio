@@ -1,0 +1,27 @@
+/* Additions for the portfolio template. base.css holds the shared design; colours come from _config.yml. */
+.hero-name { margin: 18px 0 0; font-weight: 600; color: var(--muted); }
+.hero h1 { margin-top: 10px; }
+.hero-grid.no-photo { grid-template-columns: minmax(0, 860px); }
+.hero-photo { width: 100%; max-width: 440px; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 28px; justify-self: end;
+  border: 1px solid var(--border); box-shadow: var(--shadow); }
+.stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.about-text { margin: 0; font-size: 18px; color: var(--muted); max-width: 680px; }
+#about .toolkit { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 0; }
+.quote figcaption { display: flex; flex-direction: column; font-size: 14px; color: var(--muted); }
+.quote figcaption strong { color: var(--text); }
+.post-date { font-size: 14px; margin: 0 !important; }
+.prose { max-width: 760px; }
+.prose h1 { font-size: clamp(32px, 5vw, 46px); line-height: 1.12; margin: 0 0 12px; }
+.prose h2 { font-size: clamp(22px, 3vw, 28px); margin: 36px 0 10px; }
+.prose p, .prose li { color: var(--muted); font-size: 17px; }
+.prose .chips { margin-top: 28px; }
+.post-item { padding: 22px 0; border-top: 1px solid var(--border); }
+.post-item h2 { margin: 0 0 4px; font-size: 21px; }
+.post-item h2 a { color: var(--text); text-decoration: none; }
+.post-item h2 a:hover { color: var(--accent); }
+.post-item p { margin: 4px 0 0; }
+.contact .enquiry { margin-top: 40px; }
+@media (max-width: 900px) { .hero-photo { justify-self: start; max-width: 280px; order: -1; } }
+@media (max-width: 600px) { .enquiry { grid-template-columns: 1fr; } }
+.demo-banner { background: var(--contact-bg); color: #fff; text-align: center; font-size: 14px; padding: 8px 16px; }
+.demo-banner a { color: #fff; font-weight: 600; }

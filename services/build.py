@@ -318,6 +318,7 @@ FOOTER = f'''  <footer class="site-footer">
         <h2>Built by me</h2>
         <a href="/#projects">Projects</a>
         <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
       </div>
     </div>
     <div class="wrap footer-bottom">
