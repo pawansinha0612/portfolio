@@ -55,7 +55,7 @@ Change the stall length and request interval and compare what the tool reports w
 
 ## Where it hides
 
-- **Closed-model test plans**: classic JMeter Thread Groups, LoadRunner scenarios built on a fixed number of virtual users, k6's `constant-vus` and `ramping-vus` executors. Pacing and throughput timers do not fix it; they still wait for the response before the next request.
+- **Closed-model test plans**: classic JMeter Thread Groups, LoadRunner scenarios built on a fixed number of virtual users, k6's `constant-vus` and `ramping-vus` executors. Pacing and throughput timers do not fix it. They still wait for the response before the next request.
 - **Server-side timing**: an application that times a request from when a worker thread picks it up misses the time spent in the accept queue, the load balancer and the thread pool queue.
 - **Client libraries and monitoring** that measure only from actual send time, not from when the work was due.
 
@@ -96,7 +96,7 @@ export default function () {
 
 With an arrival-rate executor, k6 keeps starting iterations on schedule during a stall, using new VUs. The stall shows up as many concurrent slow requests, which is the truth. If k6 runs out of VUs, it cannot start the iteration and counts it in `dropped_iterations`. That is coordinated omission again, so treat any dropped iterations as an invalid run, as the threshold above does.
 
-Equivalents elsewhere: Gatling's open injection profiles such as `constantUsersPerSec`; JMeter's **Open Model Thread Group** (added in JMeter 5.5); and **wrk2**, which takes a fixed rate with `-R` and measures latency from each request's *intended* send time.
+Equivalents elsewhere: Gatling's open injection profiles such as `constantUsersPerSec`, JMeter's **Open Model Thread Group** (added in JMeter 5.5), and **wrk2**, which takes a fixed rate with `-R` and measures latency from each request's *intended* send time.
 
 **2. Correct closed-loop data when you cannot change the tool.** HdrHistogram provides `recordValueWithExpectedInterval(value, expectedInterval)`, which back-fills the samples that should have been taken during a long response. It is an estimate based on an assumed interval, but far closer to reality than the raw data.
 

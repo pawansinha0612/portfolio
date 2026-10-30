@@ -6,9 +6,9 @@ tags: Performance, CDN, Caching
 linkedin: |
   A CDN hit ratio dropping from 95% to 90% sounds like a rounding error. It doubles your origin load.
 
-  Origin traffic is proportional to (1 − hit ratio): 5% of 10,000 req/s is 500 req/s; 10% is 1,000.
+  Origin traffic is proportional to (1 − hit ratio): 5% of 10,000 req/s is 500 req/s, and 10% is 1,000.
 
-  That's why I treat the CDN as part of the capacity model, not a box in front of it. The usual culprits: cache keys fragmented by tracking parameters, cookies or a careless Vary header; every edge location missing independently without an origin shield; and TTLs or a purge-all that expire everything at once at peak.
+  That's why I treat the CDN as part of the capacity model, not a box in front of it. The usual culprits are cache keys fragmented by tracking parameters, cookies or a careless Vary header. Then every edge location missing on its own because there's no origin shield. And TTLs or a purge-all that expire everything at once, right at peak.
 
   And load tests mislead in both directions. Bypass the CDN and you overstate origin load. Hammer one URL through it from one region and you test a single warm edge cache.
 
@@ -63,7 +63,7 @@ Use `Cache-Control` deliberately:
 Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=60, stale-if-error=86400
 ```
 
-- `max-age` applies to browsers; `s-maxage` overrides it for shared caches such as the CDN.
+- `max-age` applies to browsers, and `s-maxage` overrides it for shared caches such as the CDN.
 - `stale-while-revalidate` (RFC 5861) lets the cache serve the stale copy while it refreshes in the background, so users never wait on the origin for a popular object.
 - `stale-if-error` lets the cache serve stale content when the origin returns errors, which turns an origin outage into degraded freshness instead of an outage.
 
@@ -73,7 +73,7 @@ Support for these directives differs between CDN providers and configuration mod
 
 Without tiering, every edge location (point of presence, or POP) misses independently. With 50 POPs, a newly published or just-expired object can cause up to 50 origin fetches. An **origin shield** (a mid-tier cache that edges fetch from) collapses those into roughly one.
 
-**Request collapsing** handles the same problem inside one location: if 200 requests for the same uncached object arrive together, the cache sends one request to the origin and holds the rest. Check whether your provider does this by default and for which responses; it is your main defence against a stampede on a hot object.
+**Request collapsing** handles the same problem inside one location: if 200 requests for the same uncached object arrive together, the cache sends one request to the origin and holds the rest. Check whether your provider does this by default and for which responses. It is your main defence against a stampede on a hot object.
 
 ## Synchronised expiry and purge-all
 

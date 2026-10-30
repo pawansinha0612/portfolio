@@ -48,7 +48,7 @@ Try it with your own numbers. Change the cores and CPU cost per request for each
 
 **RED** (Rate, Errors, Duration, from Tom Wilkie) tells you *which service* is slow. Traces tell you which span on the critical path owns the time. Then the **USE method** (Utilisation, Saturation, Errors, from Brendan Gregg) tells you *which resource* inside it is the problem.
 
-The column that matters most is saturation: work that is *waiting*. Utilisation alone misleads. A connection pool at 100% utilisation is fine if nobody waits for a connection; a CPU at 55% average can still be throttled every 100 ms period.
+The column that matters most is saturation: work that is *waiting*. Utilisation alone misleads. A connection pool at 100% utilisation is fine if nobody waits for a connection. A CPU at 55% average can still be throttled every 100 ms period.
 
 | Resource | Utilisation | Saturation (the real signal) | Errors |
 |----------|-------------|------------------------------|--------|
@@ -130,7 +130,7 @@ Short bursts are the other blind spot. A one-minute average of 60% CPU can conta
 
 1. Define the symptom precisely: which endpoint, which percentile, at what arrival rate.
 2. Estimate service demand per tier and compute the expected ceiling.
-3. Use RED and traces to locate the service and span; USE to locate the resource.
+3. Use RED and traces to locate the service and span, then USE to locate the resource.
 4. Run a stepped open-model test and find the knee.
 5. Name the resource whose saturation rises at the knee, and predict what relieving it will do.
 6. Change one thing, re-run the same test, and record where the bottleneck moved.

@@ -50,7 +50,7 @@ Example: 4 cores, target 80% CPU, each request computes for 5 ms and waits for 4
 
 N = 4 × 0.8 × (1 + 45/5) = 3.2 × 10 = **32 threads.**
 
-Cross-check with Little's Law. At 80% of 4 cores, the pool has 3.2 CPU-seconds per second; each request needs 0.005, so throughput tops out at 3.2 / 0.005 = 640 req/s. Each request holds a thread for 50 ms, so L = 640 × 0.05 = 32. The two methods agree, which is a good sign your inputs are consistent.
+Cross-check with Little's Law. At 80% of 4 cores, the pool has 3.2 CPU-seconds per second. Each request needs 0.005, so throughput tops out at 3.2 / 0.005 = 640 req/s. Each request holds a thread for 50 ms, so L = 640 × 0.05 = 32. The two methods agree, which is a good sign your inputs are consistent.
 
 ## The pool behind the pool
 
@@ -106,11 +106,11 @@ How to read the states:
 - **BLOCKED** means waiting to enter a `synchronized` monitor. Many threads BLOCKED on the same lock is contention.
 - **WAITING / TIMED_WAITING (parking)** often means waiting on a pool: a connection pool's borrow method, a queue's `take`, a `Future.get`.
 
-A stack frame that shows up in many threads across all three dumps is your bottleneck. One dump is a snapshot; three show persistence.
+A stack frame that shows up in many threads across all three dumps is your bottleneck. One dump is a snapshot. Three show persistence.
 
 ## Metrics to export
 
-At minimum: active threads, pool size, queued tasks and, most valuable, **time spent in the queue** (record it yourself if your framework does not). Micrometer's executor metrics expose active, queued and pool-size gauges; exact metric names depend on the Micrometer version, so check your `/actuator/prometheus` output. Queue time is the saturation signal; active-thread count alone is utilisation.
+At minimum: active threads, pool size, queued tasks and, most valuable, **time spent in the queue** (record it yourself if your framework does not). Micrometer's executor metrics expose active, queued and pool-size gauges. Exact metric names depend on the Micrometer version, so check your `/actuator/prometheus` output. Queue time is the saturation signal. Active-thread count alone is only utilisation.
 
 ## Virtual threads change the question
 
@@ -121,7 +121,7 @@ One caveat: in JDK 21 to 23, a virtual thread blocking inside a `synchronized` b
 ## Summary
 
 1. Compute average busy threads with Little's Law.
-2. Use the wait-to-compute formula as a starting size; cross-check the two.
+2. Use the wait-to-compute formula as a starting size, and cross-check the two.
 3. Size the thread pool with the connection and client pools behind it.
 4. Bound the queue by latency budget, and reject fast.
 5. Prove the size with a stepped load test and three thread dumps.

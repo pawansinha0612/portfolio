@@ -28,10 +28,10 @@ The caching pattern you choose decides how you fail, and at scale the failures t
 
 | Pattern | How it works | Write latency | Main risk |
 |---------|-------------|---------------|-----------|
-| Cache-aside (lazy loading) | App reads cache; on miss reads the database and fills the cache | unchanged | stale data and races; stampedes on miss |
+| Cache-aside (lazy loading) | App reads cache, and on a miss reads the database and fills the cache | unchanged | stale data and races, stampedes on miss |
 | Read-through | Cache library or service loads from the database on miss | unchanged | same as cache-aside, but logic is centralised |
 | Write-through | Every write goes to cache and database synchronously | higher (two writes) | write latency and availability tied to both |
-| Write-behind (write-back) | Writes go to cache; database updated asynchronously | lowest | data loss on cache failure; ordering and durability |
+| Write-behind (write-back) | Writes go to cache, database updated asynchronously | lowest | data loss on cache failure, ordering and durability |
 | Refresh-ahead | Popular entries refreshed before they expire | unchanged | refreshing entries nobody needs |
 
 Cache-aside is the most common and the most forgiving. Write-behind is the fastest and the most dangerous: it turns your cache into a primary data store, with all the durability questions that brings.
@@ -42,8 +42,8 @@ When a popular key expires, every request that arrives before it is rebuilt miss
 
 Fixes, from simplest:
 
-- **Request coalescing (single-flight)**: within a process, only one caller rebuilds a key; others wait for its result.
-- **A rebuild lock across processes**: in Redis, `SET lock:key token NX PX 5000`, so only the holder rebuilds; others briefly serve the stale value or wait.
+- **Request coalescing (single-flight)**: within a process, only one caller rebuilds a key and the others wait for its result.
+- **A rebuild lock across processes**: in Redis, `SET lock:key token NX PX 5000`, so only the holder rebuilds. Others briefly serve the stale value or wait.
 - **Probabilistic early expiration** (the "XFetch" approach from Vattani, Chierichetti and Lowenstein): each reader recomputes early with a probability that rises as expiry approaches:
 
 ```python
@@ -66,9 +66,9 @@ In Redis Cluster, each key maps to one hash slot on one shard, and Redis execute
 
 Detection: `redis-cli --hotkeys` reports the most accessed keys, but it requires an LFU `maxmemory-policy` (such as `allkeys-lfu`). Application-side sampling of key access is an alternative.
 
-Fixes: a short-TTL **in-process near cache** in front of Redis for the hottest keys (even 1 second removes most of the load); **key replication** (write `key#1` to `key#N` and read a random copy); or read replicas for read-heavy keys.
+Fixes: a short-TTL **in-process near cache** in front of Redis for the hottest keys (even 1 second removes most of the load), **key replication** (write `key#1` to `key#N` and read a random copy), or read replicas for read-heavy keys.
 
-Large values are a related problem. `redis-cli --bigkeys` finds them; a multi-megabyte value costs network bandwidth and can delay other commands on the same shard while it is serialised.
+Large values are a related problem. `redis-cli --bigkeys` finds them. A multi-megabyte value costs network bandwidth and can delay other commands on the same shard while it is serialised.
 
 ## The cold-cache cliff
 
@@ -92,7 +92,12 @@ The classic sequence:
 2. Request B updates the database and deletes the cache key.
 3. Request A writes the old value into the cache.
 
-The cache now holds stale data until the TTL expires. Mitigations: always set a TTL as a safety net; delete the key after the database write (some teams add a second, delayed delete); store a version with the value and refuse older versions; or drive invalidation from the database change stream (change data capture) instead of the application.
+The cache now holds stale data until the TTL expires. Mitigations:
+
+- Always set a TTL as a safety net.
+- Delete the key after the database write (some teams add a second, delayed delete).
+- Store a version with the value and refuse older versions.
+- Drive invalidation from the database change stream (change data capture) instead of the application.
 
 ## Eviction and memory pressure
 
@@ -107,7 +112,7 @@ Redis's default `maxmemory-policy` is `noeviction`: when memory is full, writes 
 
 ## Load testing caches honestly
 
-- Use a **realistic key distribution**. Real popularity is long-tailed; a test that reads 100 keys measures a 100% hit ratio and nothing else.
+- Use a **realistic key distribution**. Real popularity is long-tailed. A test that reads 100 keys measures a 100% hit ratio and nothing else.
 - Run a **cold-start scenario**: flush or restart the cache under load and watch the database.
 - Expire a known hot key mid-test to check stampede protection.
 - Fail over the cache primary under load and measure client reconnection time and errors.
