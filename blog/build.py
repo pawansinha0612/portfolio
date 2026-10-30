@@ -187,6 +187,7 @@ def post_page(p):
         'description': p['summary'], 'datePublished': p['date'].isoformat(), 'url': url(p),
         'author': {'@type': 'Person', 'name': 'Pawan Sinha', 'url': SITE + '/'},
     })
+    widgets = '    <script src="/widgets.js" defer></script>\n' if 'data-widget=' in p['body'] else ''  # interactive charts (docs/widgets.js)
     body = f'''    <article>
       <header class="blog-hero">
         <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
@@ -204,7 +205,7 @@ def post_page(p):
       <a class="btn btn-ghost btn-small" href="/interview-prep/performance-testing/">Interview prep questions</a>
     </aside>
     <script type="application/ld+json">{ld}</script>
-'''
+{widgets}'''
     return page(p['title'] + ' — Pawan Sinha', p['summary'], url(p), 'article', body)
 
 
