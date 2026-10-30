@@ -6,13 +6,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 
 ## Queue
 
-- [ ] Bottleneck analysis as a method, not a guess — form a hypothesis, find the saturated resource with USE, prove it with one metric, fix, re-test and watch the bottleneck move
-- [ ] CDN performance beyond "it caches static files" — cache keys and Vary, TTL vs stale-while-revalidate, origin shield, hit ratio vs byte hit ratio, and why load tests that bypass the CDN mislead
-- [ ] Coordinated omission: why your load tool under-reports tail latency — closed-loop generators stall with the system; HdrHistogram correction, open-model arrival rates (k6 constant-arrival-rate, wrk2)
-- [ ] Thread pool sizing from first principles — CPU-bound vs I/O-bound pools, Little's Law (threads = throughput × time in pool), queue choice, rejection policies, reading a thread dump for BLOCKED and WAITING
-- [ ] Load balancer algorithms under real load — round robin vs least connections vs least outstanding requests vs power of two choices; keep-alive imbalance, connection draining, L4 vs L7 trade-offs
-- [ ] Greenfield performance engineering: what to do before the first line of code — measurable NFRs, latency budgets per hop, a capacity model, architecture risk review, and a test strategy that grows with the system
-- [ ] Caching strategies and their failure modes — cache-aside vs read-through vs write-through vs write-behind, invalidation, hot keys in Redis, cache stampede and request coalescing
+- [x] Bottleneck analysis as a method, not a guess — form a hypothesis, find the saturated resource with USE, prove it with one metric, fix, re-test and watch the bottleneck move
+- [x] CDN performance beyond "it caches static files" — cache keys and Vary, TTL vs stale-while-revalidate, origin shield, hit ratio vs byte hit ratio, and why load tests that bypass the CDN mislead
+- [x] Coordinated omission: why your load tool under-reports tail latency — closed-loop generators stall with the system; HdrHistogram correction, open-model arrival rates (k6 constant-arrival-rate, wrk2)
+- [x] Thread pool sizing from first principles — CPU-bound vs I/O-bound pools, Little's Law (threads = throughput × time in pool), queue choice, rejection policies, reading a thread dump for BLOCKED and WAITING
+- [x] Load balancer algorithms under real load — round robin vs least connections vs least outstanding requests vs power of two choices; keep-alive imbalance, connection draining, L4 vs L7 trade-offs
+- [x] Greenfield performance engineering: what to do before the first line of code — measurable NFRs, latency budgets per hop, a capacity model, architecture risk review, and a test strategy that grows with the system
+- [x] Caching strategies and their failure modes — cache-aside vs read-through vs write-through vs write-behind, invalidation, hot keys in Redis, cache stampede and request coalescing
 - [ ] Queueing theory for capacity planning — utilisation vs response time, R = S / (1 - U) for M/M/1, why the knee arrives before 100%, Kingman's formula and the cost of variability
 - [ ] Database bottlenecks under load — execution plans that flip at scale, missing and over-indexing, lock contention, N+1 queries, replica lag; what to check first and in which order
 - [ ] GC tuning for tail latency: G1 vs ZGC vs Shenandoah — allocation rate, pause-time goals, generational ZGC (JDK 21), reading unified GC logs (-Xlog:gc*)
