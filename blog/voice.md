@@ -25,7 +25,12 @@ Style:
   a worked example), how to detect it (exact metric, query, command or profiler mode) and the trade-offs of each fix.
 - Name the original author, paper or law only when you are certain of it (for example Little's Law, Amdahl's Law,
   Gunther's Universal Scalability Law, Dean and Barroso's "The Tail at Scale", Gil Tene on coordinated omission).
-- Lead with the point. Every post gives the reader something they can use today: a checklist, a query, a script,
+- Open with a problem, not a definition. The first 2-4 sentences are a short, vivid scenario in second person and
+  present tense where something goes wrong ("Your load test says p99 is 1 ms. The real p99 was 9 seconds."). Build a
+  little tension, then explain. The scenario must be clearly hypothetical, never presented as something Pawan saw.
+- Titles are catchy and problem-led, under 70 characters, specific to the topic: "Your load test is lying about p99",
+  "Why 500 threads made it slower". No clickbait that the article doesn't pay off.
+- After the opening, get to the point fast. Every post gives the reader something they can use today: a checklist, a query, a script,
   a decision rule or a mistake to avoid.
 - Concrete examples with realistic numbers, clearly framed as examples ("for example", "imagine", "a typical case").
 - No hype, no "in today's fast-paced world", no "game-changer", no "delve", no "unlock", no "landscape".
