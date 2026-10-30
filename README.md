@@ -91,21 +91,73 @@ They switch off for visitors who have reduced motion enabled in their device set
 
 ## Blog
 
+Daily posts on advanced performance engineering at https://pawansinha.com.au/blog/, each shared to LinkedIn.
 Posts live in `blog/posts/YYYY-MM-DD-slug.md` and are published to `docs/blog/` by `blog/build.py`.
 A post goes live on its `date` (Melbourne time), so approved posts come out one a day.
 
-| When | What runs | What it does |
-|---|---|---|
-| Sunday ~9am | `.github/workflows/blog-drafts.yml` | Drafts the next 7 topics from `blog/topics.md` with a free NVIDIA-hosted model (secret `AI_API_KEY` from build.nvidia.com; GitHub Models was retired 30 Jul 2026) in the style of `blog/voice.md`, and opens a pull request |
-| You | Review the pull request | Edit, delete or re-date drafts, then merge to approve |
-| Daily ~8am | `.github/workflows/blog-publish.yml` | Builds the blog, commits `docs/blog/`, then shares the newest post on LinkedIn |
+### Your weekly routine (about 10 minutes of your time)
 
-- **Add topics:** add `- [ ] Title — angle` lines to `blog/topics.md`.
-- **Write a post yourself:** add a Markdown file in `blog/posts/` (see the format at the top of `blog/build.py`) and push.
-- **Preview locally:** `pip install markdown && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing.
-- **Run now:** GitHub → Actions → choose the workflow → Run workflow.
-- **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API, e.g. NVIDIA).
-- **LinkedIn:** every ~60 days run Actions → **LinkedIn token** (`.github/workflows/linkedin-token.yml`): once for the sign-in link, once with the code from `/linkedin-callback/`. It saves the token itself; the publish job opens an issue a week before expiry.
+| When | Who | What happens |
+|---|---|---|
+| **Saturday night** (22:00 UTC, Sunday ~9am Melbourne) | Automatic | `blog-drafts.yml` drafts the next 7 topics from `blog/topics.md` with a free NVIDIA-hosted model and opens a pull request **"Blog drafts for review"** |
+| **Sunday** | You → Claude | Ask Claude: *"Fact-check and fix the new blog drafts PR."* Claude rewrites what the model got wrong, adds an interactive widget to each post, applies the style rules below and pushes to the PR |
+| **Sunday / Monday** | You | Read the posts (PR → **Files changed**), then **Merge pull request** |
+| **Every day ~8am Melbourne** | Automatic | `blog-publish.yml` publishes that day's post on the website (blog list, RSS, sitemap) and shares it on your personal LinkedIn |
+| **First hour after each post** | You | Reply to comments on LinkedIn (see *Growing impressions*) |
+
+**Merge or close the drafts PR before the next Saturday.** The drafting job skips a week while a drafts PR is still open.
+
+### Checklist before you merge a drafts PR
+
+- [ ] Every post was fact-checked (the free model invents facts and tool options)
+- [ ] Each post opens with a short problem scenario, not a definition, and has a catchy title
+- [ ] No invented personal stories ("on my last project…"). Scenarios are written as *you*, clearly hypothetical
+- [ ] No semicolons in the text
+- [ ] Each post has an interactive widget, and the dates run one per day with no gaps
+
+### Style rules (also in `blog/voice.md`, which the model follows)
+
+- Senior-level depth: CDN, caching, concurrency, bottlenecks, I/O, databases, threads, GC, tool choice, load balancers, cloud, autoscaling, observability, greenfield.
+- Problem-first opening, catchy problem-led title under 70 characters, then mechanism, maths with a worked example, how to detect it, trade-offs.
+- Australian spelling, short sentences, no semicolons, no hype words.
+
+### Interactive widgets
+
+`docs/widgets.js` turns `<div class="widget" data-widget="NAME"><p><em>fallback text</em></p></div>` in a post into a
+calculator or simulator. `build.py` adds the script only to posts that contain one. RSS readers see the fallback text.
+Existing widgets: `bottleneck`, `cdn`, `omission`, `threads`, `lb`, `capacity`, `cache`. New ones are added to `widgets.js`.
+
+### Recurring jobs for you
+
+| How often | What | How |
+|---|---|---|
+| Weekly | Merge the drafts PR | See above |
+| When `blog/topics.md` runs low (the PR warns under 7 left) | Add topics | Add `- [ ] Title — angle` lines under **Queue**. Lines under **Parked** are skipped |
+| Every ~60 days (next: late Dec 2026) | Renew the LinkedIn token | GitHub opens an issue **"Renew the LinkedIn token…"**. Run Actions → **LinkedIn token** with the code empty, open the sign-in link, then run it again with the code from `/linkedin-callback/` |
+| When GitHub emails about it | Renew `SECRETS_ADMIN_TOKEN` | Fine-grained token for this repo with Secrets and Variables read/write |
+| If drafting fails | Check the NVIDIA key and models | Actions → Blog drafts → the run's warnings. Free models change. Set variable `AI_MODEL` to a working model ID |
+
+### Growing impressions
+
+On LinkedIn:
+- **Reply to every comment in the first hour.** Early engagement decides how far LinkedIn pushes a post.
+- **Reshare as your company page** ("Pawan Sinha Consulting") and add a one-line comment of your own.
+- **Comment on other performance engineers' posts** during the week. Thoughtful comments put your name in front of their audience.
+- **Turn the best post each week into a carousel** (a PDF document post), which usually gets more reach than a link post.
+- **Mention the interactive calculator** in the post: "try your own numbers" gives people a reason to click.
+
+Beyond LinkedIn:
+- **Republish on dev.to and Medium** a few days later with the canonical URL set to your site, so Google credits your site.
+- **Share the strongest deep dives** (for example coordinated omission, load balancer algorithms) in relevant communities such as r/sre, r/devops or Hacker News, without a sales pitch.
+- **Google Search Console:** check *Performance* monthly to see which posts get search traffic, and write more on those topics.
+- **Link posts to each other** where topics overlap. It keeps readers on the site longer and helps search ranking.
+
+### Other tasks
+
+- **Write a post yourself:** add a Markdown file in `blog/posts/` (format at the top of `blog/build.py`) and push.
+- **Preview locally:** `pip install markdown && python3 blog/build.py --include-future`, open `docs/blog/index.html`, then `git checkout docs/` before committing (otherwise future posts go live early).
+- **Run a job now:** GitHub → Actions → choose the workflow → Run workflow.
+- **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API).
 
 ## Availability notifier
 
