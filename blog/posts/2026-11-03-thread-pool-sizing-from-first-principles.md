@@ -14,9 +14,9 @@ linkedin: |
 
   And bound the queue by your latency budget. A queue of 1,000 at 640 req/s is a 1.5-second wait, longer than most client timeouts, so you're doing work nobody is waiting for any more.
 
-  How do you size your pools today: formula, load test or the default?
-
   The article has an interactive calculator: size your own pool and see when the connection pool becomes the real limit.
+
+  How do you size your pools today: formula, load test or the default?
 
   #Java #PerformanceEngineering #Concurrency
 ---

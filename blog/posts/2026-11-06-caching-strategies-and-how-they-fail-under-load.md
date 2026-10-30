@@ -14,9 +14,9 @@ linkedin: |
   • Hot keys: one key lives on one shard, so one shard's throughput caps it.
   • Stale-write race in cache-aside: a slow reader puts an old value back after an update deleted it.
 
-  Which of these has your load test actually exercised?
-
   The article has an interactive calculator: see what a cold cache does to your database.
+
+  Which of these has your load test actually exercised?
 
   #PerformanceEngineering #Redis #Caching
 ---

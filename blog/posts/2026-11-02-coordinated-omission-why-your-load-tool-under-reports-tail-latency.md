@@ -12,9 +12,9 @@ linkedin: |
 
   The fix: use open-model, arrival-rate load (k6 constant-arrival-rate, Gatling open injection, JMeter's Open Model Thread Group, wrk2) and watch for dropped iterations, which are the same omission in a new form.
 
-  Quick check on existing results: did achieved throughput dip at the same moment latency spiked? If so, your percentiles are flattering you.
-
   The article has an interactive simulator: set your own stall length and compare reported vs real p99.
+
+  Quick check on existing results: did achieved throughput dip at the same moment latency spiked? If so, your percentiles are flattering you.
 
   #PerformanceEngineering #LoadTesting #Latency
 ---

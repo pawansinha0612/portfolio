@@ -12,9 +12,9 @@ linkedin: |
 
   The imbalance most people miss is a level down. An L4 balancer, including a plain Kubernetes Service, spreads connections, not requests. HTTP/2 and gRPC put thousands of requests on one connection, so one pod can carry a client's entire traffic while the new pods sit idle.
 
-  Which algorithm does your edge balancer use, and did someone choose it on purpose?
-
   The article has a live simulator: switch on GC pauses and watch what each algorithm does to p99.
+
+  Which algorithm does your edge balancer use, and did someone choose it on purpose?
 
   #PerformanceEngineering #Kubernetes #SRE
 ---

@@ -12,9 +12,9 @@ linkedin: |
 
   If latency climbs and no resource looks busy, look for waiting: locks, pools, GC pauses, downstream calls, or CPU throttling hidden behind a low average.
 
-  What's the first saturation metric you look at when p99 starts climbing?
-
   The article has an interactive calculator: put in your own cores and CPU cost per request and see which tier caps you.
+
+  What's the first saturation metric you look at when p99 starts climbing?
 
   #PerformanceEngineering #SRE #CapacityPlanning
 ---

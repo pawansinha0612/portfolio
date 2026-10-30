@@ -15,9 +15,9 @@ linkedin: |
   4. A walking-skeleton load test that measures real CPU cost per request.
   5. Performance checks in CI from the first service.
 
-  When does performance engineering start on your projects: design, build, or the week before go-live?
-
   The article has an interactive capacity model: put in your own forecast and see where it breaks.
+
+  When does performance engineering start on your projects: design, build, or the week before go-live?
 
   #PerformanceEngineering #SoftwareArchitecture #CapacityPlanning
 ---

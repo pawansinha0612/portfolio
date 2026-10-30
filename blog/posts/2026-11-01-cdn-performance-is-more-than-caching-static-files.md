@@ -12,9 +12,9 @@ linkedin: |
 
   And load tests mislead in both directions. Bypass the CDN and you overstate origin load. Hammer one URL through it from one region and you test a single warm edge cache.
 
-  Do you size your origin for the normal hit ratio, or for a cold cache?
-
   The article has an interactive calculator: move the hit ratio and watch your origin run out of headroom.
+
+  Do you size your origin for the normal hit ratio, or for a cold cache?
 
   #PerformanceEngineering #CDN #WebPerformance
 ---
