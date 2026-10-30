@@ -38,6 +38,10 @@ The API tier caps the system at 300 req/s. Tuning the database here buys nothing
 
 You can get demand numbers cheaply: divide CPU-seconds consumed during a steady test by the number of requests served. Do this before any tuning conversation.
 
+Try it with your own numbers. Change the cores and CPU cost per request for each tier and watch where the ceiling lands:
+
+<div class="widget" data-widget="bottleneck"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## Use RED to find the service, USE to find the resource
 
 **RED** (Rate, Errors, Duration, from Tom Wilkie) tells you *which service* is slow. Traces tell you which span on the critical path owns the time. Then the **USE method** (Utilisation, Saturation, Errors, from Brendan Gregg) tells you *which resource* inside it is the problem.

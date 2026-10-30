@@ -45,6 +45,10 @@ Imagine one closed-loop thread intended to send a request every 10 ms (100 req/s
 
 Reported p99: 1 ms. Actual p99: about 9 s. Same run.
 
+Change the stall length and request interval and compare what the tool reports with what users experienced:
+
+<div class="widget" data-widget="omission"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## Where it hides
 
 - **Closed-model test plans**: classic JMeter Thread Groups, LoadRunner scenarios built on a fixed number of virtual users, k6's `constant-vus` and `ramping-vus` executors. Pacing and throughput timers do not fix it; they still wait for the response before the next request.

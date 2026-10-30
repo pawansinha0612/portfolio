@@ -30,6 +30,10 @@ Origin request rate = edge request rate × (1 − hit ratio). This is not linear
 
 A five-point drop in hit ratio doubles origin load. If the origin was sized at 2× headroom for 500 req/s, that drop alone consumes all of it.
 
+Try it: move the hit ratio and see how quickly the origin runs out of headroom.
+
+<div class="widget" data-widget="cdn"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 Track two ratios, not one:
 
 - **Request hit ratio**: share of requests served from cache. This drives origin CPU and connection load.

@@ -36,6 +36,10 @@ The same happens with a **paused** backend. During a 500 ms garbage collection p
 
 **Least outstanding requests** (AWS Application Load Balancer offers it under that name; Envoy's `LEAST_REQUEST` policy works on the same signal) routes on in-flight work. A backend that is slow or paused accumulates outstanding requests and stops being chosen. That is the property you want.
 
+You can see the effect in a simulation. It sends identical traffic through each algorithm; switch the GC pauses on and off and raise the share of slow requests:
+
+<div class="widget" data-widget="lb"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## Power of two choices: the robust default
 
 Pure "pick the least-loaded backend" has a weakness at scale. With many balancer instances, each one sees only its own view, and they can all pick the same lightly loaded backend at the same moment. That backend gets flooded and becomes the most loaded. This is called **herding**.

@@ -72,6 +72,10 @@ A cache multiplies database capacity, which means losing it divides capacity. Im
 
 If the database cannot survive that, the cache is a **load-bearing dependency**, and the design needs one of: warming the cache before taking traffic, rate limiting misses, serving stale data, or a database sized for the cold case. Whichever you choose, test the cold start explicitly.
 
+Try it with your own traffic and database capacity:
+
+<div class="widget" data-widget="cache"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## Cache penetration
 
 Requests for keys that do not exist always miss, so they always reach the database. A bot iterating random IDs bypasses your cache entirely. Cache negative results with a short TTL, or put a Bloom filter of valid keys in front of the lookup.

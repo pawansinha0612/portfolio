@@ -54,6 +54,10 @@ Here is the trap: those 32 threads each want a database connection. If the conne
 
 **The effective concurrency of a request path is the smallest pool along it**: thread pool, connection pool, HTTP client pool, semaphores, downstream rate limits. Size them together. Raising one without the others only moves the queue somewhere less visible.
 
+Try the arithmetic with your own service, including the connection pool behind it:
+
+<div class="widget" data-widget="threads"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## Queue choice changes behaviour, not just capacity
 
 Java's `ThreadPoolExecutor` has three settings that interact in surprising ways: `corePoolSize`, `maximumPoolSize` and the work queue.

@@ -65,6 +65,10 @@ A spreadsheet is enough. Continuing the example, assume each API request costs 1
 
 Now follow the consequences. If each pod has a database connection pool of 10, that is 38 × 10 = 380 connections. PostgreSQL's default `max_connections` is 100, and large connection counts hurt PostgreSQL performance well before any limit. So the model has just produced an architecture decision: a connection pooler (such as PgBouncer or a managed proxy), smaller per-pod pools, or a different access pattern. Far better to have that conversation now.
 
+Here is the same model as an interactive calculator. Put in your own forecast and see where it breaks:
+
+<div class="widget" data-widget="capacity"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
 ## 4. An architecture risk review
 
 Review the design specifically for performance risk. The patterns that cause most production performance problems are visible on a whiteboard:
