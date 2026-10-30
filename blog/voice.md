@@ -33,6 +33,7 @@ Style:
 - After the opening, get to the point fast. Every post gives the reader something they can use today: a checklist, a query, a script,
   a decision rule or a mistake to avoid.
 - Concrete examples with realistic numbers, clearly framed as examples ("for example", "imagine", "a typical case").
+- Never use semicolons in prose. Split into two sentences or use a comma or a list instead.
 - No hype, no "in today's fast-paced world", no "game-changer", no "delve", no "unlock", no "landscape".
 - No sales pitch inside the article.
 
