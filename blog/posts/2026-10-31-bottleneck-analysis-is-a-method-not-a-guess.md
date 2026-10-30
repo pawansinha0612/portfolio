@@ -3,6 +3,7 @@ title: Your bottleneck isn't where you think it is
 date: 2026-10-31
 summary: Most slow-system investigations start with a fix. Start instead with service demand, the USE method and a stepped open-model test, and prove the bottleneck before touching anything.
 tags: Performance, Bottlenecks, Capacity Planning
+highlight: bottleneck
 linkedin: |
   "Let's double the connection pool and see." That's a guess, not an analysis.
 

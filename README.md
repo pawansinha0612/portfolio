@@ -132,7 +132,8 @@ Existing widgets: `bottleneck`, `cdn`, `omission`, `threads`, `lb`, `capacity`, 
 Each post gets its own 1200×630 share image (title, tags, your name and domain) from `blog/og.py`, written to
 `docs/blog/<slug>/og.png` when the blog is built. Google, chat apps and LinkedIn link previews show it, and the
 LinkedIn post uploads it as its picture. Fonts are in `blog/fonts` (open-source licences included).
-Preview one: `python3 blog/og.py blog/posts/<file>.md preview.png`.
+Preview one: `python3 blog/og.py blog/posts/<file>.md preview.png`. The coloured word is the last meaningful word of the title,
+or set it in the post's front matter, e.g. `highlight: bottleneck`.
 
 ### Recurring jobs for you
 

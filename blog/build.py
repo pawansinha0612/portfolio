@@ -13,6 +13,7 @@ Post format (front matter between --- lines, then Markdown):
     date: 2026-11-03
     summary: One or two sentences for the blog list, search results and link previews.
     tags: Performance, Metrics
+    highlight: p95            (optional: title word(s) coloured on the share image; default is the last word)
     linkedin: |
       The LinkedIn post text (no link: the post card links to the article).
     ---
@@ -74,6 +75,7 @@ def parse(path):
         'summary': meta['summary'],
         'tags': [t.strip() for t in meta.get('tags', '').split(',') if t.strip()],
         'linkedin': meta.get('linkedin', '').strip(),
+        'highlight': meta.get('highlight', ''),  # optional word(s) of the title to colour on the share image
         'body': markdown.markdown(m.group(2), extensions=['fenced_code', 'tables', 'sane_lists']),
         'words': len(m.group(2).split()),
     }

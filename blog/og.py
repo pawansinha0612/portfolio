@@ -82,8 +82,9 @@ def make(post):
     lw = draw.textlength(label, font=lf) + 36
     pill(draw, (W - PAD - lw, 73), label, lf, TEAL, fill=(24, 62, 70))
 
-    # Title: largest size that fits in three lines; last word in the gradient.
+    # Title: largest size that fits in three lines; the highlight word(s) in the gradient.
     words = post['title'].split()
+    marked = highlighted(words, post.get('highlight', ''))
     for size in (84, 76, 68, 62, 56, 50):
         tf = font('Inter-ExtraBold.ttf', size)
         lines = wrap(words, tf, W - 2 * PAD, draw)
@@ -92,12 +93,12 @@ def make(post):
     line_h = round(size * 1.12)
     block_h = line_h * len(lines)
     y = 190 + (300 - block_h) // 2
+    n = 0
     for i, line in enumerate(lines):
         x = PAD
         for j, word in enumerate(line):
-            last = i == len(lines) - 1 and j == len(line) - 1
             text = word + ('' if j == len(line) - 1 else ' ')
-            if last:
+            if n in marked:
                 ww = round(draw.textlength(word, font=tf))
                 mask = Image.new('L', (ww + 10, line_h + 20), 0)
                 ImageDraw.Draw(mask).text((0, 0), word, font=tf, fill=255)
@@ -105,6 +106,7 @@ def make(post):
             else:
                 draw.text((x, y), text, font=tf, fill=WHITE)
             x += round(draw.textlength(text, font=tf))
+            n += 1
         y += line_h
 
     # Tags and domain
@@ -114,6 +116,23 @@ def make(post):
         x = pill(draw, (x, H - 120), tag, mf, (214, 222, 238), outline=(70, 82, 120)) + 12
     draw.text((W - PAD, H - 97), 'pawansinha.com.au', font=font('Inter-SemiBold.ttf', 28), fill=WHITE, anchor='rm')
     return img
+
+
+SMALL = {'a', 'an', 'and', 'are', 'at', 'for', 'in', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'your', 'you'}
+
+
+def highlighted(words, phrase):
+    """Indexes of the title words to colour: the front matter's highlight phrase, else the last meaningful word."""
+    plain = [w.strip('.,:;!?\'"').lower() for w in words]
+    want = [w.lower() for w in phrase.split()]
+    if want:
+        for i in range(len(words) - len(want) + 1):
+            if plain[i:i + len(want)] == want:
+                return set(range(i, i + len(want)))
+    for i in range(len(words) - 1, -1, -1):
+        if plain[i] not in SMALL:
+            return {i}
+    return {len(words) - 1}
 
 
 def _rounded_mask(size, radius):
