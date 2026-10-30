@@ -207,6 +207,15 @@ Beyond LinkedIn:
 - **Run a job now:** GitHub → Actions → choose the workflow → Run workflow.
 - **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API).
 
+## Pending setup (your to-do list)
+
+- [ ] **Switch on the weekly email digest** (5 min): steps under *Weekly email digest* below.
+- [ ] **Get job radar emails** (1 min): private repo → **Watch → All activity**.
+- [ ] **Sell the k6 starter kit** (15 min): Gumroad, then replace `[k6-kit-url]` in `docs/index.html`. Steps in the private repo's `products/k6-starter-kit/LISTING.md`.
+- [ ] **LinkedIn company page**: waiting on LinkedIn's approval. Then follow *Company page on LinkedIn* below.
+
+Tick these off here when done.
+
 ## Ways the site earns
 
 | What | Where | How it works |
