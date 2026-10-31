@@ -1,0 +1,52 @@
+# Weekly check for anything about to break: tokens and keys close to expiry, pages down, the blog queue
+# running out, the form backend not answering. Opens one "Site health" issue (GitHub emails you) when
+# something needs attention, updates it each week, and closes it once everything passes.
+name: Site health
+
+on:
+  schedule:
+    - cron: '30 21 * * 1'   # Monday 21:30 UTC = Tuesday ~8:30am Melbourne
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run the checks
+        env:
+          ADMIN_TOKEN: ${{ secrets.SECRETS_ADMIN_TOKEN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_TOKEN_EXPIRES: ${{ vars.LINKEDIN_TOKEN_EXPIRES }}
+          LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python health/check.py
+
+      - name: Open, update or close the health issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title='Site health: something needs attention'
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -s health-problems.md ]; then
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --body-file health-problems.md
+              gh issue comment "$number" --body "Still needs attention as of $(date +%Y-%m-%d). Details updated above."
+            else
+              gh issue create --title "$title" --body-file health-problems.md
+            fi
+          elif [ -n "$number" ]; then
+            gh issue close "$number" --comment "All checks passed on $(date +%Y-%m-%d)."
+          fi
