@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>One CDN purge can take down your origin</title>
+      <link>https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/</link>
+      <guid>https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/</guid>
+      <pubDate>Sun, 01 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Origin load scales with (1 − hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.</description>
+    </item>
+    <item>
       <title>Your bottleneck isn&#x27;t where you think it is</title>
       <link>https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/</link>
       <guid>https://pawansinha.com.au/blog/bottleneck-analysis-is-a-method-not-a-guess/</guid>

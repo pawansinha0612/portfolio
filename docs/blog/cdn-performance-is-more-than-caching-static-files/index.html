@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>One CDN purge can take down your origin — Pawan Sinha</title>
+  <meta name="description" content="Origin load scales with (1 − hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.">
+  <meta property="og:title" content="One CDN purge can take down your origin — Pawan Sinha">
+  <meta property="og:description" content="Origin load scales with (1 − hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; }
+    .article pre code { background: none; padding: 0; font-size: inherit; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>One CDN purge can take down your origin</h1>
+        <div class="post-meta"><span>1 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">CDN</span><span class="tag">Caching</span></div></div>
+      </header>
+      <div class="article">
+<p>Launch morning. The new campaign goes live, and someone helpfully purges the whole CDN so the new banner shows everywhere at once. Thirty seconds later the origin, which normally serves 500 requests a second, is taking 10,000. The site goes down in the one hour it most needed to stay up.</p>
+<p>Nothing was broken. The CDN did exactly what it was told.</p>
+<p>Most teams treat the CDN as a box that makes static files fast. From a performance engineering point of view it is the <strong>first tier of your capacity model</strong>. It decides how much traffic your origin sees, and it fails in ways that stay invisible until a busy day.</p>
+<h2>The number that matters: origin load ∝ (1 − hit ratio)</h2>
+<p>Origin request rate = edge request rate × (1 − hit ratio). This is not linear in the way people intuit.</p>
+<table>
+<thead>
+<tr>
+<th>Edge traffic</th>
+<th>Hit ratio</th>
+<th>Origin traffic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10,000 req/s</td>
+<td>95%</td>
+<td>10,000 × 0.05 = 500 req/s</td>
+</tr>
+<tr>
+<td>10,000 req/s</td>
+<td>90%</td>
+<td>10,000 × 0.10 = 1,000 req/s</td>
+</tr>
+<tr>
+<td>10,000 req/s</td>
+<td>80%</td>
+<td>10,000 × 0.20 = 2,000 req/s</td>
+</tr>
+</tbody>
+</table>
+<p>A five-point drop in hit ratio doubles origin load. If the origin was sized at 2× headroom for 500 req/s, that drop alone consumes all of it.</p>
+<p>Try it: move the hit ratio and see how quickly the origin runs out of headroom.</p>
+<div class="widget" data-widget="cdn"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<p>Track two ratios, not one:</p>
+<ul>
+<li><strong>Request hit ratio</strong>: share of requests served from cache. This drives origin CPU and connection load.</li>
+<li><strong>Byte hit ratio</strong>: share of bytes served from cache. This drives origin egress bandwidth and cost. A site can have a high request hit ratio while missing on the large files.</li>
+</ul>
+<h2>Cache keys: the silent fragmentation</h2>
+<p>The cache key decides which requests share an object. Every extra dimension in the key splits one hot object into many lukewarm ones.</p>
+<p>Common fragmenters:</p>
+<ul>
+<li><strong>Query strings</strong>: <code>?utm_source=...</code>, <code>?fbclid=...</code>, cache-busting timestamps, or the same parameters in a different order. Strip tracking parameters and normalise order at the edge.</li>
+<li><strong>Cookies</strong>: forwarding all cookies to the origin usually puts them in the key. Forward only the ones the origin needs.</li>
+<li><strong><code>Vary</code> headers</strong>: <code>Vary: Accept-Encoding</code> is normal and most CDNs normalise it. <code>Vary: User-Agent</code> can turn one object into thousands of variants. <code>Vary: Cookie</code> effectively disables shared caching.</li>
+</ul>
+<p>A quick test: request the same object with two realistic variations (different tracking parameter, different user agent) and check whether the second is a hit.</p>
+<h2>TTLs, revalidation and serving stale</h2>
+<p>Use <code>Cache-Control</code> deliberately:</p>
+<pre><code class="language-http">Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=60, stale-if-error=86400
+</code></pre>
+<ul>
+<li><code>max-age</code> applies to browsers, and <code>s-maxage</code> overrides it for shared caches such as the CDN.</li>
+<li><code>stale-while-revalidate</code> (RFC 5861) lets the cache serve the stale copy while it refreshes in the background, so users never wait on the origin for a popular object.</li>
+<li><code>stale-if-error</code> lets the cache serve stale content when the origin returns errors, which turns an origin outage into degraded freshness instead of an outage.</li>
+</ul>
+<p>Support for these directives differs between CDN providers and configuration modes, so confirm them against your provider's documentation and verify with response headers.</p>
+<h2>Tiered caching and request collapsing</h2>
+<p>Without tiering, every edge location (point of presence, or POP) misses independently. With 50 POPs, a newly published or just-expired object can cause up to 50 origin fetches. An <strong>origin shield</strong> (a mid-tier cache that edges fetch from) collapses those into roughly one.</p>
+<p><strong>Request collapsing</strong> handles the same problem inside one location: if 200 requests for the same uncached object arrive together, the cache sends one request to the origin and holds the rest. Check whether your provider does this by default and for which responses. It is your main defence against a stampede on a hot object.</p>
+<h2>Synchronised expiry and purge-all</h2>
+<p>Two events produce a sudden wall of misses:</p>
+<ul>
+<li><strong>Purge-all</strong> during peak hours. It turns the origin's traffic from (1 − hit ratio) into nearly 100% for the hottest objects at once. Prefer targeted purges by URL or tag, and schedule large purges off-peak.</li>
+<li><strong>Aligned TTLs</strong>: content published in a batch with identical TTLs expires in a batch.</li>
+</ul>
+<p>Size the origin for a cold-cache event, or have a plan (stale-while-revalidate, shielding, rate limiting) that makes a cold cache survivable.</p>
+<h2>Dynamic content benefits too</h2>
+<p>Even uncacheable API calls gain from the CDN. Say a user is 150 ms round-trip time (RTT) from the origin. A new TCP plus TLS 1.3 connection needs about two round trips before the request is sent, then one more for the response: roughly 3 × 150 = 450 ms. If the edge is 10 ms from the user and keeps a warm, reused connection to the origin, the user pays about 2 × 10 = 20 ms for the handshakes plus one edge-to-origin round trip, usually under 150 ms over the provider's network. That is roughly 170 ms instead of 450 ms, before any caching.</p>
+<h2>Load testing with a CDN in the path</h2>
+<p>CDN load tests mislead in both directions:</p>
+<ul>
+<li><strong>Bypassing the CDN</strong> sends 100% of traffic to the origin. You overstate origin load and learn nothing about the edge.</li>
+<li><strong>Testing through the CDN with one URL from one cloud region</strong> hits one or two POPs with a perfectly warm cache. You understate origin load.</li>
+</ul>
+<p>What I'd do instead:</p>
+<ol>
+<li>Model the URL distribution from real access logs. Popularity is usually long-tailed, so a realistic mix includes many rarely requested objects that miss.</li>
+<li>Test the origin directly at <strong>expected miss traffic</strong>: total × (1 − hit ratio), plus the uncacheable requests, with headroom for a lower hit ratio.</li>
+<li>Run a <strong>cold-cache scenario</strong> and a <strong>purge scenario</strong> against a staging CDN configuration.</li>
+<li>Generate load from several regions if you want to exercise more than one POP.</li>
+<li>Tell your CDN provider before a large test. Edge security rules often treat a load test as an attack, and some providers' terms require notice.</li>
+</ol>
+<h2>What to monitor</h2>
+<ul>
+<li>Hit ratio by content type and path, both request and byte.</li>
+<li>Origin request rate and origin response time, separately from edge time to first byte.</li>
+<li>5xx errors split by edge and origin.</li>
+<li>Cache status headers on sampled responses: <code>Age</code> (standard), and provider-specific ones such as <code>cf-cache-status</code> (Cloudflare) or <code>X-Cache</code> (CloudFront).</li>
+</ul>
+<p>The CDN is the first tier in your capacity model. Give it the same rigour as the database.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "One CDN purge can take down your origin", "description": "Origin load scales with (1 \u2212 hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.", "datePublished": "2026-11-01", "url": "https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
