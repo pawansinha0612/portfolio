@@ -219,8 +219,28 @@ Beyond LinkedIn:
 - **Run a job now:** GitHub → Actions → choose the workflow → Run workflow.
 - **Switch AI provider:** set repository variables `AI_BASE_URL`, `AI_MODEL` and secret `AI_API_KEY` (any OpenAI-compatible API).
 
+## What can break, and what warns you
+
+**Site health** (`.github/workflows/site-health.yml`, every Tuesday morning) checks all of this and opens one
+**"Site health: something needs attention"** issue with the fix when anything is wrong. GitHub emails you; the issue
+closes itself once everything passes. Run it any time: Actions → **Site health** → Run workflow.
+
+| What | When | What to do |
+|---|---|---|
+| LinkedIn token | Expires **27 Dec 2026**, then every ~60 days | A reminder issue opens 7 days before. Actions → **LinkedIn token**, two runs, from any phone. Posts keep publishing on the site meanwhile |
+| `SECRETS_ADMIN_TOKEN` (lets the workflow save the renewed LinkedIn token) | Expires **28 Oct 2027** | Health check warns 30 days before. New fine-grained token, 1 year, then update the secret |
+| LinkedIn API version (`202609`) | LinkedIn retires versions after about a year | Health check warns at 10 months: set variable `LINKEDIN_VERSION` to a recent YYYYMM |
+| Blog queue | Runs out **6 Nov 2026** unless you merge the Saturday drafts PR | Merge the drafts PR each week (Claude fact-checks it first) |
+| 60 quiet days | GitHub pauses scheduled workflows in a repo with no commits for 60 days | Daily blog commits prevent this. If paused: Actions → each workflow → **Enable workflow** |
+| AI key (NVIDIA, for drafts) | Free models change; keys can be revoked | Health check tests it. New key at build.nvidia.com → secret `AI_API_KEY`; set `AI_MODEL` if a model disappears |
+| Enquiry form (Google Apps Script) | Breaks if Google asks to re-approve, or the deployment is archived | Health check tests it. Run any function in Apps Script to re-approve |
+| Domain `pawansinha.com.au` | Registered at Hostinger; renews yearly | **Not checked automatically.** Turn on auto-renew in Hostinger and keep the card current. If it lapses, the site, email and LinkedIn links all stop |
+| HTTPS certificate | GitHub renews it automatically | Health check warns if under 14 days left (means the domain check is failing) |
+| Job radar | Runs daily in the private repo and commits, so it stays active | Nothing, unless a job site changes its pages |
+
 ## Pending setup (your to-do list)
 
+- [ ] **Turn on auto-renew for pawansinha.com.au in Hostinger** and check the card on file. This is the one thing the health check can't see.
 - [ ] **Switch on the weekly email digest** (5 min): steps under *Weekly email digest* below.
 - [ ] **Get job radar emails**: the private repo is now watched (done 31 Oct). Check github.com/settings/notifications has **Email** ticked under *Watching*.
 - [ ] **Sell the k6 starter kit** (15 min): Gumroad, then replace `[k6-kit-url]` in `docs/index.html` and `docs/shop/index.html`. Steps in the private repo's `products/k6-starter-kit/LISTING.md`.
