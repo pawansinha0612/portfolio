@@ -4,11 +4,19 @@ name: Blog publish
 
 on:
   schedule:
-    - cron: '0 21 * * *'   # 21:00 UTC = 8am Melbourne in summer (7am in winter)
+    # Two runs, off the busy top of the hour: GitHub often starts scheduled jobs late (yesterday by 3.5 hours).
+    # The second run catches anything the first missed; posts are never shared twice.
+    - cron: '7 20 * * *'    # 20:07 UTC = 7:07am Melbourne in summer (6:07am in winter)
+    - cron: '37 21 * * *'   # 21:37 UTC = 8:37am Melbourne in summer (7:37am in winter)
   push:
     branches: [main]
     paths: ['blog/posts/**', 'blog/build.py']
   workflow_dispatch:
+    inputs:
+      test_image:
+        description: 'Only test the LinkedIn image upload (posts nothing)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -59,6 +67,7 @@ jobs:
           LINKEDIN_PAGE_ACCESS_TOKEN: ${{ secrets.LINKEDIN_PAGE_ACCESS_TOKEN }}
           LINKEDIN_PAGE_URN: ${{ vars.LINKEDIN_PAGE_URN }}
           LINKEDIN_PAGE_TOKEN_EXPIRES: ${{ vars.LINKEDIN_PAGE_TOKEN_EXPIRES }}
+          LINKEDIN_TEST_IMAGE: ${{ inputs.test_image && '1' || '' }}
         run: python blog/linkedin.py
 
       - name: Record what was shared

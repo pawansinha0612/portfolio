@@ -14,6 +14,8 @@ Company page (optional, needs LinkedIn's Community Management API on a separate 
     LINKEDIN_PAGE_URN            urn:li:organization:<page id> (the number in the page's admin URL)
     LINKEDIN_PAGE_TOKEN_EXPIRES  optional, YYYY-MM-DD
 
+LINKEDIN_TEST_IMAGE=1 only uploads the newest post's share image and reports the result, without posting anything.
+
 Writes token_problem / page_token_problem = expired|expiring to $GITHUB_OUTPUT so the workflow can open a reminder issue.
 A page failure never stops the personal share.
 """
@@ -77,9 +79,14 @@ def upload_thumbnail(owner, post, token=None):
     _, _, res = api('POST', '/rest/images?action=initializeUpload',
                     {'initializeUploadRequest': {'owner': owner}}, token=token)
     upload_url, image = res['value']['uploadUrl'], res['value']['image']
+    # Without an explicit Content-Type, urllib sends form encoding and LinkedIn rejects the upload with HTTP 400.
     req = urllib.request.Request(upload_url, data=path.read_bytes(), method='PUT',
-                                 headers={'Authorization': f'Bearer {token or TOKEN}'})
-    urllib.request.urlopen(req, timeout=60).close()
+                                 headers={'Authorization': f'Bearer {token or TOKEN}',
+                                          'Content-Type': 'application/octet-stream'})
+    try:
+        urllib.request.urlopen(req, timeout=60).close()
+    except urllib.error.HTTPError as err:
+        raise ApiError(err.code, 'image upload: ' + err.read().decode(errors='replace')[:500])
     for _ in range(10):  # wait until LinkedIn has processed the upload
         try:
             _, _, info = api('GET', '/rest/images/' + urllib.parse.quote(image, safe=''), token=token)
@@ -209,7 +216,20 @@ def save(posted):
     POSTED.write_text(json.dumps(posted, indent=2) + '\n')
 
 
+def test_image():
+    post = load()[0]
+    author = os.environ.get('LINKEDIN_AUTHOR', '').strip()
+    if not author:
+        _, _, me = api('GET', '/v2/userinfo', rest=False)
+        author = f'urn:li:person:{me["sub"]}'
+    image = upload_thumbnail(author, post)
+    _, _, info = api('GET', '/rest/images/' + urllib.parse.quote(image, safe=''))
+    print(f'Image test for "{post["title"]}": uploaded {image}, status {info.get("status")}. Nothing was posted.')
+
+
 def main():
+    if os.environ.get('LINKEDIN_TEST_IMAGE'):
+        return test_image()
     posted = json.loads(POSTED.read_text()) if POSTED.exists() else {}
     if TOKEN:
         check_expiry('LINKEDIN_TOKEN_EXPIRES', 'token_problem', 'The LinkedIn token')
