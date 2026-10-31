@@ -225,7 +225,7 @@ Beyond LinkedIn:
 **"Site health: something needs attention"** issue with the fix when anything is wrong. GitHub emails you; the issue
 closes itself once everything passes. Run it any time: Actions → **Site health** → Run workflow.
 
-| What | When | What to do |
+| What | When | What to do (full steps below) |
 |---|---|---|
 | LinkedIn token | Expires **27 Dec 2026**, then every ~60 days | A reminder issue opens 7 days before. Actions → **LinkedIn token**, two runs, from any phone. Posts keep publishing on the site meanwhile |
 | `SECRETS_ADMIN_TOKEN` (lets the workflow save the renewed LinkedIn token) | Expires **28 Oct 2027** | Health check warns 30 days before. New fine-grained token, 1 year, then update the secret |
@@ -237,6 +237,72 @@ closes itself once everything passes. Run it any time: Actions → **Site health
 | Domain `pawansinha.com.au` | Registered at Hostinger; renews yearly | **Not checked automatically.** Turn on auto-renew in Hostinger and keep the card current. If it lapses, the site, email and LinkedIn links all stop |
 | HTTPS certificate | GitHub renews it automatically | Health check warns if under 14 days left (means the domain check is failing) |
 | Job radar | Runs daily in the private repo and commits, so it stays active | Nothing, unless a job site changes its pages |
+
+### Where to see it
+
+- **Runs:** github.com/pawansinha0612/portfolio → **Actions** → **Site health** (left list). GitHub's own servers run it
+  every Tuesday; nothing runs on your computer. Click a run, then **Summary**, to see every check with ✅ or ❌.
+- **Run it now:** same page → **Run workflow** → **Run workflow**. Takes about a minute.
+- **Problems:** github.com/pawansinha0612/portfolio → **Issues**. GitHub also emails you when the issue opens.
+
+### How to fix each one
+
+**LinkedIn token expired** (issue "Renew the LinkedIn token for blog posting")
+1. GitHub → portfolio → **Actions** → **LinkedIn token** → **Run workflow**. Leave **code** empty → **Run workflow**.
+2. Open the finished run → **Summary** → click the LinkedIn sign-in link. Sign in and click **Allow**.
+3. You land on pawansinha.com.au/linkedin-callback/, which shows a code. Copy it.
+4. Back in **Actions** → **LinkedIn token** → **Run workflow**, paste the code into **code** → **Run workflow**.
+5. Done: the new token is saved and the issue closes. Do it within a few minutes of step 2, as the code expires quickly.
+
+**SECRETS_ADMIN_TOKEN expiring** (needed for step 4 above to save the token)
+1. github.com/settings/personal-access-tokens → **Generate new token** (fine-grained).
+2. Name `secrets-admin`, expiry **1 year**, **Only select repositories** → `portfolio`.
+3. Repository permissions: **Secrets → Read and write**, **Variables → Read and write**. **Generate token**, copy it.
+4. portfolio → **Settings** → **Secrets and variables** → **Actions** → **SECRETS_ADMIN_TOKEN** → pencil → paste → **Update secret**.
+   Never paste it anywhere else, including chats.
+
+**LinkedIn API version too old** (posting fails with HTTP 426)
+1. portfolio → **Settings** → **Secrets and variables** → **Actions** → **Variables** tab.
+2. **New repository variable** (or edit it if it exists): name `LINKEDIN_VERSION`, value a month 1–2 months ago as
+   YYYYMM, for example `202708`. Save. The next morning's post uses it.
+
+**Blog posts running out**
+1. portfolio → **Pull requests** → **Blog drafts for review**. Ask Claude to fact-check it (or read it yourself).
+2. **Merge pull request** → **Confirm merge**. Posts publish one a day from then on.
+3. No pull request there? **Actions** → **Blog drafts** → **Run workflow**; one appears in a few minutes.
+
+**AI key for drafts rejected**
+1. build.nvidia.com → sign in → your profile → **API Keys** → **Generate API Key**, copy it.
+2. portfolio → **Settings** → **Secrets and variables** → **Actions** → **AI_API_KEY** → pencil → paste → **Update secret**.
+3. If the key works but drafting still fails, a free model was withdrawn: open the **Blog drafts** run to see which,
+   then set variable `AI_MODEL` to a working model ID from build.nvidia.com (comma-separate several to try in turn).
+
+**Contact form not answering** (form, chat and checklist sign-ups stop reaching you)
+1. Open the **Website enquiries** Google Sheet → **Extensions** → **Apps Script**.
+2. Choose any function in the toolbar (for example `setup`) → **Run**. If Google asks for permission, approve it.
+3. **Deploy** → **Manage deployments**: the web app should be listed and active. If it was archived, **Deploy** →
+   **New deployment** → **Web app**, execute as **Me**, access **Anyone**, then put the new URL in `docs/index.html`
+   (the form, chat and peak-readiness page use it; ask Claude to replace it everywhere).
+
+**Scheduled workflows paused** (after 60 days without commits)
+1. portfolio → **Actions** → click each workflow on the left (Blog publish, Blog drafts, Site health).
+2. If a banner says it was disabled, click **Enable workflow**.
+3. Do the same in the private repo for **Job radar**.
+
+**Domain lapsed or about to** (site, email and links all stop)
+1. hpanel.hostinger.com → **Domains** → pawansinha.com.au → **Renew** (or turn on **Auto-renewal**).
+2. If it had already lapsed, check the DNS records afterwards: four **A** records for `@` to 185.199.108.153,
+   185.199.109.153, 185.199.110.153, 185.199.111.153; **CNAME** `www` to `pawansinha0612.github.io`; **MX** to
+   mx1.improvmx.com and mx2.improvmx.com; **TXT** `v=spf1 include:spf.improvmx.com ~all`.
+3. GitHub → portfolio → **Settings** → **Pages**: the custom domain should show a green tick, and **Enforce HTTPS**
+   should be ticked.
+
+**HTTPS certificate warning**
+Same as step 3 above. If the domain check is red, remove the custom domain, save, add it back, and wait up to a day.
+
+**A page not loading**
+1. portfolio → **Actions** → **pages build and deployment**. If the latest run failed, open it → **Re-run all jobs**.
+2. Still failing? The error names the file; ask Claude, or undo your last edit to that file on GitHub.
 
 ## Pending setup (your to-do list)
 
