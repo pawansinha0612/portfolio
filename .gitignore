@@ -16,3 +16,6 @@ __pycache__/
 # Private notes (rate strategy etc.)
 profile/
 blog/.draft-summary.md
+
+# Perf Advisor spec: kept in the private repo (products/perf-advisor/)
+REBUILD.public.md
