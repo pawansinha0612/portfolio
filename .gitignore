@@ -2,11 +2,8 @@
 .idea/
 *.iml
 
-# Notifier private data — never commit contacts or credentials
-notifier/config.json
-notifier/contacts.csv
-notifier/sent_log.json
-notifier/.env
+# Availability notifier: kept in the private repo (portfolio-private/notifier)
+notifier/
 __pycache__/
 .DS_Store
 

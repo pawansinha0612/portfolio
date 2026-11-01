@@ -243,7 +243,7 @@ def check_activity():
     if quiet > 40:
         bad(f'No commits for {quiet} days',
             'GitHub pauses scheduled workflows after 60 days without activity. Merge a blog drafts pull request, '
-            'or make any small edit on GitHub (for example tick a box in README.md). If workflows were already '
+            'or make any small edit on GitHub (for example add a blank line to README.md). If workflows were already '
             'paused, open Actions, pick each workflow and click **Enable workflow**.')
     else:
         ok(f'Last commit {quiet} day(s) ago')
