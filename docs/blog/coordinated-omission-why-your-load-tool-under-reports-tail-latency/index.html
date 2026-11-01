@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your load test is lying about p99 — Pawan Sinha</title>
+  <meta name="description" content="A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.">
+  <meta property="og:title" content="Your load test is lying about p99 — Pawan Sinha">
+  <meta property="og:description" content="A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; }
+    .article pre code { background: none; padding: 0; font-size: inherit; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your load test is lying about p99</h1>
+        <div class="post-meta"><span>2 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Load Testing</span><span class="tag">Latency</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test report says p99 is 1 ms. Clean run, green thresholds, ready for sign-off.</p>
+<p>During that same run, the service froze for 10 seconds. The real p99 was about 9 seconds. The tool didn't lie on purpose. It simply stopped asking questions at the exact moment the answers got bad.</p>
+<p>That is <strong>coordinated omission</strong>, a term from Gil Tene, and it is sitting quietly in a lot of load test reports right now. It doesn't make results a little optimistic. It can understate tail latency by several orders of magnitude.</p>
+<h2>The mechanism</h2>
+<p>Most load tools default to a <strong>closed model</strong>: each virtual user sends a request, waits for the response, optionally thinks, then sends the next one. That works until the system stalls.</p>
+<p>When the server freezes for two seconds (a GC pause, a lock, a failover), every virtual user is stuck waiting on one request. During those two seconds, the requests a real user population <em>would have sent</em> are never sent. The tool records one slow sample per user, not the hundreds of slow experiences real users would have had. The tool has "coordinated" with the system, and the omitted samples are exactly the bad ones.</p>
+<p>Real users do not coordinate. They arrive whenever they arrive, whether or not your service is mid-pause. That is an <strong>open model</strong>: arrivals are independent of response times.</p>
+<h2>A worked example</h2>
+<p>Imagine one closed-loop thread intended to send a request every 10 ms (100 req/s) for 100 seconds: 10,000 requests in total.</p>
+<ul>
+<li>For 90 seconds the service answers in 1 ms. The thread sends 9,000 requests, all recorded at 1 ms.</li>
+<li>Then the service stalls for 10 seconds. The thread sends one request and waits. That one request is recorded at 10 s.</li>
+</ul>
+<p><strong>What the tool reports</strong> (9,001 samples):</p>
+<ul>
+<li>Mean = (9,000 × 1 ms + 10,000 ms) / 9,001 = 19,000 / 9,001 ≈ 2.1 ms</li>
+<li>p99 = 1 ms, because only one sample in 9,001 (0.011%) is slow.</li>
+</ul>
+<p><strong>What users would have experienced:</strong> during the stall, 1,000 requests were due (one every 10 ms). They would have waited 10 s, 9.99 s, 9.98 s, down to about 0.01 s, an average of about 5 s.</p>
+<ul>
+<li>Mean = (9,000 × 1 ms + 1,000 × 5,000 ms) / 10,000 = 5,009,000 / 10,000 ≈ 501 ms</li>
+<li>p99: the slowest 1% is 100 samples, all from the start of the stall, waiting at least 9 s. So p99 ≈ 9 s.</li>
+</ul>
+<p>Reported p99: 1 ms. Actual p99: about 9 s. Same run.</p>
+<p>Change the stall length and request interval and compare what the tool reports with what users experienced:</p>
+<div class="widget" data-widget="omission"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>Where it hides</h2>
+<ul>
+<li><strong>Closed-model test plans</strong>: classic JMeter Thread Groups, LoadRunner scenarios built on a fixed number of virtual users, k6's <code>constant-vus</code> and <code>ramping-vus</code> executors. Pacing and throughput timers do not fix it. They still wait for the response before the next request.</li>
+<li><strong>Server-side timing</strong>: an application that times a request from when a worker thread picks it up misses the time spent in the accept queue, the load balancer and the thread pool queue.</li>
+<li><strong>Client libraries and monitoring</strong> that measure only from actual send time, not from when the work was due.</li>
+</ul>
+<h2>How to spot it in results you already have</h2>
+<ol>
+<li><strong>Throughput dips when latency spikes.</strong> In a closed test, achieved throughput falls when the system slows down. If your throughput graph has notches aligned with latency spikes, samples were omitted.</li>
+<li><strong>Max far above p99.9 with very few samples.</strong> A handful of huge values over a calm distribution often means stalls that were barely sampled.</li>
+<li><strong>Achieved rate below target</strong> during the run, even briefly.</li>
+</ol>
+<h2>Fixing it</h2>
+<p><strong>1. Generate load with an open model.</strong> Requests are scheduled by arrival rate, not by the previous response.</p>
+<pre><code class="language-javascript">import http from 'k6/http';
+
+export const options = {
+  scenarios: {
+    open: {
+      executor: 'constant-arrival-rate',
+      rate: 200,             // iterations started per timeUnit
+      timeUnit: '1s',
+      duration: '10m',
+      preAllocatedVUs: 100,
+      maxVUs: 2000,          // headroom for a stall: 200/s × 10 s
+    },
+  },
+  thresholds: {
+    http_req_duration: ['p(99)&lt;300'],
+    dropped_iterations: ['count==0'],
+  },
+};
+
+export default function () {
+  http.get(`${__ENV.BASE_URL}/api/quote`);
+}
+</code></pre>
+<p>With an arrival-rate executor, k6 keeps starting iterations on schedule during a stall, using new VUs. The stall shows up as many concurrent slow requests, which is the truth. If k6 runs out of VUs, it cannot start the iteration and counts it in <code>dropped_iterations</code>. That is coordinated omission again, so treat any dropped iterations as an invalid run, as the threshold above does.</p>
+<p>Equivalents elsewhere: Gatling's open injection profiles such as <code>constantUsersPerSec</code>, JMeter's <strong>Open Model Thread Group</strong> (added in JMeter 5.5), and <strong>wrk2</strong>, which takes a fixed rate with <code>-R</code> and measures latency from each request's <em>intended</em> send time.</p>
+<p><strong>2. Correct closed-loop data when you cannot change the tool.</strong> HdrHistogram provides <code>recordValueWithExpectedInterval(value, expectedInterval)</code>, which back-fills the samples that should have been taken during a long response. It is an estimate based on an assumed interval, but far closer to reality than the raw data.</p>
+<p><strong>3. In custom harnesses, measure from the intended start time</strong>, not the actual send time. If a request was due at t = 100 ms and went out at t = 2,100 ms because the sender was blocked, its latency starts at 100 ms.</p>
+<h2>Open models have a cost: plan for it</h2>
+<p>An open-model test does not back off. If the system cannot keep up, concurrency grows without limit: that is how real traffic behaves, and it is the point. Bound it deliberately with <code>maxVUs</code> sized for the longest stall you want to measure (arrival rate × stall length), and make sure the load generator has the memory and CPU for that concurrency.</p>
+<h2>Decision rule</h2>
+<p>If the question is "what latency will users see at X requests per second?", use an open model. Use a closed model only when the real system is closed: a fixed pool of batch workers, or a client with a hard concurrency limit. And whichever you use, report achieved throughput next to every percentile. A p99 without the rate it was measured at is not a result.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your load test is lying about p99", "description": "A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.", "datePublished": "2026-11-02", "url": "https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

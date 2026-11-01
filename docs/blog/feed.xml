@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your load test is lying about p99</title>
+      <link>https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/</link>
+      <guid>https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/</guid>
+      <pubDate>Mon, 02 Nov 2026 08:00:00 +1100</pubDate>
+      <description>A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.</description>
+    </item>
+    <item>
       <title>One CDN purge can take down your origin</title>
       <link>https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/</link>
       <guid>https://pawansinha.com.au/blog/cdn-performance-is-more-than-caching-static-files/</guid>
