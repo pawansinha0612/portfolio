@@ -6,5 +6,9 @@
   "cdn-performance-is-more-than-caching-static-files": {
     "date": "2026-11-01",
     "id": "urn:li:share:7522423305744732160"
+  },
+  "coordinated-omission-why-your-load-tool-under-reports-tail-latency": {
+    "date": "2026-11-02",
+    "id": "urn:li:share:7522802333177520128"
   }
 }
