@@ -13,13 +13,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 - [x] Load balancer algorithms under real load — round robin vs least connections vs least outstanding requests vs power of two choices; keep-alive imbalance, connection draining, L4 vs L7 trade-offs
 - [x] Greenfield performance engineering: what to do before the first line of code — measurable NFRs, latency budgets per hop, a capacity model, architecture risk review, and a test strategy that grows with the system
 - [x] Caching strategies and their failure modes — cache-aside vs read-through vs write-through vs write-behind, invalidation, hot keys in Redis, cache stampede and request coalescing
-- [ ] Queueing theory for capacity planning — utilisation vs response time, R = S / (1 - U) for M/M/1, why the knee arrives before 100%, Kingman's formula and the cost of variability
-- [ ] Database bottlenecks under load — execution plans that flip at scale, missing and over-indexing, lock contention, N+1 queries, replica lag; what to check first and in which order
-- [ ] GC tuning for tail latency: G1 vs ZGC vs Shenandoah — allocation rate, pause-time goals, generational ZGC (JDK 21), reading unified GC logs (-Xlog:gc*)
-- [ ] Choosing a load testing tool as a senior engineer — k6, JMeter, Gatling, Locust and LoadRunner by protocol, scripting model, open vs closed workload, scale-out cost and CI fit; a decision table
-- [ ] Kubernetes autoscaling end to end — HPA control loop and stabilisation windows, Cluster Autoscaler vs Karpenter node provisioning time, scale-out lag vs traffic ramp rate, and how to test it
-- [ ] Observability for performance engineers, beyond dashboards — OpenTelemetry traces, metrics and logs joined by trace ID, exemplars, high-cardinality data, continuous profiling
-- [ ] Disk and storage I/O bottlenecks — iostat await, %util and queue depth, IOPS vs throughput limits, fsync cost, cloud volume burst credits (for example AWS gp2 vs gp3)
+- [x] Queueing theory for capacity planning — utilisation vs response time, R = S / (1 - U) for M/M/1, why the knee arrives before 100%, Kingman's formula and the cost of variability
+- [x] Database bottlenecks under load — execution plans that flip at scale, missing and over-indexing, lock contention, N+1 queries, replica lag; what to check first and in which order
+- [x] GC tuning for tail latency: G1 vs ZGC vs Shenandoah — allocation rate, pause-time goals, generational ZGC (JDK 21), reading unified GC logs (-Xlog:gc*)
+- [x] Choosing a load testing tool as a senior engineer — k6, JMeter, Gatling, Locust and LoadRunner by protocol, scripting model, open vs closed workload, scale-out cost and CI fit; a decision table
+- [x] Kubernetes autoscaling end to end — HPA control loop and stabilisation windows, Cluster Autoscaler vs Karpenter node provisioning time, scale-out lag vs traffic ramp rate, and how to test it
+- [x] Observability for performance engineers, beyond dashboards — OpenTelemetry traces, metrics and logs joined by trace ID, exemplars, high-cardinality data, continuous profiling
+- [x] Disk and storage I/O bottlenecks — iostat await, %util and queue depth, IOPS vs throughput limits, fsync cost, cloud volume burst credits (for example AWS gp2 vs gp3)
 - [ ] The tail at scale: fan-out amplifies p99 — probability a request hits at least one slow backend is 1 - 0.99^N; hedged and tied requests, latency budgets per hop
 - [ ] Cloud performance traps — burstable instance CPU credits, per-instance network bandwidth limits, cross-AZ latency and cost, noisy neighbours, managed-service throttling quotas
 - [ ] Concurrency bugs that only appear under load — race conditions, lock contention, deadlocks, connection and thread starvation; designing tests that provoke them
