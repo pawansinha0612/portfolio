@@ -2,6 +2,7 @@
 title: Your HPA decided in 15 seconds. Capacity took three minutes
 date: 2026-11-11
 summary: Scale-out lag is rarely the HPA's maths. It is metric delay, scale-up policies, node provisioning and pod start time stacked together. What the stabilisation window really does, how to size the backlog a ramp creates, and how to test it with an arrival-rate load test.
+description: HPA scale-out lag is metric delay, sync period, node provisioning and pod start stacked together. What the stabilisation window really does.
 tags: Performance, Kubernetes, Autoscaling
 highlight: three minutes
 linkedin: |

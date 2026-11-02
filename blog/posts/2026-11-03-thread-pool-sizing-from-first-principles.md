@@ -2,6 +2,7 @@
 title: Why 500 threads made it slower
 date: 2026-11-03
 summary: Size thread pools with Little's Law and the wait-to-compute ratio, bound queues by your latency budget, and read thread dumps for what threads are waiting on. Plus what changes with virtual threads.
+description: Size thread pools with Little's Law and the wait-to-compute ratio, bound queues by your latency budget, and see what virtual threads change.
 tags: Performance, Java, Concurrency
 linkedin: |
   "Set maxThreads to 500 to be safe" is one of the least safe settings in a Java service.

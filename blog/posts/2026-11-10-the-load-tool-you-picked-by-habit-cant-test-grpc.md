@@ -2,6 +2,7 @@
 title: The load tool you picked by habit can't test gRPC
 date: 2026-11-10
 summary: Most teams pick a load tool by habit and find its limits mid-project. A fair comparison of k6, JMeter, Gatling, Locust and LoadRunner on the constraints that actually block you: protocol, workload model, language, scale-out cost and result fidelity.
+description: k6, JMeter, Gatling, Locust and LoadRunner compared on what actually blocks you: protocol support, workload model, scale-out cost and result fidelity.
 tags: Performance, Load Testing, Tooling
 highlight: gRPC
 linkedin: |

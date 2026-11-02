@@ -2,6 +2,7 @@
 title: Green load test, red production: finding the database bottleneck
 date: 2026-11-08
 summary: Why a PostgreSQL-backed service passes its load test and still blows its p99 in production, and the order I check things in: pool exhaustion, N+1, generic-plan flips, lock waits, replicas and indexes, with the exact queries for PostgreSQL 13+.
+description: Why a PostgreSQL service passes its load test but blows p99 in production: pool exhaustion, N+1, plan flips and lock waits, with the queries to check.
 tags: Performance, Database, PostgreSQL
 linkedin: |
   The load test passed with a p99 of 120 ms. In production the same endpoint hits 4 seconds, and the slow query log is empty.

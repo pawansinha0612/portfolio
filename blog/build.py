@@ -73,6 +73,7 @@ def parse(path):
         'title': meta['title'],
         'date': dt.date.fromisoformat(meta['date']),
         'summary': meta['summary'],
+        'description': search_snippet(meta.get('description') or meta['summary']),  # search results and link previews
         'tags': [t.strip() for t in meta.get('tags', '').split(',') if t.strip()],
         'linkedin': meta.get('linkedin', '').strip(),
         'highlight': meta.get('highlight', ''),  # optional word(s) of the title to colour on the share image
@@ -95,6 +96,20 @@ def load(include_future=False):
 
 def url(p):
     return f'{SITE}/blog/{p["slug"]}/'
+
+
+def search_snippet(text, limit=155):
+    """Search engines show about 155 characters: keep whole sentences that fit, else cut at a word."""
+    if len(text) <= limit:
+        return text
+    out = ''
+    for sentence in re.split(r'(?<=[.!?])\s+', text):
+        if len(out) + len(sentence) + 1 > limit:
+            break
+        out = (out + ' ' + sentence).strip()
+    if len(out) >= 90:
+        return out
+    return text[:limit - 1].rsplit(' ', 1)[0].rstrip(',;:—-') + '…'
 
 
 def nice_date(d):
@@ -251,7 +266,7 @@ def post_page(p):
     minutes = max(1, round(p['words'] / 220))
     ld = json.dumps({
         '@context': 'https://schema.org', '@type': 'BlogPosting', 'headline': p['title'],
-        'description': p['summary'], 'datePublished': p['date'].isoformat(), 'url': url(p),
+        'description': p['description'], 'datePublished': p['date'].isoformat(), 'url': url(p),
         'author': {'@type': 'Person', 'name': 'Pawan Sinha', 'url': SITE + '/'},
     })
     widgets = '    <script src="/widgets.js" defer></script>\n' if 'data-widget=' in p['body'] else ''  # interactive charts (docs/widgets.js)
@@ -277,7 +292,7 @@ def post_page(p):
     <script type="application/ld+json">{ld}</script>
 {widgets}'''
     image = url(p) + 'og.png' if (OUT / p['slug'] / 'og.png').exists() else None
-    return page(p['title'] + ' — Pawan Sinha', p['summary'], url(p), 'article', body, image)
+    return page(p['title'] + ' — Pawan Sinha', p['description'], url(p), 'article', body, image)
 
 
 def index_page(posts):

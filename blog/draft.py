@@ -47,6 +47,7 @@ TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 FORMAT = '''Write one blog post on the topic below. Reply with only a JSON object, no code fences, with these keys:
   "title":    a catchy, problem-led title (under 70 characters) that the article pays off
   "summary":  one or two sentences for the blog list and link previews (under 200 characters)
+  "description": one sentence for search results, at most 150 characters, most important words first
   "tags":     2 to 4 short tags, e.g. ["Performance", "k6"]
   "body":     the article in Markdown, 900 to 1300 words, written for senior engineers. Use ## subheadings, short paragraphs, and a code block,
               table or checklist where it genuinely helps. Do not repeat the title as a heading.
@@ -195,6 +196,7 @@ def write_post(post, date):
 title: {one_line(post["title"])}
 date: {date.isoformat()}
 summary: {one_line(post["summary"])}
+description: {one_line(post.get("description", ""))}
 tags: {", ".join(one_line(t) for t in tags)}
 linkedin: |
 {linkedin}

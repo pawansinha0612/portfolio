@@ -2,6 +2,7 @@
 title: Your 1% trace sample threw away the slow requests
 date: 2026-11-12
 summary: Head sampling keeps 1% of everything, including 1% of the requests you actually need to debug. How to keep every slow and failed trace, link metrics to traces with exemplars, and close the loop with logs and profiles.
+description: 1% head sampling keeps 1% of your slow requests too. Keep every slow and failed trace with tail sampling, then link metrics, traces, logs and profiles.
 tags: Performance, Observability, OpenTelemetry, Tracing
 highlight: slow requests
 linkedin: |

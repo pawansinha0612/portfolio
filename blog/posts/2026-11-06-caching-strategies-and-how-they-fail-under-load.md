@@ -2,6 +2,7 @@
 title: When the cache fails, the database pays
 date: 2026-11-06
 summary: Cache-aside, read-through, write-through and write-behind compared by failure mode, then the failures that matter at scale: stampedes, synchronised expiry, hot keys, cold starts, penetration, stale-write races and eviction churn.
+description: Cache-aside, read-through, write-through and write-behind by failure mode, plus stampedes, synchronised expiry, hot keys and cold starts under load.
 tags: Performance, Caching, Redis
 linkedin: |
   A cache is a capacity multiplier, until it isn't, and then it's a capacity cliff.

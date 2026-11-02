@@ -2,6 +2,7 @@
 title: One GC pause, everyone's p99
 date: 2026-11-04
 summary: Round robin assumes every request costs the same. It doesn't. Least outstanding requests, power of two choices, the connection-level imbalance that L4 hides, slow start, draining, and how to load test the balancer itself.
+description: Round robin assumes every request costs the same. Least outstanding requests, power of two choices, and the L4 imbalance that gRPC exposes.
 tags: Performance, Load Balancing, Kubernetes
 linkedin: |
   Round robin balances requests evenly. That's the problem.

@@ -361,7 +361,12 @@ def case_html(key):
 def page(s):
     url = f'{SITE}/services/{s["slug"]}/'
     name = plain(s['name'])
-    desc = plain(s['summary']) + ' Melbourne-based, remote across Australia. Book a free 30-minute call.'
+    # Search results show about 155 characters: add as much of the call to action as fits.
+    desc = plain(s['summary'])
+    for tail in (' Melbourne-based, remote across Australia. Book a free 30-minute call.', ' Free 30-minute call.'):
+        if len(desc + tail) <= 155:
+            desc += tail
+            break
     brief = f'/?need={quote(plain(s["need"]))}#contact'
     ld = {
         '@context': 'https://schema.org',

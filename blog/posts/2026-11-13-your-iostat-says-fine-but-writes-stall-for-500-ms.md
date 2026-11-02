@@ -2,6 +2,7 @@
 title: Your iostat says fine but writes stall for 500 ms
 date: 2026-11-13
 summary: Why %util lies on SSDs and cloud volumes, how to read await and aqu-sz with Little's Law, why per-second averages hide stalls, what fsync and writeback really cost, and how gp2 burst credits make short load tests pass.
+description: Why %util lies on SSDs and cloud volumes, how per-second averages hide 500 ms stalls, and how gp2 burst credits make short load tests pass.
 tags: Performance, Disk I/O, AWS
 highlight: 500 ms
 linkedin: |

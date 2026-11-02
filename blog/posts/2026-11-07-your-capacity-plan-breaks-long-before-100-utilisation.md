@@ -2,6 +2,7 @@
 title: Your capacity plan breaks long before 100% utilisation
 date: 2026-11-07
 summary: Why response time bends upward long before a server is full, how Kingman's formula prices the cost of bursty traffic, how many servers change the answer, and how to measure and load test the inputs.
+description: Why response time climbs long before 100% utilisation, how Kingman's formula prices bursty traffic, and why constant-rate load tests miss it.
 tags: Performance, Queueing, Capacity Planning
 highlight: utilisation
 linkedin: |

@@ -2,6 +2,7 @@
 title: The week-2 decisions that sink your week-38 load test
 date: 2026-11-05
 summary: The cheapest performance work happens before anything is built. Measurable NFRs from business numbers, latency budgets per hop, a capacity model, an architecture risk review and a test strategy that grows with the system.
+description: The cheapest performance work happens before code exists: NFRs from business numbers, latency budgets per hop, a capacity model and a test strategy.
 tags: Performance, Architecture, Capacity Planning
 highlight: week-38
 linkedin: |
