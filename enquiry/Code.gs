@@ -48,6 +48,9 @@ const SUBSCRIBER_SHEET = 'Subscribers';
 const SUBSCRIBER_HEADERS = ['subscribed', 'email', 'page', 'status', 'token', 'unsubscribed'];
 const FEED_URL = 'https://pawansinha.com.au/blog/feed.xml';
 const SITE_URL = 'https://pawansinha.com.au';
+// The live /exec URL, used in unsubscribe links. ScriptApp.getService().getUrl() can return the private /dev URL
+// when the Sunday trigger runs, which subscribers can't open. Keep this in sync with data-endpoint in docs/.
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -277,7 +280,7 @@ function saveSubscriber(p) {
 
 function unsubscribeFooter(token) {
   return "You're getting this because you subscribed at pawansinha.com.au.\n" +
-    'Unsubscribe with one click: ' + ScriptApp.getService().getUrl() + '?unsubscribe=' + encodeURIComponent(token);
+    'Unsubscribe with one click: ' + WEB_APP_URL + '?unsubscribe=' + encodeURIComponent(token);
 }
 
 function unsubscribePage(token) {
