@@ -52,6 +52,702 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 - [ ] Microbenchmarking with JMH without fooling yourself — warm-up and JIT tiers, dead-code elimination, constant folding, Blackhole, forks
 - [ ] Little's Law beyond virtual users — L = λW for sizing thread pools, connection pools and in-flight limits; checking a load test's internal consistency with it
 - [ ] Amdahl's Law vs Gustafson's Law — the serial fraction limits speed-up; what it means for horizontal scaling
+- [ ] Breakpoint tests that find the real limit — ramping-arrival-rate until failure, thresholds with abortOnFail, telling the knee from the cliff, recording which resource saturated at each step
+- [ ] JIT tiers decoded: why your JVM is slow for the first five minutes — tiered compilation levels 0 to 4, C1 vs C2, reading -XX:+PrintCompilation output, deoptimisation when a newly loaded class breaks an inlining assumption
+- [ ] Autovacuum is losing and nobody noticed — autovacuum_vacuum_scale_factor on big tables, autovacuum_vacuum_cost_limit throttling, n_dead_tup in pg_stat_user_tables, per-table storage parameters
+- [ ] Chatty APIs: death by a thousand round trips — N+1 calls between services, batch endpoints and DataLoader-style request coalescing, counting calls per request from trace span counts
+- [ ] Your LLM eval set is quietly lying to you — golden sets drift from production: sample real traffic, stratify by intent and risk, version the set alongside the prompt, report per-slice scores instead of one average
+- [ ] Soak tests that catch slow leaks — 8 to 24 hour runs, heap and RSS slope vs a flat line, file descriptor and connection counts, log volume and disk fill as hidden failure modes
+- [ ] The day the code cache filled up — ReservedCodeCacheSize, the "CodeCache is full. Compiler has been disabled" warning, segmented code cache, checking usage with jcmd Compiler.codecache
+- [ ] Transaction ID wraparound before it pages you — age(datfrozenxid), autovacuum_freeze_max_age, anti-wraparound vacuums that cannot be cancelled, vacuum_failsafe_age in PostgreSQL 14+
+- [ ] The BFF as owner of the latency budget — backend-for-frontend fan-out with parallel calls, partial responses when one dependency is slow, trimming payloads per client for mobile
+- [ ] Consumer-driven contracts that don't rot — Pact matchers (like, eachLike, regex) over exact values, provider states, pending and WIP pacts, can-i-deploy as the real release gate
+- [ ] Spike tests done properly — zero to peak in seconds, cold connection pools, autoscaler lag, and measuring time to recover rather than just the error rate during the spike
+- [ ] Killing JVM warm-up after every deploy — CDS and AppCDS archives, CRaC checkpoint and restore, GraalVM native image trade-offs, measuring time to steady-state p99
+- [ ] Table and index bloat you can measure — pgstattuple, pg_stat_user_tables dead tuples, why VACUUM does not shrink files, pg_repack vs VACUUM FULL lock cost
+- [ ] API aggregation without the slowest-dependency penalty — scatter-gather with per-call deadlines, returning degraded fields instead of failing the page, optional fields marked in the contract
+- [ ] Appium 2 architecture explained — drivers and plugins installed independently, W3C WebDriver protocol only, the appium: capability prefix, why Appium 1 setups broke
+- [ ] Step load beats a linear ramp — plateaus give one clean data point per load level, plateau length vs warm-up, and plotting latency against throughput per step
+- [ ] Where the other 2 GB went: JVM native memory tracking — -XX:NativeMemoryTracking=summary, jcmd VM.native_memory baseline and summary.diff, metaspace, thread stacks, GC structures and direct buffers
+- [ ] HOT updates: the PostgreSQL write optimisation you are probably defeating — heap-only tuples, fillfactor, n_tup_hot_upd vs n_tup_upd, why indexing an updated column kills HOT
+- [ ] Hedged requests done right — sending a backup request after the p95 delay, cancelling the loser, capping hedges to a small percentage so you do not double the load, idempotent reads only
+- [ ] Crash reporting as pre-release test evidence — Firebase Crashlytics on beta builds, dSYM and R8 mapping upload for symbolication, crash-free users as a release gate
+- [ ] Stress testing for graceful degradation — deciding what should fail first, verifying 429 and 503 behaviour and load shedding, and checking the system recovers once load drops
+- [ ] JFR always-on in production — continuous recordings with the default vs profile settings, jdk.ObjectAllocationSample and jdk.JavaMonitorEnter events, JDK Mission Control automated analysis, the JFR streaming API
+- [ ] The long-running transaction that bloats everything — xmin horizon, backend_xmin in pg_stat_activity, idle in transaction sessions, idle_in_transaction_session_timeout
+- [ ] Latency budgets per hop — splitting an end-to-end SLO across gateway, services and data stores, enforcing each slice with deadlines, spotting budget overruns in trace data
+- [ ] LLM-as-judge has biases you must measure first — position, verbosity and self-preference bias: swap answer order, calibrate the judge against human labels with Cohen's kappa, pin the judge model version
+- [ ] Warm-up and steady state — excluding JIT compilation, cache fill and pool creation from results, detecting steady state, and cutting the warm-up window with tags or timestamps
+- [ ] Escape analysis: the allocations the JIT deletes for you — scalar replacement, why inlining limits (MaxInlineSize, FreqInlineSize) decide whether an object escapes, proving it with JMH -prof gc
+- [ ] Planner statistics that lie at scale — default_statistics_target, ALTER TABLE SET STATISTICS, pg_stats n_distinct and most_common_vals, estimated vs actual rows in EXPLAIN ANALYZE
+- [ ] gRPC between services under load — HTTP/2 multiplexing on one long-lived connection, why L4 balancing pins traffic to hot pods, client-side or L7 balancing, protobuf vs JSON CPU cost
+- [ ] Bi-directional contract testing, honestly assessed — PactFlow comparing consumer pacts with the provider OpenAPI spec, what it cannot catch about behaviour, when it beats provider verification
+- [ ] How long must a load test run — samples needed for a trustworthy p99.9, rare events per hour, and why a 10-minute run cannot validate a tail-latency SLO
+- [ ] Virtual threads after JEP 491 — synchronized no longer pins in JDK 24, what still pins (native frames, class initialisation), jdk.VirtualThreadPinned JFR event, ThreadLocal cost with millions of threads
+- [ ] Correlated columns and the row-estimate cliff — CREATE STATISTICS with dependencies, ndistinct and mcv, why city and postcode filters underestimate, fixing a nested loop gone wrong
+- [ ] Get it off the critical path — finding non-essential work in traces, moving it to a queue or background task, and what that does to p99 and failure coupling
+- [ ] Choosing an Appium driver — UiAutomator2 vs Espresso driver on Android, XCUITest driver on iOS, Flutter driver options, trade-offs in speed, stability and app access
+- [ ] Load test anti-patterns that invalidate results — every VU hitting the same ID, synchronized starts, no think time or pacing, and ignoring errors that return fast
+- [ ] G1 humongous allocations: the silent old-gen filler — objects of half a region or more, G1HeapRegionSize, eager humongous reclaim, spotting "to-space exhausted" in -Xlog:gc output
+- [ ] Generic vs custom plans for prepared statements — plan_cache_mode, the five-execution switch to a generic plan, skewed parameters, spotting it in pg_stat_statements
+- [ ] When microservices are too small — every split adds network hops, serialization and new failure modes, and the trace and cost metrics that justify merging two services back
+- [ ] Test strategy for a product that doesn't exist yet — a risk workshop, quality attributes ranked with product, test portfolio shape per architecture, and what you deliberately won't test
+- [ ] Open vs closed workload models in depth — arrival rate vs concurrency, what each model does when the system slows down, and matching the model to how real users arrive
+- [ ] The container-aware JVM, checked flag by flag — UseContainerSupport, MaxRAMPercentage vs -Xmx, ActiveProcessorCount, how detected CPUs size GC threads and the ForkJoinPool common pool
+- [ ] PostgreSQL partitioning that actually helps — declarative range vs hash, partition pruning at plan time vs execution time, enable_partitionwise_join, too many partitions hurting planning
+- [ ] What an Envoy sidecar really costs — added per-hop latency, sidecar CPU and memory requests on every pod, the proxy concurrency setting, measuring it with a mesh-on vs mesh-off test
+- [ ] Non-deterministic output without flaky tests — run each case N times and assert on pass rate with a confidence interval, why temperature 0 is not determinism, using the seed parameter where the API offers one
+- [ ] Partly-open systems: sessions that arrive — sessions arrive open while requests inside a session are closed, and modelling it with k6 scenarios or Gatling injection profiles
+- [ ] Allocation rate is the JVM metric nobody graphs — TLAB refills, JFR jdk.ObjectAllocationOutsideTLAB, deriving MB/s from GC logs, why allocation rate sets young GC frequency more than heap size
+- [ ] PgBouncer transaction mode and what it breaks — session vs transaction vs statement pooling, prepared statements and max_prepared_statements in 1.21+, SET and advisory locks, default_pool_size
+- [ ] Istio ambient vs sidecars under load — ztunnel as a per-node L4 proxy, waypoint proxies only where L7 is needed, fewer proxies per request and what it changes in latency and cost
+- [ ] Pact Broker workflows for twenty teams — branches and environments instead of tags, record-deployment, webhooks that trigger provider verification, keeping can-i-deploy fast
+- [ ] k6 executors compared — constant-vus, ramping-vus, constant-arrival-rate, ramping-arrival-rate, shared-iterations, per-vu-iterations and externally-controlled, and when each misleads
+- [ ] Off-heap memory without leaks — direct ByteBuffers and MaxDirectMemorySize, Netty pooled allocator and -Dio.netty.leakDetection.level, Arena lifetimes in the Foreign Function and Memory API (JDK 22)
+- [ ] PostgreSQL JIT: when compilation costs more than the query — jit_above_cost, jit_inline_above_cost, the JIT section of EXPLAIN ANALYZE, OLTP latency spikes from JIT
+- [ ] Linkerd vs Istio data plane performance — the Rust linkerd2-proxy vs Envoy, memory per proxy, and how to design a fair benchmark between the two meshes
+- [ ] Appium plugins worth knowing — images plugin, execute-driver to batch commands in one round trip, relaxed-caps for legacy capabilities, writing your own plugin
+- [ ] dropped_iterations: when k6 quietly closes your open model — preAllocatedVUs vs maxVUs, the dropped_iterations metric, and sizing VUs with Little's Law before the run
+- [ ] Life after biased locking — JEP 374 deprecation in JDK 15, uncontended lock cost today, lock inflation to heavyweight monitors, jdk.JavaMonitorInflate events in JFR
+- [ ] Parallel query is not free — max_parallel_workers_per_gather, parallel_setup_cost, Gather vs Gather Merge nodes, workers planned vs launched under concurrency
+- [ ] mTLS overhead in a mesh — handshake cost vs connection reuse, why short-lived connections make mesh TLS expensive, certificate rotation and the CPU it costs per proxy
+- [ ] Defect escape rate done right — counting by severity and phase found, normalising by change volume, why a falling escape rate can just mean falling usage
+- [ ] Gatling injection profiles explained — rampUsersPerSec, constantUsersPerSec with randomized, constantConcurrentUsers, and why open and closed steps cannot mix in one population
+- [ ] Thread dumps in the age of virtual threads — jstack vs jcmd Thread.print vs jcmd Thread.dump_to_file -format=json, taking dumps in a loop, grouping identical stacks to find the real hot spot
+- [ ] work_mem and the hidden disk spill — sort and hash spills in EXPLAIN (ANALYZE, BUFFERS), temp_files in pg_stat_database, log_temp_files, hash_mem_multiplier
+- [ ] Mesh retries that multiply — Istio VirtualService retries stacked on client library retries, perTryTimeout below the overall timeout, and retry budgets to cap the amplification
+- [ ] Indirect prompt injection is the attack that matters — payloads hidden in retrieved documents, tool outputs and uploaded files, OWASP LLM01, canary tokens in the system prompt to detect leakage in tests
+- [ ] Escaping JMeter's closed-model trap — Thread Group concurrency limits, Constant Throughput Timer vs Precise Throughput Timer, and the Open Model Thread Group
+- [ ] Metaspace leaks on redeploy — classloader leaks, MaxMetaspaceSize, jcmd VM.classloader_stats, -Xlog:class+load and class+unload to prove classes never go away
+- [ ] shared_buffers and the double-buffering question — pg_buffercache, buffer hit ratio from pg_stat_database, effective_cache_size as a planner hint only, the OS page cache layer
+- [ ] Envoy outlier detection under load — consecutive 5xx ejection, base ejection time, max ejection percent, and how it behaves with small replica counts
+- [ ] OpenAPI as the enforceable source of truth — validating every response against the spec in tests, Spectral lint rules, spec drift detection, failing CI on undocumented fields
+- [ ] Think time vs pacing vs arrival rate — LoadRunner pacing options, why fixed think time synchronizes users, and choosing random distributions that match production
+- [ ] .NET ThreadPool starvation: the outage that looks like a slow database — sync-over-async with .Result and .Wait(), dotnet-counters threadpool-queue-length, hill-climbing injection rate, SetMinThreads as a stopgap
+- [ ] Checkpoints and WAL as a latency source — checkpoint_timeout, max_wal_size, checkpoints_req vs checkpoints_timed, full_page_writes amplification after each checkpoint
+- [ ] Envoy config bloat at scale — every sidecar receiving every service, xDS push cost on large clusters, scoping config with the Istio Sidecar resource and the proxy memory it saves
+- [ ] Espresso synchronisation done right — IdlingResource and CountingIdlingResource, idling for coroutines and custom executors, Android Test Orchestrator for isolation
+- [ ] k6 scripting patterns at scale — SharedArray for memory, setup() data handoff, scenarios with exec functions, and group vs tags to control metric cardinality
+- [ ] Server GC, Workstation GC and DATAS — DOTNET_gcServer, concurrent GC, GCHeapCount, Dynamic Adaptation To Application Sizes in .NET 8 and 9, choosing per container size
+- [ ] EXPLAIN (ANALYZE, BUFFERS) for load testers — shared hit vs read, loops multiplying cost, rows removed by filter, auto_explain with log_min_duration in a test run
+- [ ] Token bucket vs leaky bucket vs sliding window — burst tolerance vs smoothing, memory per key, and matching the algorithm to how your clients really send traffic
+- [ ] DORA metrics for QA leads — change failure rate and failed deployment recovery time, where testing moves them, why deployment frequency alone says nothing about quality
+- [ ] Custom metrics in k6 that answer real questions — Trend, Counter, Rate and Gauge, thresholds on submetrics like http_req_duration{name:login}, and expected_response tagging
+- [ ] The Large Object Heap tax in .NET — the 85,000-byte threshold, LOH fragmentation, GCLargeObjectHeapCompactionMode, ArrayPool to keep big buffers off the LOH
+- [ ] Lock queues in PostgreSQL — pg_locks with pg_blocking_pids(), lock_timeout, how one ACCESS EXCLUSIVE request queues every reader behind it
+- [ ] Distributed rate limiting without a hot Redis key — Envoy local rate limit filter vs the global rate limit service, local buckets with periodic sync, accuracy vs added latency
+- [ ] Jailbreak regression testing in CI — garak probes and Microsoft PyRIT for automated red teaming, attack success rate per model version, a curated jailbreak corpus that grows with every finding
+- [ ] Hybrid tests with the k6 browser module — a few browser VUs over protocol-level load, browser_web_vital_lcp under stress, and the CPU cost per browser VU
+- [ ] async/await pitfalls that cost real latency — async void, ValueTask awaited twice, ConfigureAwait(false) in libraries, state machine allocations on hot paths
+- [ ] Sequences, UUIDs and insert hot spots — UUIDv4 random inserts vs UUIDv7 and bigserial, B-tree page splits, WAL volume and buffer churn on random keys
+- [ ] AWS API Gateway throttling decoded — account-level, stage and method limits, usage plans with API keys, steady rate vs burst, and the 429s your peak traffic will hit
+- [ ] JSON Schema validation pitfalls — additionalProperties allowed by default, format not asserted unless enabled, draft 2020-12 vs draft-07 differences, strict mode in Ajv
+- [ ] Maintainable JMeter test plans — Test Fragments and Module Controller, JSR223 with Groovy and compiled-script caching, dropping BeanShell, and properties passed with -J
+- [ ] dotnet-trace and PerfView for production triage — CPU sampling, gc-collect profile, opening traces in speedscope, PerfView GCStats and the allocation tick view
+- [ ] InnoDB buffer pool sizing and warm-up — innodb_buffer_pool_size, Innodb_buffer_pool_reads vs read_requests, innodb_buffer_pool_dump_at_shutdown, cold-cache test results
+- [ ] Rate limits as a capacity contract — deriving per-client limits from measured capacity, Retry-After and RateLimit headers, and what well-behaved clients do on 429
+- [ ] XCUITest at scale — accessibility identifiers as a contract with developers, launch arguments and environment as test hooks, parallel testing on simulator clones, Xcode test plans
+- [ ] JMeter at high throughput — non-GUI mode, removing listeners, CSV JTL output, heap sizing for the JVM, and the Backend Listener streaming to InfluxDB
+- [ ] dotnet-counters as a live performance dashboard — System.Runtime counters (gc-heap-size, alloc-rate, time-in-gc, monitor-lock-contention-count, exception-count), EventCounters vs System.Diagnostics.Metrics
+- [ ] InnoDB redo log capacity as a write ceiling — innodb_redo_log_capacity in 8.0.30+, checkpoint age, innodb_flush_log_at_trx_commit 1 vs 2, async flush stalls
+- [ ] The API gateway as the bottleneck — CPU per request from auth, transforms and logging plugins, upstream connection pools, and testing the gateway in isolation from backends
+- [ ] Vanity metrics to retire this quarter — test case count, pass percentage, automation percentage, and the decision-driving metric that replaces each one
+- [ ] Gatling simulations as code — feeders, checks with saveAs, exec chains, throttle, and reading the response time distribution in the HTML report
+- [ ] HttpClient under load in .NET — socket exhaustion from new HttpClient per call, IHttpClientFactory, SocketsHttpHandler PooledConnectionLifetime, MaxConnectionsPerServer
+- [ ] The adaptive hash index: help or contention — innodb_adaptive_hash_index, innodb_adaptive_hash_index_parts, btr_search latch waits in SHOW ENGINE INNODB STATUS
+- [ ] Concurrency limits beat RPS limits at the edge — why a requests-per-second limit lets in-flight work explode when latency rises, limiting in-flight requests, Little's Law behind it
+- [ ] RAG retrieval is a search problem, so test it like one — recall@k, MRR and nDCG on labelled query-document pairs, separating retrieval failures from generation failures before blaming the model
+- [ ] Locust beyond the basics — FastHttpUser vs HttpUser, blocking calls that stall gevent, wait_time with constant_throughput vs between, and LoadTestShape for custom profiles
+- [ ] .NET in containers — DOTNET_GCHeapHardLimit and GCHeapHardLimitPercent, Environment.ProcessorCount under CPU limits, DOTNET_PROCESSOR_COUNT, GC heap count vs cores
+- [ ] Gap locks and next-key locks under REPEATABLE READ — why range updates deadlock, performance_schema.data_locks, READ COMMITTED as the fix and its binlog_format requirement
+- [ ] Timeouts are a capacity setting — how a long timeout holds threads and connections during a slowdown, deriving timeouts from downstream p99.9, the outage when one is missing
+- [ ] Property-based API testing with Schemathesis — requests generated from OpenAPI, stateful testing via OpenAPI links, checks like not_a_server_error and response_schema_conformance, triaging the findings
+- [ ] LoadRunner VuGen deep dive — web_reg_save_param_ex, transactions and lr_think_time, runtime settings for pacing, and Controller goal-oriented vs manual scenarios
+- [ ] Tiered compilation and Dynamic PGO in .NET 8 — tier-0, tier-1 and OSR, Dynamic PGO on by default, ReadyToRun images for startup, TieredCompilation settings that change warm-up
+- [ ] Reading SHOW ENGINE INNODB STATUS during a load test — LATEST DETECTED DEADLOCK, history list length, semaphore waits, pending reads and writes
+- [ ] Deadline propagation across services — gRPC deadlines, passing remaining budget in headers, and stopping work the caller has already given up on
+- [ ] Flutter integration_test vs Patrol — native permission dialogs and notifications with Patrol, running on Firebase Test Lab, finder and key strategy
+- [ ] Artillery for modern stacks — phases with arrivalRate and rampTo, YAML flows, custom JS processor functions, and the WebSocket and Socket.IO engines
+- [ ] Zero-allocation parsing in .NET — Span, Memory and stackalloc, System.IO.Pipelines, proving the win with BenchmarkDotNet MemoryDiagnoser
+- [ ] InnoDB history list length and the purge lag problem — long transactions, innodb_purge_threads, innodb_max_purge_lag, why SELECTs slow as undo grows
+- [ ] Bulkheads in practice — separate thread or connection pools per dependency, sizing them, and proving isolation with a test that makes one dependency slow
+- [ ] Building a performance engineering practice from zero — intake model, NFR templates, shared tooling, a baseline library, engagement tiers, proving the practice's impact
+- [ ] NeoLoad for enterprise teams — populations and user paths, framework parameters for automatic correlation, as-code YAML projects, and SLA profiles
+- [ ] GOMAXPROCS in containers — pre-1.25 Go reading the host CPU count, CFS throttling as the symptom, uber-go/automaxprocs, the cgroup-aware default in Go 1.25
+- [ ] MySQL performance_schema and sys schema for load testers — sys.statement_analysis, events_statements_summary_by_digest, sys.schema_unused_indexes, wait event timing
+- [ ] Circuit breakers under real load — Resilience4j failure rate and slow call thresholds, sliding window type and size, half-open probes, why breakers flap at low traffic
+- [ ] Ragas metrics and where they disagree with humans — faithfulness, context precision and context recall, judge-model cost per run, anchoring automated scores to a small human-labelled set
+- [ ] Load testing WebSockets and SSE — connection lifetime vs messages per second, k6 WebSocket APIs, and measuring message latency with timestamps in the payload
+- [ ] Go GC pacer: GOGC and GOMEMLIMIT together — soft memory limit (Go 1.19), the GC death spiral when the limit is too tight, reading GODEBUG=gctrace=1 lines
+- [ ] Doublewrite, fsync and flushing in InnoDB — innodb_flush_method O_DIRECT, innodb_io_capacity and io_capacity_max, dirty page percentage and sync flush stalls
+- [ ] Load shedding by priority — dropping low-value traffic first, shedding at the edge vs in the service, using queue wait time as the shedding signal
+- [ ] Stateful API fuzzing with RESTler — inferring producer-consumer dependencies between requests, fuzzing modes, catching 500s and resource leaks that schema-based tests never reach
+- [ ] gRPC load testing — the k6 grpc module and ghz, streaming RPCs, and how long-lived HTTP/2 connections pin load to a single backend pod
+- [ ] pprof beyond CPU profiles — heap inuse vs alloc, goroutine, block and mutex profiles, runtime.SetMutexProfileFraction, go tool pprof -diff_base for regressions
+- [ ] MySQL thread handling at high connection counts — thread_cache_size, Threads_running vs Threads_connected, max_connections memory cost, thread pool plugin in Percona and MariaDB
+- [ ] Graceful degradation you can prove — serving stale cache, static fallbacks, switching off expensive features with flags, and verifying each degraded mode at peak load
+- [ ] Flutter test timing traps — pumpAndSettle timing out on infinite animations, pump with explicit durations, fakeAsync, golden tests across platforms
+- [ ] GraphQL load testing — one endpoint with many shapes, tagging by operationName, query cost variance, and persisted queries in the workload model
+- [ ] Inside the Go scheduler — G, M and P, work stealing, sysmon and async preemption (Go 1.14), reading GODEBUG=schedtrace=1000 output under load
+- [ ] Clustered primary keys in InnoDB — secondary indexes carrying the PK, wide PK cost, auto-increment lock modes with innodb_autoinc_lock_mode
+- [ ] LIFO and request expiry under overload — why FIFO serves requests nobody is waiting for, dropping work older than the client timeout, CoDel-style queue management
+- [ ] Performance engineering operating models — central CoE vs embedded engineers vs enabling team, when each fits, and career paths that keep specialists
+- [ ] Scripting OAuth and token flows — caching tokens per VU, refresh mid-test, not hammering the identity provider, and client credentials vs authorization code flows
+- [ ] Go execution traces and the flight recorder — go tool trace, scheduler latency and GC stop-the-world in the timeline, runtime/trace FlightRecorder in Go 1.25 for catching rare spikes
+- [ ] Bind peeking and adaptive cursor sharing in Oracle — skewed data and histograms, V$SQL is_bind_sensitive and is_bind_aware, child cursors multiplying
+- [ ] Client-side adaptive throttling — the Google SRE requests vs accepts formula, rejecting locally before the backend drowns, and tuning the K multiplier
+- [ ] Re-chunking and new embeddings are breaking changes — re-index regression tests, top-k overlap before vs after, pinning embedding model versions, catching silent recall drops before users do
+- [ ] Load testing asynchronous APIs — 202 Accepted plus polling, measuring end-to-end completion time instead of the HTTP call, correlation IDs and webhook callbacks
+- [ ] Go escape analysis in practice — go build -gcflags=-m, interface boxing, closures and slice growth that move values to the heap, sync.Pool pitfalls
+- [ ] Hard parses are a scalability bug — literals vs bind variables, parse count (hard) in AWR, shared pool and library cache latch contention, cursor_sharing as a last resort
+- [ ] Idempotency keys at scale — safe retries for writes, storage and lookup cost of idempotency records, TTLs, and spotting duplicate processing during incidents
+- [ ] Idempotency keys under concurrent retries — two identical requests in flight at once, key scope and TTL, replaying the stored response, proving it with parallel requests in k6
+- [ ] Recording vs writing scripts — har-to-k6, the JMeter HTTP(S) Test Script Recorder, filtering static and third-party calls, and when a recording does more harm than good
+- [ ] Goroutine leaks: the slow memory climb — runtime.NumGoroutine trend in soak tests, goleak in unit tests, blocked channel sends, missing context cancellation
+- [ ] Oracle ASH for minute-by-minute diagnosis — V$ACTIVE_SESSION_HISTORY, DBA_HIST_ACTIVE_SESS_HISTORY, grouping by sql_id and event, finding the burst AWR averages away
+- [ ] PACELC for performance engineers — the latency vs consistency choice when there is no partition, what strong reads cost in round trips, and measuring it per endpoint
+- [ ] Device farms compared for real work — BrowserStack App Automate, AWS Device Farm and Firebase Test Lab on device coverage, parallel sessions, artefacts and pricing model
+- [ ] Emulating a browser in protocol scripts — parallel embedded resource downloads, k6 http.batch, JMeter HTTP Cache Manager and Cookie Manager, and what you still miss
+- [ ] Profile-guided optimisation in Go — default.pgo, GA in Go 1.21, inlining and devirtualisation gains, collecting a representative production CPU profile
+- [ ] Oracle wait events that matter in load tests — log file sync vs log file parallel write, db file sequential read, enq: TX - row lock contention, buffer busy waits
+- [ ] Read-your-writes without strong consistency everywhere — session stickiness, version tokens, routing reads to the leader briefly after a write, and the latency each costs
+- [ ] Interviewing test engineers for judgment, not trivia — work-sample exercises, a flaky test debugging session, a strategy discussion, scoring rubrics that reduce bias
+- [ ] Response validation under load — catching 200 OK error pages, k6 checks with a threshold on the checks rate, and the CPU cost of heavy JMeter assertions
+- [ ] Go net/http client tuning — http.Transport MaxIdleConnsPerHost default of 2, connection churn and TIME_WAIT, undrained response bodies that kill reuse
+- [ ] Oracle SQL Plan Management for stable plans — SQL plan baselines, DBMS_SPM, plan regressions after stats gathering, comparing plan_hash_value across runs
+- [ ] Quorum maths and tail latency — W + R > N, why the slowest replica inside the quorum sets your p99, and choosing consistency level per request type
+- [ ] Hallucination detection that survives production — claim extraction plus citation checks, NLI entailment scoring, SelfCheckGPT-style consistency sampling, and the false positive rate of each
+- [ ] Timeouts in load tools distort percentiles — k6's 60s default timeout, JMeter connect and response timeouts, and aligning tool timeouts with client and gateway timeouts
+- [ ] Go RSS vs heap: why the pod looks bigger than pprof — runtime/metrics memory classes, the background scavenger, GODEBUG=madvdontneed, heap released vs idle
+- [ ] Parameter sniffing in SQL Server — first-call plans for skewed values, OPTION (RECOMPILE) vs OPTIMIZE FOR UNKNOWN, Parameter Sensitive Plan optimization in SQL Server 2022
+- [ ] Two-phase commit vs sagas under load — lock hold time across participants, coordinator round trips, saga compensation latency, and throughput at contention
+- [ ] Retry amplification across layers — client, gateway and service mesh retries multiplying load, Retry-After handling, which methods are safe to retry, asserting no duplicate side effects
+- [ ] Correlation without pain — boundary vs regex vs JSON extractors, failing fast when a value is missing, and ordinal vs random selection of extracted values
+- [ ] The libuv threadpool bottleneck in Node.js — UV_THREADPOOL_SIZE default of 4, fs, dns.lookup, crypto.pbkdf2 and zlib competing for it, dns.lookup vs dns.resolve
+- [ ] Query Store as a regression detector — sys.query_store_runtime_stats, regressed queries report, forcing plans with sp_query_store_force_plan, capture mode settings
+- [ ] Cross-region consistency costs — synchronous replication adds a round trip per write, async replication lag, and deciding per data type which one you can afford
+- [ ] Firebase Test Lab at scale — instrumentation vs Robo tests, test matrices, sharding with Flank, reading the performance metrics it captures
+- [ ] Finding dynamic values systematically — diffing two recorded sessions, scanning HAR files for server-generated tokens, and LoadRunner Design Studio
+- [ ] V8 heap tuning for allocation-heavy Node services — new space vs old space, --max-old-space-size, --max-semi-space-size, Scavenge vs Mark-Compact in --trace-gc
+- [ ] SQL Server wait stats triage — sys.dm_os_wait_stats deltas not totals, PAGEIOLATCH vs PAGELATCH, CXPACKET and CXCONSUMER, SOS_SCHEDULER_YIELD and RESOURCE_SEMAPHORE
+- [ ] Clock skew breaks latency maths — why span timings across hosts disagree, NTP vs PTP accuracy, Amazon Time Sync Service, and measuring async latency with skewed clocks
+- [ ] Hiring performance engineers — probing Little's Law, reading a flame graph, a failed test story, take-home vs live exercises, red flags in senior candidates
+- [ ] CSRF tokens, ViewState and hidden fields — extracting __VIEWSTATE and __EVENTVALIDATION, Spring Security CSRF tokens, and the silent failures when extraction misses
+- [ ] Finding Node.js memory leaks with heap snapshots — the three-snapshot technique, retainer chains, closures and forgotten listeners, --heapsnapshot-signal in production
+- [ ] tempdb contention in SQL Server — PAGELATCH waits on PFS, GAM and SGAM pages, multiple data files, memory-optimized tempdb metadata in 2019+
+- [ ] Requests, limits and QoS classes under load — Guaranteed vs Burstable vs BestEffort, eviction order under node pressure, why memory limit equal to request matters
+- [ ] Load testing an LLM endpoint is not load testing REST — time to first token vs inter-token latency, streamed SSE responses, output tokens per second per user, provider limits in tokens per minute
+- [ ] Partitioning test data across injectors — exec.vu.idInTest and exec.scenario.iterationInTest in k6, split CSV files per JMeter server, and avoiding collisions between generators
+- [ ] process.nextTick starvation and event loop phases — timers, poll and check phases, microtask queue draining, setImmediate vs nextTick, perf_hooks monitorEventLoopDelay histograms
+- [ ] Memory grants that starve concurrency — RESOURCE_SEMAPHORE waits, sys.dm_exec_query_memory_grants, over-estimated sorts, memory grant feedback
+- [ ] Pod startup time decomposed — scheduling, image pull, container create, app init and readiness, timing each phase, and image size and pre-pull fixes
+- [ ] Cursor vs offset pagination under concurrent writes — skipped and duplicated records, stable sort keys with tie-breakers, a test that inserts rows during a paged read
+- [ ] Synthetic data that behaves like production — cardinality, skew and hot keys, Zipf-like access patterns, and why uniform random IDs make caches look wrong
+- [ ] Profiling Node.js in production — --cpu-prof, --perf-basic-prof with Linux perf, Clinic.js doctor and flame, 0x, reading inlined frames
+- [ ] Read Committed Snapshot Isolation in SQL Server — READ_COMMITTED_SNAPSHOT ON, version store growth in tempdb, blocking that disappears and the cost that appears
+- [ ] Readiness probes that cause outages — probes that check dependencies, failureThreshold times periodSeconds maths, and every pod going unready at once under load
+- [ ] Sharding mobile suites by duration — Flank and Test Lab sharding, Xcode parallel testing, Appium session per device, balancing shards from historical run times
+- [ ] Resetting state between runs — database snapshots, idempotent setup scripts, data growth across repeated runs, and how growing tables quietly break run comparisons
+- [ ] Worker threads vs cluster vs child processes in Node — SharedArrayBuffer and Atomics, Piscina pools, message passing cost, when CPU-bound work justifies each
+- [ ] SQL Server MAXDOP and cost threshold for parallelism — defaults that hurt OLTP, CXPACKET noise, per-query MAXDOP hints, measuring with Query Store
+- [ ] Liveness probes that kill pods under load — slow responses during saturation trigger restarts, startupProbe for slow boots, and cascading restart loops
+- [ ] Coaching developers to own testing — pairing on tests, review checklists, testing in the definition of done, QA as enablers rather than gatekeepers
+- [ ] Production data in test environments — masking and tokenization, keeping referential integrity and distributions, and the limits GDPR puts on copying data
+- [ ] V8 deoptimisations: hidden classes and inline caches — monomorphic vs megamorphic call sites, --trace-opt and --trace-deopt, Ignition, Sparkplug, Maglev and TurboFan tiers
+- [ ] SQL Server lock escalation surprises — the 5000-lock threshold, table locks blocking a load test, LOCK_ESCALATION table option, batching deletes
+- [ ] kube-proxy iptables vs IPVS vs nftables — rule sync cost with thousands of services, per-packet rule traversal, and when switching mode pays off
+- [ ] Token cost as a CI assertion — counting input and output tokens per scenario from usage fields, budget thresholds per feature, catching prompt bloat from new instructions, tracking prompt cache hit rate
+- [ ] Sessions and cookies in load scripts — a cookie jar per VU, sticky sessions at the load balancer, and why one session shared across VUs hides the real cost
+- [ ] Node.js outbound HTTP under load — http.Agent keepAlive and maxSockets, undici connection pools behind fetch, pipelining, socket reuse vs new TLS handshakes
+- [ ] Composite index column order — equality first then range, leftmost prefix rule, why the wrong order turns an index seek into a scan
+- [ ] CoreDNS as a hidden bottleneck — ndots:5 search domain amplification, NodeLocal DNSCache, conntrack races on UDP DNS, and DNS time inside request latency
+- [ ] Eventual consistency without flaky API tests — polling with deadlines instead of sleeps, asserting convergence, read-your-writes guarantees, replica lag as a test variable
+- [ ] Distributed load generation that does not lie — injector CPU and network saturation, clock sync, merging results correctly, and monitoring the generators themselves
+- [ ] Streams and backpressure in Node — highWaterMark, write() returning false and the drain event, stream.pipeline, memory blow-ups when backpressure is ignored
+- [ ] Covering indexes and index-only scans — INCLUDE columns in PostgreSQL and SQL Server, visibility map and Heap Fetches, key lookups in SQL Server plans
+- [ ] VPA in production — recommender percentiles, update modes, in-place pod resize, and why VPA and HPA on the same CPU metric fight each other
+- [ ] Root causes of mobile UI test flakiness — animations (animator_duration_scale 0 via adb), system dialogs, soft keyboard, network, device state left by earlier tests
+- [ ] JMeter distributed mode pitfalls — RMI setup and server.rmi.ssl.disable, thread counts multiplied per server, and the controller becoming the results bottleneck
+- [ ] Node.js memory outside the V8 heap — process.memoryUsage external and arrayBuffers, Buffer.allocUnsafe pooling, RSS growth that heap snapshots never show
+- [ ] Partial and filtered indexes for skewed data — PostgreSQL partial indexes, SQL Server filtered indexes, indexing only the 2% of rows that are hot
+- [ ] KEDA scaling that keeps up — scaling on queue depth or Prometheus queries, pollingInterval and cooldownPeriod tuning, and the cold start cost of scale to zero
+- [ ] Removing the separate QA phase without losing quality — from handoffs to in-sprint testing, measuring cycle time and escapes before and after, the guardrails to keep
+- [ ] k6 at scale on Kubernetes — k6-operator and the TestRun resource, parallelism and execution segments, and Prometheus remote write for aggregated results
+- [ ] The GIL under contention — sys.setswitchinterval, CPU-bound threads starving I/O threads, the convoy effect, measuring GIL wait with py-spy --gil
+- [ ] The write cost of every index — index maintenance per INSERT, WAL and redo amplification, finding unused indexes with pg_stat_user_indexes idx_scan
+- [ ] Scheduling for performance — topology spread constraints, pod anti-affinity, node affinity for instance types, and avoiding hot nodes that set your tail latency
+- [ ] Guardrails need their own test suite — false positive and false negative rates for input and output filters, Llama Guard and NeMo Guardrails as classifiers, measuring over-refusal on benign prompts
+- [ ] Calibrating a load generator before the real test — run against a stub, measure VUs per core and memory per VU, and keep headroom on injector CPU
+- [ ] Free-threaded Python 3.13 benchmarked honestly — python3.13t builds, PYTHON_GIL=0, single-thread overhead, biased reference counting, C extension compatibility
+- [ ] Why the optimizer ignores your index — implicit type casts, functions on columns, leading wildcard LIKE, low selectivity, expression indexes as a fix
+- [ ] CPU Manager static policy and Topology Manager — exclusive cores for Guaranteed pods with integer CPUs, NUMA alignment, and running latency-critical work on Kubernetes
+- [ ] OAuth2 in automated tests without driving the login UI — authorization code with PKCE, client credentials, refresh token rotation and reuse detection, token caching across workers
+- [ ] Geo-distributed load — injecting from several regions, DNS and CDN edge selection, per-region latency differences, and when single-region load is good enough
+- [ ] asyncio pitfalls that block the loop — blocking calls inside coroutines, debug mode and loop.slow_callback_duration, run_in_executor, uvloop as a drop-in loop
+- [ ] Keyset pagination vs OFFSET at scale — OFFSET reading and discarding rows, seek method with composite keys, deep page latency in a load test
+- [ ] Graceful shutdown in Kubernetes — preStop hooks, terminationGracePeriodSeconds, the endpoint removal race, and 5xx spikes during rolling updates under load
+- [ ] Device state hygiene between tests — pm clear vs reinstall, xcrun simctl erase, granting permissions with adb shell pm grant and simctl privacy
+- [ ] Locust in distributed mode — master and workers, --expect-workers, one worker per CPU core because of gevent, and aggregating stats across workers
+- [ ] py-spy, Scalene and memray compared — attach-without-restart sampling, py-spy dump and --native, Scalene CPU vs memory attribution, memray for native allocations
+- [ ] Join algorithms under load — nested loop vs hash join vs merge join, estimate errors flipping choice, hash spills, reading join nodes in a plan
+- [ ] Rolling updates without latency spikes — maxSurge and maxUnavailable, cold JIT and empty caches on new pods, and slow start mode on load balancers
+- [ ] Test automation ROI finance will accept — maintenance cost per test, CI runtime cost, defects caught per suite, cost of a false failure, retiring low-value tests
+- [ ] Client-side overhead masquerading as server latency — TLS handshakes per iteration, DNS lookups, noConnectionReuse and discardResponseBodies in k6
+- [ ] Python memory that never comes back — pymalloc arenas and fragmentation, tracemalloc snapshot compare_to, object churn vs real leaks
+- [ ] BRIN, GIN and GiST: specialised PostgreSQL indexes — BRIN for append-only time data, GIN for jsonb and trigram search, fastupdate and gin_pending_list_limit
+- [ ] PodDisruptionBudgets and node drains under traffic — capacity lost during cluster upgrades, minAvailable vs maxUnavailable, and upgrading with load running
+- [ ] Testing tool-calling agents by trajectory, not prose — assert on tool names, arguments and order, mock tool responses, inject tool errors, cap steps to catch infinite tool loops
+- [ ] Network emulation in load tests — mobile bandwidth and latency with tc netem, LoadRunner network virtualization, and why slow clients hold server connections longer
+- [ ] Gunicorn worker models under load — sync vs gthread vs uvicorn workers, worker count vs cores, preload_app and copy-on-write broken by refcounting, gc.freeze()
+- [ ] Hibernate N+1 beyond the textbook — lazy associations in loops, JOIN FETCH vs @EntityGraph vs @BatchSize, hibernate.default_batch_fetch_size, counting statements per request
+- [ ] Kubernetes control plane at scale — API server request latency, etcd database size, watch load from controllers, and API Priority and Fairness
+- [ ] JWT edge cases worth a test each — expired exp, future nbf, clock skew leeway, alg none and algorithm confusion, kid lookup and key rotation through JWKS
+- [ ] Load testing behind a WAF and CDN — allowlisting injector IPs, bot protection blocking tests, rate limits, and testing the edge and the origin separately
+- [ ] The faster CPython story — specialising adaptive interpreter (3.11), the experimental JIT in 3.13 (--enable-experimental-jit), what actually speeds up real services
+- [ ] Hibernate batching that silently does not batch — hibernate.jdbc.batch_size, IDENTITY generation disabling insert batching, order_inserts, reWriteBatchedStatements for MySQL
+- [ ] Image pulls during a scale-out — kubelet serializeImagePulls and registryPullQPS, registry rate limits, and lazy loading with SOCI or stargz snapshotters
+- [ ] App startup measured properly — cold, warm and hot start, time to initial display vs time to full display with reportFullyDrawn, adb shell am start -W
+- [ ] Scaling down a test environment honestly — what a half-size environment can and cannot tell you, shared resources, and the danger of linear extrapolation
+- [ ] Python multiprocessing costs — pickling overhead, fork vs spawn vs forkserver start methods, multiprocessing.shared_memory, when processes lose to a single process
+- [ ] The Hibernate first-level cache as a memory leak — large sessions in batch jobs, dirty checking cost, flush and clear cadence, StatelessSession
+- [ ] ALB vs NLB for latency-sensitive services — L7 processing vs L4 pass-through, cross-zone load balancing defaults, idle timeouts, and LCU vs NLCU pricing
+- [ ] Measuring test maintenance cost from git — churn per test file, time to fix broken tests, rerun minutes burned in CI, ranking suites by cost per defect found
+- [ ] A production parity checklist — data volume, configuration, instance types, pool sizes, feature flags, third-party stubs and network topology, checked before every cycle
+- [ ] Profiling Python without lying to yourself — cProfile deterministic overhead, sys.monitoring (PEP 669, 3.12), -X perf for Linux perf flame graphs (3.12)
+- [ ] Open Session in View and connection hold time — spring.jpa.open-in-view, connections held during rendering, pool exhaustion under load
+- [ ] ALBs and sudden spikes — how load balancers scale behind the scenes, LCU capacity reservation before a known event, and why traffic should ramp
+- [ ] A model upgrade is a release — run the full eval suite on the new model version, diff results per case, count wins, losses and ties, block on any regression in critical slices
+- [ ] Service virtualization for load tests — WireMock, Mountebank and Hoverfly, realistic latency distributions in stubs, and spotting when the stub becomes the bottleneck
+- [ ] Getting Python hot paths off the GIL — NumPy vectorisation, C extensions that release the GIL, Cython nogil blocks, Numba, measuring the speed-up per call
+- [ ] Hibernate second-level and query cache trade-offs — region invalidation storms, query cache invalidation on any table write, Ehcache vs Infinispan
+- [ ] Lambda concurrency at peak — account concurrency quota, reserved vs provisioned concurrency, and the per-function scaling rate of 1,000 executions every 10 seconds
+- [ ] Testing mTLS APIs — client certificates in k6 tlsAuth and curl, expiry and rotation, broken chains, telling a TLS handshake failure from an application 403
+- [ ] Shared test environments — other teams' traffic, batch jobs during test windows, and how to fence an environment so results are trustworthy
+- [ ] glibc malloc arenas and the RSS that keeps growing — MALLOC_ARENA_MAX, per-thread arenas in busy services, malloc_trim, switching to jemalloc or tcmalloc
+- [ ] Entity Framework Core traps under load — tracking vs AsNoTracking, cartesian explosion and AsSplitQuery, compiled queries, DbContext pooling
+- [ ] Lambda memory is a CPU dial — CPU allocated in proportion to memory up to 6 vCPUs at 10,240 MB, power tuning, and cost per invocation vs duration
+- [ ] Macrobenchmark in CI — StartupTimingMetric and FrameTimingMetric, CompilationMode, real devices vs emulators, iteration counts and run-to-run noise
+- [ ] Ephemeral performance environments — per-test environments with infrastructure as code, data seeding time, cost control, and keeping runs comparable
+- [ ] Native leak hunting with jemalloc profiling — MALLOC_CONF prof:true, jeprof call graphs, finding leaks in JNI, Python C extensions and sidecars
+- [ ] ORM-generated SQL you should read — IN-list explosion and plan cache pollution, Hibernate in_clause_parameter_padding, SELECT star from entities, logging SQL with timings
+- [ ] Azure Functions plans under load — Consumption vs Flex Consumption vs Premium, always-ready instances, and scale-out behaviour for HTTP vs queue triggers
+- [ ] Flaky test debt as a managed backlog — quarantine with an expiry date, flake rate per test from CI history, owners and budgets, Playwright retries and the flaky status
+- [ ] Third-party dependencies in load tests — payment and SMS sandboxes with low rate limits, stubbing vs agreeing test capacity with the vendor, and what each choice hides
+- [ ] Memory leak or just a big cache? — heap-after-full-GC trend vs sawtooth, soak test signatures, old-gen occupancy after each cycle, when to take a heap dump
+- [ ] Optimistic vs pessimistic locking under contention — @Version retries, SELECT FOR UPDATE queueing, SKIP LOCKED for work queues, retry storms on hot rows
+- [ ] EBS gp3 vs io2 under load — gp3 baseline of 3,000 IOPS and 125 MB/s, provisioning more, and the per-instance EBS bandwidth limit that caps you first
+- [ ] Structured output under stress — schema-constrained JSON output validated with JSON Schema, parse failure rate as a metric, truncation at max_tokens, refusals that break your parser
+- [ ] Validating your workload model after the run — comparing the test's transaction mix, payload sizes and cache hit ratio with production to prove the test was realistic
+- [ ] Heap dump analysis with Eclipse MAT — dominator tree, retained vs shallow size, leak suspects report, OQL queries, dumping safely with jcmd GC.heap_dump
+- [ ] Isolation levels under load — read committed vs repeatable read vs serializable throughput, serialization failures (SQLSTATE 40001) and retry cost
+- [ ] Aurora under load — reader endpoint DNS balancing, replica lag, connection storms on failover, and RDS Proxy pinning that defeats connection pooling
+- [ ] Rate limiting as a contract — 429 with Retry-After, the IETF RateLimit header fields draft, token bucket vs sliding window behaviour at the edges, limits per key, per IP and global
+- [ ] Reading latency histograms — HdrHistogram and log-linear buckets, bimodal distributions, and what two humps usually mean
+- [ ] Transparent huge pages: friend or latency foe — enabled=always vs madvise, khugepaged compaction stalls, AnonHugePages in /proc/meminfo, why some databases tell you to turn THP off
+- [ ] Deadlocks as a load-test finding — lock ordering, log_lock_waits and deadlock_timeout in PostgreSQL, SQL Server system_health deadlock graphs
+- [ ] ElastiCache at peak — per-node network bandwidth limits, hot keys on one shard, EngineCPUUtilization vs CPUUtilization, and online resharding under traffic
+- [ ] Baseline Profiles from generation to proof — BaselineProfileRule, measuring with CompilationMode.Partial, ProfileVerifier to confirm the profile was installed
+- [ ] Latency vs throughput curves — plotting latency against achieved throughput, finding the knee, and why time-series charts hide it
+- [ ] Hunting native leaks without a restart — BCC memleak, heaptrack, valgrind massif, comparing /proc/PID/smaps over time
+- [ ] Hot row contention — counters and balances updated by every request, row lock waits, sharded counters and append-then-aggregate patterns
+- [ ] Multi-region active-active latency — Route 53 latency-based routing vs Global Accelerator, replication lag between regions, and failover tested with live traffic
+- [ ] Risk-based release decisions — release readiness reviews, a residual risk register with likelihood and impact, accepted risk documented with a named owner
+- [ ] Error analysis in load tests — error rate by type over time, fast failures that drag percentiles down, and whether to exclude failed requests from latency stats
+- [ ] RSS, PSS and USS: measuring memory correctly — /proc/PID/smaps_rollup, shared libraries and forked workers, smem, why summing RSS overstates pod memory
+- [ ] Commit latency as a throughput ceiling — synchronous_commit in PostgreSQL, group commit, innodb_flush_log_at_trx_commit, fsync latency on cloud disks
+- [ ] Service quotas that fail you at peak — EC2 vCPU quotas, subnet IP exhaustion, and throttled control plane API calls during a big scale-out
+- [ ] Reviewing Playwright tests an AI agent wrote — getByRole over CSS chains, web-first assertions instead of waitForTimeout, assertions that actually assert, test isolation via fixtures
+- [ ] Confidence intervals on percentiles — a p99 from 1,000 samples rests on about 10 data points, bootstrap intervals, and reporting ranges instead of single numbers
+- [ ] Object pooling that backfires — pooled objects promoted to old gen, card marking cost, sync.Pool, ArrayPool and Netty Recycler, when allocation is cheaper than reuse
+- [ ] Serializable Snapshot Isolation in PostgreSQL — predicate locks, max_pred_locks_per_transaction, false-positive serialization failures at high concurrency
+- [ ] VPC CNI limits on EKS — max pods per node from ENIs and IPs, prefix delegation, and pods stuck pending during scale-out
+- [ ] Catching GraphQL N+1 in tests — counting database calls per operation, DataLoader batching and per-request caching, asserting query counts in integration tests
+- [ ] Correlating load results with server metrics — aligning timestamps, 1s vs 60s resolution mismatch, and Grafana annotations for test phases
+- [ ] String memory on the JVM — Compact Strings (JEP 254), -XX:+UseStringDeduplication in G1, String.intern costs, measuring duplicate strings in a heap dump
+- [ ] HikariCP settings that matter — maximumPoolSize, connectionTimeout, maxLifetime vs database idle timeouts, leakDetectionThreshold, reading pending threads metrics
+- [ ] NAT gateway as a hidden bottleneck — the 55,000 connections per destination limit, ErrorPortAllocation, per-GB processing charges, and VPC endpoints as the fix
+- [ ] Android jank in depth — frame deadlines at 60, 90 and 120Hz, JankStats, frameOverrunMs from FrameTimingMetric, main thread work in a Perfetto trace
+- [ ] Latency heatmaps beat percentile lines — spotting periodic GC or cron spikes, building Grafana heatmaps from histogram buckets, and reading density over time
+- [ ] Page faults as a latency source — minor vs major faults, perf stat -e page-faults, -XX:+AlwaysPreTouch, mlock for latency-critical buffers
+- [ ] Connection churn and its hidden cost — PostgreSQL fork per connection, TLS handshakes, pools of size zero in serverless, RDS Proxy pinning
+- [ ] GCP global load balancing — global external Application Load Balancer on anycast, backend balancing mode and capacity settings, and overflow to other regions
+- [ ] Saying no to a release with evidence — a one-page go/no-go memo, quantified risk, options like flag-off or partial rollout, escalating without becoming the blocker
+- [ ] When adding load stops adding throughput — diagnosing a throughput plateau as the client, the network or the system, with evidence for each
+- [ ] Profiling lock contention across runtimes — async-profiler -e lock, JFR jdk.JavaMonitorEnter, Go mutex profile, perf lock, turning contention into a flame graph
+- [ ] Multiplexing proxies compared — PgBouncer vs Odyssey vs pgcat, ProxySQL for MySQL, query routing and per-proxy overhead
+- [ ] Origin shield and tiered caching — collapsing misses into one origin fetch, CloudFront Origin Shield, request collapsing, and origin load after a purge
+- [ ] Mutation testing as referee for AI-written tests — Stryker and PIT mutation scores expose tests that execute code but check nothing, a mutation threshold as the gate for accepting agent suites
+- [ ] Chasing the slowest requests — the max is a real user, tagging load test requests with a header to find them in traces, and exemplars linking metrics to traces
+- [ ] AtomicLong vs LongAdder: when CAS stops scaling — cache line ping-pong, failed CAS retries, striped counters, backoff strategies
+- [ ] Replication lag under write load — pg_stat_replication write_lag, flush_lag and replay_lag, MySQL Seconds_Behind_Master caveats, single-threaded apply
+- [ ] Edge compute latency — CloudFront Functions vs Lambda@Edge vs Cloudflare Workers, their execution limits, and what logic belongs at the edge
+- [ ] GraphQL depth and cost limits under attack — deeply nested and aliased queries, introspection in production, persisted queries, proving the server rejects expensive operations
+- [ ] Apdex and its limits — T and 4T thresholds, how it flattens a distribution, and when it helps executives and when it hides tails
+- [ ] Read-write locks that make things slower — ReentrantReadWriteLock overhead and writer starvation, StampedLock optimistic reads, copy-on-write and RCU-style alternatives
+- [ ] Read-your-writes on replicas — stale reads after writes, session pinning to primary, LSN-based routing, Aurora reader endpoint behaviour
+- [ ] Cache purge storms — purging everything before a launch, the origin thundering herd that follows, staged purges and soft purge
+- [ ] Perfetto for mobile performance engineers — system traces, the Android frame timeline, binder transactions, querying traces with SQL in trace processor
+- [ ] Client-side vs server-side latency — load balancer logs vs tool measurements, queueing in front of the app, and explaining the gap between them
+- [ ] Lock-free handoff with the LMAX Disruptor — ring buffers, sequence barriers, BusySpin vs Yielding vs Blocking wait strategies and their CPU cost
+- [ ] Hot standby query conflicts — canceling statement due to conflict with recovery, hot_standby_feedback and its bloat cost, max_standby_streaming_delay
+- [ ] Microcaching dynamic content — one to five second TTLs on hot API responses, collapsing concurrent misses, and the origin load maths at peak
+- [ ] Shift-left and shift-right as one strategy — static analysis and contracts early, canary analysis and synthetic monitoring late, production signals feeding new tests
+- [ ] A performance results warehouse — storing per-transaction histograms instead of summaries, InfluxDB or Prometheus vs files, and querying trends over months
+- [ ] Futexes: what a contended lock looks like to Linux — futex syscalls in strace -c and perf trace, adaptive spinning vs sleeping, voluntary context switches in pidstat -w
+- [ ] Parallel replication in MySQL — replica_parallel_workers, replica_preserve_commit_order, WRITESET dependency tracking, measuring applier lag
+- [ ] Edge-to-origin connections — keep-alive and connection reuse from PoPs to origin, origin connection limits, and why origin latency dominates cache misses
+- [ ] Playwright MCP and test agents in practice — an LLM driving the browser through accessibility snapshots, planner, generator and healer agents, and the review points a human must keep
+- [ ] Capacity planning from a load test — translating max sustainable throughput into instance counts, headroom targets, and surviving the loss of a zone
+- [ ] Fair locks, lock convoys and throughput collapse — ReentrantLock fairness cost, convoy formation under load, priority inversion, why unfair is the default
+- [ ] Shard key choice decides your ceiling — cardinality, monotonic keys causing hot shards, scatter-gather queries, resharding cost
+- [ ] Anycast vs DNS-based routing to the edge — how users reach a PoP, measuring PoP selection from RUM data, and failover time differences
+- [ ] GraphQL schema evolution without breaking clients — breaking vs dangerous changes, graphql-inspector diff in CI, @deprecated with field usage data before removal
+- [ ] Service demand: CPU milliseconds per request — the Utilisation Law U = X × S, measuring demand in a test, and predicting CPU at future traffic
+- [ ] Memory ordering on x86 vs ARM — total store order vs weaker ARM ordering, volatile and the Java Memory Model, acquire and release, bugs that appear only on Graviton
+- [ ] Cross-shard queries and the fan-out tax — scatter-gather latency, Vitess and Citus query routing, distributed joins, colocated tables
+- [ ] Measuring CDN performance from real users — Server-Timing and cache status headers, edge vs origin time split, hit ratio by requests vs bytes
+- [ ] Android vitals as a release gate — user-perceived crash rate and ANR rate, bad behaviour thresholds in Play Console, excessive wake locks, per-device breakdowns
+- [ ] Operational laws beyond Little's Law — Forced Flow Law, visit ratios, the bottleneck law X ≤ 1/Dmax, and asymptotic bounds on throughput and response time
+- [ ] The real cost of a context switch — vmstat cs, voluntary vs nonvoluntary switches, cache and TLB pollution, thread-per-request vs event loop at high concurrency
+- [ ] Aurora vs RDS PostgreSQL performance differences — log-only writes to shared storage, IO-optimized vs standard billing, replica lag in milliseconds
+- [ ] Scaling on the right signal — CPU vs request rate vs queue depth vs latency, why latency-based scaling oscillates, and choosing a leading indicator
+- [ ] Quality in regulated industries — traceability from requirement to test to evidence, IEC 62304 and 21 CFR Part 11, validated tools, audit-ready reports by default
+- [ ] Multi-server queues and Erlang C — M/M/c waiting probability, why one shared queue beats separate queues, and how many instances keep wait under target
+- [ ] Cancellation that actually stops work — Java StructuredTaskScope (preview), Go context, .NET CancellationToken, orphaned work that keeps burning CPU after a timeout
+- [ ] MongoDB WiredTiger cache pressure — cache dirty and used percentages, eviction thread stalls, application threads doing eviction, cacheSizeGB
+- [ ] Predictive and scheduled scaling for known peaks — EC2 Auto Scaling predictive scaling, scheduled actions, and pre-scaling before a marketing event
+- [ ] Self-healing locators hide real regressions — a healed locator clicking the wrong button, logging every heal as a defect signal, heal rate as test debt, healing that opens a PR instead of passing silently
+- [ ] Mean Value Analysis for closed systems — predicting response time vs user count from service demands without running the test, and checking the model against reality
+- [ ] Lock contention in .NET — monitor-lock-contention-count, System.Threading.Lock in .NET 9, SemaphoreSlim as an async lock, lock-free alternatives with Interlocked
+- [ ] MongoDB explain plans and the query planner — executionStats, totalDocsExamined vs nReturned, plan cache, compound index ESR rule
+- [ ] Target tracking pitfalls — EC2 Auto Scaling target tracking on CPU, instance warmup, slow scale-in, and why the average hides one hot instance
+- [ ] A gRPC testing toolkit — grpcurl with server reflection, ghz for load, deadlines and status codes, buf breaking to guard proto backward compatibility
+- [ ] Forecasting peak traffic — growth trends, seasonality, marketing calendars, peak-to-average ratios, and turning a forecast into a test target
+- [ ] Run queue latency: the CPU wait you are not graphing — vmstat r column, /proc/schedstat, runqlat histograms, why load average also counts D-state tasks
+- [ ] MongoDB write concern and read concern under load — w:majority latency, j:true, readConcern majority vs local, readPreference secondaryPreferred staleness
+- [ ] Scale-out speed as an SLO — time from signal to serving capacity, split into metric delay, decision interval and boot time, and measuring it under a spike
+- [ ] Xcode Instruments for testers — Time Profiler, Allocations, Leaks, Hangs and Animation Hitches, recording from the command line with xctrace
+- [ ] A capacity model in a spreadsheet — per-tier service demand, utilisation ceilings, what-if growth scenarios, and validating the model against a real test
+- [ ] From CFS to EEVDF — the Linux 6.6 scheduler change, latency-nice ideas, sched_ext in Linux 6.12, what it means for latency-sensitive services
+- [ ] MongoDB shard balancing and jumbo chunks — hashed vs ranged shard keys, chunk migration overhead, balancer windows, targeted vs broadcast queries
+- [ ] Warm pools and overprovisioning — EC2 Auto Scaling warm pools, low-priority placeholder pods on Kubernetes, and the cost of idle headroom
+- [ ] Computer Software Assurance instead of paperwork — the FDA CSA guidance, risk-based assurance, unscripted testing, automation logs as validation evidence
+- [ ] Target utilisation vs latency SLOs — why high average utilisation conflicts with tail latency, burst headroom, and choosing a ceiling per tier
+- [ ] CPU frequency and C-states change your benchmark — cpufreq governors performance vs schedutil, turbo boost variance, C-state exit latency, turbostat and cpupower frequency-info
+- [ ] Unbounded arrays and document growth in MongoDB — 16MB limit, multikey index cost, bucket pattern, update performance on large documents
+- [ ] Autoscaling during a dependency outage — scaling up on latency when the bottleneck is downstream makes it worse, and min and max guards that stop it
+- [ ] Building an MCP server for your test infrastructure — exposing test runs, flake history and environment health as MCP tools, read-only by default, auth scopes and an audit log of agent actions
+- [ ] NFRs that can actually fail — percentile, load level, duration, data volume and error rate in one testable statement
+- [ ] NUMA balancing gone wrong — kernel.numa_balancing page migration, numastat remote allocations, numactl --cpunodebind and --membind, when to pin and when to let the kernel decide
+- [ ] Cassandra tombstones as a latency bomb — tombstone_warn_threshold and tombstone_failure_threshold, gc_grace_seconds, queue-like tables, TTL-heavy data
+- [ ] Cost per request as a performance metric — joining billing data with request counts, unit cost per endpoint, and tracking it release to release
+- [ ] Testing gRPC streaming — server, client and bidirectional streams, flow control and slow consumers, cancellation and deadline expiry mid-stream, k6 gRPC streaming support
+- [ ] Deriving NFRs from business numbers — orders per hour to requests per second, transaction mix, conversion funnels, and peak multipliers
+- [ ] Swap, reclaim and direct reclaim stalls — vm.swappiness, kswapd vs direct reclaim, sar -B pgscand, why "no swap" does not mean "no memory pressure"
+- [ ] Choosing Cassandra compaction strategy — STCS vs LCS vs TWCS vs UCS in 5.0, write amplification vs read amplification, nodetool compactionstats
+- [ ] Graviton migration with numbers — ARM vs x86 throughput per vCPU, multi-arch images, native library gaps, and a fair price-performance comparison method
+- [ ] iOS performance tests in XCTest — measure(metrics:) with XCTApplicationLaunchMetric, XCTOSSignpostMetric and XCTMemoryMetric, baselines and allowed deviation
+- [ ] NFRs for batch and async workloads — throughput and completion windows, backlog drain time, and end-to-end freshness instead of response time
+- [ ] Pressure Stall Information as a saturation signal — /proc/pressure cpu, memory and io, some vs full, cgroup v2 cpu.pressure, alerting on PSI instead of utilisation
+- [ ] Wide partitions in Cassandra and ScyllaDB — partition size warnings, nodetool tablehistograms, time bucketing, heap pressure on reads
+- [ ] Spot for latency-sensitive services — the two-minute interruption notice, capacity-optimized allocation, instance diversification, and draining gracefully
+- [ ] Certification testing in gaming and payments — GLI-19 for interactive gaming systems, PCI DSS 4.0 secure development requirements, preparing submissions to independent test labs
+- [ ] Turning "it must be fast" into numbers — using current production RUM as the baseline, proposing percentile targets, and getting sign-off
+- [ ] cgroup v2 memory.high vs memory.max — reclaim throttling before the OOM kill, memory.events high and oom counters, memory.stat, setting a soft ceiling for pods
+- [ ] Cassandra consistency levels and latency — LOCAL_QUORUM vs ONE, speculative_retry, read repair cost, coordinator latency vs replica latency
+- [ ] Right-sizing from load test data — CPU and memory at target throughput, a headroom policy, and finding the instance size with the lowest cost per request
+- [ ] AI triage of failing tests — clustering failures by error message and stack trace embeddings, product bug vs infra noise vs test bug, measuring triage accuracy against human labels before trusting it
+- [ ] Performance acceptance criteria per user story — story-level budgets, the definition of done, and which stories need a test vs only a design review
+- [ ] ftrace for latency you cannot see elsewhere — trace-cmd, function_graph tracer, funclatency from perf-tools, tracing a slow syscall down to the kernel function
+- [ ] ScyllaDB shard-per-core model — shard-aware drivers, per-shard hot partitions, scylla-monitoring dashboards, why a single hot key saturates one core
+- [ ] Kubernetes cost allocation with OpenCost — request-based vs usage-based cost, idle cost, and what over-requested pods really cost per month
+- [ ] Webhook testing that matches reality — HMAC signature verification, timestamp-based replay protection, sender retries and out-of-order delivery, a local receiver for assertions
+- [ ] SLAs vs SLOs vs NFRs — contractual SLAs, internal SLOs, test-time NFRs, and why test thresholds should be stricter than the SLO
+- [ ] Writing your own bpftrace scripts — tracepoints vs kprobes vs uprobes, USDT probes in the JVM, Node.js and Python, histograms with hist() and lhist()
+- [ ] Cassandra read path anatomy — memtable, bloom filters, partition index and SSTables per read, nodetool tablehistograms SSTables column
+- [ ] Observability cost control — log volume, metric cardinality and trace sampling bills, and what to cut without losing performance insight
+- [ ] Lab vs field on iOS — MetricKit MXMetricPayload and MXDiagnosticPayload, hang and launch diagnostics, Xcode Organizer, why lab numbers and field numbers disagree
+- [ ] Performance risk in one slide — red, amber and green by journey, a capacity headroom number, a confidence level, and the decision you need from leadership
+- [ ] CPU isolation for latency-critical services — isolcpus, nohz_full, IRQ affinity and irqbalance, taskset and cpuset cgroups, measuring jitter before and after
+- [ ] Load testing Cassandra honestly — cassandra-stress and its yaml profiles, warming compaction, test duration long enough for compaction debt
+- [ ] Serverless vs containers cost crossover — Lambda per-ms pricing vs Fargate vs EC2 at steady load, and finding the break-even request rate
+- [ ] Tool selection without regret — weighted scoring, a proof of concept on your hardest scenarios, total cost of ownership, and an exit strategy before you sign
+- [ ] Explaining percentiles to executives — "1 in 100 customers waits longer than X", users affected per hour instead of p99
+- [ ] Dirty page writeback stalls — vm.dirty_ratio and dirty_background_ratio, dirty_bytes for large-memory hosts, writeback throttling, the latency spike when the flusher falls behind
+- [ ] DynamoDB partitions and hot keys — per-partition 3000 RCU and 1000 WCU, adaptive capacity, CloudWatch Contributor Insights for hot keys
+- [ ] Bin packing efficiency in Kubernetes — the gap between requests and real usage, node allocatable utilisation, and consolidation that saves nodes
+- [ ] LLMs reading logs during an incident — summarising log bursts, forcing answers to cite log lines and timestamps, hallucinated root causes, evaluating with replayed past incidents
+- [ ] Go/no-go performance sign-off — entry and exit criteria, accepted risks, who signs, and how to record caveats
+- [ ] The clocksource trap — tsc vs xen vs kvm-clock, vDSO clock_gettime turning into a syscall, current_clocksource in sysfs, why timing calls dominate some cloud profiles
+- [ ] DynamoDB on-demand vs provisioned under spikes — on-demand scaling from previous peak, pre-warming, ThrottledRequests and auto scaling lag
+- [ ] Prometheus cardinality explosions — labels holding user IDs or raw URLs, head series count, memory per series, and finding offenders with the TSDB status page
+- [ ] Contracts for async APIs — AsyncAPI specs, Pact message pacts for Kafka and queues, schema registry compatibility modes, consumers that tolerate unknown fields
+- [ ] Turning latency into money — conversion vs load time from your own RUM data, cost of downtime per minute, and why borrowed industry statistics backfire
+- [ ] What kernel mitigations cost you — Spectre and Meltdown mitigations, syscall-heavy workloads, /sys/devices/system/cpu/vulnerabilities, measuring the delta before deciding anything
+- [ ] DynamoDB GSI back-pressure — GSI write throttling throttling the base table, sparse indexes, projection choices and write cost
+- [ ] Recording rules for fast dashboards — precomputing histogram_quantile inputs, evaluation interval, and why rate() over short windows misleads
+- [ ] Network conditioning for mobile tests — Network Link Conditioner, Android emulator network speed and latency settings, mitmproxy throttling, flaky Wi-Fi to cellular handover
+- [ ] Performance dashboards for leadership — trends across releases, SLO compliance, capacity runway in months, and what to leave off
+- [ ] IPC: the one CPU metric that explains "busy but slow" — perf stat cycles and instructions, IPC below 1, Top-down Microarchitecture Analysis with perf stat --topdown and toplev
+- [ ] DynamoDB single-table design performance — access patterns first, item size and RCU cost, Query vs Scan, BatchGetItem and UnprocessedKeys retries
+- [ ] Prometheus native histograms — exponential buckets vs classic le buckets, quantile accuracy, and storage and query cost
+- [ ] Managing outsourced testing vendors — SLAs on outcomes not test case counts, defect quality metrics, knowledge retention, transition and exit plans
+- [ ] Communicating test limitations — what the test did not cover, environment gaps, and confidence statements that survive an audit
+- [ ] Branch prediction in production code — perf stat branch-misses, sorted vs unsorted data, branchless rewrites and cmov, when the compiler already does it for you
+- [ ] DynamoDB transactions and conditional writes — TransactWriteItems double cost, TransactionConflict exceptions, optimistic locking with condition expressions
+- [ ] The OpenTelemetry Collector as a pipeline — batch processor, memory_limiter, exporter queues and retries, and sizing collectors by spans per second
+- [ ] Anomaly detection you can actually trust — static thresholds vs seasonal baselines vs ML detectors, precision and recall against labelled incidents, alert fatigue as the real failure mode
+- [ ] Shift-left performance testing — component-level load tests, per-service API benchmarks, and what still needs a full system test
+- [ ] SIMD for application developers — auto-vectorisation, AVX2 vs AVX-512 frequency effects, the Java Vector API (incubator), simdjson as a case study
+- [ ] DAX vs ElastiCache in front of DynamoDB — item cache vs query cache, write-through semantics, eventual consistency, when DAX adds latency
+- [ ] Tail sampling that keeps the right traces — keeping errors and slow traces, the load-balancing exporter for trace ID affinity, decision_wait and memory cost
+- [ ] Testing event-driven flows end to end — correlation IDs across topics, the outbox pattern, asserting eventual outcomes, checking dead letter queues after negative tests
+- [ ] k6 thresholds as quality gates — abortOnFail and delayAbortEval, non-zero exit codes in pipelines, and per-endpoint thresholds on submetrics
+- [ ] Data-oriented design for latency — arrays of structs vs structs of arrays, pointer chasing in object graphs, LLC-load-misses, why linked lists lose to arrays
+- [ ] Elasticsearch shard sizing — oversharding cost, shard size guidance, heap per shard, _cat/shards and _cat/allocation checks
+- [ ] The overhead of instrumentation — agent CPU and latency cost, spans per request, and measuring it with and without the agent at the same load
+- [ ] Testing offline-first apps — queued writes, sync conflict resolution, airplane mode toggles mid-request, data consistency after reconnect
+- [ ] Performance smoke tests on every pull request — tiny load, fixed data, comparing against main, and keeping the run under five minutes
+- [ ] TLB misses and huge pages for big heaps — dTLB-load-misses in perf stat, -XX:+UseLargePages, hugetlbfs vs THP, page walk cost on large working sets
+- [ ] Refresh interval and indexing throughput — index.refresh_interval, bulk sizing, translog durability async, replicas set to 0 during reindex
+- [ ] RED vs USE vs the four golden signals — which one for services and which for resources, and one dashboard per layer that leads to the bottleneck
+- [ ] Reporting quality to executives — one page, risk in business terms, trends instead of snapshots, stating your confidence level and what would change it
+- [ ] Load tests from GitHub Actions — hosted runner limits, self-hosted runners for stable results, HTML reports as artifacts, and scheduled nightly runs
+- [ ] SMT and the 50% CPU lie — hyperthread siblings sharing execution units, why half-used SMT cores are not half capacity, nosmt tests, per-core vs per-thread utilisation
+- [ ] Elasticsearch heap and circuit breakers — JVM heap under 32GB for compressed oops, fielddata vs doc values, parent circuit breaker trips
+- [ ] Exemplars: from a latency spike to the exact trace — exemplars on Prometheus histograms, Grafana trace links, and the trace context needed
+- [ ] Testing multi-turn conversations — scripted dialogues vs simulated users driven by a second LLM, context window overflow, memory leaking between sessions, regression on turn 7 not turn 1
+- [ ] Gatling and JMeter in build pipelines — gatling-maven-plugin and jmeter-maven-plugin, assertions that fail the build, and publishing reports
+- [ ] Graviton vs x86 benchmarking without bias — no SMT on Graviton, per-vCPU vs per-core comparisons, compiler and JVM build differences, cost per request as the real metric
+- [ ] Slow search diagnosis in Elasticsearch — search slow log, profile API, deep pagination and search_after, wildcard and regex query cost
+- [ ] Error budget policies that change behaviour — release freezes on fast burn, budgeting for planned load tests in production, and SLOs on dependencies
+- [ ] WireMock beyond simple stubs — stateful scenarios, fault injection with connection reset and chunked dribble delay, request verification, record and playback pitfalls
+- [ ] Front-end performance budgets in CI — Lighthouse CI assertions, bundle size limits with size-limit, and failing a PR on regression
+- [ ] Memory bandwidth and latency as the hidden bottleneck — Intel MLC, STREAM, hardware prefetchers, loaded vs idle latency, when more cores make it worse
+- [ ] Thread pool rejections in Elasticsearch and OpenSearch — _cat/thread_pool write and search queues, rejected counts, adaptive replica selection
+- [ ] Choosing SLO windows and targets — rolling 28 days vs calendar month, picking a latency threshold from user data, and targets nobody can meet
+- [ ] Deep links and universal links tested properly — apple-app-site-association and assetlinks.json validation, adb shell am start -d, xcrun simctl openurl, deferred links after install
+- [ ] Performance testing in a trunk-based team — what runs per commit, nightly and pre-release, and the feedback time vs fidelity trade-off
+- [ ] Hardware counters in the cloud — which instance types expose the PMU, perf stat showing "not supported", virtualised counters, working around missing events
+- [ ] Segment merging and force merge in Elasticsearch — segment count vs search latency, merge throttling, force merge on read-only indices only
+- [ ] Log pipelines under load — synchronous logging on request threads, async appenders that drop or block, log sampling, and shipper backpressure
+- [ ] The first two weeks of a QA consulting engagement — stakeholder interviews, current-state assessment, quick wins vs structural fixes, a 30-60-90 day plan
+- [ ] Feature flags and performance — testing both flag states, dark launches to measure cost before release, and flag evaluation overhead
+- [ ] Frontend-bound code and instruction cache misses — iTLB and L1-icache misses, code layout optimisation with BOLT, PGO, why big binaries stall the frontend
+- [ ] Mapping explosions and high cardinality fields — index.mapping.total_fields.limit, dynamic mapping traps, keyword vs text, aggregations on high-cardinality terms
+- [ ] Grafana dashboards that load fast — queries per panel, $__rate_interval, query caching, and Mimir query sharding for long ranges
+- [ ] PII leakage testing for LLM features — seeding canary records in RAG sources, extraction probes, output redaction checks with Microsoft Presidio, what lands in prompt logs
+- [ ] LCP broken into its four parts — TTFB, resource load delay, resource load duration and element render delay, plus fetchpriority=high and preload
+- [ ] BBR vs CUBIC in production — net.ipv4.tcp_congestion_control, loss-based vs model-based control, bufferbloat, lossy long-haul links, fairness when both share a bottleneck
+- [ ] Redis single thread under load — one slow command blocks all, SLOWLOG GET, LATENCY DOCTOR, O(N) commands like KEYS and SMEMBERS
+- [ ] Chaos under load, not at idle — why fault injection without traffic proves nothing, running AWS FIS or Chaos Mesh during a steady load test, what to measure
+- [ ] Prism mock servers from OpenAPI — static vs dynamic response generation, validation proxy mode that flags spec violations in real traffic, mocks for frontend teams
+- [ ] INP in practice — input delay, processing time and presentation delay, long tasks, and breaking up work with scheduler.yield
+- [ ] The 40 ms mystery: Nagle meets delayed ACK — write-write-read patterns, TCP_NODELAY, TCP_QUICKACK, spotting the gap in a packet capture
+- [ ] Big keys and hot keys in Redis — redis-cli --bigkeys and --hotkeys, MEMORY USAGE, UNLINK vs DEL, splitting large hashes
+- [ ] Latency injection beats killing pods — adding delay to one dependency, watching pools and timeouts fill, and exposing hidden synchronous coupling
+- [ ] Push notification testing — xcrun simctl push with APNs payload files, FCM test sends, permission states, tap-through to deep link from background and killed states
+- [ ] Finding CLS root causes — images without dimensions, late ads and embeds, injected banners, and layout shift attribution in DevTools
+- [ ] TCP buffers and the bandwidth-delay product — tcp_rmem and tcp_wmem autotuning, net.core.rmem_max, calculating BDP, why cross-region throughput caps out
+- [ ] Redis eviction policies under memory pressure — maxmemory-policy allkeys-lru vs volatile-ttl vs allkeys-lfu, evicted_keys, sampling with maxmemory-samples
+- [ ] AZ failure drills with traffic — losing a third of capacity, cross-zone rebalancing, autoscaling catch-up time, and zonal shift in Route 53 ARC
+- [ ] Scoping and pricing performance testing engagements — fixed price vs time and materials, environment and data dependencies as assumptions, change control
+- [ ] Web fonts without layout shift — font-display swap vs optional, size-adjust and ascent-override, and preloading the fonts that matter
+- [ ] TLS handshake cost at scale — TLS 1.3 vs 1.2 round trips, session tickets and resumption, 0-RTT replay risk, ECDSA vs RSA certificates, openssl speed
+- [ ] Redis pipelining vs MULTI vs Lua — round trips per op, pipeline batch size, Lua scripts blocking the server, EVALSHA
+- [ ] Performance game days — hypotheses, blast radius, abort conditions, and turning every finding into a repeatable test scenario
+- [ ] promptfoo as the test runner for LLM features — declarative cases, assertion types like is-json, contains and llm-rubric, side-by-side provider comparison, failing the build on regression
+- [ ] Long Animation Frames API — LoAF vs Long Tasks, script attribution, and using it in RUM to find the code behind poor INP
+- [ ] The idle timeout ladder — client, load balancer and server keep-alive timeouts, why a server closing first causes resets and 502s, ordering the timeouts correctly
+- [ ] Redis Cluster slots and cross-slot pain — 16384 hash slots, hash tags, MOVED and ASK redirects, multi-key commands across slots
+- [ ] Proving resilience patterns with fault injection — circuit breakers open, bulkheads hold and fallbacks serve, using Istio fault injection or Toxiproxy
+- [ ] Service virtualisation in performance tests — realistic latency distributions in mocks, mocks that become the bottleneck, why virtualised downstreams hide real capacity limits
+- [ ] JavaScript bundle cost — parse and compile time on mobile CPUs, code splitting, tree shaking, and webpack-bundle-analyzer or source-map-explorer
+- [ ] gRPC performance traps — HTTP/2 flow control windows, one long-lived connection pinned to a single backend behind an L4 balancer, MAX_CONCURRENT_STREAMS, keepalive pings
+- [ ] Redis persistence and latency spikes — RDB fork cost and latest_fork_usec, AOF appendfsync everysec, transparent huge pages
+- [ ] Gray failures under load — 1 percent errors and slow-but-alive nodes, why health checks miss them, and why systems handle hard failures better than slow ones
+- [ ] App size budgets in CI — Android App Bundle size per device config with bundletool get-size total, iOS App Thinning size report, failing the build on growth
+- [ ] The hydration tax — SSR pages that look ready but are not, partial and progressive hydration, React Server Components, and islands architecture
+- [ ] QUIC's CPU bill — userspace congestion control and crypto, UDP GSO and GRO, why HTTP/3 can cost more CPU per byte than TCP with kernel offloads
+- [ ] Redis I/O threads in 6.0+ — io-threads and io-threads-do-reads, what stays single-threaded, benchmarking with redis-benchmark --threads
+- [ ] Steady-state hypotheses from SLOs — defining chaos success with SLO metrics, auto-abort on burn rate, and continuous chaos in pre-production
+- [ ] Statement of work traps for QA contractors — acceptance criteria for deliverables, client dependencies with dates, handover and exit clauses
+- [ ] The critical rendering path — render-blocking CSS and JS, async vs defer, inlined critical CSS, and preconnect
+- [ ] DNS latency inside Kubernetes — ndots:5 and search domain expansion, conntrack races with parallel A and AAAA lookups, NodeLocal DNSCache, measuring resolver time
+- [ ] Redis client connection pools and timeouts — Lettuce vs Jedis models, connected_clients, client-output-buffer-limit, timeouts that hide queueing
+- [ ] Performance incident triage in the first 15 minutes — what changed, saturation vs errors vs latency, traffic vs capacity, and the dashboards to open first
+- [ ] Semantic similarity assertions and their traps — cosine thresholds on embeddings, contradictions that score as similar, calibrating a threshold per domain with labelled pairs
+- [ ] Image performance — AVIF and WebP, srcset and sizes, loading=lazy and why never on the LCP image, and decoding=async
+- [ ] conntrack table exhaustion — nf_conntrack_max, "table full, dropping packet" in dmesg, conntrack -S counters, timeouts for short-lived connections
+- [ ] Redis memory fragmentation — mem_fragmentation_ratio, activedefrag, jemalloc behaviour, used_memory vs used_memory_rss
+- [ ] Mitigate first, diagnose later — rollback, scale out, shed load or fail over, and choosing the cheapest reversible action under pressure
+- [ ] A microservice test portfolio that holds up — component tests with Testcontainers, contracts between services, a thin end-to-end layer, deciding which E2E tests to delete
+- [ ] Lighthouse scores are not user experience — simulated vs DevTools throttling, score variance between runs, taking the median of several, and lab vs CrUX field data
+- [ ] NIC queues, softirqs and ksoftirqd — RSS, RPS and RFS, ethtool -l and -S, /proc/softirqs NET_RX, net.core.netdev_budget, one core pegged by interrupts
+- [ ] Memcached slab allocation and eviction — slab classes, growth factor -f, slab calcification, slab_reassign and slab_automove
+- [ ] Slow is the new down — detecting latency incidents before errors appear, paging on latency SLO burn, and declaring incidents for slowness
+- [ ] Battery testing that means something — Battery Historian, adb shell dumpsys batterystats, the Xcode energy gauge and Instruments, background work with WorkManager
+- [ ] RUM vs synthetic monitoring — what each catches, CrUX and the 75th percentile, the web-vitals attribution build, and sampling RUM data
+- [ ] ss -ti as a TCP debugger — rtt and rttvar, cwnd, retrans, delivery_rate and pacing_rate, comparing healthy and sick connections side by side
+- [ ] Kafka producer batching explained — batch.size, linger.ms, compression.type, records per request and request latency metrics
+- [ ] Capacity regressions from deploys — a new code path doubles CPU per request, spotting it as resource per request, and rollback criteria
+- [ ] Designing a QA organisation — embedded vs centralised, SDET vs quality analyst roles, ratios that mislead, a career ladder with a principal track
+- [ ] Taming third-party scripts — measuring third-party main-thread cost, tag manager sprawl, Partytown, and facades for heavy embeds
+- [ ] Retransmission timeouts and tail latency — 200 ms minimum RTO on Linux, tail loss probe, nstat TcpExtTCPLossProbes, why one lost packet lands on your p99.9
+- [ ] acks=all and min.insync.replicas — durability vs latency, ISR shrink and NotEnoughReplicas, idempotent producers in Kafka 3.0+ defaults
+- [ ] Performance postmortems that prevent repeats — a metric-backed timeline, contributing factors, and turning findings into tests and alerts
+- [ ] Online evaluation for LLM features — shadow traffic for new prompts, A/B tests on prompt versions, thumbs-up rate as a biased signal, tracing with OpenTelemetry GenAI semantic conventions
+- [ ] WebPageTest deep dive — filmstrip, waterfall and connection view, scripted multi-step tests, and custom metrics
+- [ ] MTU black holes and MSS clamping — path MTU discovery failures, tunnel and overlay overhead, jumbo frames inside a VPC, net.ipv4.tcp_mtu_probing
+- [ ] Kafka partition count trade-offs — throughput per partition, consumer parallelism ceiling, end-to-end latency with many partitions, controller load
+- [ ] Finding the change behind a slowdown — deploy markers, config and feature flag changes, traffic shifts, and diffing traces before and after
+- [ ] Testcontainers for API integration tests — real Postgres, Kafka and Redis per run, reusable containers, startup cost, running safely in parallel CI jobs
+- [ ] Reading the Chrome DevTools Performance panel — main-thread flame chart, forced reflow warnings, CPU throttling, and recording interactions
+- [ ] Zero-copy networking — sendfile and splice, MSG_ZEROCOPY, kernel TLS (kTLS) offload, when copies are your real CPU cost
+- [ ] Consumer group rebalances that stall processing — eager vs cooperative-sticky assignor, session.timeout.ms, static membership with group.instance.id
+- [ ] Running a performance architecture review — the questions to ask about call graphs, data access, scaling limits and failure modes before any test
+- [ ] Memory leaks on mobile — LeakCanary in instrumentation tests, Instruments Leaks and the memory graph debugger, OOM and low-memory kills on low-RAM devices
+- [ ] Browser caching done right — Cache-Control immutable, ETag revalidation, service workers, and bfcache eligibility for back and forward navigations
+- [ ] SO_REUSEPORT and accept balancing — thundering herd on a shared listen socket, EPOLLEXCLUSIVE, per-worker accept queues, uneven worker load under bursts
+- [ ] Kafka consumer fetch tuning — fetch.min.bytes, fetch.max.wait.ms, max.poll.records, max.partition.fetch.bytes and their latency effects
+- [ ] The first thing that breaks at 10x — single-writer components, global locks, shared caches, quotas and fixed pools, found from the design alone
+- [ ] Test environment strategy — ephemeral environments per pull request, shared staging contention, data refresh, environment cost as a line item
+- [ ] Instant navigations with the Speculation Rules API — prefetch vs prerender, eagerness settings, and measuring impact in RUM by navigation type
+- [ ] fsync is the real write latency — fsync vs fdatasync, O_DSYNC and O_DIRECT, group commit, what the 2018 PostgreSQL fsyncgate taught everyone about error handling
+- [ ] Under-replicated partitions as an early warning — UnderReplicatedPartitions, replica.lag.time.max.ms, broker disk and network saturation
+- [ ] Capacity models from architecture diagrams — throughput per component, locating the bottleneck tier, and estimating max load before testing
+- [ ] Testing the degraded path of an AI feature — provider 429s and 5xx, timeouts mid-stream, fallback to a smaller model, cached answers, and what the UI shows while the LLM is down
+- [ ] Exposing the backend to the browser — the Server-Timing header in DevTools and RUM, TTFB breakdown, and 103 Early Hints
+- [ ] io_uring for performance engineers — submission and completion rings, SQPOLL, registered buffers, comparison with epoll and libaio, why some container seccomp profiles block it
+- [ ] Kafka on the page cache — why brokers want RAM not heap, zero-copy sendfile, lagging consumers causing disk reads
+- [ ] The hidden cost of state — sticky sessions, external session stores, in-memory caches per pod, and what each does to scaling and failover
+- [ ] OWASP API Security Top 10 2023 as a test plan — BOLA, broken authentication, BOPLA, unrestricted resource consumption, turning each risk into an automated check
+- [ ] Mobile web on mid-tier devices — CPU slowdown, network throttling profiles, real devices via WebPageTest, and why a developer laptop lies
+- [ ] NVMe and blk-mq tuning — multi-queue block layer, none vs mq-deadline vs kyber schedulers, nr_requests and queue depth, when the scheduler adds latency
+- [ ] Load testing Kafka properly — kafka-producer-perf-test and kafka-consumer-perf-test, message size realism, key skew
+- [ ] Data locality in the request path — co-locating compute with data, cross-AZ and cross-region hops per request, and counting them in traces
+- [ ] Staged rollouts as a test stage — Play Console staged rollout percentages and halting, App Store phased release over 7 days, crash-free rate as the halt signal, remote kill switches
+- [ ] A peak-season readiness plan — traffic forecast, change freeze, rehearsal tests above forecast, game days, runbooks and the war room
+- [ ] fio done right — iodepth and numjobs, direct=1, ramp_time, latency percentiles in the output, preconditioning SSDs before trusting the numbers
+- [ ] Exactly-once semantics and its cost — transactional producers, isolation.level read_committed, transaction markers, throughput penalty
+- [ ] Reviewing third-party dependencies — external API rate limits and timeouts, fallbacks, and simulating them with mocks at realistic latency
+- [ ] Escape analysis after incidents — blameless postmortems, which test layer should have caught it, turning findings into tests and process changes
+- [ ] Ticket drops and on-sale events — a thundering herd at a known second, virtual waiting rooms, queue fairness, and token issuance rate
+- [ ] ext4 vs XFS for latency-sensitive workloads — journaling modes, noatime, XFS allocation groups and parallel writes, mount options that matter
+- [ ] Kafka log compaction and retention performance — cleanup.policy compact, log cleaner threads, segment.ms, tombstones in compacted topics
+- [ ] Cell-based architecture for scale — cells and a cell router, sizing a cell from load test results, and scaling by adding cells instead of growing one
+- [ ] Prompts are code, so version and diff them — prompts in git, eval results snapshotted per commit, output diffs in pull requests, a rollback plan for a bad prompt change
+- [ ] Jackpot-style demand spikes — surges before a sales cutoff, the traffic shape around a draw, and pre-scaling vs relying on autoscaling
+- [ ] Instance store NVMe vs network block storage — local NVMe latency vs EBS and Azure managed disks, per-instance storage bandwidth caps, durability trade-offs
+- [ ] RabbitMQ prefetch and consumer throughput — basic.qos prefetch count, unacked messages, too-high prefetch causing unfairness
+- [ ] Shuffle sharding for blast radius — assigning tenants to random worker subsets, the combinatorics of overlap, and when it beats plain sharding
+- [ ] BOLA testing at scale — two-user and cross-tenant matrices, swapping object IDs, generating authorisation tests from OpenAPI, why generic scanners miss it
+- [ ] Pre-scaling for known events — scheduled scaling, warm pools, load balancer pre-warming, and how far ahead to scale
+- [ ] SSD write amplification and TRIM — discard mount option vs scheduled fstrim, garbage collection stalls, sustained vs burst write performance
+- [ ] Quorum queues vs classic queues in RabbitMQ — Raft replication cost, memory limits, delivery-limit for poison messages, migration impact
+- [ ] End-to-end latency in event-driven systems — producer-to-consumer time, timestamps in message headers, and tracing across async hops with span links
+- [ ] Mobile release pipelines — fastlane lanes, Play internal and closed testing tracks, TestFlight groups, signing, automated smoke tests on release candidate builds
+- [ ] Peak readiness for dependencies — vendor capacity confirmations, payment provider rate limits, DNS and CDN, and what to do when a vendor cannot be tested
+- [ ] Page cache vs O_DIRECT — double buffering, readahead with blockdev --getra, posix_fadvise hints, cachestat to measure page cache hit ratio
+- [ ] RabbitMQ flow control and memory alarms — vm_memory_high_watermark, disk_free_limit, publisher blocking, credit flow
+- [ ] Async request-reply patterns — 202 Accepted with polling vs webhooks vs WebSockets, polling cost at scale, and measuring time to result
+- [ ] Quality OKRs that aren't vanity — objectives tied to customer outcomes, key results like escape rate and recovery time, avoiding targets that get gamed
+- [ ] A graceful degradation plan for peak — feature kill switches, static fallback pages, read-only mode, and choosing which features to shed first
+- [ ] Tracing storage latency to the block layer — biosnoop, ext4slower and xfsslower, blktrace and btt Q2C vs D2C, separating queue time from device time
+- [ ] SQS visibility timeout and duplicate processing — visibility timeout vs processing time, ChangeMessageVisibility, redrive policy and DLQ
+- [ ] SQS and Lambda at peak — event source mapping scaling, the maximum concurrency setting, batch size and batching window, visibility timeout vs function timeout
+- [ ] Testing safety classifiers like a QA lead — confusion matrix per harm category, threshold tuning with product, leetspeak and multilingual bypasses, measuring over-blocking as a user cost
+- [ ] Cache warming before a launch — the cold-cache stampede at go-live, pre-populating caches, and testing deliberately with a cold cache
+- [ ] overlayfs and container storage overhead — copy-up on first write, writing logs into the container layer, volumes vs emptyDir vs tmpfs, measuring the difference
+- [ ] SQS throughput patterns — long polling with WaitTimeSeconds, batch receive of 10, FIFO throughput limits and high throughput mode, message group IDs
+- [ ] Event fan-out with SNS and EventBridge — delivery latency, EventBridge PutEvents and invocation quotas, retry policies and dead-letter queues
+- [ ] Mass assignment and excessive data exposure — sending read-only and admin fields, response field allowlists, schema-based checks for properties that should never leave the API
+- [ ] Reviewing a peak after the event — forecast vs actual, saturation points observed, and what the test predicted vs what really happened
+- [ ] Differential flame graphs for regression hunting — difffolded.pl, red and blue colouring, normalising sample counts, comparing release N vs N+1 under the same load
+- [ ] Pulsar vs Kafka architecture for performance — BookKeeper separation, bundle splitting, tiered storage, broker statelessness
+- [ ] Transactional outbox performance — polling publisher vs change data capture, outbox table growth and cleanup, and publish lag under write load
+- [ ] Mobile accessibility automation — Espresso AccessibilityChecks, Accessibility Scanner, XCUITest performAccessibilityAudit (Xcode 15), and what automation misses
+- [ ] Testing in production safely — tagging synthetic traffic, kill switches and abort criteria, blast radius limits, and choosing the window
+- [ ] Continuous profiling in production — Grafana Pyroscope and Parca, pprof format, overhead budgets, the OpenTelemetry profiling signal, finding costs that only show at scale
+- [ ] Pulsar backlog and acknowledgement performance — individual vs cumulative ack, subscription types, backlog quotas
+- [ ] Poison messages and retry topics — head-of-line blocking from one bad message, delayed retry queues, and DLQ alerting that catches it early
+- [ ] Leading a Selenium to Playwright migration — strangler approach, parallel runs for parity, measuring flake rate and runtime before and after, when to stop migrating
+- [ ] Traffic replay with GoReplay — capturing live traffic, rate multiplication with the |200% output modifier, filtering, and middleware for rewriting requests
+- [ ] Icicle graphs and inverted flame graphs — merging leaf functions called from many paths, finding the death-by-a-thousand-cuts function, when to flip the view
+- [ ] Batch job performance tuning — chunk size, commit interval, parallel steps in Spring Batch, restart cost
+- [ ] Ordering vs throughput — partition keys, SQS FIFO message group IDs, per-key ordering, and the throughput ceiling of strict ordering
+- [ ] Counterfactual bias testing for LLM output — swap names, genders and locales in otherwise identical prompts, measure differences in outcome, tie findings to product risk not abstract scores
+- [ ] Shadow traffic and mirroring — Envoy request mirroring, the Istio mirror field, the NGINX mirror directive, and side effects on writes
+- [ ] Frame pointers are back — distros rebuilding with -fno-omit-frame-pointer, perf --call-graph fp vs dwarf vs lbr, cost of DWARF unwinding, broken stacks in flame graphs
+- [ ] Bulk loading at speed — PostgreSQL COPY vs multi-row INSERT, disabling indexes during load, unlogged tables, SQL Server BULK INSERT with TABLOCK
+- [ ] CQRS read model lag — projection lag under write bursts, rebuild time for a projection, and serving reads before the model catches up
+- [ ] SSRF and unsafe API consumption — testing URL-fetching endpoints against 169.254.169.254 and internal hosts, redirects, trusting third-party API responses (API10)
+- [ ] Replaying access logs as a workload — converting logs to a k6 or Gatling feeder, preserving inter-arrival times, and handling state and auth
+- [ ] Sampling profilers and statistics — why 99 Hz instead of 100 Hz, how many samples you need before trusting a percentage, profiling short-lived processes
+- [ ] ETL pipelines and the small files problem — Parquet file sizing, Spark shuffle partitions, spark.sql.shuffle.partitions, skewed joins
+- [ ] Preparing for a peak event — traffic forecast, change freeze, pre-scaling, quota increases, and a go or no-go checklist the business signs
+- [ ] Manual screen reader testing protocols — TalkBack and VoiceOver gestures, focus order, dynamic type and font scaling, touch targets of 48dp and 44pt
+- [ ] Replaying writes safely — deduplication, idempotency keys, isolated sinks, and why replaying POST requests is dangerous
+- [ ] Allocation flame graphs — async-profiler -e alloc, Go alloc_space vs inuse_space, memray, linking allocation hot spots to GC pressure
+- [ ] Mixing batch and OLTP on one database — batch jobs crushing OLTP latency, resource groups, throttling batch, read replicas for reporting
+- [ ] Virtual waiting rooms — queueing users at the edge, admission rate control, and protecting the origin during a ticket drop or flash sale
+- [ ] Your first 90 days with an inherited QA team — assessing suites, skills and trust, stopping the bleeding, and the first visible win
+- [ ] Canary analysis for performance — comparing canary vs baseline latency distributions, Kayenta and Argo Rollouts analysis, and the traffic needed for a confident verdict
+- [ ] Profiling inside Kubernetes — perf_event_paranoid and CAP_PERFMON, symbol resolution across mount namespaces, JIT symbol maps with jcmd Compiler.perfmap and --perf-basic-prof
+- [ ] Change data capture performance — Debezium snapshot vs streaming, replication slot WAL retention, max_slot_wal_keep_size
+- [ ] The push notification thundering herd — millions of pushes and a synchronized app open, staggered sends, and modelling the backend spike
+- [ ] Synthetic test data from LLMs, safely — generating edge-case inputs, validating against schema and business rules, deduplicating, keeping generated data out of eval sets to avoid leakage
+- [ ] Synthetic monitoring is not load testing — k6 or Playwright journey checks from multiple regions, alerting on journeys, and what they cannot tell you
+- [ ] Causal profiling with Coz — virtual speed-ups, progress points, why optimising the hottest function sometimes changes nothing
+- [ ] Realistic data volumes in load tests — production-sized tables, plan changes with scale, data generation tools
+- [ ] Mobile clients as a retry storm — offline queues and client retries flooding back after an outage, jitter in the app, and server-driven backoff
+- [ ] API versioning and its test bill — URI vs header vs media type versioning, contract suites per live version, Sunset and Deprecation headers, retiring old versions with usage data
+- [ ] A performance engineering maturity model — from ad-hoc tests to continuous performance, what each level looks like, and the next step
+- [ ] Measuring your profiler's own overhead — sampling vs instrumentation vs tracing, safepoint and signal costs, A/B runs with the profiler on and off
+- [ ] Data skew in test data — Zipfian vs uniform keys, hot customers, cache hit rate inflation from uniform data
+- [ ] Live event traffic shapes — cliffs at a start time, second-level vs minute-level metrics, and why reactive autoscaling cannot catch a cliff
+- [ ] Foldables, tablets and configuration changes — activity recreation, multi-window, rotation and window size classes, state restoration tests
+- [ ] Central performance team vs embedded engineers — enablement over gatekeeping, templates, office hours, and avoiding the bottleneck team
+- [ ] The TSA method: thread state analysis — splitting time into on-CPU, runnable, sleeping, lock and I/O states, how it complements USE, tools for each state on Linux
+- [ ] Cardinality matters for load testing — unique IDs per virtual user, index selectivity, high cardinality labels
+- [ ] Turning dynamic pages static for a launch — pre-rendered pages, edge-cached JSON, and moving personalisation to the client for peak hours
+- [ ] Cost of quality for budget conversations — prevention, appraisal, internal and external failure costs, putting numbers on each with your own data
+- [ ] A test strategy document people read — scope, workload model, environments, entry and exit criteria, tooling and roles, kept short
+- [ ] JSON vs protobuf: the real cost — CPU per message and bytes on the wire, varint encoding, schema evolution, benchmarking with realistic payloads instead of toy objects
+- [ ] Database state reset between load tests — snapshot restore, stats reset with pg_stat_reset, buffer cache warm vs cold
+- [ ] WebSocket fan-out at scale — connections per node, broadcast cost, reconnect storms after deploys, and load balancer idle timeouts
+- [ ] Vector search performance testing — HNSW ef_search and M trade-offs, recall vs latency curves, filtered search slowdowns, re-index time under load in pgvector or a dedicated vector store
+- [ ] Risk-based selection of what to load test — scoring components by change volume, traffic and business criticality
+- [ ] Jackson performance on hot paths — ObjectMapper reuse, ObjectReader and ObjectWriter, the streaming API, the Blackbird module, allocation per request
+- [ ] Zero-downtime schema migrations — expand and contract, ADD COLUMN with defaults in PostgreSQL 11+, lock_timeout on DDL
+- [ ] Noisy neighbours in multi-tenant SaaS — per-tenant quotas, per-tenant latency metrics without cardinality explosions, and isolation levels
+- [ ] Backward compatibility you can automate — oasdiff breaking change detection, new enum values that crash clients, tightened validation, optional fields that became required
+- [ ] Blameless reviews for performance incidents — finding the test that should have caught it, and adding it to the suite
+- [ ] Compression: CPU vs bytes trade-off — gzip vs zstd vs brotli vs lz4, compression levels, MB per second per core, when compressing costs more than the bandwidth it saves
+- [ ] Online schema change tools for MySQL — gh-ost vs pt-online-schema-change, triggers vs binlog, throttling on replica lag
+- [ ] Fair queuing across tenants — per-tenant queues, weighted fair queuing and deficit round robin, and stopping one tenant from starving the rest
+- [ ] Process death is a test case — adb shell am kill, the Don't keep activities developer option, SavedStateHandle, iOS state restoration after termination
+- [ ] Load test script rot — scripts breaking after API changes, versioning scripts with the application, ownership, and contract tests to catch breakage early
+- [ ] Catastrophic regex backtracking — ReDoS with nested quantifiers, RE2 and Go regexp linear-time guarantees, possessive quantifiers and atomic groups, caching compiled Pattern objects
+- [ ] Creating indexes without downtime — CREATE INDEX CONCURRENTLY, invalid indexes after failure, ONLINE = ON in SQL Server
+- [ ] Whale tenants — detecting a tenant that dominates load, routing it to a dedicated cell, and keeping the shared pool predictable
+- [ ] Quality gates in the release pipeline — hard gates vs advisory signals, a documented bypass process, measuring how often gates block good releases
+- [ ] Migrating from LoadRunner to k6 or Gatling — licence cost, protocol gaps, rewriting correlation, team skills, and parallel runs to prove equivalence
+- [ ] Logging is a performance feature — synchronous appenders under load, Log4j2 async loggers on the LMAX Disruptor, garbage-free logging, parameterised messages vs concatenation
+- [ ] Backfills under live traffic — batched updates, vacuum pressure from backfills, rate limiting by replication lag
+- [ ] Noisy neighbours on shared Kubernetes nodes — contention that limits do not cover such as network, disk and memory bandwidth, and taints for isolation
+- [ ] Visual AI testing and its limits — Applitools Strict vs Layout match levels, dynamic regions, when Playwright toHaveScreenshot with masks and maxDiffPixels is good enough
+- [ ] A performance findings register — run logs, tuning history, open risks, and making past findings searchable for the next release
+- [ ] Exceptions as a hidden CPU cost — fillInStackTrace, exceptions as control flow, -XX:-OmitStackTraceInFastThrow, logging full stack traces at high error rates
+- [ ] Time-series databases compared — TimescaleDB hypertables and chunk sizing, InfluxDB, Prometheus TSDB, compression ratios
+- [ ] CPU steal time in the cloud — what steal means on shared hosts, reading it from mpstat and node exporter, and when dedicated hosts are worth it
+- [ ] Testing the API gateway, not just the service — auth policies, request size limits, gateway vs upstream timeouts, header rewriting, gateway config tested as code
+- [ ] Estimating performance testing effort — scripting per journey, environment preparation, test cycles, analysis time, and why the first cycle overruns
+- [ ] Reflection vs generated serializers — System.Text.Json source generators, kotlinx.serialization, Jackson Afterburner, startup and steady-state differences
+- [ ] TimescaleDB compression and continuous aggregates — compression segmentby and orderby, refresh policies, query speedups
+- [ ] Quick HTTP benchmarking tools — wrk2, vegeta, hey and oha, constant-rate vs as-fast-as-possible modes, and when each gives an honest answer
+- [ ] Rolling out AI tools in a QA team responsibly — data handling policy, review rules for generated tests, measuring productivity honestly, skills that must not atrophy
+- [ ] Hidden costs of UUIDs, hashing and Base64 — UUID.randomUUID and SecureRandom contention, SHA-256 vs xxHash for non-crypto keys, Base64 bloat in payloads
 
 ## Parked
 
