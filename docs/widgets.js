@@ -86,12 +86,17 @@
   }
 
   function number(f, o, onChange) {
-    var input = h('input', { type: 'number', min: o.min, step: o.step || 'any', value: o.value });
+    var attrs = { type: 'number', min: o.min, step: o.step || 'any', value: o.value };
+    if (o.max != null) attrs.max = o.max;
+    var input = h('input', attrs);
     input.addEventListener('input', onChange);
     f.controls.appendChild(h('label', {}, [h('span', { text: o.label }), input]));
     return function () {
-      var v = parseFloat(input.value);
-      return isFinite(v) && v >= (o.min || 0) ? v : o.value;
+      var v = parseFloat(input.value), lo = o.min || 0, hi = o.max != null ? o.max : Infinity;
+      var ok = isFinite(v) && v >= lo && v <= hi;
+      input.setAttribute('aria-invalid', ok ? 'false' : 'true');
+      input.style.outline = ok ? '' : '2px solid #e5484d';
+      return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : o.value;
     };
   }
 
@@ -279,7 +284,7 @@
         hLines: [{ y: ceil, color: C.w, label: 'ceiling set by the ' + tier }],
         points: [{ x: Math.min(x, xMax), y: Math.min(x, ceil), color: x >= ceil ? C.w : C.a, label: fmt(x) + ' req/s offered' }],
       });
-      if (x >= ceil) say('Offered load is above the ' + tier + ' ceiling of ' + fmt(ceil) + ' req/s. Throughput flattens and queues grow until requests time out. Tuning the other tier changes nothing.', true);
+      if (x >= ceil) say('Offered load is ' + (x > ceil ? 'above' : 'at') + ' the ' + tier + ' ceiling of ' + fmt(ceil) + ' req/s. Throughput flattens and queues grow until requests time out. Tuning the other tier changes nothing.', true);
       else if (Math.max(ua, ud) >= 0.8) say('Below the ceiling, but the ' + (ua >= ud ? 'API tier' : 'database') + ' is at ' + pct(Math.max(ua, ud), 0) + ' utilisation, where queueing delay starts to climb steeply.', true);
       else say('Headroom: you can add about ' + fmt(ceil - x) + ' req/s before the ' + tier + ' saturates.');
     }
@@ -343,7 +348,7 @@
       var pts = [];
       for (var x = 50; x <= 100.0001; x += 0.5) pts.push([x, e * (1 - x / 100)]);
       lineChart(chart, {
-        xMin: 50, xMax: 100, yMin: 0, yMax: e * 0.5, xTitle: 'Hit ratio (%)', yTitle: 'Origin req/s',
+        xMin: 50, xMax: 100, yMin: 0, yMax: Math.max(e * 0.5, c * 1.15), xTitle: 'Hit ratio (%)', yTitle: 'Origin req/s',
         series: [{ pts: pts, color: C.a }],
         hLines: [{ y: c, color: C.w, label: 'origin capacity' }],
         points: [{ x: hit(), y: o, color: o > c ? C.w : C.a, label: fmt(o) + ' req/s' }],
@@ -368,7 +373,7 @@
     legend(f.out, [['What the tool reports', C.a], ['What users experienced', C.w]]);
     var say = note(f.out);
     function update() {
-      var I = interval(), r = Math.min(normal(), I), S = stall() * 1000, T = run() * 1000;
+      var r = normal(), I = Math.max(interval(), r), S = stall() * 1000, T = run() * 1000;
       if (T <= S + I) T = S + I * 10;
       var n = Math.floor((T - S) / I), m = Math.max(1, Math.floor(S / I));
       var rep = new Float64Array(n + 1), act = new Float64Array(n + m), i;
@@ -394,7 +399,7 @@
           { pts: av.map(function (v, k) { return [k, v]; }), color: C.w },
         ],
       });
-      say('The tool recorded ' + fmt(n + 1) + ' samples. Users would have sent ' + fmt(n + m) + '. Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.', av[2] / rv[2] > 2);
+      say((normal() > interval() ? 'A single thread with ' + ms(normal()) + ' responses cannot send every ' + ms(interval()) + ', so this uses a ' + ms(I) + ' interval. ' : '') + 'The tool recorded ' + fmt(n + 1) + ' samples. Users would have sent ' + fmt(n + m) + '. Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.', av[2] / rv[2] > 2);
     }
     update();
   };
@@ -408,7 +413,7 @@
     var wait = range(f, { label: 'Wait time per request (DB, HTTP)', min: 0, max: 1000, step: 5, value: 45, show: ms }, u);
     var pool = range(f, { label: 'Database connection pool', min: 1, max: 200, value: 10 }, u);
     var budget = range(f, { label: 'Acceptable queueing delay', min: 10, max: 2000, step: 10, value: 200, show: ms }, u);
-    var st = stats(f.out, [['threads', 'Thread pool size'], ['x', 'CPU-bound max throughput'], ['xp', 'Connection-pool max throughput'], ['q', 'Queue bound']]);
+    var st = stats(f.out, [['threads', 'Thread pool size'], ['x', 'CPU-bound max throughput'], ['xp', 'Connection-pool max throughput'], ['q', 'Queue bound (at achievable rate)']]);
     var say = note(f.out);
     function update() {
       var N = cores() * util() / 100 * (1 + wait() / comp());
@@ -515,11 +520,11 @@
     var f = frame(node, 'Greenfield capacity model', 'From business numbers to request rate, cores, pods and database connections. Replace the CPU cost with a measured number as soon as you have one.');
     var u = function () { update(); };
     var orders = number(f, { label: 'Orders per day', min: 1, value: 2000000 }, u);
-    var peak = number(f, { label: 'Share in the busiest hour (%)', min: 1, value: 30 }, u);
+    var peak = number(f, { label: 'Share in the busiest hour (%)', min: 1, max: 100, value: 30 }, u);
     var burst = number(f, { label: 'Burst factor (peak minute ÷ hour average)', min: 1, value: 3 }, u);
     var calls = number(f, { label: 'API calls per order', min: 1, value: 6 }, u);
     var cpu = number(f, { label: 'CPU ms per API request', min: 0.1, value: 15 }, u);
-    var target = number(f, { label: 'Target CPU utilisation (%)', min: 1, value: 60 }, u);
+    var target = number(f, { label: 'Target CPU utilisation (%)', min: 1, max: 100, value: 60 }, u);
     var podCores = number(f, { label: 'Cores per pod', min: 0.25, value: 2 }, u);
     var poolSize = number(f, { label: 'DB pool size per pod', min: 1, value: 10 }, u);
     var maxConn = number(f, { label: 'Database max connections', min: 1, value: 100 }, u);
@@ -627,7 +632,7 @@
         points: [{ x: U, y: rGG, color: C.a, label: ms(rGG) }]
       });
 
-      var step = Math.min(U + 0.05, 0.98);
+      var step = Math.min(U + 0.05, U + (1 - U) / 2);
       var rNext = S + wqMM(c, step, S) * k;
       if (U > 0.8) say('Above 80% the curve is nearly vertical. Going from ' + pct(U, 0) + ' to ' + pct(step, 0) + ' utilisation moves mean response time from ' + ms(rGG) + ' to ' + ms(rNext) + '. A small traffic burst or a slightly slower dependency is now enough to tip the queue over. These are means, so p99 is worse again.', true);
       else say('Queueing delay is ' + fmt(k, 2) + '× the M/M value because (Ca² + Cs²) ÷ 2 = ' + fmt(k, 2) + '. Only the waiting time scales with variability, the ' + ms(S) + ' of service time does not. Measure utilisation over your burst window, not an hourly average.');
@@ -797,7 +802,7 @@
       var horizon = Math.min(3600, Math.ceil(rd + md + sy + lag) * 2 + 120);
       var demand = function (t) { return t <= 0 ? s0 : s0 + (sp - s0) * Math.min(t / rd, 1); };
       var ready = pods0(), want = ready, arrivals = {};
-      var q = 0, peakQ = 0, peakWait = 0, over = 0, first = -1, lastPolicyT = -Infinity;
+      var q = 0, peakQ = 0, peakWait = 0, over = 0, first = -1, lastPolicyT = -Infinity, policyBase = 0;
       var dPts = [], cPts = [], tPts = [];
       for (var t = 0; t <= horizon; t++) {
         if (arrivals[t]) { ready += arrivals[t]; if (first < 0) first = t; }
@@ -807,7 +812,10 @@
           var need = seen / (c * tu);
           if (Math.abs(need / want - 1) > 0.1 && need > want) {
             var next = Math.ceil(need);
-            if (policy()) next = Math.min(next, Math.max(want * 2, want + 4));
+            if (policy()) {
+              if (t - lastPolicyT >= 15) { lastPolicyT = t; policyBase = want; }
+              next = Math.min(next, Math.max(policyBase * 2, policyBase + 4));
+            }
             if (next > want) {
               arrivals[t + lag] = (arrivals[t + lag] || 0) + (next - want);
               want = next;
@@ -857,10 +865,10 @@
     var say = note(f.out);
     function update() {
       var total = rate() * 60 * mins(), t = TAILS[tail()], slow = total * (1 - t[0]), r = head() / 100;
-      var hcap = slow * r, prob = r >= 1 ? 1 : 1 - Math.pow(1 - r, slow);
+      var hcap = slow * r, prob = 1 - Math.exp(-slow * r);
       var hstore = total * r, tstore = r * (total - slow) + slow;
       st.slow(fmt(slow, slow < 10 ? 1 : 0));
-      st.hcap(fmt(hcap, hcap < 10 ? 1 : 0), hcap < 10 ? 'warn' : 'ok');
+      st.hcap(fmt(hcap, hcap < 1 ? 2 : hcap < 10 ? 1 : 0), hcap < 10 ? 'warn' : 'ok');
       st.prob(pct(prob), prob < 0.95 ? 'warn' : 'ok');
       st.tcap(fmt(slow, slow < 10 ? 1 : 0), 'ok');
       st.hstore(fmt(hstore));
@@ -881,7 +889,7 @@
   W.burst = function (node) {
     var f = frame(node, 'gp2 burst-credit calculator', 'A gp2 volume earns I/O credits at its baseline rate and spends them at the rate you use. When the 5.4 million credit bucket is empty, the volume drops to baseline. gp3 has no credits: it delivers its provisioned IOPS all the time.');
     var u = function () { update(); };
-    var size = number(f, { label: 'gp2 volume size (GiB)', min: 1, step: 1, value: 100 }, u);
+    var size = number(f, { label: 'gp2 volume size (GiB)', min: 1, max: 16384, step: 1, value: 100 }, u);
     var load = number(f, { label: 'Sustained workload (IOPS)', min: 1, step: 1, value: 2000 }, u);
     var start = range(f, { label: 'Starting credit balance', min: 0, max: 100, step: 1, value: 100, show: function (v) { return fmt(v) + '%'; } }, u);
     var st = stats(f.out, [['base', 'gp2 baseline'], ['burst', 'gp2 burst ceiling'], ['empty', 'Credits run out after'], ['after', 'gp2 IOPS after that'], ['gp3', 'gp3 (3,000 IOPS included)']]);
@@ -921,7 +929,10 @@
         hLines: [{ y: w, color: C.w, label: 'workload ' + fmt(w) + ' IOPS' }],
       });
       var msg;
-      if (w > cap) {
+      if (credits === 0 && w > base) {
+        st.empty('already empty', 'warn');
+        say('The bucket starts empty, so the volume runs at its baseline of ' + fmt(base) + ' IOPS from the first second, ' + fmt(w / base, 1) + '× less than the workload needs. Credits only refill while the workload stays below ' + fmt(base) + ' IOPS.', true);
+      } else if (w > cap) {
         msg = 'This workload needs more IOPS than this gp2 volume can ever deliver (' + fmt(cap) + ' even when bursting). Requests will queue from the start, and await will grow until the backlog is bounded by the application.';
         if (isFinite(tEmpty) && tEmpty < end) msg += ' Then after ' + dur(tEmpty) + ' the volume drops to ' + fmt(base) + ' IOPS.';
         say(msg, true);

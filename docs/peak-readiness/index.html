@@ -192,7 +192,7 @@
       const form = document.getElementById('lead');
       const status = form.querySelector('.lead-status');
       const open = () => {
-        status.innerHTML = 'Thanks! <a href="/peak-readiness/checklist/" target="_blank" rel="noopener">Open the checklist</a> (it also opened in a new tab).';
+        status.innerHTML = 'Thanks! <a href="/peak-readiness/checklist/" target="_blank" rel="noopener">Open the checklist</a> if it didn\'t open in a new tab.';
         window.open('/peak-readiness/checklist/', '_blank', 'noopener');
       };
       form.addEventListener('submit', async (e) => {
@@ -207,9 +207,10 @@
         body.append('message', 'Downloaded the peak-readiness checklist.');
         body.append('page', location.href);
         form.querySelector('button').disabled = true;
-        try { await fetch(form.dataset.endpoint, { method: 'POST', body }); } catch (_) {}
-        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'peak-checklist-sent', title: 'peak-checklist-sent', event: true });
+        // Open the tab straight away: Safari and iPhones block tabs opened after waiting on the network.
         open();
+        try { await fetch(form.dataset.endpoint, { method: 'POST', body, keepalive: true }); } catch (_) {}
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'peak-checklist-sent', title: 'peak-checklist-sent', event: true });
       });
     })();
   </script>

@@ -140,8 +140,8 @@ HEAD = '''<!doctype html>
     .article h3 {{ font-size: 19px; margin: 28px 0 8px; }}
     .article p, .article ul, .article ol {{ margin: 0 0 16px; }}
     .article pre {{ background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }}
-    .article code {{ font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; }}
-    .article pre code {{ background: none; padding: 0; font-size: inherit; }}
+    .article code {{ font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }}
+    .article pre code {{ background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }}
     .article blockquote {{ margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }}
     .article table {{ border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }}
     .article th, .article td {{ border: 1px solid var(--border); padding: 8px 10px; text-align: left; }}
