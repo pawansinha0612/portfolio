@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SLO &amp; Error Budget Calculator — Pawan Sinha</title>
+  <meta name="description" content="Free SLO and error budget calculator. Turn 99.9% into allowed downtime, work out burn rates and multi-window alert thresholds, track this month's budget, and copy k6 thresholds and Prometheus alert rules.">
+  <meta property="og:title" content="SLO &amp; Error Budget Calculator — Pawan Sinha">
+  <meta property="og:description" content="Allowed downtime, burn rate, multi-burn-rate alerts and a budget tracker for any SLO. Copy k6 thresholds and Prometheus rules. Free, runs in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/slo-calculator/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/slo-calculator/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"SLO and error budget calculator","url":"https://pawansinha.com.au/tools/slo-calculator/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How much downtime does a 99.9% SLO allow?","acceptedAnswer":{"@type":"Answer","text":"About 43 minutes 12 seconds in a 30-day month, 1 minute 26 seconds a day, and 8 hours 46 minutes a year."}},
+    {"@type":"Question","name":"What is an error budget?","acceptedAnswer":{"@type":"Answer","text":"The share of requests (or time) an SLO allows to fail. A 99.9% SLO has a 0.1% error budget: one failed request in every thousand."}},
+    {"@type":"Question","name":"What is a burn rate?","acceptedAnswer":{"@type":"Answer","text":"How fast you are spending the error budget compared with spending it evenly over the SLO window. A burn rate of 1 uses the whole budget exactly at the end of the window; 14.4 uses 2% of a 30-day budget in one hour."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .calc { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 18px; }
+    .fgrid fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .fgrid legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .field small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 4px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 14px; }
+    .kpi { background: var(--alt); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+    .kpi span { display: block; font-size: 12px; color: var(--muted); }
+    .kpi b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .kpi.ok b { color: var(--ok); } .kpi.warn { background: var(--warn-bg); } .kpi.warn b { color: var(--warn); }
+    .table-wrap { overflow-x: auto; }
+    table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.t th, table.t td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; vertical-align: top; }
+    table.t th { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    .sev { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--alt); }
+    .sev.page { background: var(--warn-bg); color: var(--warn); }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; margin: 12px 0 0; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.ok { background: var(--ok-bg); color: var(--ok); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg[hidden], .result[hidden] { display: none; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin: 14px 0 8px; }
+    .out-head h3 { font-size: 16px; margin: 0; }
+    .out-head button { font: inherit; cursor: pointer; }
+    pre.code { width: 100%; box-sizing: border-box; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; overflow: auto; max-height: 520px; white-space: pre; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide li { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .kpi b { font-size: 18px; }
+      table.t th, table.t td { padding-right: 8px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources" aria-current="page">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · SRE &amp; reliability</p>
+      <h1>SLO &amp; error budget calculator</h1>
+      <p class="lead">Turn an SLO like 99.9% into minutes of downtime and failed requests you can afford, see how fast you're burning that budget, and copy ready-made k6 thresholds and Prometheus burn-rate alerts.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you type is sent anywhere.</p>
+    </section>
+
+    <section class="wrap calc" aria-label="SLO calculator">
+      <form id="f" onsubmit="return false" novalidate>
+      <div class="panel">
+        <h2>1. Your SLO</h2>
+        <p class="sub">The share of requests (or minutes) that must be good over the window.</p>
+        <div class="chips" id="presets" aria-label="Common SLO targets"></div>
+        <div class="fgrid">
+          <label class="field"><span>SLO target (%)</span><input type="text" name="target" value="99.9" inputmode="decimal" autocomplete="off"></label>
+          <fieldset>
+            <legend>Rolling window</legend>
+            <div class="seg">
+              <label><input type="radio" name="windowDays" value="7"> 7d</label>
+              <label><input type="radio" name="windowDays" value="28"> 28d</label>
+              <label><input type="radio" name="windowDays" value="30" checked> 30d</label>
+              <label><input type="radio" name="windowDays" value="90"> 90d</label>
+            </div>
+          </fieldset>
+          <label class="field"><span>Requests per month (optional)</span><input type="text" name="monthlyRequests" value="" placeholder="e.g. 10,000,000" inputmode="numeric" autocomplete="off"><small>Shows the budget as failed requests.</small></label>
+        </div>
+        <p class="msg warn" id="err" role="alert" hidden></p>
+        <p class="msg info" id="warn" hidden></p>
+      </div>
+
+      <div class="result" id="results">
+      <div class="panel">
+        <h2>2. Your error budget</h2>
+        <p class="sub" id="budget-sub"></p>
+        <div class="kpis" id="budget-stats"></div>
+        <div class="table-wrap"><table class="t" id="budget-table"><thead><tr><th>Period</th><th>Allowed downtime</th><th id="req-col">Failed requests</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <h2>3. Burn rate and alerts</h2>
+        <p class="sub">Burn rate is how fast you're spending the budget. At 1× it runs out exactly at the end of the window.</p>
+        <div class="fgrid">
+          <label class="field"><span>Current error rate (%)</span><input type="text" name="errorRatePct" value="" placeholder="e.g. 0.5" inputmode="decimal" autocomplete="off"><small>Failed ÷ total requests right now.</small></label>
+        </div>
+        <div class="kpis" id="burn-stats" style="margin-top:14px" hidden></div>
+        <p class="msg" id="burn-msg" hidden></p>
+        <h3 style="font-size:16px;margin:18px 0 6px">Multi-window, multi-burn-rate alerts</h3>
+        <p class="sub">The Google SRE workbook's recommended alerts for this SLO. Each fires only when both the long and the short window are over the threshold, so it catches real burns fast and clears quickly once fixed.</p>
+        <div class="table-wrap"><table class="t" id="alert-table"><thead><tr><th>Budget spent</th><th>Short window</th><th>Burn rate</th><th>Alert when error rate &gt;</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <h2>4. Budget tracker</h2>
+        <p class="sub">Where you are in the current window, and where you'll end up if things carry on like this.</p>
+        <div class="fgrid">
+          <label class="field"><span>Failed requests so far</span><input type="text" name="badSoFar" value="" placeholder="e.g. 1,200" inputmode="numeric" autocomplete="off"></label>
+          <label class="field"><span>Total requests so far</span><input type="text" name="totalSoFar" value="" placeholder="e.g. 4,000,000" inputmode="numeric" autocomplete="off"><small>Leave empty to use the monthly volume.</small></label>
+          <label class="field"><span>Days into the window</span><input type="text" name="daysElapsed" value="" placeholder="e.g. 12" inputmode="decimal" autocomplete="off"></label>
+        </div>
+        <div class="kpis" id="track-stats" style="margin-top:14px" hidden></div>
+        <p class="msg" id="track-msg" hidden></p>
+      </div>
+
+      <div class="panel">
+        <h2>5. Copy it into your tests and alerts</h2>
+        <p class="sub">k6 thresholds fail the load test when it breaks the SLO. The Prometheus rules page you when production does.</p>
+        <div class="fgrid">
+          <label class="field"><span>Latency SLO: % of requests</span><input type="text" name="latencyPct" value="95" inputmode="decimal" autocomplete="off"></label>
+          <label class="field"><span>…under (ms)</span><input type="text" name="latencyMs" value="500" inputmode="numeric" autocomplete="off"><small>Clear either box to leave latency out.</small></label>
+          <label class="field"><span>Prometheus metric</span><input type="text" name="metric" value="http_requests_total" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>Error filter</span><input type="text" name="errorFilter" value='code=~"5.."' autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>Extra labels (optional)</span><input type="text" name="labels" value="" placeholder='job="checkout"' autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="out-head"><h3>k6 thresholds</h3><button class="btn btn-small" type="button" data-copy="k6-out" data-track="slo-copy-k6">Copy</button></div>
+        <pre class="code" id="k6-out" tabindex="0" aria-label="k6 thresholds"></pre>
+        <div class="out-head"><h3>Prometheus alerting rules</h3><button class="btn btn-small" type="button" data-copy="prom-out" data-track="slo-copy-prom">Copy</button></div>
+        <pre class="code" id="prom-out" tabindex="0" aria-label="Prometheus alerting rules"></pre>
+      </div>
+      </div>
+      </form>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">Error budgets in plain English</p>
+      <h2>What the numbers mean</h2>
+      <h3>What is an error budget?</h3>
+      <p>An SLO of 99.9% means one request in a thousand is <strong>allowed</strong> to fail. That 0.1% is your error budget. Over a 30-day window it's about 43 minutes of full downtime, or the same amount spread across thousands of small failures. The budget turns "is reliability good enough?" into a number product and engineering can both act on: while there's budget left, ship; when it's gone, slow down and fix.</p>
+      <h3>How do I pick a target?</h3>
+      <p>Start from what users notice, not from what the system does today. Most user-facing APIs land between <strong>99.5% and 99.95%</strong>. Every extra nine cuts the budget tenfold: 99.99% gives you about 4 minutes a month, which is less than one bad deploy plus a rollback. Your SLO also can't be higher than the dependencies you call in series.</p>
+      <h3>What's a burn rate, and why alert on it?</h3>
+      <p>Alerting on "error rate above 0.1%" pages you for blips and misses slow leaks. Burn rate asks how fast the budget is going instead. A burn rate of <strong>14.4</strong> on a 30-day SLO spends 2% of the month's budget in one hour: wake someone up. A burn of <strong>1</strong> sustained for three days spends 10%: raise a ticket. Pairing each long window with a short one (1h with 5m) stops the alert firing long after the problem is fixed.</p>
+      <h3>How does this connect to load testing?</h3>
+      <p>A load test that passes with a 2% error rate fails a 99.9% SLO twenty times over. Put the SLO in the test as a <strong>k6 threshold</strong> so the run goes red automatically, then run it in CI before every release. Paste the end-of-test summary into the <a href="/tools/k6-results/">k6 results explainer</a> to see which requests broke it.</p>
+      <h3>Request-based or time-based?</h3>
+      <p>This calculator shows both. Time-based ("43 minutes of downtime") is easy to explain; request-based ("10,000 failed requests") is what you actually measure, and it treats a quiet 3am outage and a peak-hour one differently, which matches what users feel.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/">All calculators →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Setting SLOs for a real system?</p>
+          <h3>Get SLOs, alerts and load tests that agree</h3>
+          <p>I'll help you pick targets from real traffic, wire them into k6 thresholds and CI, and set alerts that page for the right things. Or start with the k6 starter kit: SLO thresholds and CI gates included. A$49, one-off.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="slo-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/shop/" data-track="slo-kit">See the k6 kit</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/slo-calculator/slo.js"></script>
+  <script>
+  (() => {
+    const S = window.SloCalc;
+    const $ = (id) => document.getElementById(id);
+    const form = $('f');
+    const STORE = 'slo-calculator-inputs';
+    const FIELDS = ['target', 'windowDays', 'monthlyRequests', 'errorRatePct', 'badSoFar', 'totalSoFar', 'daysElapsed', 'latencyPct', 'latencyMs', 'metric', 'errorFilter', 'labels'];
+    const D = S.fmtDuration, N = S.fmtNumber, P = S.fmtPct;
+
+    // Restore the visitor's inputs (this browser only).
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) for (const k of FIELDS) {
+        const el = form.elements[k];
+        if (!el || saved[k] === undefined) continue;
+        if (el instanceof RadioNodeList) { for (const r of el) r.checked = r.value === String(saved[k]); }
+        else el.value = saved[k];
+      }
+    } catch (e) {}
+
+    const presets = $('presets');
+    S.PRESETS.forEach(p => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip-btn'; b.textContent = p + '%'; b.dataset.v = p;
+      b.addEventListener('click', () => { form.elements.target.value = p; update(); });
+      presets.appendChild(b);
+    });
+
+    function el(tag, text, cls) { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
+    function stats(node, items) {
+      node.replaceChildren(...items.map(([label, value, cls]) => {
+        const d = el('div', undefined, 'kpi' + (cls ? ' ' + cls : ''));
+        d.append(el('span', label), el('b', value));
+        return d;
+      }));
+    }
+    function msg(node, text, cls) { node.hidden = !text; node.textContent = text || ''; node.className = 'msg ' + (cls || 'info'); }
+    function row(cells) { const tr = document.createElement('tr'); cells.forEach(c => { const td = el('td'); if (c instanceof Node) td.append(c); else td.textContent = c; tr.append(td); }); return tr; }
+
+    function input() {
+      const o = {};
+      for (const k of FIELDS) o[k] = form.elements[k].value;
+      return o;
+    }
+
+    function update() {
+      const inp = input();
+      try { localStorage.setItem(STORE, JSON.stringify(inp)); } catch (e) {}
+      const t = S.num(inp.target);
+      presets.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === t)));
+      const r = S.compute(inp);
+      $('results').hidden = !r.ok;
+      msg($('err'), r.ok ? '' : r.error, 'warn');
+      if (!r.ok) { $('warn').hidden = true; return; }
+      msg($('warn'), r.warnings.join(' '), 'info');
+
+      // 2. Budget
+      const b = r.budget, hasReq = b.budgetRequests !== undefined;
+      $('budget-sub').textContent = `A ${S.clean(r.target)}% SLO allows ${P(b.fraction)} of requests to fail: ${b.fraction === 0 ? 'none at all' : 'about 1 in ' + N(1 / b.fraction)}.`;
+      const st = [['Downtime per ' + r.windowDays + ' days', D(b.windowSec)], ['Error budget', P(b.fraction)]];
+      if (hasReq) { st.push(['Failed requests per ' + r.windowDays + ' days', N(b.budgetRequests)]); st.push(['Failed requests per day', N(b.budgetRequestsPerDay, b.budgetRequestsPerDay < 10 ? 1 : 0)]); }
+      stats($('budget-stats'), st);
+      $('req-col').hidden = !hasReq;
+      const tb = $('budget-table').tBodies[0];
+      tb.replaceChildren(...b.periods.map(p => {
+        const cells = [p.label, D(p.sec)];
+        if (hasReq) cells.push(N(p.requests));
+        return row(cells);
+      }));
+
+      // 3. Burn rate
+      const br = r.burn;
+      if (!br) { $('burn-stats').hidden = true; msg($('burn-msg'), ''); }
+      else if (br.error) { $('burn-stats').hidden = true; msg($('burn-msg'), br.error, 'warn'); }
+      else {
+        $('burn-stats').hidden = false;
+        const rate = br.rate === Infinity ? '∞' : S.clean(Number(br.rate.toFixed(2))) + '×';
+        stats($('burn-stats'), [
+          ['Burn rate', rate, br.status === 'over' ? 'warn' : 'ok'],
+          ['Budget runs out in', br.rate === 0 ? 'never' : br.rate === Infinity ? 'already gone' : D(br.exhaustSec), br.status === 'over' ? 'warn' : 'ok'],
+        ]);
+        let text;
+        if (br.rate === Infinity) text = 'With a 100% SLO any error breaks it immediately.';
+        else if (br.rate === 0) text = 'No errors: the budget isn\'t being spent.';
+        else if (br.status === 'over') {
+          const page = r.alerts.find(a => !a.impossible && br.rate >= a.burn);
+          text = `At this rate the whole ${r.windowDays}-day budget is gone in ${D(br.exhaustSec)}.` + (page ? ` That trips the ${page.long} alert below (${page.severity}).` : '');
+        } else text = `Under 1×: at this rate you'd use ${P(br.rate)} of the budget by the end of the window.`;
+        msg($('burn-msg'), text, br.status === 'over' ? 'warn' : 'ok');
+      }
+      const at = $('alert-table').tBodies[0];
+      at.replaceChildren(...r.alerts.map(a => row([
+        a.budget + '% in ' + a.long, a.short, a.burn + '×',
+        a.impossible ? 'never (SLO too loose)' : P(a.errorRate),
+        el('span', a.severity, 'sev ' + a.severity),
+      ])));
+
+      // 4. Tracker
+      const tr = r.tracker;
+      if (!tr) { $('track-stats').hidden = true; msg($('track-msg'), ''); }
+      else if (tr.error) { $('track-stats').hidden = true; msg($('track-msg'), tr.error, 'info'); }
+      else {
+        $('track-stats').hidden = false;
+        const bad = tr.status !== 'ok';
+        const usedTxt = tr.used === Infinity ? '∞' : P(tr.used);
+        stats($('track-stats'), [
+          ['Budget for the window', N(tr.budgetReq) + ' failed'],
+          ['Used so far', usedTxt, tr.used >= 1 ? 'warn' : ''],
+          ['Remaining', tr.remaining >= 0 ? N(tr.remaining) + ' failed' : 'over by ' + N(-tr.remaining), tr.remaining < 0 ? 'warn' : 'ok'],
+          ['Projected at window end', tr.projected === Infinity ? '∞' : P(tr.projected), bad ? 'warn' : 'ok'],
+        ]);
+        let text;
+        if (tr.status === 'exhausted') text = 'The budget is spent. The usual policy: freeze risky releases and put the next sprint into reliability until the window rolls over.';
+        else if (tr.status === 'at-risk') text = `On this pace the budget runs out around day ${Math.max(1, Math.ceil(tr.exhaustDay))} of ${r.windowDays}. Find what's failing now, while there's still room to ship the fix.`;
+        else text = `On track: about ${P(tr.projected)} of the budget used by the end of the window, leaving room for risky changes.`;
+        msg($('track-msg'), text, bad ? 'warn' : 'ok');
+      }
+
+      // 5. Snippets
+      $('k6-out').textContent = r.k6;
+      $('prom-out').textContent = r.prometheus;
+    }
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+    document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', async () => {
+      const text = $(btn.dataset.copy).textContent, label = btn.textContent;
+      try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied ✓'; }
+      catch (e) {
+        const sel = window.getSelection(), range = document.createRange();
+        range.selectNodeContents($(btn.dataset.copy)); sel.removeAllRanges(); sel.addRange(range);
+        btn.textContent = 'Press Ctrl+C';
+      }
+      setTimeout(() => { btn.textContent = label; }, 1800);
+    }));
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

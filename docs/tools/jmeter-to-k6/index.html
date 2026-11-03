@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter to k6 Converter — Pawan Sinha</title>
+  <meta name="description" content="Free JMeter to k6 converter. Upload a .jmx test plan and get a k6 script: thread groups, HTTP requests, headers, CSV data, extractors, assertions and controllers. Runs in your browser.">
+  <meta property="og:title" content="JMeter to k6 Converter — Pawan Sinha">
+  <meta property="og:description" content="Turn a JMeter .jmx test plan into a k6 script with scenarios, checks, extractors and thresholds. Free, and the file never leaves your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/jmeter-to-k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/jmeter-to-k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"JMeter to k6 converter","url":"https://pawansinha.com.au/tools/jmeter-to-k6/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .conv { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 190px; resize: vertical; display: block; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 640px; white-space: pre; tab-size: 2; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; margin-top: 4px; }
+    .opts fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .opts legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input[type=text], .field input[type=number] { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 6px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .model-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; grid-column: 1 / -1; }
+    .model-fields[hidden] { display: none; }
+    .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 18px; }
+    .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+    .checks input { margin-top: 4px; accent-color: var(--accent); }
+    .checks small { color: var(--muted); display: block; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .out-head button { font: inherit; cursor: pointer; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .drop { border: 2px dashed var(--border); border-radius: 12px; padding: 14px; text-align: center; color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+    .drop.over { border-color: var(--accent); color: var(--accent); background: var(--alt); }
+    .drop label { color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: underline; }
+    .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+    .summary span { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); color: var(--muted); }
+    .summary span b { color: var(--text); }
+    .summary span.todo { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+    .summary:empty { display: none; }
+    .msgs .msg { margin: 0; }
+    details.more-warn summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--warn); }
+    details.more-warn[open] summary { margin-bottom: 8px; }
+    details.more-warn .msgs { margin: 0; }
+    details.notes { margin: 0 0 12px; }
+    details.notes summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .support { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 24px; padding: 0; list-style: none; }
+    .support li { padding-left: 0 !important; }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources" aria-current="page">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · JMeter → k6 migration</p>
+      <h1>JMeter to k6 converter</h1>
+      <p class="lead">Drop in a JMeter test plan (.jmx) and get a k6 script you can run: thread groups become scenarios, and requests, headers, CSV data, extractors, assertions, timers and controllers carry over. Anything that needs a human is listed and marked TODO, so nothing disappears silently.</p>
+      <p class="private-note">🔒 Runs in your browser. Your test plan is never uploaded.</p>
+    </section>
+
+    <section class="wrap conv" aria-label="Converter">
+      <div class="panel">
+        <h2><label for="jmx-in">1. Add your JMeter test plan</label></h2>
+        <p class="sub">Choose the .jmx file, drag it here, or paste its contents. JMeter 3.x to 5.x plans work.</p>
+        <div class="drop" id="drop">Drag a .jmx file here or <label for="jmx-file">choose a file</label><input type="file" id="jmx-file" accept=".jmx,.xml,text/xml"></div>
+        <div class="examples">
+          <button class="chip-btn" type="button" id="example">Try an example plan</button>
+          <button class="chip-btn" type="button" id="clear">Clear</button>
+        </div>
+        <textarea id="jmx-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;jmeterTestPlan version=&quot;1.2&quot; ...&gt;"></textarea>
+      </div>
+
+      <div class="panel">
+        <h2>2. Options</h2>
+        <form id="opts" class="opts" onsubmit="return false">
+          <label class="field"><span>p95 response time limit (ms)</span><input type="number" name="p95" value="500" min="0" step="50"></label>
+          <label class="field"><span>Max error rate (%)</span><input type="number" name="errorRate" value="1" min="0" step="0.1"></label>
+          <label class="field"><span>Hold time for "loop forever" groups</span><input type="text" name="duration" value="10m"></label>
+          <div class="checks">
+            <label><input type="checkbox" name="statusCheck" checked><span>Check every response isn't an error<small>like JMeter, which marks 4xx/5xx as failed</small></span></label>
+            <label><input type="checkbox" name="baseUrl" checked><span>Use a BASE_URL variable<small>run the same script against any environment</small></span></label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" id="out-panel">
+        <div class="out-head">
+          <h2>3. Your k6 script</h2>
+          <div class="btns">
+            <button class="btn btn-small" type="button" id="copy" data-track="jmeter-to-k6-copy">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="download" data-track="jmeter-to-k6-download">Download script.js</button>
+          </div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <details class="notes" id="notes-box" hidden><summary id="notes-sum">Notes</summary><div class="msgs" id="notes"></div></details>
+        <pre class="code" id="out" tabindex="0" aria-label="Generated k6 script"><code>// Add a .jmx file above, or try the example.</code></pre>
+        <p class="run" id="run" hidden></p>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">What gets converted</p>
+      <h2>JMeter elements and their k6 equivalents</h2>
+      <ul class="support">
+        <li><strong>Thread Group</strong> → scenario (per-vu-iterations, ramping-vus or constant-vus)</li>
+        <li><strong>Concurrency / Arrivals Thread Group</strong> → ramping-vus / ramping-arrival-rate</li>
+        <li><strong>setUp / tearDown Thread Group</strong> → setup() / teardown()</li>
+        <li><strong>HTTP Request + Defaults</strong> → http.get / post / put / del with BASE_URL</li>
+        <li><strong>Header Manager</strong> → headers (with JMeter's scoping)</li>
+        <li><strong>User Defined Variables, ${__P()}</strong> → vars and __ENV</li>
+        <li><strong>CSV Data Set</strong> → SharedArray (one row per iteration)</li>
+        <li><strong>Regex, JSON, Boundary, CSS extractors</strong> → variables</li>
+        <li><strong>Response, Duration, Size, JSON assertions</strong> → check()</li>
+        <li><strong>Timers</strong> → sleep()</li>
+        <li><strong>Transaction Controller</strong> → group()</li>
+        <li><strong>Loop, If, Once Only, Random, Interleave, ForEach, Throughput</strong> → JavaScript</li>
+        <li><strong>Module Controller + Test Fragment</strong> → the fragment's steps, copied in</li>
+        <li><strong>Groovy If conditions</strong> (vars.get, equals, getIteration) → JavaScript</li>
+      </ul>
+      <h2 style="margin-top:32px">What still needs you</h2>
+      <ul>
+        <li><strong>Groovy and BeanShell scripts</strong> (JSR223 samplers and processors) can't be translated safely. Their code is copied into the script as a comment, marked TODO.</li>
+        <li><strong>Non-HTTP samplers</strong> (JDBC, JMS, FTP, LDAP) have no k6 core equivalent. Some have xk6 extensions.</li>
+        <li><strong>Listeners</strong> aren't needed: k6 prints a summary, and <code>--out</code> sends results to InfluxDB, Prometheus or a file.</li>
+        <li><strong>Embedded resources</strong> ("retrieve all embedded resources") aren't fetched. Add the asset requests you care about, or test the page with k6's browser module.</li>
+      </ul>
+      <h2 style="margin-top:32px">After converting</h2>
+      <ol>
+        <li><strong>Search the script for TODO</strong> and read the notes above the script.</li>
+        <li><strong>Put any CSV files next to script.js.</strong> The script names each one.</li>
+        <li><strong>Smoke test first:</strong> <code>k6 run --vus 1 --iterations 1 script.js</code>, then compare the requests with a JMeter run.</li>
+        <li><strong>Read the result.</strong> Paste k6's end-of-test summary into the <a href="/tools/k6-results/">k6 results explainer</a>.</li>
+      </ol>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/slo-calculator/">SLO calculator →</a>
+        <a href="/tools/">All calculators →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Moving a whole suite from JMeter to k6?</p>
+          <h3>I've migrated JMeter suites for banks and gaming platforms</h3>
+          <p>A converter gets you most of the way. The rest is reworking scripts, CI gates, test data and dashboards so the new suite earns trust. Book a free call and we'll plan the migration.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="jmeter-to-k6-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/shop/" data-track="jmeter-to-k6-kit">See the k6 starter kit</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script type="text/plain" id="example-jmx">
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Shop API example" enabled="true">
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="host" elementType="Argument">
+            <stringProp name="Argument.name">host</stringProp>
+            <stringProp name="Argument.value">${__P(host,shop.example.com)}</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="Defaults" enabled="true">
+        <stringProp name="HTTPSampler.domain">${host}</stringProp>
+        <stringProp name="HTTPSampler.port" />
+        <stringProp name="HTTPSampler.protocol">https</stringProp>
+      </ConfigTestElement>
+      <hashTree />
+      <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+        <collectionProp name="HeaderManager.headers">
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">Accept</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
+          </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">X-Client</stringProp>
+            <stringProp name="Header.value">jmeter-plan</stringProp>
+          </elementProp>
+        </collectionProp>
+      </HeaderManager>
+      <hashTree />
+      <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="Cookies" enabled="true">
+        <boolProp name="CookieManager.clearEachIteration">true</boolProp>
+      </CookieManager>
+      <hashTree />
+      <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Users" enabled="true">
+        <stringProp name="filename">${__P(dir,data)}/users.csv</stringProp>
+        <stringProp name="variableNames" />
+        <boolProp name="ignoreFirstLine">false</boolProp>
+        <stringProp name="delimiter">,</stringProp>
+        <stringProp name="shareMode">shareMode.all</stringProp>
+        <boolProp name="recycle">true</boolProp>
+        <boolProp name="quotedData">true</boolProp>
+      </CSVDataSet>
+      <hashTree />
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true" />
+      <hashTree />
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp" enabled="true">
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">0</stringProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Health" enabled="true">
+          <stringProp name="HTTPSampler.path">/health</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree />
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Shoppers" enabled="true">
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">3</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think" enabled="true">
+          <stringProp name="ConstantTimer.delay">50</stringProp>
+        </ConstantTimer>
+        <hashTree />
+        <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="qty" enabled="true">
+          <stringProp name="variableName">qty</stringProp>
+          <stringProp name="minimumValue">1</stringProp>
+          <stringProp name="maximumValue">5</stringProp>
+        </RandomVariableConfig>
+        <hashTree />
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="01 Login" enabled="true">
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login" enabled="true">
+            <stringProp name="HTTPSampler.path">/api/login</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">{"user":"${username}","pass":"${password}","rid":"${__UUID()}","n":${__Random(1,9)}}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="json" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree />
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">token;userId;missing</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.token;$.user.id;$.nope</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers">1;1;1</stringProp>
+              <stringProp name="JSONPostProcessor.defaultValues">;;DEF</stringProp>
+            </JSONPostProcessor>
+            <hashTree />
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="0">"token"\s*:</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">2</intProp>
+            </ResponseAssertion>
+            <hashTree />
+            <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="JSON Assertion" enabled="true">
+              <stringProp name="JSON_PATH">$.user.roles[*]</stringProp>
+              <stringProp name="EXPECTED_VALUE">shopper</stringProp>
+              <boolProp name="JSONVALIDATION">true</boolProp>
+              <boolProp name="EXPECT_NULL">false</boolProp>
+              <boolProp name="INVERT">false</boolProp>
+              <boolProp name="ISREGEX">false</boolProp>
+            </JSONPathAssertion>
+            <hashTree />
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration Assertion" enabled="true">
+              <stringProp name="DurationAssertion.duration">2000</stringProp>
+            </DurationAssertion>
+            <hashTree />
+          </hashTree>
+        </hashTree>
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="02 Browse" enabled="true">
+          <boolProp name="TransactionController.includeTimers">false</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Items page" enabled="true">
+            <stringProp name="HTTPSampler.path">/items</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="page" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">1</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">page</stringProp>
+                </elementProp>
+                <elementProp name="q" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">red shoes &amp; more</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">q</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Regex" enabled="true">
+              <stringProp name="RegexExtractor.useHeaders">false</stringProp>
+              <stringProp name="RegexExtractor.refname">itemId</stringProp>
+              <stringProp name="RegexExtractor.regex">href="/items/(\d+)"</stringProp>
+              <stringProp name="RegexExtractor.template">$1$</stringProp>
+              <stringProp name="RegexExtractor.default">NONE</stringProp>
+              <stringProp name="RegexExtractor.match_number">-1</stringProp>
+            </RegexExtractor>
+            <hashTree />
+            <HtmlExtractor guiclass="HtmlExtractorGui" testclass="HtmlExtractor" testname="CSS" enabled="true">
+              <stringProp name="HtmlExtractor.refname">csrf</stringProp>
+              <stringProp name="HtmlExtractor.expr">input[name=csrf]</stringProp>
+              <stringProp name="HtmlExtractor.attribute">value</stringProp>
+              <stringProp name="HtmlExtractor.default">NOTFOUND</stringProp>
+              <stringProp name="HtmlExtractor.match_number">1</stringProp>
+            </HtmlExtractor>
+            <hashTree />
+            <BoundaryExtractor guiclass="BoundaryExtractorGui" testclass="BoundaryExtractor" testname="Boundary" enabled="true">
+              <stringProp name="BoundaryExtractor.useHeaders">false</stringProp>
+              <stringProp name="BoundaryExtractor.refname">title</stringProp>
+              <stringProp name="BoundaryExtractor.lboundary">&lt;h1&gt;</stringProp>
+              <stringProp name="BoundaryExtractor.rboundary">&lt;/h1&gt;</stringProp>
+              <stringProp name="BoundaryExtractor.default">NB</stringProp>
+              <stringProp name="BoundaryExtractor.match_number">1</stringProp>
+            </BoundaryExtractor>
+            <hashTree />
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="0">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree />
+          </hashTree>
+          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="Each item" enabled="true">
+            <stringProp name="ForeachController.inputVal">itemId</stringProp>
+            <stringProp name="ForeachController.returnVal">oneItem</stringProp>
+            <boolProp name="ForeachController.useSeparator">true</boolProp>
+          </ForeachController>
+          <hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Item detail" enabled="true">
+              <stringProp name="HTTPSampler.path">/api/items/${oneItem}</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="auth" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">Authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${token}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree />
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="(?i) check" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="0">(?i).*"ID"\s*:\s*\d+.*</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+                <intProp name="Assertion.test_type">1</intProp>
+              </ResponseAssertion>
+              <hashTree />
+            </hashTree>
+          </hashTree>
+        </hashTree>
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="Only with csrf" enabled="true">
+          <stringProp name="IfController.condition">${__jexl3("${csrf}" != "NOTFOUND")}</stringProp>
+          <boolProp name="IfController.useExpression">true</boolProp>
+        </IfController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Add to cart" enabled="true">
+            <stringProp name="HTTPSampler.path">/cart</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="csrf" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${csrf}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">csrf</stringProp>
+                </elementProp>
+                <elementProp name="item" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${itemId_1}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">item</stringProp>
+                </elementProp>
+                <elementProp name="qty" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">${qty}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">qty</stringProp>
+                </elementProp>
+                <elementProp name="note" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">gift wrap</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">note</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Created" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="0">201</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">true</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree />
+          </hashTree>
+        </hashTree>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once" enabled="true" />
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Profile" enabled="true">
+            <stringProp name="HTTPSampler.path">/api/profile?u=${userId}</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="auth2" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Authorization</stringProp>
+                  <stringProp name="Header.value">Bearer ${token}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree />
+          </hashTree>
+        </hashTree>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Twice" enabled="true">
+          <stringProp name="LoopController.loops">2</stringProp>
+        </LoopController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Ping" enabled="true">
+            <stringProp name="HTTPSampler.path">/ping</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          </HTTPSamplerProxy>
+          <hashTree />
+        </hashTree>
+        <RandomController guiclass="RandomControlGui" testclass="RandomController" testname="Pick one" enabled="true" />
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="A" enabled="true">
+            <stringProp name="HTTPSampler.path">/a</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          </HTTPSamplerProxy>
+          <hashTree />
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="B" enabled="true">
+            <stringProp name="HTTPSampler.path">/b</stringProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          </HTTPSamplerProxy>
+          <hashTree />
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Disabled" enabled="false">
+          <stringProp name="HTTPSampler.path">/never</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree />
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Logout" enabled="true">
+          <stringProp name="HTTPSampler.path">/api/session</stringProp>
+          <stringProp name="HTTPSampler.method">DELETE</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="not error" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="0">error</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">20</intProp>
+          </ResponseAssertion>
+          <hashTree />
+        </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
+</script>
+  <script src="/tools/jmeter-to-k6/convert.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const input = $('jmx-in'), form = $('opts'), out = $('out'), msgs = $('msgs'), run = $('run');
+    const notes = $('notes'), notesBox = $('notes-box'), summary = $('summary');
+    const STORE = 'jmeter-to-k6-options';
+    let script = '', fileName = 'script.js';
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) for (const [k, v] of Object.entries(saved)) {
+        const el = form.elements[k];
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+      }
+    } catch (e) {}
+    function options() {
+      const f = form.elements;
+      return { p95: f.p95.value, errorRate: f.errorRate.value, duration: f.duration.value.trim() || '10m',
+        statusCheck: f.statusCheck.checked, baseUrl: f.baseUrl.checked };
+    }
+    function msg(box, cls, text) {
+      const p = document.createElement('p');
+      p.className = 'msg ' + cls;
+      p.textContent = text;
+      box.appendChild(p);
+    }
+    function pill(text, n, cls) {
+      const s = document.createElement('span');
+      if (cls) s.className = cls;
+      const b = document.createElement('b'); b.textContent = n;
+      s.append(b, ' ' + text);
+      summary.appendChild(s);
+    }
+    function update() {
+      const o = options();
+      try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+      msgs.textContent = ''; notes.textContent = ''; summary.textContent = '';
+      notesBox.hidden = true; run.hidden = true;
+      if (!/^\s*\d+(\.\d+)?(ms|s|m|h)(\d+(\.\d+)?(ms|s|m|h))*\s*$/.test(o.duration)) msg(msgs, 'warn', 'Hold time should look like 30s, 10m or 1h30m.');
+      if (!input.value.trim()) { script = ''; out.firstChild.textContent = '// Add a .jmx file above, or try the example.'; return; }
+      let r;
+      try { r = JmxToK6.convert(input.value, o); }
+      catch (e) { r = { error: 'Something went wrong while converting: ' + e.message + '. Email the file to hello@pawansinha.com.au and I\'ll take a look.' }; }
+      if (r.error) { script = ''; msg(msgs, 'err', r.error); out.firstChild.textContent = '// ' + r.error; return; }
+      script = r.script;
+      out.firstChild.textContent = script;
+      const st = r.stats;
+      pill(st.requests === 1 ? 'request' : 'requests', st.requests);
+      pill(st.checks === 1 ? 'check' : 'checks', st.checks);
+      pill(st.extractors === 1 ? 'extractor' : 'extractors', st.extractors);
+      if (st.threadGroups > 1) pill('thread groups', st.threadGroups);
+      if (st.todo) pill('to do by hand', st.todo, 'todo');
+      // Many warnings: show the first three, fold the rest so the script stays in view.
+      r.warnings.slice(0, r.warnings.length > 4 ? 3 : 4).forEach(w => msg(msgs, 'warn', '⚠️ ' + w));
+      if (r.warnings.length > 4) {
+        const more = document.createElement('details'); more.className = 'more-warn';
+        const sm = document.createElement('summary'); sm.textContent = (r.warnings.length - 3) + ' more things to check';
+        const box = document.createElement('div'); box.className = 'msgs';
+        more.append(sm, box);
+        r.warnings.slice(3).forEach(w => msg(box, 'warn', '⚠️ ' + w));
+        msgs.appendChild(more);
+      }
+      if (r.infos.length) {
+        notesBox.hidden = false;
+        $('notes-sum').textContent = r.infos.length + (r.infos.length === 1 ? ' note' : ' notes') + ' on how k6 differs';
+        r.infos.forEach(w => msg(notes, 'info', w));
+      }
+      const env = (r.envVars || []).slice(0, 4).map(e => ` -e ${e}=…`).join('');
+      run.innerHTML = '';
+      run.append('Run it: ');
+      const code = document.createElement('code');
+      code.textContent = `k6 run${env} script.js`;
+      run.append(code);
+      if (st.csvFiles.length) run.append(' (with ' + st.csvFiles.join(', ') + ' in the same folder)');
+      run.hidden = false;
+    }
+
+    let timer;
+    const later = () => { clearTimeout(timer); timer = setTimeout(update, 200); };
+    input.addEventListener('input', later);
+    form.addEventListener('input', later);
+    form.addEventListener('change', update);
+
+    function readFile(file) {
+      if (!file) return;
+      if (file.size > 20 * 1024 * 1024) { msgs.textContent = ''; msg(msgs, 'err', 'That file is over 20 MB. Is it a .jmx test plan?'); return; }
+      const fr = new FileReader();
+      fr.onload = () => {
+        input.value = String(fr.result);
+        fileName = file.name.replace(/\.(jmx|xml)$/i, '') + '.js';
+        update();
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'jmeter-to-k6-file', title: 'jmeter-to-k6-file', event: true });
+      };
+      fr.readAsText(file);
+    }
+    $('jmx-file').addEventListener('change', e => readFile(e.target.files[0]));
+    const drop = $('drop');
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
+
+    $('example').addEventListener('click', () => {
+      input.value = $('example-jmx').textContent.trim();
+      fileName = 'shop-api.js';
+      update();
+      if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'jmeter-to-k6-example', title: 'jmeter-to-k6-example', event: true });
+    });
+    $('clear').addEventListener('click', () => { input.value = ''; fileName = 'script.js'; $('jmx-file').value = ''; update(); input.focus(); });
+
+    $('copy').addEventListener('click', async () => {
+      if (!script) return;
+      const b = $('copy');
+      try { await navigator.clipboard.writeText(script); b.textContent = 'Copied ✓'; }
+      catch (e) {
+        const range = document.createRange(); range.selectNodeContents(out);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        b.textContent = 'Press Ctrl/⌘+C';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+    $('download').addEventListener('click', () => {
+      if (!script) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

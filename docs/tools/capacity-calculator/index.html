@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Load Test Capacity Calculator — Pawan Sinha</title>
+  <meta name="description" content="Free load test capacity calculator. Work out virtual users with Little's Law, turn daily orders into peak requests per second, cores, pods and database connections, and get a k6 scenario sized for your peak.">
+  <meta property="og:title" content="Load Test Capacity Calculator — Pawan Sinha">
+  <meta property="og:description" content="How many virtual users do you need, and how many pods, cores and DB connections will your peak take? Little's Law, peak-hour factor and headroom in one page.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/capacity-calculator/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/capacity-calculator/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Load test capacity calculator","url":"https://pawansinha.com.au/tools/capacity-calculator/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How many virtual users do I need for a load test?","acceptedAnswer":{"@type":"Answer","text":"Use Little's Law: users = throughput × (response time + think time). 50 iterations a second that take 0.8 s plus 5 s of think time need 290 virtual users. An arrival-rate test fixes the throughput instead, so you only size for the time requests are in flight."}},
+    {"@type":"Question","name":"How do I turn daily traffic into peak requests per second?","acceptedAnswer":{"@type":"Answer","text":"Multiply the daily volume by the share that lands in the busiest hour, divide by 3,600, then multiply by a burst factor for the busiest minute and by the number of API calls each user action makes."}},
+    {"@type":"Question","name":"How much headroom should a load test prove?","acceptedAnswer":{"@type":"Answer","text":"Test at least 1.5 to 2 times the forecast peak, and plan for CPU around 60 to 70% at peak, because queueing makes latency climb steeply above that."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .calc { max-width: 1000px; padding: 24px 16px 0; }
+    .calc h2 { font-size: clamp(22px, 3vw, 28px); margin: 8px 0 6px; }
+    .calc > p { color: var(--muted); margin: 0; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; }
+    .steps li { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; font-size: 14px; color: var(--muted); }
+    .steps b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide li { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .formula { font: 500 14px/1.6 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; overflow-x: auto; white-space: pre; }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 600px) { .project-hero { padding-top: 40px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources" aria-current="page">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · Capacity planning</p>
+      <h1>Load test capacity calculator</h1>
+      <p class="lead">Two questions every load test starts with: how many virtual users do I need, and what will the peak actually cost in requests, cores, pods and database connections? Answer both here, then copy a k6 scenario sized for it.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you type is sent anywhere.</p>
+      <ol class="steps">
+        <li><b>1. Forecast the peak</b>Daily volume → busiest hour → busiest minute.</li>
+        <li><b>2. Size the infrastructure</b>Requests per second → cores, pods, DB connections.</li>
+        <li><b>3. Size the test</b>Throughput → virtual users and a k6 scenario.</li>
+      </ol>
+    </section>
+
+    <section class="wrap calc" id="capacity">
+      <p class="eyebrow">Step 1 and 2</p>
+      <h2>From business forecast to requests, pods and connections</h2>
+      <p>Start with orders (or sign-ins, searches, payments) per day. Replace the CPU cost with a number measured in a load test as soon as you have one.</p>
+      <div class="widget" data-widget="capacity"><p><em>This calculator needs JavaScript.</em></p></div>
+    </section>
+
+    <section class="wrap calc" id="virtual-users">
+      <p class="eyebrow">Step 3</p>
+      <h2>How many virtual users do I need?</h2>
+      <p>Take the peak from step 1 as the target throughput. The calculator applies Little's Law and writes the k6 arrival-rate scenario for you.</p>
+      <div class="widget" data-widget="vusers"><p><em>This calculator needs JavaScript.</em></p></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>The four numbers behind any capacity plan</h2>
+      <h3>1. Little's Law</h3>
+      <p>The number of users in a system equals how fast they arrive times how long each one stays:</p>
+      <div class="formula">virtual users = throughput × (response time + think time)
+50 iterations/s × (0.8 s + 5 s) = 290 users</div>
+      <p>That's for a <strong>closed</strong> model (a fixed pool of users with think time). An <strong>arrival-rate</strong> test (k6's <code>constant-arrival-rate</code>) fixes the throughput instead, so it keeps the pressure on when the system slows down, which is what real traffic does.</p>
+      <h3>2. Peak-hour factor</h3>
+      <p>Traffic is never spread evenly. Retail often sees <strong>15–30%</strong> of a day's orders in the busiest hour, and the busiest minute inside that hour runs another <strong>2–3×</strong> above the hour's average. Size for the peak minute, not the daily average: averages are how systems pass a test and fall over at 8pm.</p>
+      <h3>3. Headroom</h3>
+      <p>Plan for CPU around <strong>60–70%</strong> at peak. Above that, queueing makes response times climb steeply, and you need spare capacity for a node failing or a deploy rolling pods. Then prove it: run the load test at <strong>1.5–2×</strong> the forecast peak.</p>
+      <h3>4. The event multiplier</h3>
+      <p>Black Friday, a ticket release or a TV ad isn't a busier normal day. Peaks of <strong>3–10×</strong> normal traffic are common, they arrive in minutes, and they hit the paths that are hardest to scale: search, cart, checkout and payment. Multiply orders per day by your expected uplift and check the database connection line first, because it's usually the first limit you hit.</p>
+
+      <h2 style="margin-top:36px">FAQ</h2>
+      <h3>Should I use virtual users or arrival rate?</h3>
+      <p>Arrival rate for anything that models real users hitting a website or API: they don't wait for your server before clicking. Virtual users suit fixed-size client pools, like batch workers or a mobile app with a known number of connected devices.</p>
+      <h3>Where do I get the CPU cost per request?</h3>
+      <p>From a short load test: CPU seconds used divided by requests served, at a steady rate. Until then the default of 15 ms is a reasonable guess for a typical JSON API.</p>
+      <h3>Why does the database connection count matter so much?</h3>
+      <p>Every pod opens its own pool. Scale out from 10 to 40 pods and the database suddenly sees four times the connections, and many managed databases cap them in the low hundreds. Autoscaling the app can take the database down.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/slo-calculator/">SLO &amp; error budget calculator →</a>
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz →</a>
+        <a href="/tools/">All calculators →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Big event coming up?</p>
+          <h3>Get a capacity plan from your real traffic</h3>
+          <p>Calculators give you the shape. A workload model from your own logs, a load test that proves it and a clear go/no-go give you the answer. Or start with the k6 starter kit, A$49, one-off.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="capacity-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="capacity-peak">Peak-readiness test</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/widgets.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

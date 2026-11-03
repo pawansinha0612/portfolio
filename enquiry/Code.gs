@@ -26,6 +26,8 @@
  *   saves the lead to the "Quiz" tab, emails the visitor their report and emails you the lead.
  * k6 in 7 days email course (docs/course/k6/): form=course saves to the "Course" tab and sends lesson 1;
  *   sendCourseLessons() runs every morning and sends each student their next lesson until day 7.
+ * Job alerts (docs/jobs/, page built by jobs/build.py): form=jobs saves to the "Job alerts" tab and sends the current matching
+ *   roles; sendJobAlerts() runs every morning and emails only roles new since each person's last alert (daily, or Mondays).
  * AI interview practice (docs/interview-prep/practice/): form=practice scores an answer with AI.
  *   Script Property GEMINI_API_KEY (fast, free, from aistudio.google.com) is used first; AI_API_KEY (NVIDIA, free
  *   but often slow) is the fallback. With neither key the AI part stays hidden (Project Settings → Script properties).
@@ -73,8 +75,10 @@ function setup() {
   quizSheet();
   courseSheet();
   practiceSheet();
+  jobsSheet();
   installWeeklyDigest();
   installCourseLessons();
+  installJobAlerts();
 }
 
 function subscriberSheet() {
@@ -151,6 +155,7 @@ function doPost(e) {
   if (p.form === 'quiz') return saveQuiz(p);
   if (p.form === 'course') return saveCourse(p);
   if (p.form === 'practice') return practiceFeedback(p);
+  if (p.form === 'jobs') return saveJobAlert(p);
   return p.form === 'testimonial' ? saveTestimonial(p) : saveEnquiry(p);
 }
 
@@ -294,8 +299,8 @@ function unsubscribeFooter(token) {
 }
 
 function unsubscribePage(token) {
-  // The same link format serves the weekly digest (Subscribers tab) and the email course (Course tab).
-  const lists = [[SUBSCRIBER_SHEET, SUBSCRIBER_HEADERS], [COURSE_SHEET, COURSE_HEADERS]];
+  // The same link format serves the weekly digest (Subscribers tab), the email course (Course tab) and job alerts.
+  const lists = [[SUBSCRIBER_SHEET, SUBSCRIBER_HEADERS], [COURSE_SHEET, COURSE_HEADERS], [JOBS_SHEET, JOBS_HEADERS]];
   let done = false;
   lists.forEach(([name, headers]) => {
     const sh = SpreadsheetApp.getActive().getSheetByName(name);
@@ -568,7 +573,7 @@ function json(obj) {
 // What this deployed version can do. Pages check GET ?view=features and only show a form that is listed,
 // so nothing appears on the site before this code is deployed (and practice stays hidden without an AI key).
 function features() {
-  const list = ['subscribe', 'quiz', 'course'];
+  const list = ['subscribe', 'quiz', 'course', 'jobs'];
   if (aiKey()) list.push('practice');
   return list;
 }
@@ -1077,4 +1082,183 @@ function testPractice() {
     'Because the average hides the slow requests. If most are fast and a few are very slow the average still looks fine, but p95 tells you what 95 percent of users get.');
   console.log((geminiKey() ? 'Using Gemini. ' : nvidiaKey() ? 'Using NVIDIA (slow): add GEMINI_API_KEY for fast answers. ' : 'No AI key set. ') +
     (r ? JSON.stringify(r) : 'No answer: check the key and the log above.'));
+}
+
+// =====================================================================================================
+// Job alerts (added 2026-11-03): docs/jobs/ signup → "Job alerts" tab; sendJobAlerts() runs every morning.
+// The jobs come from the public jobs page's own data file, jobs.json, rebuilt each morning by jobs/build.py.
+// =====================================================================================================
+const JOBS_SHEET = 'Job alerts';
+const JOBS_HEADERS = ['subscribed', 'email', 'where', 'roles', 'how often', 'status', 'token', 'last sent', 'sent count', 'page', 'unsubscribed'];
+const JOBS_URL = SITE_URL + '/jobs/jobs.json';
+const JOBS_WHERE = { australia: 'Australia / APAC', 'australia+remote': 'Australia / APAC and remote', all: 'Anywhere' };
+const JOBS_ROLES = { perf: 'Performance testing', qa: 'QA automation', all: 'Performance and QA automation' };
+const JOBS_OFTEN = { daily: 'Daily', weekly: 'Weekly (Mondays)' };
+const JOBS_MAX_IN_EMAIL = 15;
+const JOBS_QUOTA_RESERVE = 15;  // emails kept back each day for enquiries, quiz reports and course lessons
+
+function jobsSheet() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(JOBS_SHEET);
+  if (sh) return sh;
+  const created = sheetWithHeaders(JOBS_SHEET, JOBS_HEADERS);
+  dropdown(created, JOBS_HEADERS.indexOf('status') + 1, ['Active', 'Unsubscribed']);
+  return created;
+}
+
+// Sends alerts every morning at 10am Melbourne (the jobs page rebuilds around 8am). Safe to run again.
+function installJobAlerts() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'sendJobAlerts')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('sendJobAlerts').timeBased().everyDays(1).atHour(10).inTimezone('Australia/Melbourne').create();
+}
+
+// The jobs page's data: { updated, jobs: [{ title, company, location, url, source, id, group, region, first_seen }] }.
+function jobsData() {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('jobs-json');
+  if (hit) return JSON.parse(hit);
+  const r = UrlFetchApp.fetch(JOBS_URL, { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('jobs.json returned ' + r.getResponseCode());
+  const text = r.getContentText();
+  const data = JSON.parse(text);
+  if (!data || !Array.isArray(data.jobs)) throw new Error('jobs.json has no jobs list');
+  try { cache.put('jobs-json', text, 1800); } catch (err) {}  // over the 100 KB cache limit: just fetch next time
+  return data;
+}
+
+function pick(value, allowed, fallback) {
+  return Object.prototype.hasOwnProperty.call(allowed, value) ? value : fallback;
+}
+
+// Jobs matching a subscriber's choices, newest first. since = ISO time: only jobs first seen after it.
+function matchingJobs(jobs, where, roles, since) {
+  return jobs.filter(j => {
+    if (roles !== 'all' && j.group !== roles) return false;
+    if (where === 'australia' && j.region !== 'australia') return false;
+    if (where === 'australia+remote' && j.region !== 'australia' && j.region !== 'remote') return false;
+    if (since && !(String(j.first_seen || j.posted || '') > since)) return false;
+    return /^https?:\/\//.test(String(j.url || ''));
+  }).sort((a, b) => String(b.first_seen || '').localeCompare(String(a.first_seen || '')));
+}
+
+function isoOf(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v) ? '' : v.toISOString();  // a Date the sheet gave back
+  return String(v || '');
+}
+
+function saveJobAlert(p) {
+  const email = String(p.email || '').trim().toLowerCase().slice(0, 200);
+  if (!EMAIL_RE.test(email)) return json({ ok: false, error: 'Please enter a valid email address.' });
+  const where = pick(p.where, JOBS_WHERE, 'australia+remote');
+  const roles = pick(p.roles, JOBS_ROLES, 'all');
+  const often = pick(p.often, JOBS_OFTEN, 'weekly');
+  if (isRepeat('jobs', email)) return json({ ok: true });
+
+  const sh = jobsSheet();
+  const col = h => JOBS_HEADERS.indexOf(h);
+  const rows = sh.getDataRange().getValues();
+  const i = rows.findIndex((r, n) => n > 0 && String(r[col('email')]).toLowerCase() === email);
+  const now = new Date().toISOString();
+  if (i > 0 && rows[i][col('status')] === 'Active') {
+    // Already subscribed: just save the new choices, no second welcome email.
+    sh.getRange(i + 1, col('where') + 1, 1, 3).setValues([[where, roles, often]]);
+    return json({ ok: true, updated: true });
+  }
+  const token = (i > 0 && rows[i][col('token')]) || Utilities.getUuid();
+  const row = [new Date(), email, where, roles, often, 'Active', token, now, 0, safe(String(p.page || '').slice(0, 300)), ''];
+  if (i > 0) sh.getRange(i + 1, 1, 1, JOBS_HEADERS.length).setValues([row]);
+  else appendRow(JOBS_SHEET, row);
+
+  let jobs = [];
+  try { jobs = matchingJobs(jobsData().jobs, where, roles, ''); } catch (err) { console.warn('Job alert welcome without jobs: ' + err); }
+  sendJobsEmail(email, jobs, { where: where, roles: roles, often: often }, token, true, '');
+  return json({ ok: true });
+}
+
+// Runs every morning (see installJobAlerts). Daily subscribers get the jobs first seen since their last email;
+// weekly subscribers the same on Mondays. Nothing new = no email. If Google's daily email limit runs low, the
+// rest are left for tomorrow: their "last sent" doesn't move, so they lose nothing.
+function sendJobAlerts() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(JOBS_SHEET);
+  if (!sh) return;
+  const jobs = jobsData().jobs;
+  const col = h => JOBS_HEADERS.indexOf(h);
+  const rows = sh.getDataRange().getValues();
+  const monday = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'u') === '1';
+  const now = new Date().toISOString();
+  let sent = 0, waiting = 0;
+  for (let n = 1; n < rows.length; n++) {
+    const r = rows[n];
+    if (r[col('status')] !== 'Active' || !EMAIL_RE.test(String(r[col('email')]))) continue;
+    const often = pick(r[col('how often')], JOBS_OFTEN, 'weekly');
+    if (often === 'weekly' && !monday) continue;
+    const where = pick(r[col('where')], JOBS_WHERE, 'australia+remote');
+    const roles = pick(r[col('roles')], JOBS_ROLES, 'all');
+    const fresh = matchingJobs(jobs, where, roles, isoOf(r[col('last sent')]));
+    if (!fresh.length) continue;
+    if (MailApp.getRemainingDailyQuota() <= JOBS_QUOTA_RESERVE) { waiting++; continue; }
+    sendJobsEmail(String(r[col('email')]), fresh, { where: where, roles: roles, often: often }, r[col('token')], false, '');
+    sh.getRange(n + 1, col('last sent') + 1, 1, 2).setValues([[now, (Number(r[col('sent count')]) || 0) + 1]]);
+    sent++;
+  }
+  console.log('Job alerts: sent ' + sent + (waiting ? ', ' + waiting + ' waiting for tomorrow (daily email limit)' : ''));
+  if (waiting) {
+    MailApp.sendEmail({ to: OWNER_EMAIL, subject: 'Job alerts: daily email limit reached',
+      body: 'Sent ' + sent + ' job alerts; ' + waiting + ' are waiting and will go out tomorrow automatically (nothing is lost). ' +
+        'If this happens most days, the list has outgrown the free Gmail limit: see OPERATIONS.md → Job alerts.' });
+  }
+}
+
+function sendJobsEmail(to, jobs, prefs, token, welcome, prefix) {
+  const E = EMAIL;
+  const shown = jobs.slice(0, JOBS_MAX_IN_EMAIL);
+  const more = jobs.length - shown.length;
+  const choice = JOBS_ROLES[prefs.roles] + ' · ' + JOBS_WHERE[prefs.where] + ' · ' + JOBS_OFTEN[prefs.often];
+  const jobsUrl = SITE_URL + '/jobs/';
+  const card = j =>
+    '<a href="' + esc(j.url) + '" style="display:block;text-decoration:none;color:' + E.text + ';border:1px solid ' + E.border + ';border-radius:12px;padding:12px 14px;margin:0 0 10px">' +
+    '<span style="display:block;font-size:16px;font-weight:700;line-height:1.35">' + esc(shorten(String(j.title || ''), 120)) + '</span>' +
+    '<span style="display:block;font-size:14px;color:' + E.muted + ';margin-top:3px">' + esc(String(j.company || '')) +
+    (j.location ? ' · ' + esc(shorten(String(j.location), 60)) : '') + ' · via ' + esc(String(j.source || '')) + '</span></a>';
+  const list = shown.length
+    ? shown.map(card).join('') + (more > 0 ? '<p style="margin:4px 0 0;font-size:14px;color:' + E.muted + '">+' + more + ' more on the jobs page.</p>' : '')
+    : '<p style="margin:0 0 12px;font-size:15px;line-height:1.6">No roles match right now. New ones are added every morning, and you\'ll get an email as soon as one turns up.</p>';
+  const body = list +
+    '<p style="margin:18px 0 0"><a href="' + jobsUrl + '" style="display:inline-block;background:' + E.accent + ';color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:11px 20px;border-radius:10px">See all jobs</a></p>' +
+    '<div style="margin:22px 0 0;padding:16px 18px;border-radius:14px;background:#eef3ff">' +
+    '<p style="margin:0 0 4px;font-size:15px;font-weight:700">Got an interview coming up?</p>' +
+    '<p style="margin:0;font-size:15px;line-height:1.6">Practise with <a href="' + SITE_URL + '/interview-prep/performance-testing/" style="color:' + E.accent + '">model answers</a> or get your answer scored by <a href="' + SITE_URL + '/interview-prep/practice/" style="color:' + E.accent + '">AI interview practice</a>, both free.</p></div>' +
+    '<p style="margin:16px 0 0;font-size:13px;color:' + E.muted + '">Your alert: ' + esc(choice) + '. To change it, sign up again on the <a href="' + jobsUrl + '#alerts" style="color:' + E.muted + '">jobs page</a> with the same email.</p>';
+  const n = jobs.length;
+  const heading = welcome
+    ? "Job alerts are on 🔔"
+    : n + ' new ' + (n === 1 ? 'role' : 'roles') + ' for you';
+  const intro = welcome
+    ? (n ? "Here's what's open right now. From now on you'll get only the new ones, " + (prefs.often === 'daily' ? 'each morning' : 'every Monday') + ', and no email when nothing new turns up.'
+         : "You'll get an email " + (prefs.often === 'daily' ? 'each morning' : 'on Mondays') + ' when new matching roles appear.')
+    : 'Roles added to the jobs page since your last alert. Always check the details and work rights on the original posting.';
+  const html = emailShell({
+    preheader: shown.slice(0, 3).map(j => j.title).join(' · ') || 'Job alerts are on',
+    eyebrow: 'Testing jobs · ' + JOBS_ROLES[prefs.roles],
+    heading: heading,
+    intro: intro,
+    body: body,
+    token: token,
+    reason: "You're getting this because you turned on job alerts at pawansinha.com.au/jobs/.",
+  });
+  const text = heading + '\n\n' + intro + '\n\n' +
+    shown.map(j => '- ' + j.title + ' · ' + j.company + (j.location ? ' · ' + j.location : '') + '\n  ' + j.url).join('\n\n') +
+    (more > 0 ? '\n\n+' + more + ' more: ' + jobsUrl : '') + '\n\nAll jobs: ' + jobsUrl + '\nYour alert: ' + choice +
+    '\n\n' + signature() + "\n\nYou're getting this because you turned on job alerts at pawansinha.com.au/jobs/.\n" +
+    'Unsubscribe with one click: ' + WEB_APP_URL + '?unsubscribe=' + encodeURIComponent(token);
+  const subject = welcome ? 'Job alerts are on: ' + (n ? n + ' open roles to start' : "you'll hear when roles appear")
+    : n + ' new ' + (n === 1 ? 'role' : 'roles') + ': ' + shorten(String(shown[0].title || ''), 60) + (n > 1 ? ' and more' : '');
+  MailApp.sendEmail({ to: to, name: MY_NAME, replyTo: OWNER_EMAIL, subject: (prefix || '') + subject, body: text, htmlBody: html });
+}
+
+// Emails you a job alert as a subscriber sees it (the 5 newest Australia + remote roles).
+function previewJobAlert() {
+  const jobs = matchingJobs(jobsData().jobs, 'australia+remote', 'all', '').slice(0, 5);
+  sendJobsEmail(OWNER_EMAIL, jobs, { where: 'australia+remote', roles: 'all', often: 'daily' }, 'preview', false, '[Preview] ');
 }

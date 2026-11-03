@@ -58,11 +58,30 @@
     .jobs-note { color: var(--muted); font-size: 14px; margin: 18px 0 0; }
     .jobs-end { max-width: 860px; padding: 32px 16px 72px; display: flex; flex-direction: column; gap: 16px; }
     .jobs-end .offer { margin: 0; }
+    .alert-link { display: inline-flex; gap: 6px; align-items: center; margin: 14px 0 0; font-weight: 600; font-size: 15px; }
+    .alerts { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow); scroll-margin-top: 90px; }
+    .alerts h2 { margin: 0 0 6px; font-size: 21px; }
+    .alerts > p { margin: 0 0 14px; color: var(--muted); font-size: 15px; }
+    .alerts form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+    .alerts form[hidden] { display: none; }
+    .alerts label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; min-width: 0; }
+    .alerts input, .alerts select { width: 100%; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+    .alerts input:focus-visible, .alerts select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .alerts .wide { grid-column: 1 / -1; }
+    .alerts button { font: inherit; font-weight: 600; cursor: pointer; grid-column: 1 / -1; justify-self: start; }
+    .alerts button:disabled { opacity: .6; cursor: progress; }
+    .alerts .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .alerts .status { margin: 0; font-size: 15px; color: var(--muted); grid-column: 1 / -1; }
+    .alerts .status:empty { display: none; }
+    .alerts .fine { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
     @media (max-width: 600px) {
       .project-hero { padding-top: 40px; }
       .job { padding: 12px 14px; }
       .job-side { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; flex-basis: 100%; }
       .job-when { text-align: left; }
+      .alerts { padding: 20px 16px; }
+      .alerts button { justify-self: stretch; }
     }
   </style>
 </head>
@@ -87,6 +106,7 @@
       <h1>Performance testing &amp; QA automation jobs</h1>
       <p class="lead">Performance engineering, load testing and test automation roles from public job boards. Australian and Asia-Pacific roles come first, then remote roles open worldwide.</p>
       <p class="updated">Updated <time datetime="2026-11-03">3 Nov 2026</time> · 83 roles · roles older than 3 weeks drop off</p>
+      <a class="alert-link" href="#alerts" data-track="jobs-alert-link">🔔 Get new roles by email</a>
     </section>
 
     <section class="wrap jobs" aria-label="Job listings">
@@ -942,6 +962,21 @@
     </section>
 
     <section class="wrap jobs-end">
+      <div class="alerts" id="alerts">
+        <h2>🔔 Job alerts</h2>
+        <p>Get new roles by email as they're added, daily or every Monday. No email when nothing new turns up. Free, unsubscribe in one click.</p>
+        <p class="soon">Loading…</p>
+        <form hidden novalidate>
+          <label class="wide">Email<input type="email" name="email" required maxlength="200" placeholder="you@example.com" autocomplete="email"></label>
+          <label>Roles<select name="roles"><option value="all">Performance + QA</option><option value="perf">Performance only</option><option value="qa">QA automation only</option></select></label>
+          <label>Where<select name="where"><option value="australia+remote">Australia + remote</option><option value="australia">Australia / APAC only</option><option value="all">Anywhere</option></select></label>
+          <label>How often<select name="often"><option value="weekly">Weekly (Mondays)</option><option value="daily">Daily</option></select></label>
+          <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+          <button class="btn" type="submit" data-track="jobs-alert-submit">Turn on alerts</button>
+          <p class="status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="fine">Already signed up? Sign up again with the same email to change your choices.</p>
+      </div>
       <div class="offer">
         <div>
           <p class="eyebrow">Got an interview?</p>
@@ -1054,6 +1089,40 @@
       }));
       q.addEventListener('input', apply);
       apply();
+    })();
+  </script>
+  <script>
+    // Job alerts form. It appears only once the Apps Script version with job alerts is deployed.
+    (() => {
+      const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
+      const box = document.getElementById('alerts');
+      const form = box.querySelector('form'), soon = box.querySelector('.soon');
+      const status = form.querySelector('.status'), button = form.querySelector('button');
+      fetch(ENDPOINT + '?view=features').then(r => r.json()).then(o => {
+        if ((o.features || []).includes('jobs')) { form.hidden = false; soon.remove(); }
+        else throw new Error('not deployed');
+      }).catch(() => { soon.textContent = 'Job alerts open very soon. Meanwhile, bookmark this page: it updates every morning.'; });
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = form.elements.email;
+        if (!email.value.trim() || !email.checkValidity()) { status.textContent = 'Please enter a valid email address.'; email.focus(); return; }
+        button.disabled = true; status.textContent = 'Turning on your alerts…';
+        const body = new URLSearchParams(new FormData(form));
+        body.append('form', 'jobs'); body.append('page', location.href);
+        try {
+          const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+          if (!out.ok) { status.textContent = out.error || 'Something went wrong. Please try again.'; return; }
+          status.textContent = out.updated
+            ? 'Done: your alert choices are updated.'
+            : "You're in. The roles open right now are on their way to your inbox (check the spam folder, just in case).";
+          form.elements.email.value = '';
+          if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'jobs-alert-on', title: 'jobs-alert-on', event: true });
+        } catch {
+          status.textContent = "Sorry, that didn't go through. Please try again later.";
+        } finally {
+          button.disabled = false;
+        }
+      });
     })();
   </script>
   <script src="/subscribe.js" defer></script>

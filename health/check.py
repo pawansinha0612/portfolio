@@ -29,7 +29,7 @@ import urllib.request
 SITE = 'pawansinha.com.au'
 PAGES = ['/', '/blog/', '/blog/feed.xml', '/services/performance-testing/', '/shop/', '/perf-advisor/',
          '/peak-readiness/', '/hire/', '/portfolio-template/', '/tools/',
-         '/tools/curl-to-k6/', '/tools/k6-results/', '/peak-readiness/quiz/', '/peak-readiness/quiz/questions.json',
+         '/tools/curl-to-k6/', '/tools/k6-results/', '/tools/jmeter-to-k6/', '/tools/slo-calculator/', '/tools/capacity-calculator/', '/jobs/jobs.json', '/peak-readiness/quiz/', '/peak-readiness/quiz/questions.json',
          '/course/k6/', '/interview-prep/performance-testing/', '/interview-prep/qa.js', '/interview-prep/practice/',
          '/interview-prep/guide/', '/templates/', '/jobs/']
 ROOT = pathlib.Path(__file__).resolve().parent.parent

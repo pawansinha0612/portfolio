@@ -10,7 +10,8 @@ docs/        The website: plain HTML, CSS and JavaScript, no build step
   styles.css   Design, layout and animation styles
   main.js      Animations, scroll effects, booking button, placeholder hiding
   CNAME        Tells GitHub Pages to serve the site at pawansinha.com.au
-  tools/       Calculators, curl → k6 converter, k6 results explainer (all run in the browser)
+  tools/       Calculators, curl → k6 and JMeter → k6 converters, k6 results explainer, SLO and capacity
+               calculators (all run in the browser)
   interview-prep/  Interview questions (qa.js), AI practice page, Interview Guide page
   peak-readiness/  Peak-readiness offer, checklist and quiz (quiz/questions.json)
   course/k6/   "k6 in 7 days" email course sign-up (lessons are in enquiry/Code.gs)
@@ -18,7 +19,8 @@ blog/        Daily blog: posts (Markdown), topic queue, AI drafting, page builde
 .github/     GitHub Actions: weekly blog drafts, daily blog publish
 enquiry/     Google Apps Script backend for the site's enquiry form (saves to a Google Sheet, emails a notification)
 health/      Weekly site health check (tokens, pages, blog queue), run by .github/workflows/site-health.yml
-jobs/        Daily public jobs page (docs/jobs/), run by .github/workflows/jobs-page.yml; word lists in jobs/config.json
+jobs/        Daily public jobs page (docs/jobs/), run by .github/workflows/jobs-page.yml; word lists in jobs/config.json.
+             The page's job-alert signup is handled by enquiry/Code.gs (form=jobs, sendJobAlerts)
 services/    Generator for the /services/ pages
 profile/     Git-ignored, never published.
 ```
