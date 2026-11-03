@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Why 500 threads made it slower — Pawan Sinha</title>
+  <meta name="description" content="Size thread pools with Little&#x27;s Law and the wait-to-compute ratio, bound queues by your latency budget, and see what virtual threads change.">
+  <meta property="og:title" content="Why 500 threads made it slower — Pawan Sinha">
+  <meta property="og:description" content="Size thread pools with Little&#x27;s Law and the wait-to-compute ratio, bound queues by your latency budget, and see what virtual threads change.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Why 500 threads made it slower</h1>
+        <div class="post-meta"><span>3 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Java</span><span class="tag">Concurrency</span></div></div>
+      </header>
+      <div class="article">
+<p>Traffic climbs, latency follows. Someone opens the config, finds <code>maxThreads: 200</code>, and says the obvious thing: "Make it 500, to be safe."</p>
+<p>The deploy goes out and p99 gets <em>worse</em>. CPU has barely moved. A thread dump shows hundreds of threads parked, all waiting for one of 10 database connections.</p>
+<p>A thread pool is a queueing system: a fixed number of servers (threads) in front of a queue. That means it can be sized with arithmetic instead of folklore, and its failure modes can be predicted before they page you.</p>
+<h2>Little's Law gives you the floor</h2>
+<p><strong>Little's Law</strong>: L = λ × W. The average number of items in a system equals the arrival rate times the average time each item spends in it.</p>
+<p>For a thread pool, L is the number of busy threads, λ is throughput, and W is how long a request holds a thread (not end-to-end latency, which also includes time queued).</p>
+<p>Say an endpoint serves 400 req/s and each request holds a thread for 50 ms:</p>
+<p>L = 400 × 0.05 = <strong>20 busy threads on average.</strong></p>
+<p>That is the average, not the size. Arrivals are bursty and service times have a tail, so the pool needs headroom above it, and the queue absorbs short bursts. But it tells you instantly that a pool of 500 for this workload is 25× the average need.</p>
+<h2>CPU-bound vs I/O-bound: the wait-to-compute ratio</h2>
+<p>For <strong>CPU-bound</strong> work (parsing, compression, crypto), more threads than cores only adds context switching. Use roughly the number of cores available to the process.</p>
+<p>For work that mostly <strong>waits</strong> (database calls, HTTP calls), Brian Goetz's formula in <em>Java Concurrency in Practice</em> gives the starting point:</p>
+<p>N_threads = N_cpu × U_cpu × (1 + W / C)</p>
+<p>where U_cpu is the target CPU utilisation, W is wait time and C is compute time per request.</p>
+<p>Example: 4 cores, target 80% CPU, each request computes for 5 ms and waits for 45 ms:</p>
+<p>N = 4 × 0.8 × (1 + 45/5) = 3.2 × 10 = <strong>32 threads.</strong></p>
+<p>Cross-check with Little's Law. At 80% of 4 cores, the pool has 3.2 CPU-seconds per second. Each request needs 0.005, so throughput tops out at 3.2 / 0.005 = 640 req/s. Each request holds a thread for 50 ms, so L = 640 × 0.05 = 32. The two methods agree, which is a good sign your inputs are consistent.</p>
+<h2>The pool behind the pool</h2>
+<p>Here is the trap: those 32 threads each want a database connection. If the connection pool has 10 connections, 22 threads at peak are parked waiting for one. Effective concurrency for that path is 10, and the extra threads add memory and context switches, not throughput.</p>
+<p><strong>The effective concurrency of a request path is the smallest pool along it</strong>: thread pool, connection pool, HTTP client pool, semaphores, downstream rate limits. Size them together. Raising one without the others only moves the queue somewhere less visible.</p>
+<p>Try the arithmetic with your own service, including the connection pool behind it:</p>
+<div class="widget" data-widget="threads"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>Queue choice changes behaviour, not just capacity</h2>
+<p>Java's <code>ThreadPoolExecutor</code> has three settings that interact in surprising ways: <code>corePoolSize</code>, <code>maximumPoolSize</code> and the work queue.</p>
+<table>
+<thead>
+<tr>
+<th>Queue</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unbounded <code>LinkedBlockingQueue</code></td>
+<td>New threads beyond core are created only when the queue is full, which never happens. <code>maximumPoolSize</code> is ignored, and the queue can grow until memory runs out.</td>
+</tr>
+<tr>
+<td><code>SynchronousQueue</code></td>
+<td>Direct hand-off: no queueing. The pool grows to max, then rejects.</td>
+</tr>
+<tr>
+<td>Bounded <code>ArrayBlockingQueue</code></td>
+<td>Grows to core, queues up to the bound, then grows to max, then rejects. Predictable.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bound the queue by your latency budget.</strong> Queue wait ≈ queue depth / throughput. With a queue of 1,000 at 640 req/s, the last item waits about 1,000 / 640 ≈ 1.56 s before it even starts. If the client times out at 1 s, you are spending capacity on work nobody is waiting for, which is how overload turns into collapse. If you can afford 200 ms of queueing, the queue bound is about 0.2 × 640 = 128.</p>
+<h2>Rejection is a feature</h2>
+<p>When the queue is full, the <code>RejectedExecutionHandler</code> decides what happens:</p>
+<ul>
+<li><code>AbortPolicy</code> (default) throws <code>RejectedExecutionException</code>. Map it to a fast 503 or 429 so clients back off.</li>
+<li><code>CallerRunsPolicy</code> runs the task on the submitting thread. This is natural back-pressure, but if the caller is a web server's I/O or event-loop thread, you just stalled your network layer.</li>
+<li><code>DiscardPolicy</code> and <code>DiscardOldestPolicy</code> drop work silently. Rarely what you want for requests.</li>
+</ul>
+<p>Failing fast under overload is what keeps p99 bounded for the requests you do accept.</p>
+<h2>Web server defaults are not sizing</h2>
+<p>Embedded Tomcat (and Spring Boot's default config) uses <code>maxThreads</code> 200 and <code>acceptCount</code> 100 by default, with the NIO connector allowing up to 8,192 connections. Those numbers are generic defaults, not a statement about your workload. Derive yours from the arithmetic above and confirm with a stepped load test.</p>
+<h2>Reading a thread dump for saturation</h2>
+<p>When latency climbs and CPU is low, threads are waiting. Find out on what:</p>
+<pre><code class="language-bash"># Take three dumps about 5 seconds apart
+for i in 1 2 3; do jcmd &lt;pid&gt; Thread.print &gt; dump-$i.txt; sleep 5; done
+
+# Count thread states in each dump
+grep -ho 'java.lang.Thread.State: [A-Z_]*' dump-*.txt | sort | uniq -c
+</code></pre>
+<p>How to read the states:</p>
+<ul>
+<li><strong>RUNNABLE</strong> does not mean on-CPU. A thread blocked in a native socket read shows as RUNNABLE. Look at the top frame.</li>
+<li><strong>BLOCKED</strong> means waiting to enter a <code>synchronized</code> monitor. Many threads BLOCKED on the same lock is contention.</li>
+<li><strong>WAITING / TIMED_WAITING (parking)</strong> often means waiting on a pool: a connection pool's borrow method, a queue's <code>take</code>, a <code>Future.get</code>.</li>
+</ul>
+<p>A stack frame that shows up in many threads across all three dumps is your bottleneck. One dump is a snapshot. Three show persistence.</p>
+<h2>Metrics to export</h2>
+<p>At minimum: active threads, pool size, queued tasks and, most valuable, <strong>time spent in the queue</strong> (record it yourself if your framework does not). Micrometer's executor metrics expose active, queued and pool-size gauges. Exact metric names depend on the Micrometer version, so check your <code>/actuator/prometheus</code> output. Queue time is the saturation signal. Active-thread count alone is only utilisation.</p>
+<h2>Virtual threads change the question</h2>
+<p>With Java 21 virtual threads, a blocking call no longer pins an OS thread, so you stop sizing thread pools for I/O-bound work. The question becomes: <strong>what limits concurrency now?</strong> Usually the connection pool or a downstream service. Put explicit limits (a semaphore or a bounded pool) in front of scarce resources, because millions of cheap threads will happily queue on a pool of 10 connections.</p>
+<p>One caveat: in JDK 21 to 23, a virtual thread blocking inside a <code>synchronized</code> block stays <em>pinned</em> to its carrier thread, which can starve the scheduler. JDK 24 (JEP 491) removed most of that pinning. Check which JDK you run before trusting load test results across versions.</p>
+<h2>Summary</h2>
+<ol>
+<li>Compute average busy threads with Little's Law.</li>
+<li>Use the wait-to-compute formula as a starting size, and cross-check the two.</li>
+<li>Size the thread pool with the connection and client pools behind it.</li>
+<li>Bound the queue by latency budget, and reject fast.</li>
+<li>Prove the size with a stepped load test and three thread dumps.</li>
+</ol>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Why 500 threads made it slower", "description": "Size thread pools with Little's Law and the wait-to-compute ratio, bound queues by your latency budget, and see what virtual threads change.", "datePublished": "2026-11-03", "url": "https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

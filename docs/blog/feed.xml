@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Why 500 threads made it slower</title>
+      <link>https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/</link>
+      <guid>https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/</guid>
+      <pubDate>Tue, 03 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Size thread pools with Little&#x27;s Law and the wait-to-compute ratio, bound queues by your latency budget, and read thread dumps for what threads are waiting on. Plus what changes with virtual threads.</description>
+    </item>
+    <item>
       <title>Your load test is lying about p99</title>
       <link>https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/</link>
       <guid>https://pawansinha.com.au/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/</guid>
