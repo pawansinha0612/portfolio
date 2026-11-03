@@ -10,5 +10,9 @@
   "coordinated-omission-why-your-load-tool-under-reports-tail-latency": {
     "date": "2026-11-02",
     "id": "urn:li:share:7522802333177520128"
+  },
+  "thread-pool-sizing-from-first-principles": {
+    "date": "2026-11-03",
+    "id": "urn:li:share:7523205415224913920"
   }
 }
