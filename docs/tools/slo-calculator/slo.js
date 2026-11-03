@@ -109,12 +109,12 @@
     const allowed = (100 - target) / 100, e = errorRatePct / 100;
     let rate;
     if (allowed === 0) rate = e > 0 ? Infinity : 0;
-    else rate = e / allowed;
+    else rate = clean(e / allowed);   // clean(): 0.1% ÷ 0.1% must be exactly 1, not 1.0000000000000568
     const exhaustSec = rate === 0 ? Infinity : rate === Infinity ? 0 : windowDays * DAY / rate;
     let status;
     if (allowed === 0) status = e > 0 ? 'over' : 'ok';
+    else if (Math.abs(rate - 1) < 1e-9) status = 'even';
     else if (rate > 1) status = 'over';
-    else if (rate === 1) status = 'even';
     else status = 'ok';
     return { rate, exhaustSec, status };
   }
@@ -124,7 +124,9 @@
     const windowH = windowDays * 24;
     return ALERTS.map(a => {
       const longH = Math.min(a.longH, windowH);                 // a 3-day window in a 7-day SLO is fine; never longer than the SLO window
-      const burnRate = (a.budget / 100) * windowH / longH;
+      // The workbook's 2% / 5% / 10% are tuned for 30 days. In a 7-day window "10% in 3 days" is a 0.23× burn, which would
+      // alert on a service that isn't even using its budget, so never alert below 1×.
+      const burnRate = Math.max(1, (a.budget / 100) * windowH / longH);
       const errorRate = burnRate * allowed;                       // fraction of requests
       return Object.assign({}, a, {
         burn: clean(burnRate),

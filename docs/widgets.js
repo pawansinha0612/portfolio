@@ -151,6 +151,8 @@
     return out;
   }
 
+  var clipSeq = 0;
+
   // Line chart. o: {xMin,xMax,yMin,yMax,logY,xTicks:[[v,label]],yFmt,xTitle,yTitle,series:[{pts,color,dash,width}],hLines:[{y,color,label}],points:[{x,y,color,label}]}
   function lineChart(host, o) {
     var W = chartWidth(host), H = 270, L = 74, R = 16, T = 14, B = 42;
@@ -160,7 +162,17 @@
       var r = (ly(Math.max(v, o.logY ? o.yMin : -Infinity)) - ly(o.yMin)) / (ly(o.yMax) - ly(o.yMin));
       return T + (1 - Math.min(Math.max(r, 0), 1)) * (H - T - B);
     };
+    // Lines that leave the plot are cut off at its edge (clip path), never flattened onto it: a flattened
+    // line would look like the value stops growing.
+    var Yraw = function (v) {
+      var r = (ly(Math.max(v, o.logY ? o.yMin : -Infinity)) - ly(o.yMin)) / (ly(o.yMax) - ly(o.yMin));
+      return T + (1 - Math.min(Math.max(r, -1), 2)) * (H - T - B);
+    };
     var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    var clipId = 'wclip' + (++clipSeq);
+    var defs = s('defs'), clip = s('clipPath', { id: clipId });
+    clip.appendChild(s('rect', { x: L, y: T, width: W - L - R, height: H - T - B }));
+    defs.appendChild(clip); svg.appendChild(defs);
     var yTicks = o.logY
       ? (function () { var t = []; for (var p = Math.ceil(Math.log10(o.yMin)); p <= Math.log10(o.yMax); p++) t.push(Math.pow(10, p)); return t; })()
       : niceTicks(o.yMin, o.yMax, 5);
@@ -178,12 +190,17 @@
       if (l.label) svg.appendChild(s('text', { x: W - R - 4, y: Y(l.y) - 6, 'text-anchor': 'end', text: l.label }));
     });
     (o.series || []).forEach(function (se) {
-      var d = se.pts.map(function (p, i) { return (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' ');
-      svg.appendChild(s('path', { d: d, fill: 'none', 'stroke-dasharray': se.dash || '' }, { stroke: se.color, strokeWidth: se.width || 2.5, strokeLinejoin: 'round' }));
+      var d = se.pts.map(function (p, i) { return (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Yraw(p[1]).toFixed(1); }).join(' ');
+      svg.appendChild(s('path', { d: d, fill: 'none', 'stroke-dasharray': se.dash || '', 'clip-path': 'url(#' + clipId + ')' }, { stroke: se.color, strokeWidth: se.width || 2.5, strokeLinejoin: 'round' }));
     });
     (o.points || []).forEach(function (p) {
       svg.appendChild(s('circle', { cx: X(p.x), cy: Y(p.y), r: 5 }, { fill: p.color, stroke: 'var(--surface)', strokeWidth: 2 }));
-      if (p.label) svg.appendChild(s('text', { x: X(p.x) + (X(p.x) > W - 160 ? -8 : 8), y: Y(p.y) - 9, 'text-anchor': X(p.x) > W - 160 ? 'end' : 'start', text: p.label }));
+      if (p.label) {
+        // Put the label under the point when it would sit on a dashed reference line.
+        var above = Y(p.y) - 9, clash = (o.hLines || []).some(function (l) { return Math.abs(Y(l.y) - (above - 4)) < 9; });
+        var ly2 = clash || above < T + 10 ? Y(p.y) + 19 : above;
+        svg.appendChild(s('text', { x: X(p.x) + (X(p.x) > W - 160 ? -8 : 8), y: ly2, 'text-anchor': X(p.x) > W - 160 ? 'end' : 'start', text: p.label }));
+      }
     });
     host.innerHTML = '';
     host.appendChild(svg);
@@ -232,6 +249,10 @@
     host.appendChild(svg);
   }
 
+  // Math.ceil for results that should be whole numbers: 25 × 2.2 is 55.000000000000004 in floating point, which
+  // must not round up to 56.
+  function ceilSafe(v) { return Math.ceil(v - 1e-9); }
+
   function sortedPercentile(sorted, p) {
     if (!sorted.length) return 0;
     var i = Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1));
@@ -271,7 +292,8 @@
     function update() {
       var apiMax = apiCores() / (apiMs() / 1000), dbMax = dbCores() / (dbMs() / 1000);
       var ceil = Math.min(apiMax, dbMax), tier = apiMax <= dbMax ? 'API tier' : 'database';
-      var x = load(), ua = x * apiMs() / 1000 / apiCores(), ud = x * dbMs() / 1000 / dbCores();
+      // Both tiers see the achieved throughput, which can't exceed the ceiling: the faster tier is never "saturated".
+      var x = load(), got = Math.min(x, ceil), ua = got * apiMs() / 1000 / apiCores(), ud = got * dbMs() / 1000 / dbCores();
       st.api(fmt(apiMax) + ' req/s', apiMax <= dbMax ? 'warn' : '');
       st.db(fmt(dbMax) + ' req/s', dbMax < apiMax ? 'warn' : '');
       st.ua(ua >= 1 ? 'saturated' : pct(ua, 0), ua >= 0.8 ? 'warn' : 'ok');
@@ -303,9 +325,9 @@
     var say = note(f.out);
     function update() {
       var x = rate(), r = resp() / 1000, z = think();
-      var closed = Math.ceil(x * (r + z));
-      var pre = Math.max(1, Math.ceil(x * r * 1.2));       // busy VUs at normal latency, plus 20%
-      var max = Math.max(pre, Math.ceil(x * r * 5));        // room for latency to grow 5× before iterations drop
+      var closed = ceilSafe(x * (r + z));
+      var pre = Math.max(1, ceilSafe(x * r * 1.2));       // busy VUs at normal latency, plus 20%
+      var max = Math.max(pre, ceilSafe(x * r * 5));        // room for latency to grow 5× before iterations drop
       st.closed(fmt(closed));
       st.hour(fmt(x * 3600));
       st.pre(fmt(pre));
@@ -335,7 +357,7 @@
     var edge = range(f, { label: 'Edge traffic', min: 1000, max: 50000, step: 500, value: 10000, show: function (v) { return fmt(v) + ' req/s'; } }, u);
     var hit = range(f, { label: 'Request hit ratio', min: 50, max: 99.9, step: 0.1, value: 95, show: function (v) { return fmt(v, 1) + '%'; } }, u);
     var cap = range(f, { label: 'Origin capacity', min: 100, max: 10000, step: 50, value: 1000, show: function (v) { return fmt(v) + ' req/s'; } }, u);
-    var st = stats(f.out, [['origin', 'Origin traffic'], ['util', 'Origin utilisation'], ['min', 'Lowest safe hit ratio']]);
+    var st = stats(f.out, [['origin', 'Origin traffic'], ['util', 'Origin utilisation'], ['min', 'Hit ratio at 100% origin load']]);
     var chart = h('div'); f.out.appendChild(chart);
     legend(f.out, [['Origin load', C.a], ['Origin capacity', C.w]]);
     var say = note(f.out);
@@ -399,7 +421,7 @@
           { pts: av.map(function (v, k) { return [k, v]; }), color: C.w },
         ],
       });
-      say((normal() > interval() ? 'A single thread with ' + ms(normal()) + ' responses cannot send every ' + ms(interval()) + ', so this uses a ' + ms(I) + ' interval. ' : '') + 'The tool recorded ' + fmt(n + 1) + ' samples. Users would have sent ' + fmt(n + m) + '. Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.', av[2] / rv[2] > 2);
+      say((normal() > interval() ? 'A single thread with ' + ms(normal()) + ' responses cannot send every ' + ms(interval()) + ', so this uses a ' + ms(I) + ' interval. ' : '') + (run() * 1000 <= S + I ? 'The test is shorter than the stall, so this uses a ' + fmt(T / 1000, 1) + ' s test. ' : '') + 'The tool recorded ' + fmt(n + 1) + ' samples. Users would have sent ' + fmt(n + m) + '. ' + (av[2] / rv[2] >= 1.5 ? 'Reported p99 understates the real p99 by about ' + fmt(av[2] / rv[2]) + '×.' : 'Here the stall fills most of the test, so the reported and real p99 are close; shorten the stall or lengthen the test to see the effect.'), av[2] / rv[2] > 2);
     }
     update();
   };
@@ -421,12 +443,12 @@
       // Assumes each request holds a database connection for its wait time.
       var Xp = wait() > 0 ? pool() / (wait() / 1000) : Infinity;
       var Xe = Math.min(X, Xp);
-      st.threads(fmt(Math.ceil(N)) + ' threads');
+      st.threads(fmt(ceilSafe(N)) + ' threads');
       st.x(fmt(X) + ' req/s', X <= Xp ? 'ok' : '');
       st.xp(isFinite(Xp) ? fmt(Xp) + ' req/s' : 'n/a', Xp < X ? 'warn' : '');
       st.q(fmt(Math.max(1, Math.floor(budget() / 1000 * Xe))) + ' tasks');
       var L = X * (comp() + wait()) / 1000;
-      if (Xp < X) say('The connection pool is the real limit: at most ' + fmt(Xp) + ' req/s if each request holds a connection for its ' + ms(wait()) + ' wait. ' + fmt(Math.ceil(N)) + ' threads would leave about ' + fmt(Math.max(0, Math.ceil(N) - pool())) + ' parked waiting for a connection. Size the pools together.', true);
+      if (Xp < X) say('The connection pool is the real limit: at most ' + fmt(Xp) + ' req/s if each request holds a connection for its ' + ms(wait()) + ' wait. ' + fmt(ceilSafe(N)) + ' threads would leave about ' + fmt(Math.max(0, ceilSafe(N) - pool())) + ' parked waiting for a connection. Size the pools together.', true);
       else say('Little\'s Law check: ' + fmt(X) + ' req/s × ' + ms(comp() + wait()) + ' = ' + fmt(L, 1) + ' busy threads, matching the formula. Queue bound = delay budget × throughput.');
     }
     update();
@@ -533,7 +555,7 @@
     function update() {
       var avg = orders() * peak() / 100 / 3600, pk = avg * burst(), rps = pk * calls();
       var busy = rps * cpu() / 1000, need = busy / (Math.min(target(), 100) / 100);
-      var pods = Math.ceil(need / podCores()), conns = pods * poolSize();
+      var pods = ceilSafe(need / podCores()), conns = pods * poolSize();
       st.avg(fmt(avg) + ' orders/s');
       st.peak(fmt(pk) + ' orders/s');
       st.rps(fmt(rps) + ' req/s');
@@ -673,7 +695,8 @@
       st.util(util >= 1 ? 'over 100%' : pct(util, 0), util >= 0.8 ? 'warn' : 'ok');
       st.wait(isFinite(wait) ? ms(wait) : 'unbounded', !isFinite(wait) || wait > hold ? 'warn' : 'ok');
 
-      var xMax = Math.max(5000, x * 1.2), pts = [];
+      // Wide enough to show where demand crosses the pool size, and the line leaving the top of the chart.
+      var xMax = Math.max(x * 1.5, c * 1.5 * 1000 / hold), pts = [];
       for (var i = 0; i <= 40; i++) { var r = xMax * i / 40; pts.push([r, r * hold / 1000]); }
       lineChart(chart, {
         xMin: 0, xMax: xMax, yMin: 0, yMax: Math.max(c * 1.5, busy * 1.1, 10),
@@ -684,7 +707,7 @@
       });
 
       var batched = 2 * (rtt() + exec()), batchedBusy = x * batched / 1000;
-      if (util >= 1) say('Demand is ' + fmt(busy, 1) + ' connections but the pool has ' + fmt(c) + '. Requests queue for a connection until the pool timeout fires, so p99 grows without limit while the database itself may look idle. Fetching the children in one batched query (2 queries per request) would need about ' + fmt(batchedBusy, 1) + ' connections.', true);
+      if (util >= 1) say('Demand is ' + fmt(busy, 1) + ' connections but the pool has ' + fmt(c) + '. Requests queue for a connection until the pool timeout fires, so p99 grows without limit while the database itself may look only lightly loaded. Fetching the children in one batched query (2 queries per request) would need about ' + fmt(batchedBusy, 1) + ' connections.', true);
       else if (util >= 0.8) say('At ' + pct(util, 0) + ' pool utilisation, random bursts already make requests wait for a connection. That wait is invisible in pg_stat_statements because no query is running. Batching to 2 queries per request would need about ' + fmt(batchedBusy, 1) + ' connections.', true);
       else say('The pool has headroom: about ' + fmt(c - busy, 0) + ' connections spare on average. Rough upper rate before the pool saturates: ' + fmt(c * 1000 / hold) + ' req/s.');
     }
@@ -733,7 +756,7 @@
       ['WebSocket', false, [2, 1, 2, 1, 2]],
       ['Real browser testing', false, [2, 1, 0, 1, 2]],
       ['Open model (arrival rate)', true, [2, 2, 2, 0, 1]],
-      ['Team prefers JavaScript/TypeScript', false, [2, 0, 1, 0, 1]],
+      ['Team prefers JavaScript/TypeScript', false, [2, 0, 2, 0, 2]],   // Gatling JS/TS SDK (3.11+), LoadRunner DevWeb/TruClient
       ['Team prefers Python', false, [0, 0, 0, 2, 0]],
       ['Team prefers Java, Kotlin or Scala', false, [0, 1, 2, 0, 1]],
       ['No-code GUI authoring', false, [1, 2, 1, 0, 2]],
@@ -802,7 +825,7 @@
       var horizon = Math.min(3600, Math.ceil(rd + md + sy + lag) * 2 + 120);
       var demand = function (t) { return t <= 0 ? s0 : s0 + (sp - s0) * Math.min(t / rd, 1); };
       var ready = pods0(), want = ready, arrivals = {};
-      var q = 0, peakQ = 0, peakWait = 0, over = 0, first = -1, lastPolicyT = -Infinity, policyBase = 0;
+      var q = 0, peakQ = 0, peakWait = 0, over = 0, first = -1, scaleUps = [];
       var dPts = [], cPts = [], tPts = [];
       for (var t = 0; t <= horizon; t++) {
         if (arrivals[t]) { ready += arrivals[t]; if (first < 0) first = t; }
@@ -811,12 +834,15 @@
           if (sat()) seen = Math.min(seen, ready * c);
           var need = seen / (c * tu);
           if (Math.abs(need / want - 1) > 0.1 && need > want) {
-            var next = Math.ceil(need);
+            var next = ceilSafe(need);
             if (policy()) {
-              if (t - lastPolicyT >= 15) { lastPolicyT = t; policyBase = want; }
-              next = Math.min(next, Math.max(policyBase * 2, policyBase + 4));
+              // Kubernetes limits growth over a rolling 15 s window, based on the replica count at its start.
+              var recent = scaleUps.filter(function (e) { return t - e.t < 15; }).reduce(function (a, e) { return a + e.n; }, 0);
+              var base = want - recent;
+              next = Math.min(next, Math.max(base * 2, base + 4));
             }
             if (next > want) {
+              scaleUps.push({ t: t, n: next - want });
               arrivals[t + lag] = (arrivals[t + lag] || 0) + (next - want);
               want = next;
             }
@@ -846,7 +872,9 @@
       });
       if (peakQ > sp * 5) say('Peak backlog is ' + fmt(peakQ) + ' requests, about ' + fmt(peakQ / sp, 0) + ' seconds of peak traffic. With a typical 30 s client timeout most of it becomes errors and retries. Pre-scale before known peaks, lower the target utilisation for more headroom, or shorten the reaction chain (spare nodes, faster pod start).', true);
       else if (peakQ > 0) say('Demand exceeds ready capacity for ' + fmt(over) + ' s and ' + fmt(peakQ) + ' requests queue at the worst point. Survivable if your queues and timeouts can absorb it.');
-      else say('Ready capacity stays ahead of demand. Your headroom covers the reaction time for this ramp.');
+      else say(peak() < start()
+        ? 'Peak traffic is below the starting traffic, so this shows a flat load at ' + fmt(s0) + ' req/s (scale-down isn\'t modelled). Ready capacity covers it.'
+        : 'Ready capacity stays ahead of demand. Your headroom covers the reaction time for this ramp.');
     }
     update();
   };
@@ -879,7 +907,8 @@
         yTitle: 'Slow traces (log scale)', yFmt: function (v) { return fmt(v, 1); },
         series: [{ label: 'Slow traces kept', color: C.a, vals: [Math.max(hcap, 0.1), Math.max(slow, 0.1)] }],
       });
-      if (hcap < 1) say('Head sampling expects to keep ' + fmt(hcap, 2) + ' of the ' + fmt(slow, 1) + ' requests slower than ' + t[1] + ', so most of the time you will have no slow trace at all. Tail sampling keeps all of them for about ' + pct(tstore / Math.max(hstore, 1e-9) - 1, 0) + ' more stored traces.', true);
+      if (r >= 1) say('At 100% head sampling every trace is kept, so head and tail sampling keep the same ' + fmt(slow, slow < 10 ? 1 : 0) + ' slow traces' + (slow < 1 ? ', and in this window you expect fewer than one request slower than ' + t[1] + ' at all' : '') + '. Tail sampling only pays off when you sample less than everything.', slow < 1);
+      else if (hcap < 1) say('Head sampling expects to keep ' + fmt(hcap, 2) + ' of the ' + fmt(slow, 1) + ' requests slower than ' + t[1] + ', so most of the time you will have no slow trace at all. Tail sampling keeps all of them for about ' + pct(tstore / Math.max(hstore, 1e-9) - 1, 0) + ' more stored traces.', true);
       else if (hcap < 10) say('Head sampling expects to keep only ' + fmt(hcap, 1) + ' slow traces (' + pct(prob) + ' chance of at least one). That is too few to see a pattern. Tail sampling keeps all ' + fmt(slow) + '.', true);
       else say('Head sampling keeps about ' + fmt(hcap) + ' of ' + fmt(slow) + ' slow traces. Enough to investigate, but tail sampling keeps every one for ' + fmt(tstore - hstore) + ' extra stored traces.');
     }
@@ -933,7 +962,7 @@
         st.empty('already empty', 'warn');
         say('The bucket starts empty, so the volume runs at its baseline of ' + fmt(base) + ' IOPS from the first second, ' + fmt(w / base, 1) + '× less than the workload needs. Credits only refill while the workload stays below ' + fmt(base) + ' IOPS.', true);
       } else if (w > cap) {
-        msg = 'This workload needs more IOPS than this gp2 volume can ever deliver (' + fmt(cap) + ' even when bursting). Requests will queue from the start, and await will grow until the backlog is bounded by the application.';
+        msg = 'This workload needs more IOPS than this gp2 volume can ever deliver (' + fmt(cap) + (g < 1000 ? ' even when bursting' : ', and volumes of 1,000 GiB or more don\'t burst') + '). Requests will queue from the start, and await will grow until the backlog is bounded by the application.';
         if (isFinite(tEmpty) && tEmpty < end) msg += ' Then after ' + dur(tEmpty) + ' the volume drops to ' + fmt(base) + ' IOPS.';
         say(msg, true);
       } else if (isFinite(tEmpty) && tEmpty < end) {

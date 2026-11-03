@@ -361,7 +361,8 @@
         else if (br.status === 'over') {
           const page = r.alerts.find(a => !a.impossible && br.rate >= a.burn);
           text = `At this rate the whole ${r.windowDays}-day budget is gone in ${D(br.exhaustSec)}.` + (page ? ` That trips the ${page.long} alert below (${page.severity}).` : '');
-        } else text = `Under 1×: at this rate you'd use ${P(br.rate)} of the budget by the end of the window.`;
+        } else if (br.status === 'even') text = `Exactly 1×: at this rate you use the whole budget, and no more, by the end of the ${r.windowDays}-day window.`;
+        else text = `Under 1×: at this rate you'd use ${P(br.rate)} of the budget by the end of the window.`;
         msg($('burn-msg'), text, br.status === 'over' ? 'warn' : 'ok');
       }
       const at = $('alert-table').tBodies[0];
