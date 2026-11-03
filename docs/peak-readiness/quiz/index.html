@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peak-Readiness Quiz: Will Your Site Survive Peak? — Pawan Sinha</title>
+  <meta name="description" content="10 questions, 2 minutes: score how ready your site is for Black Friday or launch-day traffic and get a prioritised fix list. Free.">
+  <meta property="og:title" content="Peak-Readiness Quiz: Will Your Site Survive Peak? — Pawan Sinha">
+  <meta property="og:description" content="Score your site&#x27;s readiness for Black Friday, Click Frenzy or launch-day traffic in 2 minutes, and get your fix list.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/peak-readiness/quiz/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/peak-readiness/quiz/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .quiz-hero { padding: 56px 16px 8px; max-width: 760px; }
+    .quiz-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; margin: 0 0 14px; }
+    .quiz-wrap { max-width: 760px; padding: 16px 16px 72px; }
+    .quiz-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px 28px; box-shadow: var(--shadow); }
+    .q-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+    .q-area { font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+    .bar { height: 6px; border-radius: 99px; background: var(--alt); overflow: hidden; margin-bottom: 20px; }
+    .bar span { display: block; height: 100%; width: 0; background: var(--hl); transition: width .3s ease; }
+    .q-text { font-size: clamp(20px, 3vw, 24px); line-height: 1.35; margin: 0 0 18px; }
+    .opts { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; }
+    .opt { font: inherit; font-size: 16px; text-align: left; cursor: pointer; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+    .opt:hover { border-color: var(--accent); }
+    .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .opt .key { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; font-weight: 700;
+      background: var(--alt); color: var(--muted); }
+    .opt[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .opt[aria-checked="true"] .key { background: var(--accent); color: var(--accent-text); }
+    .q-nav { display: flex; justify-content: space-between; margin-top: 18px; }
+    .q-nav button { font: inherit; font-weight: 600; cursor: pointer; }
+    .q-nav button[disabled] { visibility: hidden; }
+    .result { text-align: center; }
+    .ring { --v: 0; --c: var(--accent); width: 160px; height: 160px; border-radius: 50%; margin: 4px auto 14px; display: grid; place-items: center;
+      background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--alt) 0); }
+    .ring div { width: 128px; height: 128px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; }
+    .ring b { font-size: 44px; line-height: 1; }
+    .ring small { display: block; color: var(--muted); font-size: 14px; }
+    .band { font-size: 24px; margin: 0 0 6px; }
+    .band-sum { color: var(--muted); max-width: 560px; margin: 0 auto; }
+    .fixes { text-align: left; margin: 26px 0 0; padding: 0; list-style: none; counter-reset: fix; }
+    .fixes li { counter-increment: fix; border-top: 1px solid var(--border); padding: 14px 0 14px 40px; position: relative; }
+    .fixes li::before { content: counter(fix); position: absolute; left: 0; top: 14px; width: 26px; height: 26px; border-radius: 8px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-weight: 800; display: grid; place-items: center; font-size: 14px; }
+    .fixes h3 { margin: 0 0 2px; font-size: 16px; }
+    .fixes .said { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+    .fixes p { margin: 0; }
+    .more { color: var(--muted); font-size: 15px; text-align: left; margin: 6px 0 0; }
+    .report { margin-top: 24px; text-align: left; padding: 22px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), color-mix(in srgb, var(--accent-2) 9%, var(--surface))); }
+    .report h2 { margin: 0 0 6px; font-size: 20px; }
+    .report > p { margin: 0 0 14px; color: var(--muted); }
+    .report form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .report label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+    .report input:not([type=checkbox]) { font: inherit; font-size: 16px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 13px; min-width: 0; }
+    .report .wide { grid-column: 1 / -1; }
+    .report .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; color: var(--muted); }
+    .report .check input { margin-top: 5px; }
+    .report button { font: inherit; font-weight: 600; cursor: pointer; justify-self: start; }
+    .report .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .report .status { grid-column: 1 / -1; margin: 0; font-size: 15px; color: var(--muted); }
+    .report .status:empty { display: none; }
+    .after button { font: inherit; font-weight: 600; cursor: pointer; }
+    .after { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+    .privacy { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+    @media (max-width: 600px) {
+      .quiz-card { padding: 20px 16px; }
+      .report form { grid-template-columns: 1fr; }
+      .report { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap quiz-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/peak-readiness/">Peak readiness</a><span aria-hidden="true">/</span><span aria-current="page">Quiz</span></nav>
+      <p class="eyebrow">Free · 10 questions · 2 minutes</p>
+      <h1>Is your site ready for <span class="hl">peak traffic?</span></h1>
+      <p class="lead">Black Friday, Click Frenzy, a product launch or a TV spot: answer 10 quick questions and get a readiness score with the fixes that matter most, in order.</p>
+    </section>
+
+    <section class="wrap quiz-wrap">
+      <div class="quiz-card" id="quiz" aria-live="polite">
+        <noscript><p>The quiz needs JavaScript. You can still use the <a href="/peak-readiness/checklist/">peak-readiness checklist</a>.</p></noscript>
+      </div>
+      <p class="privacy">Your answers stay in your browser unless you ask for the emailed report. No sign-up needed to see your score.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/peak-readiness/quiz/score.js"></script>
+  <script>
+  (() => {
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
+    const BOOK = 'https://calendly.com/pawansinha4u/30min';
+    const box = document.getElementById('quiz');
+    const count = name => window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: name, title: name, event: true });
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let data, answers = [], at = 0, started = false;
+    // Is the emailed report available? (Only once the matching Apps Script version is deployed.)
+    const canEmail = fetch(ENDPOINT + '?view=features').then(r => r.json()).then(o => !!(o.features || []).includes('quiz')).catch(() => false);
+
+    fetch('/peak-readiness/quiz/questions.json').then(r => r.json()).then(d => { data = d; answers = new Array(d.questions.length); show(); })
+      .catch(() => { box.innerHTML = '<p>Sorry, the quiz didn\'t load. Please refresh the page, or use the <a href="/peak-readiness/checklist/">checklist</a> instead.</p>'; });
+
+    function show() {
+      const qs = data.questions, q = qs[at];
+      box.innerHTML = `
+        <div class="q-top"><span class="q-area"></span><span>Question ${at + 1} of ${qs.length}</span></div>
+        <div class="bar" aria-hidden="true"><span style="width:${at / qs.length * 100}%"></span></div>
+        <h2 class="q-text" id="qt"></h2>
+        <div class="opts" role="radiogroup" aria-labelledby="qt"></div>
+        <div class="q-nav"><button class="btn btn-ghost btn-small" type="button" id="back" ${at ? '' : 'disabled'}>← Back</button>
+          <button class="btn btn-small" type="button" id="next" ${answers[at] == null ? 'disabled' : ''}>${at === qs.length - 1 ? 'See my score' : 'Next →'}</button></div>`;
+      box.querySelector('.q-area').textContent = q.area;
+      box.querySelector('#qt').textContent = q.q;
+      const opts = box.querySelector('.opts');
+      q.options.forEach((o, i) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'opt'; b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(answers[at] === i));
+        b.innerHTML = `<span class="key">${'ABCD'[i]}</span><span></span>`;
+        b.lastChild.textContent = o.t;
+        b.addEventListener('click', () => choose(i));
+        opts.appendChild(b);
+      });
+      box.querySelector('#back').addEventListener('click', () => { at--; show(); focusFirst(); });
+      box.querySelector('#next').addEventListener('click', next);
+    }
+    function focusFirst() { const f = box.querySelector('.opt[aria-checked="true"]') || box.querySelector('.opt'); if (f) f.focus(); }
+    function choose(i) {
+      if (!started) { started = true; count('quiz-start'); }
+      answers[at] = i;
+      box.querySelectorAll('.opt').forEach((b, j) => b.setAttribute('aria-checked', String(i === j)));
+      box.querySelector('#next').disabled = false;
+      setTimeout(next, 220);  // move on automatically; Back is there for changes
+    }
+    function next() {
+      if (answers[at] == null) return;
+      if (at < data.questions.length - 1) { at++; show(); focusFirst(); }
+      else result();
+    }
+    // Keyboard: A-D or 1-4 picks an answer.
+    document.addEventListener('keydown', e => {
+      if (!data || !box.querySelector('.opts') || e.target.matches('input, textarea')) return;
+      const k = e.key.toUpperCase(); const i = 'ABCD'.indexOf(k) >= 0 ? 'ABCD'.indexOf(k) : '1234'.indexOf(k);
+      if (i >= 0 && i < data.questions[at].options.length) choose(i);
+    });
+
+    function result() {
+      const r = window.scoreQuiz(data, answers);
+      count('quiz-complete');
+      const colour = r.score >= 80 ? 'var(--ok)' : r.score >= 50 ? 'var(--warn)' : '#d14343';
+      const top = r.weak.slice(0, 3);
+      box.innerHTML = `<div class="result">
+        <div class="ring" style="--v:${r.score};--c:${colour}" role="img" aria-label="Score ${r.score} out of 100"><div><span><b>${r.score}</b><small>out of 100</small></span></div></div>
+        <h2 class="band">${esc(r.band.label)}</h2>
+        <p class="band-sum">${esc(r.band.summary)}</p>
+        ${top.length ? `<ol class="fixes">${top.map(w => `<li><h3>${esc(w.area)}</h3><p class="said">You said: ${esc(w.answer)}</p><p>${esc(w.fix)}</p></li>`).join('')}</ol>
+          ${r.weak.length > 3 ? `<p class="more">+ ${r.weak.length - 3} more ${r.weak.length - 3 === 1 ? 'fix' : 'fixes'} in your full report.</p>` : ''}`
+          : '<p class="more" style="text-align:center">No gaps found. Keep a retest booked after your last big release before the day.</p>'}
+        <div class="report" id="report" hidden>
+          <h2>Get your full report by email</h2>
+          <p>Your score, every fix in priority order and a link to the 24-point checklist, to share with your team.</p>
+          <form novalidate>
+            <label>Your name<input name="name" autocomplete="name" maxlength="200"></label>
+            <label>Work email<input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+            <label class="wide">Company (optional)<input name="company" autocomplete="organization" maxlength="200"></label>
+            <label class="check wide"><input type="checkbox" name="digest" value="yes"> Also send me the weekly performance deep dive (one email on Sundays, unsubscribe any time)</label>
+            <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+            <button class="btn" type="submit" data-track="quiz-report">Email me the report</button>
+            <p class="status" role="status"></p>
+          </form>
+        </div>
+        <div class="after">
+          <a class="btn btn-ghost" href="${BOOK}" target="_blank" rel="noopener" data-track="quiz-book-call">Book a free 30-min call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="quiz-service">How a peak-readiness test works</a>
+          <button class="btn btn-ghost" type="button" id="again">Start again</button>
+        </div></div>`;
+      box.querySelector('#again').addEventListener('click', () => { answers = new Array(data.questions.length); at = 0; show(); focusFirst(); });
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      canEmail.then(ok => { if (ok) setupReport(); });
+    }
+
+    function setupReport() {
+      const wrap = document.getElementById('report');
+      if (!wrap) return;
+      wrap.hidden = false;
+      const form = wrap.querySelector('form'), status = form.querySelector('.status'), button = form.querySelector('button');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = form.elements.email;
+        if (!email.value.trim() || !email.checkValidity()) { status.textContent = 'Please enter a valid email address.'; email.focus(); return; }
+        button.disabled = true; status.textContent = 'Sending your report…';
+        const body = new URLSearchParams(new FormData(form));
+        body.append('form', 'quiz'); body.append('answers', answers.join(',')); body.append('page', location.href);
+        try {
+          const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+          if (!out.ok) { status.textContent = out.error || 'Something went wrong. Please try again.'; return; }
+          form.querySelectorAll('input, button').forEach(el => (el.disabled = true));
+          status.textContent = 'Sent. Check your inbox in a minute (and the spam folder, just in case).';
+          count('quiz-report-sent');
+        } catch {
+          status.textContent = "Sorry, that didn't go through. Please try again later.";
+        } finally {
+          if (!status.textContent.startsWith('Sent')) button.disabled = false;
+        }
+      });
+    }
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

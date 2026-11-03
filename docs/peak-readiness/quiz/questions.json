@@ -1,0 +1,121 @@
+{
+  "_help": "Peak-readiness quiz. Read by docs/peak-readiness/quiz/index.html (shows the questions and the score) AND by enquiry/Code.gs (emails the report), so both always agree. Each option's p = points (0 to 10). 'fix' is shown when the visitor scores below 10 on that question. Keep ids stable: they are saved in the Quiz sheet.",
+  "version": 1,
+  "bands": [
+    { "min": 80, "label": "Ready, with evidence", "summary": "You've done the work most teams skip. Close the remaining gaps and keep a retest on the calendar before the day." },
+    { "min": 50, "label": "At risk", "summary": "The basics are there, but a few gaps could take checkout down at the busiest hour. Fix the top items below first." },
+    { "min": 0, "label": "Not ready yet", "summary": "Right now you'd be finding your limits live, with real customers. Start with the top three fixes below, this week." }
+  ],
+  "questions": [
+    {
+      "id": "forecast",
+      "area": "Traffic forecast",
+      "q": "Do you know how much traffic your busiest hour will bring?",
+      "options": [
+        { "t": "Yes: a forecast from last year's peak plus this year's campaigns", "p": 10 },
+        { "t": "Roughly, from last year's numbers", "p": 5 },
+        { "t": "Not really", "p": 0 }
+      ],
+      "fix": "Build a peak-hour forecast: take last year's busiest hour (orders, sessions and requests per second), multiply by expected growth and campaign uplift, then add 30–50% headroom. Every other decision depends on this number."
+    },
+    {
+      "id": "tested",
+      "area": "Load testing",
+      "q": "When did you last load test at your forecast peak?",
+      "options": [
+        { "t": "In the last 3 months, on the current release", "p": 10 },
+        { "t": "Within the last year", "p": 4 },
+        { "t": "Never, or I'm not sure", "p": 0 }
+      ],
+      "fix": "Run a load test at forecast peak on the release you'll actually run on the day, then a stress test past it to find the breaking point. A test from last year tested a different system."
+    },
+    {
+      "id": "journeys",
+      "area": "Realistic journeys",
+      "q": "Does that test cover the full journey to a paid order?",
+      "options": [
+        { "t": "Yes: browse, search, cart, checkout and payment, in realistic proportions", "p": 10 },
+        { "t": "Some pages, such as the home page and product pages", "p": 4 },
+        { "t": "We don't test journeys", "p": 0 }
+      ],
+      "fix": "Script the money path end to end: browse, search, add to cart, checkout and payment (against a sandbox). Home-page-only tests mostly hit the CDN and say little about checkout."
+    },
+    {
+      "id": "thirdparty",
+      "area": "Third parties",
+      "q": "Do you know how your payment gateway, search and other third parties behave at peak?",
+      "options": [
+        { "t": "Yes: we know their rate limits and have timeouts and fallbacks", "p": 10 },
+        { "t": "We know who they are, but not their limits", "p": 4 },
+        { "t": "No", "p": 0 }
+      ],
+      "fix": "List every third party in the checkout path. Ask each for its rate limits, set short timeouts with a sensible fallback, and load tag scripts asynchronously so one slow vendor can't block the page."
+    },
+    {
+      "id": "database",
+      "area": "Database",
+      "q": "Do you know which database queries and connection pools run out first?",
+      "options": [
+        { "t": "Yes: slow-query logs and pool usage were checked under load", "p": 10 },
+        { "t": "Partly", "p": 5 },
+        { "t": "No", "p": 0 }
+      ],
+      "fix": "During a load test, watch slow-query logs, connection pool usage and lock waits. A pool that is 100% busy turns extra traffic into queueing and timeouts, and autoscaling more app servers makes it worse."
+    },
+    {
+      "id": "scaling",
+      "area": "Autoscaling",
+      "q": "Have you watched your autoscaling react to a sudden spike?",
+      "options": [
+        { "t": "Yes, and we pre-scale before known peaks", "p": 10 },
+        { "t": "It's configured, but we haven't tested a spike", "p": 3 },
+        { "t": "We don't autoscale", "p": 5 }
+      ],
+      "fix": "Run a spike test and time how long new capacity takes to serve traffic (often several minutes). For known peaks, scale up in advance, and check account limits and database connections can take the extra servers."
+    },
+    {
+      "id": "caching",
+      "area": "Caching and CDN",
+      "q": "How much of your traffic is served from a CDN or cache?",
+      "options": [
+        { "t": "We know our hit ratio, and static and cacheable pages are cached", "p": 10 },
+        { "t": "Images and scripts only", "p": 5 },
+        { "t": "Not sure", "p": 0 }
+      ],
+      "fix": "Check your CDN hit ratio and cache what you safely can. Avoid a purge-all on the day: it sends the full load to your servers at once."
+    },
+    {
+      "id": "monitoring",
+      "area": "Monitoring",
+      "q": "If checkout slowed down at peak, how quickly would you know?",
+      "options": [
+        { "t": "Within minutes: alerts on errors and p95 latency for key journeys", "p": 10 },
+        { "t": "We'd see it on a dashboard if someone was watching", "p": 4 },
+        { "t": "When customers complained", "p": 0 }
+      ],
+      "fix": "Alert on what customers feel: error rate and p95 response time for checkout and payment, plus orders per minute against normal levels. Test that the alerts actually fire before the day."
+    },
+    {
+      "id": "freeze",
+      "area": "Change control",
+      "q": "Do you have a change freeze and a tested rollback plan for peak week?",
+      "options": [
+        { "t": "Yes, both", "p": 10 },
+        { "t": "A freeze, but rollback isn't tested", "p": 5 },
+        { "t": "No", "p": 0 }
+      ],
+      "fix": "Agree a change freeze for peak week, with an exception process. Rehearse rolling back the last release, and know how to switch off risky features quickly."
+    },
+    {
+      "id": "runbook",
+      "area": "On the day",
+      "q": "Is there a plan for the day itself: who watches, who decides and what to switch off?",
+      "options": [
+        { "t": "Yes: named people, a channel and a runbook", "p": 10 },
+        { "t": "Informally", "p": 4 },
+        { "t": "No", "p": 0 }
+      ],
+      "fix": "Write a one-page runbook: who is on watch and when, where the team talks, the thresholds that trigger action, and what you can switch off first (recommendations, heavy search features, non-essential scripts)."
+    }
+  ]
+}

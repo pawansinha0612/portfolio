@@ -1,0 +1,727 @@
+// The interview questions and model answers, shared by /interview-prep/performance-testing/ and /interview-prep/practice/.
+// Each item: q = question, t = topics (used by the filters), a = model answer (HTML).
+window.QA = {
+  basic: [
+    { q: 'What is performance testing, and why do we need it?', t: ['Concepts'], a: `
+      <p>Performance testing checks how a system behaves under an expected or extreme load. It covers <strong>speed</strong> (response time), <strong>capacity</strong> (how much load it handles), <strong>stability</strong> (does it stay healthy over time) and <strong>scalability</strong> (does adding resources add capacity).</p>
+      <p>Functional tests show that a feature works for one user. Performance tests show that it still works for 10,000 users at once, at peak, after hours of running. Problems such as slow pages, timeouts at a sale launch or memory leaks only appear under load. Finding them in production costs far more than finding them in a test environment.</p>` },
+    { q: 'What types of performance tests are there?', t: ['Concepts'], a: `
+      <ul>
+        <li><strong>Load test:</strong> expected peak load for a set duration. Does it meet the NFRs?</li>
+        <li><strong>Stress test:</strong> push beyond peak until something breaks. Where is the breaking point and how does it fail?</li>
+        <li><strong>Spike test:</strong> a sudden jump in users (a sale opening, a draw closing). Does it absorb the jump and recover?</li>
+        <li><strong>Soak (endurance) test:</strong> steady load for hours. Finds memory leaks, connection leaks and growing queues.</li>
+        <li><strong>Scalability test:</strong> add load step by step, and add resources. Does throughput grow in line?</li>
+        <li><strong>Volume test:</strong> large data volumes, such as a big database or file. Do queries and batch jobs still perform?</li>
+        <li><strong>Breakpoint / capacity test:</strong> ramp slowly until the system can't keep up, to find its maximum throughput.</li>
+      </ul>` },
+    { q: 'What are the key metrics you look at in a performance test?', t: ['Metrics'], a: `
+      <ul>
+        <li><strong>Response time:</strong> average, and more importantly p90, p95 and p99.</li>
+        <li><strong>Throughput:</strong> requests or transactions per second (RPS/TPS).</li>
+        <li><strong>Error rate:</strong> the percentage of failed requests, broken down by error type.</li>
+        <li><strong>Concurrency:</strong> active virtual users or open connections.</li>
+        <li><strong>Server resources:</strong> CPU, memory, disk I/O, network, and for the JVM, heap and GC.</li>
+        <li><strong>Downstream resources:</strong> DB connections in use, thread pool usage, queue depth.</li>
+      </ul>
+      <p>The client-side numbers tell you <em>that</em> something is wrong. The server-side numbers tell you <em>why</em>.</p>` },
+    { q: 'Why use percentiles like p95 instead of the average response time?', t: ['Metrics'], a: `
+      <p>Averages hide pain. If 95 requests take 200 ms and 5 take 8 seconds, the average is about 590 ms, which looks fine. But 1 in 20 users waited 8 seconds.</p>
+      <p>p95 means 95% of requests were faster than this value. It describes what nearly all users experience. p99 shows the tail, which matters because one page often makes many calls, so a user is likely to hit at least one slow one.</p>
+      <div class="say">I set SLAs on p95 or p99, and I treat a healthy average with a bad p99 as a warning sign. It often points to periodic pauses such as garbage collection.</div>` },
+    { q: 'How are throughput, response time and concurrent users related?', t: ['Metrics', 'Workload'], a: `
+      <p>By <strong>Little's Law</strong>: <code>Concurrent users = Throughput × (Response time + Think time)</code>.</p>
+      <p>Example: you need 50 TPS, and each iteration has a 1 s response time plus 4 s of think time. You need 50 × 5 = 250 virtual users.</p>
+      <p>Use it in two ways. First, to size a test before you run it. Second, to sanity-check results. If you add users and throughput stops rising while response time climbs, the system is saturated.</p>` },
+    { q: 'What is a workload model, and how do you build one?', t: ['Workload'], a: `
+      <p>A workload model (WLM) describes the realistic mix of traffic you will simulate: which journeys, in what proportion, at what rate, and with how many users.</p>
+      <ol>
+        <li>Take production data from the peak hour: access logs, APM, Splunk/Kibana or Google Analytics.</li>
+        <li>List the business transactions and their hourly volumes, such as login 40%, search 35% and purchase 10%.</li>
+        <li>Apply growth: future peak = today's peak × the business growth factor, plus headroom.</li>
+        <li>Work out users, think time and pacing to hit those rates.</li>
+        <li>Get the business and architects to sign it off. It becomes the contract for the test.</li>
+      </ol>
+      <p>For a new product with no production data, build it from business forecasts and similar systems, and say clearly that it's an assumption.</p>` },
+    { q: 'What are think time and pacing? How do you calculate pacing?', t: ['Workload', 'Scripting'], a: `
+      <p><strong>Think time</strong> is the pause between steps <em>inside</em> a journey, to imitate a real user reading or typing. <strong>Pacing</strong> is the time from the start of one iteration to the start of the next. It controls how many iterations each user does per hour.</p>
+      <pre>Pacing (s) = (Test duration in s × Users) / Target iterations
+
+Target: 15 iterations per hour with 5 users
+Pacing = (3600 × 5) / 15 = 1200 s per iteration per user</pre>
+      <p>Pacing has to be longer than one iteration's own run time. If it isn't, you can't reach the target rate and need more users.</p>` },
+    { q: 'What are correlation and parameterisation?', t: ['Scripting', 'LoadRunner', 'JMeter', 'k6'], a: `
+      <p><strong>Correlation</strong> means capturing dynamic values from a server response, such as a session ID, CSRF token, auth token or order ID, and passing them into later requests. Without it the recorded script replays stale values and fails. In LoadRunner you use <code>web_reg_save_param</code>, in JMeter a JSON or regex extractor, and in k6 you parse <code>res.json()</code>.</p>
+      <p><strong>Parameterisation</strong> means replacing hard-coded inputs, such as usernames or search terms, with data from a file or generator. Each virtual user then behaves like a different real user and doesn't just hit the cache.</p>` },
+    { q: 'What are NFRs, and how do you gather them?', t: ['Process'], a: `
+      <p>Non-functional requirements set the measurable performance targets. For example: "95% of login requests under 1 s at 200 TPS with an error rate below 0.1%."</p>
+      <p>I gather them from the business owners (peak volumes, growth, key journeys), the architects (design limits, dependencies) and production data. A good NFR is <strong>specific, measurable and tied to a load level</strong>. "The system should be fast" isn't an NFR. If nobody can give me numbers, I propose them from production baselines and industry norms and get them signed off.</p>` },
+    { q: 'Walk me through the performance testing life cycle.', t: ['Process'], a: `
+      <ol>
+        <li><strong>Requirements:</strong> gather NFRs and peak volumes.</li>
+        <li><strong>Test strategy:</strong> application overview, objectives, scope, infrastructure, workload model, environment, test scenarios, risks and references.</li>
+        <li><strong>Scripting:</strong> build the journeys, with correlation, parameterisation and checks.</li>
+        <li><strong>Test data and environment:</strong> create the data and confirm the environment is close to production.</li>
+        <li><strong>Execution:</strong> a smoke run first, then baseline, load, stress and soak.</li>
+        <li><strong>Analysis:</strong> correlate client metrics with server metrics, find bottlenecks, retest after fixes.</li>
+        <li><strong>Report:</strong> a test summary report with results against the NFRs, risks and a go/no-go recommendation, then sign-off.</li>
+      </ol>` },
+    { q: 'What is the difference between an open and a closed workload model?', t: ['Workload', 'k6', 'Gatling'], a: `
+      <p><strong>Closed model:</strong> a fixed number of users loop through the script. If the system slows down, users wait, so fewer requests are sent. This hides the problem. k6 examples: <code>constant-vus</code>, <code>ramping-vus</code>.</p>
+      <p><strong>Open model:</strong> requests arrive at a fixed rate no matter how slow the system is, like real internet traffic. Slowness shows up as queues and errors, as it would in production. k6 examples: <code>constant-arrival-rate</code>, <code>ramping-arrival-rate</code>.</p>
+      <p>To prove you can handle a target TPS, use an arrival-rate (open) model.</p>` },
+    { q: 'In k6, what is the difference between checks and thresholds?', t: ['k6'], a: `
+      <p><strong>Checks</strong> are assertions on individual responses, such as "status is 200" or "body contains orderId". A failed check doesn't fail the test. It's recorded as a pass rate.</p>
+      <p><strong>Thresholds</strong> are pass/fail rules for the whole test. When one is breached, k6 exits with a non-zero code, which fails the CI pipeline.</p>
+      <pre>export const options = {
+  thresholds: {
+    http_req_duration: ['p(95)&lt;500'],
+    http_req_failed:   ['rate&lt;0.01'],
+    checks:            ['rate&gt;0.99'],
+  },
+};</pre>` },
+    { q: 'JMeter, k6 or LoadRunner: how do you choose?', t: ['Tools', 'LoadRunner', 'JMeter', 'k6'], a: `
+      <ul>
+        <li><strong>LoadRunner:</strong> commercial and protocol-rich (Citrix, SAP, Oracle Forms, mainframe). It suits large enterprises with legacy protocols, but licences are expensive.</li>
+        <li><strong>JMeter:</strong> free, GUI-based and Java. It has many plugins and a large community, but it uses a lot of memory per thread and its XML scripts are awkward to review in Git.</li>
+        <li><strong>k6:</strong> free, written in Go, with tests in JavaScript or TypeScript. It's very light per virtual user, built for CI/CD, and developers find it easy to read. It also has a browser module for front-end metrics. It mainly covers HTTP, gRPC and WebSockets, plus extensions.</li>
+      </ul>
+      <p>I pick the tool for the protocol and the team: k6 for modern APIs and pipelines, LoadRunner when the protocol needs it, and JMeter when the team already knows it.</p>` },
+    { q: 'What do 429, 502, 503 and 504 errors usually mean during a load test?', t: ['Analysis'], a: `
+      <ul>
+        <li><strong>429 Too Many Requests:</strong> a rate limiter or API gateway is throttling you. Check whether this is expected, and whether the test is coming from too few IP addresses.</li>
+        <li><strong>502 Bad Gateway:</strong> the proxy or load balancer got a bad response from the app, often because an app instance crashed or restarted.</li>
+        <li><strong>503 Service Unavailable:</strong> the app or upstream service is overloaded or has no healthy instances, or a circuit breaker is open.</li>
+        <li><strong>504 Gateway Timeout:</strong> the proxy gave up waiting. The backend is too slow, often because of a saturated DB or thread pool.</li>
+      </ul>
+      <p>When errors start, note the exact load level. That point is your capacity limit.</p>` },
+    { q: 'How do you make sure your test results are valid?', t: ['Process', 'Analysis'], a: `
+      <ul>
+        <li>The environment matches production in scale, or you know the ratio (for example half the pods) and allow for it.</li>
+        <li>Run a warm-up first so caches, JIT compilation and connection pools settle, and leave it out of the analysis.</li>
+        <li>Use enough unique test data that you aren't only measuring the cache.</li>
+        <li>Make sure the load generator isn't the bottleneck: check its CPU and network.</li>
+        <li>Check for errors. Fast responses full of 500 errors aren't fast responses.</li>
+        <li>Make sure nothing else is running in the shared environment during your test window.</li>
+        <li>Repeat runs give similar numbers.</li>
+      </ul>` },
+    { q: 'What are the main components of LoadRunner?', t: ['LoadRunner', 'Tools'], a: `
+      <ul>
+        <li><strong>VuGen</strong> (Virtual User Generator): records and edits scripts, in C for web HTTP/HTML.</li>
+        <li><strong>Controller:</strong> designs and runs the scenario: how many users, ramp-up, duration, which load generators.</li>
+        <li><strong>Load generators:</strong> the machines that run the virtual users.</li>
+        <li><strong>Analysis:</strong> merges and correlates graphs after the run and builds the report.</li>
+        <li><strong>LoadRunner Enterprise</strong> (formerly Performance Center): the web-based version for sharing load generators, scheduling and keeping results across teams.</li>
+      </ul>` },
+    { q: 'In LoadRunner, what are transactions and rendezvous points?', t: ['LoadRunner', 'Scripting'], a: `
+      <p>A <strong>transaction</strong> wraps the steps you want timed, such as a login, between <code>lr_start_transaction("Login")</code> and <code>lr_end_transaction("Login", LR_AUTO)</code>. Response times are reported per transaction, so name them clearly and keep think time outside them.</p>
+      <p>A <strong>rendezvous point</strong> (<code>lr_rendezvous("buy")</code>) makes virtual users wait until a set number arrive, then releases them together. Use it to simulate a burst, such as everyone pressing "buy" when a sale opens. Don't use it in a normal load test, because it distorts the arrival rate.</p>` },
+    { q: 'How do you correlate a dynamic value in VuGen?', t: ['LoadRunner', 'Scripting'], a: `
+      <ol>
+        <li>Record the script twice and compare (or replay and look for failures) to find values that change, such as session IDs and tokens.</li>
+        <li>Try the <strong>automatic correlation</strong> scan, but check each rule it suggests.</li>
+        <li>For manual correlation, place <code>web_reg_save_param_ex</code> (or <code>web_reg_save_param_json</code> or <code>_regexp</code>) <em>before</em> the request whose response holds the value, using left and right boundaries.</li>
+        <li>Replace the hard-coded value in later requests with <code>{ParamName}</code>.</li>
+        <li>Turn on extended logging for one replay to confirm the captured value, then turn it off for the load test.</li>
+      </ol>` },
+    { q: 'Explain the main elements of a JMeter test plan.', t: ['JMeter', 'Scripting'], a: `
+      <ul>
+        <li><strong>Thread Group:</strong> the users. Number of threads, ramp-up and loop count or duration.</li>
+        <li><strong>Samplers:</strong> the requests, such as HTTP Request or JDBC Request.</li>
+        <li><strong>Config elements:</strong> CSV Data Set Config for test data, HTTP Header Manager, Cookie Manager, defaults.</li>
+        <li><strong>Pre- and post-processors:</strong> JSON Extractor and Regular Expression Extractor for correlation.</li>
+        <li><strong>Timers:</strong> think time. Use the Constant Throughput Timer or Throughput Shaping Timer to control the rate.</li>
+        <li><strong>Assertions:</strong> response code, JSON path or duration checks.</li>
+        <li><strong>Listeners:</strong> results. Keep them off during real load tests.</li>
+      </ul>` },
+    { q: 'Why should you run JMeter in non-GUI mode for load tests?', t: ['JMeter', 'Tools'], a: `
+      <p>The GUI and its listeners use a lot of memory and CPU. That skews results and limits how many threads one machine can run. The GUI is for building and debugging scripts only.</p>
+      <pre>jmeter -n -t plan.jmx -l results.jtl -e -o report/</pre>
+      <p><code>-n</code> runs without the GUI, <code>-l</code> writes raw results, and <code>-e -o</code> generates the HTML dashboard at the end. Also raise the heap in <code>JVM_ARGS</code> for large tests, and use a Backend Listener to stream results to InfluxDB.</p>` },
+    { q: 'What is the structure of a k6 script?', t: ['k6', 'Scripting'], a: `
+      <pre>import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = { vus: 10, duration: '5m' };   // init: runs once per VU
+
+export function setup() { return { token: login() }; } // once, before the test
+
+export default function (data) {                      // each iteration
+  const res = http.get('https://api.example.com/items',
+    { headers: { Authorization: 'Bearer ' + data.token } });
+  check(res, { 'status 200': r =&gt; r.status === 200 });
+  sleep(1);
+}
+
+export function teardown(data) {}                      // once, after the test</pre>
+      <p>Code in the init context runs once per VU, so put file reads and imports there, not inside the default function.</p>` },
+    { q: 'What is Gatling, and how is a simulation built?', t: ['Gatling', 'Tools'], a: `
+      <p>Gatling is an open-source load-testing tool that runs on the JVM. Scripts are written in Java, Kotlin, Scala or JavaScript. It uses non-blocking I/O, so one machine can simulate many users with little memory.</p>
+      <p>A simulation has four parts:</p>
+      <ul>
+        <li><strong>Protocol:</strong> base URL, headers.</li>
+        <li><strong>Scenario:</strong> the user journey, a chain of <code>exec(http(...))</code> requests with <code>pause()</code> for think time.</li>
+        <li><strong>Injection profile:</strong> how users arrive, such as <code>rampUsers(100).during(60)</code>.</li>
+        <li><strong>Assertions:</strong> pass/fail rules, such as <code>global().responseTime().percentile(95).lt(500)</code>.</li>
+      </ul>
+      <p>It produces a detailed HTML report after each run.</p>` },
+    { q: 'What is the difference between monitoring and observability?', t: ['Observability'], a: `
+      <p><strong>Monitoring</strong> answers questions you already knew to ask: is CPU above 80%, is the error rate above 1%? <strong>Observability</strong> lets you answer new questions about a problem you didn't predict, from the data the system gives out.</p>
+      <p>It rests on three pillars:</p>
+      <ul>
+        <li><strong>Metrics:</strong> numbers over time (RPS, latency, CPU). Cheap to keep, good for trends and alerts.</li>
+        <li><strong>Logs:</strong> detailed records of events. Good for the "what exactly happened".</li>
+        <li><strong>Traces:</strong> one request's path across services, with timing for each hop. Good for "where did the time go".</li>
+      </ul>` },
+    { q: 'What changes when you performance test in the cloud instead of on-premises?', t: ['Cloud'], a: `
+      <ul>
+        <li><strong>Capacity can grow:</strong> auto-scaling adds instances or pods, so you test how fast and how far it scales, not only a fixed limit.</li>
+        <li><strong>Shared hardware:</strong> "noisy neighbours" make results vary more. Repeat runs and compare ranges, not single numbers.</li>
+        <li><strong>Service limits:</strong> managed services have quotas (API Gateway throttling, Lambda concurrency, database IOPS and connection limits). These are often the first thing you hit.</li>
+        <li><strong>Cost:</strong> load tests cost money, both for the system and the load generators. Plan run lengths and tear down after.</li>
+        <li><strong>Permission:</strong> large tests against cloud services can look like an attack. Check the provider's testing policy and tell the platform team.</li>
+        <li><strong>Network:</strong> where the load comes from (same region, other region, internet) changes latency a lot.</li>
+      </ul>` },
+    { q: 'What is mCPU (millicores) in Kubernetes, and how is it different from CPU utilisation?', t: ['Cloud'], a: `
+      <p><strong>1 CPU = 1000m</strong> (millicores). <code>500m</code> means half of one CPU core. It's a <em>quantity</em> of CPU time, not a percentage.</p>
+      <ul>
+        <li><strong>Request</strong> (such as <code>500m</code>): the amount reserved for the pod. The scheduler uses it to place pods on nodes. The pod can use more if the node has spare CPU.</li>
+        <li><strong>Limit</strong> (such as <code>1000m</code>): a hard cap. Above it, the pod is <em>throttled</em>, meaning paused until the next time slot.</li>
+        <li><strong>CPU utilisation</strong> is how much CPU is actually used, shown as a percentage of something. Always ask: a percentage of what?</li>
+      </ul>
+      <p>A pod using 400m with a 500m request shows <strong>80% of request</strong>, <strong>40% of its 1000m limit</strong>, and perhaps <strong>5% of an 8-core node</strong>. All three are "CPU utilisation". The Horizontal Pod Autoscaler scales on percentage of <em>request</em>, so 80% here could trigger scaling.</p>
+      <div class="say">Millicores are what the pod is given; utilisation is how much of it it uses. I always check which baseline a dashboard's percentage is against: the request, the limit or the node.</div>` },
+    { q: 'What database metrics do you watch during a load test?', t: ['Database'], a: `
+      <ul>
+        <li><strong>Query time:</strong> the slowest and the most-run queries, not only the average.</li>
+        <li><strong>Connections:</strong> active compared with the maximum, and threads waiting for a connection in the app's pool.</li>
+        <li><strong>Waits and locks:</strong> lock waits, deadlocks and the top wait events.</li>
+        <li><strong>Resources:</strong> DB CPU, memory, disk IOPS and throughput, disk queue length.</li>
+        <li><strong>Cache:</strong> buffer cache hit ratio. Lots of physical reads means data isn't in memory.</li>
+        <li><strong>Replication lag</strong> on read replicas, and <strong>table growth</strong> during soak tests.</li>
+      </ul>
+      <p>Tools: AWR for Oracle, <code>pg_stat_statements</code> for PostgreSQL, the slow query log for MySQL, Query Store for SQL Server, and Performance Insights on AWS RDS.</p>` },
+    { q: 'What is a database index, and can it hurt performance?', t: ['Database'], a: `
+      <p>An index is a sorted lookup structure (usually a B-tree) that lets the database jump to matching rows instead of reading the whole table. Without it, a query on a large table does a <strong>full table scan</strong>, which gets slower as the table grows.</p>
+      <p>Yes, it can hurt. Every insert, update and delete must also update each index, so too many indexes slow down writes and use more storage. Indexes on columns with few distinct values (such as yes/no) rarely help. Index the columns that queries filter, join and sort on, and check with the execution plan that the index is actually used.</p>` },
+    { q: 'Which monitoring tools have you used, and what is each one for?', t: ['Observability', 'Monitoring tools'], a: `
+      <ul>
+        <li><strong>APM</strong> (Dynatrace, AppDynamics, New Relic, Datadog APM): traces through the code and services. Answers "which method or call is slow?"</li>
+        <li><strong>Metrics and dashboards</strong> (Prometheus with Grafana, InfluxDB): time series for the system and the load test.</li>
+        <li><strong>Logs</strong> (Splunk, the ELK stack, Grafana Loki): errors and detailed events.</li>
+        <li><strong>Cloud monitoring</strong> (AWS CloudWatch, Azure Monitor, Google Cloud Monitoring): managed services such as load balancers, RDS, Lambda and queues.</li>
+        <li><strong>Server and OS level</strong> (nmon, sar, vmstat; Windows perfmon): when no agent is installed.</li>
+        <li><strong>Front end</strong> (Lighthouse, WebPageTest, real-user monitoring).</li>
+      </ul>
+      <p>In an interview, name the tools you used and say what you found with each one. That counts for more than a long list.</p>` },
+  ],
+
+  intermediate: [
+    { q: 'How do you find a bottleneck? Walk me through your approach.', t: ['Analysis', 'Observability'], a: `
+      <ol>
+        <li><strong>Find the knee:</strong> the load level where response time climbs and throughput stops rising.</li>
+        <li><strong>Narrow the scope:</strong> is every transaction slow, or only some? All of them points to something shared (CPU, GC, network, the gateway). Only one points to that path's code or query.</li>
+        <li><strong>Walk the request path:</strong> client → CDN → load balancer → gateway → service → cache → queue → DB. Use APM traces (Dynatrace PurePath, AppDynamics) to see where the time goes.</li>
+        <li><strong>Check each resource for saturation:</strong> CPU, memory/GC, threads, connection pools, DB, disk, network.</li>
+        <li><strong>Prove it:</strong> change one thing, re-run the same workload, and compare.</li>
+      </ol>
+      <div class="say">High CPU isn't always the cause. It's often a symptom of something queueing somewhere else.</div>` },
+    { q: 'Response time is high but CPU is only about 45%. What do you check?', t: ['Analysis', 'Database'], a: `
+      <p>If CPU isn't the limit, something is <strong>waiting</strong>. I check:</p>
+      <ul>
+        <li><strong>Connection pools:</strong> a DB pool at its maximum with threads waiting for a connection.</li>
+        <li><strong>Thread pools:</strong> all worker threads busy, so requests queue.</li>
+        <li><strong>The database:</strong> slow queries, missing indexes, lock contention.</li>
+        <li><strong>Downstream calls:</strong> a slow third-party or internal API.</li>
+        <li><strong>Network and DNS, rate limits, sync logging.</strong></li>
+      </ul>
+      <div class="say">On a payments API, p95 went from 800 ms to 6 s at 400 users and throughput flattened at about 120 TPS. App CPU was 45%. APM showed 80% of the time in a single SELECT, and the DB pool (max 50) was full with threads waiting. We raised the pool to 150 and added a missing composite index. Throughput rose to about 210 TPS and p95 fell to 1.1 s. The fix wasn't more servers. It was finding the real constraint.</div>` },
+    { q: 'Which Linux and JVM commands do you use to investigate performance?', t: ['Tools', 'JVM'], a: `
+      <ul>
+        <li><code>top</code> / <code>htop</code>: live CPU and memory per process.</li>
+        <li><code>vmstat 1</code>: CPU, memory, swap and run queue over time.</li>
+        <li><code>iostat -x 1</code>: disk utilisation and wait time.</li>
+        <li><code>sar</code>: historical resource usage. <code>nmon -f -s 60 -c 60</code> records to a file.</li>
+        <li><code>ss</code> / <code>netstat</code>: connection counts, TIME_WAIT pile-ups, connection exhaustion.</li>
+        <li><code>free -m</code>: memory. <code>tail -f</code>, <code>grep</code>, <code>awk</code>: log analysis.</li>
+        <li><code>jstat -gcutil</code>: GC activity. <code>jstack</code>: thread dumps (look for BLOCKED or WAITING). <code>jmap</code>: heap dumps.</li>
+      </ul>` },
+    { q: 'What operations commonly make a web application CPU-bound?', t: ['Analysis'], a: `
+      <p>JSON and XML parsing and serialisation, encryption and JWT signing, compression, regular expressions, sorting large collections, heavy business rules, excessive logging, password hashing (BCrypt), image and PDF generation, and creating lots of objects, which drives garbage collection.</p>
+      <p>Many RUNNABLE threads in a thread dump plus high CPU usually means one of these is saturating the servers. A CPU profile or APM hotspot view shows which one.</p>` },
+    { q: 'What do you watch in a soak test? Give an example of something only a soak test caught.', t: ['Soak', 'Story'], a: `
+      <p>I watch <strong>trends, not snapshots</strong>: heap after GC, active DB connections, thread count, open file handles, queue depth, disk usage and response time per transaction.</p>
+      <div class="say">In an 8-hour soak at a steady 100 TPS, everything looked healthy for five and a half hours. Then response times spiked across every transaction and throughput collapsed. The clue was the active DB connection count. It climbed in a slow straight line and never came back down, which is the classic sign of a connection leak. I traced it to a rare flow (0.5% of traffic) that called an external service. About 2% of those calls timed out, and on that path an exception skipped <code>connection.close()</code>. That leaked about 0.01 connections per second, so it took hours to drain the 200-connection pool. The fix was try-with-resources, plus enabling the pool's leak-detection threshold.</div>
+      <pre>// Before: close() is skipped if getRate() throws
+conn = pool.getConnection();
+rate = fxService.getRate(...);
+save(conn, rate);
+conn.close();
+
+// After: the connection is always returned
+try (Connection conn = pool.getConnection()) {
+  save(conn, fxService.getRate(...));
+}</pre>
+      <p>The lesson: response time and error rate stay green until the collapse. The metric to watch is the trend in a resource that should be flat.</p>` },
+    { q: 'How do you investigate a memory leak with heap dumps?', t: ['JVM', 'Story'], a: `
+      <ol>
+        <li>Take <strong>two heap dumps</strong>: one after warm-up and one late in the soak. Trigger a GC first so only live objects are captured.</li>
+        <li><strong>Compare them.</strong> A class that grows out of proportion is your suspect.</li>
+        <li>Open the later dump in <strong>Eclipse MAT</strong>. Run the Leak Suspects report, then the Dominator Tree sorted by retained heap.</li>
+        <li><strong>Path to GC Roots</strong> shows why the objects can't be freed. Static fields, ThreadLocals and listeners are the usual culprits.</li>
+      </ol>
+      <div class="say">Memory grew about 50 MB an hour in a 6-hour soak. The Dominator Tree showed 50 pool threads holding 1.8 GB through ThreadLocal maps full of logging MDC entries. The code called <code>MDC.put()</code> for each request but never <code>MDC.clear()</code>, and pooled threads live forever. It was also a data issue: one request's orderId appeared in another request's logs. The fix was clearing MDC in a finally block, moving MDC handling into a servlet filter, and monitoring MDC size.</div>` },
+    { q: 'How do you put performance tests into a CI/CD pipeline?', t: ['CI/CD'], a: `
+      <ul>
+        <li><strong>Two modes:</strong> a short <em>sanity</em> run on every deploy (a few users for a few minutes, as a regression gate) and a full <em>load</em> run on a schedule or before release.</li>
+        <li><strong>Thresholds as gates:</strong> k6 exits non-zero when a threshold is breached, so the pipeline fails.</li>
+        <li><strong>Runner sized for load:</strong> for example a Kubernetes runner with a fixed CPU and memory limit, so the injector isn't the bottleneck.</li>
+        <li><strong>Secrets</strong> come from a vault at runtime and are never in the repo.</li>
+        <li><strong>Parallel scenarios</strong> each get their own block of test data, so they don't collide.</li>
+        <li><strong>Results:</strong> stream metrics to InfluxDB/Grafana or Elastic, and save the report as an artifact, even when the job fails.</li>
+      </ul>
+      <div class="say">Every CI file answers the same questions: when does it run, on which machine, with which tools, which settings and which secrets, then it runs the test and saves the results.</div>` },
+    { q: 'How do you correlate load test results with monitoring tools?', t: ['Observability'], a: `
+      <p>Align everything on <strong>time</strong> and <strong>tags</strong>:</p>
+      <ul>
+        <li>Send load-test metrics to the same place as app metrics (InfluxDB/Grafana, Elastic or Datadog), or add the test window as annotations.</li>
+        <li>Add a header such as <code>x-test-run-id</code> to requests so APM (Dynatrace, AppDynamics, New Relic) and logs (Splunk, Kibana) can be filtered to your traffic.</li>
+        <li>Build a dashboard per run: RPS, percentiles and errors next to CPU, heap, GC, pools and DB time.</li>
+      </ul>
+      <p><strong>The ELK stack:</strong> Elasticsearch stores and indexes, Logstash (or Beats) collects and transforms, and Kibana visualises. Logs flow from collect, to store, to dashboard.</p>` },
+    { q: 'Describe how you would structure a k6 framework.', t: ['k6', 'Framework'], a: `
+      <p>In four layers, each with one job:</p>
+      <ol>
+        <li><strong>API clients:</strong> generated from OpenAPI specs (for example with Grafana's <code>openapi-to-k6</code>). When an API changes, you regenerate the client instead of editing it by hand.</li>
+        <li><strong>Services:</strong> wrap the clients and add checks. Did we get the right status and the right data?</li>
+        <li><strong>Scenarios:</strong> the user journeys, such as log in, view the current draw, buy a ticket.</li>
+        <li><strong>Runners:</strong> decide how hard to push (users, duration, ramp-up) and what counts as a pass (thresholds).</li>
+      </ol>
+      <div class="say">The runner says how hard to push, the scenario says what to do, the service checks it worked, and the client makes the call.</div>` },
+    { q: 'k6 is written in Go. How does it run TypeScript tests?', t: ['k6'], a: `
+      <p>k6 is a Go binary with an embedded JavaScript engine. It doesn't use Node.js. From k6 v0.52 onwards, and in all of 1.x, it removes TypeScript types on the fly when it loads a <code>.ts</code> file, so there's no build step. We run <code>tsc --noEmit</code> in CI only to type-check.</p>
+      <p>On older k6 versions, teams bundled TypeScript to JavaScript first with Webpack or esbuild and Babel. Node is often still in the image, but only for helper scripts and npm packages.</p>` },
+    { q: 'How do you manage test data for large load tests?', t: ['Test data'], a: `
+      <ul>
+        <li>Give each virtual user its <strong>own data</strong>, using <code>exec.vu.idInTest</code> or the iteration number to index into a dataset.</li>
+        <li>When scenarios run in parallel, give each one an <strong>offset</strong> or range of accounts so they don't share users.</li>
+        <li>Create data in bulk ahead of time through APIs or the DB, not in the measured run.</li>
+        <li>Think about <strong>data that gets used up</strong>, such as one-time vouchers or balances. Reset it between runs.</li>
+        <li>Make the data volume close to production, or the DB tests itself on an empty table.</li>
+      </ul>` },
+    { q: 'Why put an API gateway or reverse proxy in front of services?', t: ['Architecture'], a: `
+      <p>A reverse proxy adds a layer that handles common concerns in one place: SSL termination, routing, load balancing, auth and security filtering, rate limiting, caching, compression and static content. That takes work off the app servers and gives you one point to control traffic.</p>
+      <p>For a performance engineer, each hop (CDN → load balancer → gateway → services → cache → queue → DB) is a place where time and limits pile up. Test and monitor each one, including the gateway's own connection limits and timeouts.</p>` },
+    { q: 'How do you performance test Kafka or MQ-based systems?', t: ['Messaging'], a: `
+      <p>Queues decouple systems. The producer doesn't wait for the consumer, which helps with spikes. But a "fast" API might only be queuing work. So measure end to end.</p>
+      <p><strong>Kafka:</strong> producer and consumer throughput, <strong>consumer lag</strong> (how far behind consumers are), partition balance, broker CPU, memory, disk and network.</p>
+      <p><strong>MQ (such as IBM MQ):</strong> queue depth, message age, wait time, consumer rate.</p>
+      <p>The key question: under peak load, does consumer lag or queue depth stay flat, or keep growing? If it keeps growing, the system can't keep up, even if the API responds quickly.</p>` },
+    { q: 'How do you test front-end (UI) performance? What are Core Web Vitals?', t: ['UI'], a: `
+      <ul>
+        <li><strong>LCP</strong> (Largest Contentful Paint): when the main content is visible. Good is under 2.5 s.</li>
+        <li><strong>INP</strong> (Interaction to Next Paint): how quickly the page responds to clicks and typing. Good is under 200 ms.</li>
+        <li><strong>CLS</strong> (Cumulative Layout Shift): how much the layout jumps around. Good is under 0.1.</li>
+        <li>Also <strong>FCP</strong> (first content, under 1.8 s) and <strong>TTFB</strong> (server responsiveness, under 800 ms).</li>
+      </ul>
+      <p>Tools: Lighthouse, WebPageTest, the k6 browser module (alongside protocol-level load) and real-user monitoring. Add custom timings for real actions such as search or login, and put thresholds on them.</p>
+      <div class="say">On a homepage, CLS was 0.52 because a prize panel filled in from an API after the page rendered, pushing the content below it down. Some images also had no width or height. We reserved space with a fixed-height placeholder and set image dimensions, and CLS fell into the good range. It mattered because the shifting area was where people tap to play.</div>` },
+    { q: 'Do FCP and LCP depend only on the user\'s device?', t: ['UI'], a: `
+      <p>No. They are a chain: <strong>server processing (TTFB)</strong> → <strong>network</strong> → <strong>downloading resources (page weight)</strong> → <strong>the browser parsing and painting</strong>. Only the last step depends on the device.</p>
+      <p>In a lab test the device stays the same, so if LCP rises from 3.2 s with one user to 5 s with ten, the server and network caused it. Watch out, though: running many browser users on one machine can max out that machine's CPU. Keep browser user counts low and generate the main load at the protocol level.</p>` },
+    { q: 'How do you know the load generator isn\'t the bottleneck?', t: ['Tools', 'Analysis'], a: `
+      <ul>
+        <li>Monitor the injector's CPU, memory and network. Keep CPU below about 70–80%.</li>
+        <li>Look for client-side warnings, such as k6 warning about too few pre-allocated VUs, or dropped iterations.</li>
+        <li>A rising <code>http_req_blocked</code> or <code>http_req_connecting</code> time can mean local port or DNS limits.</li>
+        <li>Spread the load across several generators and check that the total throughput scales in line.</li>
+        <li>Remember that k6 measures from the VU's point of view, including DNS, TCP, TLS and the client's own processing time.</li>
+      </ul>` },
+    { q: 'Which LoadRunner run-time settings matter most, and why?', t: ['LoadRunner'], a: `
+      <ul>
+        <li><strong>Pacing:</strong> controls iterations per hour, so it controls the load. Set it from the workload model.</li>
+        <li><strong>Think time:</strong> replay as recorded, a random percentage of it, or ignore. Use the same setting across runs, or results can't be compared.</li>
+        <li><strong>Browser emulation:</strong> "simulate a new user on each iteration" and cache settings. These decide whether every iteration downloads static content again.</li>
+        <li><strong>Log level:</strong> extended logging is for debugging only. It slows the load generators.</li>
+        <li><strong>Continue on error</strong> and timeouts: decide whether a failed step ends the iteration.</li>
+        <li><strong>Download non-HTML resources:</strong> turn it off for API-level tests, on to measure full page weight.</li>
+      </ul>` },
+    { q: 'How do you analyse a LoadRunner test in LoadRunner Analysis?', t: ['LoadRunner', 'Analysis'], a: `
+      <ol>
+        <li>Check the <strong>summary</strong>: transaction response times (90th percentile), passed and failed counts, errors.</li>
+        <li><strong>Merge graphs</strong> to line up running Vusers with response time and hits per second, to find where response time starts rising.</li>
+        <li>Use <strong>auto-correlation</strong> to find which server metrics moved with a slow transaction.</li>
+        <li>Look at <strong>Errors per second</strong> by description to group failures.</li>
+        <li>For web tests, use <strong>web page diagnostics</strong> to split time into DNS, connection, SSL, first buffer and download.</li>
+        <li>Set the <strong>granularity</strong> sensibly: too coarse hides spikes.</li>
+      </ol>` },
+    { q: 'How do you run a large distributed test with JMeter?', t: ['JMeter', 'Tools'], a: `
+      <ul>
+        <li>Use one controller and several worker nodes (<code>jmeter -n -t plan.jmx -R host1,host2</code>), or run independent JMeter containers on Kubernetes and merge the results.</li>
+        <li>The thread count is <em>per worker</em>: 3 workers × 200 threads = 600 users.</li>
+        <li>Split CSV data per worker so they don't reuse the same accounts.</li>
+        <li>Set the heap (<code>-Xms</code>/<code>-Xmx</code>), disable unneeded listeners and use the Backend Listener to stream results to InfluxDB/Grafana.</li>
+        <li>Watch each worker's CPU. One overloaded worker skews the totals.</li>
+      </ul>` },
+    { q: 'How do you model several user journeys in one k6 test?', t: ['k6', 'Workload'], a: `
+      <p>Use <strong>scenarios</strong>. Each one has its own executor, rate and function:</p>
+      <pre>export const options = {
+  scenarios: {
+    browse: { executor: 'constant-arrival-rate', rate: 80, timeUnit: '1s',
+              duration: '30m', preAllocatedVUs: 100, exec: 'browse' },
+    buy:    { executor: 'constant-arrival-rate', rate: 10, timeUnit: '1s',
+              duration: '30m', preAllocatedVUs: 40,  exec: 'buy' },
+  },
+  thresholds: { 'http_req_duration{scenario:buy}': ['p(95)&lt;800'] },
+};</pre>
+      <p>Other useful features: <code>SharedArray</code> to load test data once and share it across VUs, <code>group()</code> and tags to break results down, and custom <code>Trend</code>, <code>Counter</code> and <code>Rate</code> metrics for business measures.</p>` },
+    { q: 'How do you get k6 results into Grafana, and when do you need extensions?', t: ['k6', 'Observability'], a: `
+      <p>k6 can send metrics while the test runs with <code>--out</code>: InfluxDB, Prometheus remote write, OpenTelemetry, Datadog, or JSON/CSV files. Grafana dashboards then show load next to the system metrics.</p>
+      <p>Watch for <strong>high cardinality</strong>: URLs with IDs in them create thousands of separate series. Group them with a <code>name</code> tag, such as <code>http.get(url, { tags: { name: 'GetOrder' } })</code>.</p>
+      <p><strong>xk6 extensions</strong> add protocols and outputs that k6 doesn't have built in, such as Kafka, SQL or Redis. You build a custom k6 binary with <code>xk6 build --with ...</code>.</p>` },
+    { q: 'In Gatling, how do injection profiles, feeders and checks work?', t: ['Gatling', 'Workload', 'Scripting'], a: `
+      <p><strong>Injection profiles</strong> come in two kinds. Open: users arrive at a rate, such as <code>constantUsersPerSec(20).during(600)</code> or <code>rampUsersPerSec(1).to(50).during(300)</code>. Closed: a fixed number of users at once, such as <code>constantConcurrentUsers(100).during(600)</code>. Use open for internet-facing APIs.</p>
+      <p><strong>Feeders</strong> provide test data, for example <code>csv("users.csv").circular()</code> with <code>feed(feeder)</code> in the scenario. Use <code>queue</code> when each record should be used only once.</p>
+      <p><strong>Checks</strong> validate responses and also do correlation: <code>.check(jsonPath("$.token").saveAs("token"))</code>, then use <code>#{token}</code> in later requests.</p>` },
+    { q: 'Compare Gatling, k6 and JMeter.', t: ['Gatling', 'k6', 'JMeter', 'Tools'], a: `
+      <ul>
+        <li><strong>Language:</strong> Gatling uses Java/Kotlin/Scala (and JavaScript), k6 uses JavaScript/TypeScript, JMeter uses a GUI with XML files.</li>
+        <li><strong>Efficiency:</strong> Gatling and k6 are both non-blocking and light. JMeter uses one thread per user and needs more memory.</li>
+        <li><strong>Code review:</strong> Gatling and k6 scripts are plain code that's easy to review in Git. JMeter XML is hard to diff.</li>
+        <li><strong>Reports:</strong> Gatling's built-in HTML report is very good. k6 relies on outputs and Grafana, or its web dashboard. JMeter has an HTML dashboard.</li>
+        <li><strong>Team fit:</strong> Gatling suits JVM teams, k6 suits JavaScript and DevOps teams, and JMeter suits teams who prefer a GUI and need many protocols.</li>
+      </ul>` },
+    { q: 'What are the RED and USE methods?', t: ['Observability', 'Analysis'], a: `
+      <p><strong>RED</strong> is for <em>services</em>, from the user's point of view: <strong>R</strong>ate (requests per second), <strong>E</strong>rrors (failed requests) and <strong>D</strong>uration (latency percentiles).</p>
+      <p><strong>USE</strong> is for <em>resources</em> such as CPU, memory, disk, pools and queues: <strong>U</strong>tilisation (how busy), <strong>S</strong>aturation (how much work is waiting) and <strong>E</strong>rrors.</p>
+      <p>In a load test, RED tells you <em>that</em> a service got slow, and USE tells you <em>which resource</em> ran out. Saturation is the one most often missed: CPU at 60% with a long run queue is still a bottleneck.</p>` },
+    { q: 'What is distributed tracing, and how does OpenTelemetry help?', t: ['Observability'], a: `
+      <p>A <strong>trace</strong> follows one request across services. Each step is a <strong>span</strong> with a start time and duration. A <strong>trace context</strong> header (W3C <code>traceparent</code>) is passed from service to service so the spans join up.</p>
+      <p><strong>OpenTelemetry</strong> is the open standard and set of SDKs for producing traces, metrics and logs, independent of any vendor. You instrument once and send the data to Jaeger, Grafana Tempo, Elastic, Dynatrace or Datadog.</p>
+      <p>For load tests, send a trace header from the load tool. You can then jump from a slow request in your results to its full trace.</p>` },
+    { q: 'What would you put on a Grafana dashboard for a load test?', t: ['Observability', 'Reporting'], a: `
+      <ul>
+        <li><strong>Load:</strong> active VUs and RPS sent, next to RPS the server received.</li>
+        <li><strong>Experience:</strong> p50, p95 and p99 per endpoint, and error rate by status code.</li>
+        <li><strong>Services (RED):</strong> per service rate, errors and duration.</li>
+        <li><strong>Resources (USE):</strong> CPU, memory, pod count, JVM heap and GC pauses, thread pools, DB connections.</li>
+        <li><strong>Dependencies:</strong> DB query time, cache hit rate, queue lag.</li>
+        <li><strong>The load generator itself:</strong> its CPU and network.</li>
+      </ul>
+      <p>Put all of them on the same time axis, with a variable to pick the test run, and add annotations for ramp stages and deployments.</p>` },
+    { q: 'CPU usage looks low, but a pod still has latency spikes. How can CPU throttling cause that?', t: ['Cloud', 'Analysis'], a: `
+      <p>Kubernetes enforces CPU limits in <strong>100 ms periods</strong> (the Linux CFS quota). A <code>500m</code> limit means the pod may use 50 ms of CPU time per 100 ms, <em>across all its threads together</em>.</p>
+      <p>Suppose the app has 4 busy threads. They use up the 50 ms in about 12.5 ms of real time. The pod is then paused for the remaining 87.5 ms. Averaged over a minute, CPU utilisation looks moderate, but requests caught in those pauses take an extra 80 ms or more. That shows up as bad p95/p99 with "normal" CPU.</p>
+      <p><strong>How to confirm:</strong> <code>container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total</code> in Prometheus (the share of periods throttled), or the throttling view in Datadog or Dynatrace.</p>
+      <p><strong>Fixes:</strong> raise the CPU limit or remove it (keep a sensible request), reduce thread pool sizes, and for Java set <code>-XX:ActiveProcessorCount</code> so the JVM doesn't create GC and worker threads for every core on the node.</p>` },
+    { q: 'How do you use load test results to set CPU and memory requests and limits?', t: ['Cloud', 'Capacity'], a: `
+      <ol>
+        <li>Run a load test at target peak with generous limits, and record each pod's real CPU (in millicores) and memory use.</li>
+        <li>Set the <strong>request</strong> near normal peak use, so the scheduler reserves what the pod needs.</li>
+        <li>Set the <strong>memory limit</strong> above the highest observed use plus headroom. Going over the memory limit kills the pod (OOMKilled), it isn't throttled.</li>
+        <li>For CPU, use a limit well above the request, or no limit, then check throttling stays near zero.</li>
+        <li>Set the auto-scaling target (such as 70% of request) so new pods start before the existing ones are saturated, and check the scale-out time in a ramp test.</li>
+        <li>Re-run and confirm the SLA holds at peak with the new settings.</li>
+      </ol>` },
+    { q: 'What do you need to know about running the JVM in containers?', t: ['Cloud', 'JVM'], a: `
+      <ul>
+        <li>Modern JVMs (Java 11+, and 8u191+) read the container's memory and CPU limits. Older ones read the whole host's resources and can be OOMKilled.</li>
+        <li>Size the heap as a percentage: <code>-XX:MaxRAMPercentage=70</code>. Leave room for metaspace, thread stacks, direct buffers and the agent.</li>
+        <li>With fractional CPU (for example 1500m), the JVM rounds up the number of processors it sees. That affects GC threads, the ForkJoin pool and default thread pools. Set <code>-XX:ActiveProcessorCount</code> if needed.</li>
+        <li>With less than 2 CPUs and under 1792 MB, the JVM may choose the Serial GC by default. Choose the collector explicitly.</li>
+        <li>Allow for JIT warm-up after each new pod starts. The first minutes are slower, which matters during scale-out.</li>
+      </ul>` },
+    { q: 'How do you performance test serverless functions such as AWS Lambda?', t: ['Cloud'], a: `
+      <ul>
+        <li><strong>Cold starts:</strong> the first call to a new instance is slower. Measure cold and warm latency separately, especially after idle time and during sudden spikes.</li>
+        <li><strong>Concurrency limits:</strong> the account and per-function concurrency limits cause throttling (429 errors). Test the scale-up rate as well as the maximum.</li>
+        <li><strong>Downstream effects:</strong> 1,000 concurrent functions can open 1,000 database connections. Use a connection proxy (such as RDS Proxy) or a queue in between.</li>
+        <li><strong>Memory setting</strong> also sets CPU on Lambda. Test a few sizes. More memory is sometimes both faster and cheaper.</li>
+        <li><strong>Monitor:</strong> duration, init duration, throttles, errors and concurrent executions in CloudWatch, plus X-Ray traces.</li>
+      </ul>` },
+    { q: 'How do you size a database connection pool?', t: ['Database'], a: `
+      <p>Bigger isn't better. A database can only run a limited number of queries at once, roughly a small multiple of its CPU cores. Extra connections just queue inside the database and add contention.</p>
+      <ul>
+        <li>Start small. A common starting point is <code>(DB cores × 2) + effective disks</code>, shared across <em>all</em> app instances.</li>
+        <li>Do the sum across pods: 20 pods × a pool of 50 = 1,000 connections. That can exceed the database's <code>max_connections</code>, especially after auto-scaling.</li>
+        <li>In the load test, watch time spent waiting for a connection (Hikari's <code>pending</code> threads), active connections, and DB CPU and waits.</li>
+        <li>If threads wait for connections but the DB is idle, raise the pool. If the DB is saturated, a bigger pool makes things worse. Fix the queries instead.</li>
+      </ul>` },
+    { q: 'How do you find slow queries in PostgreSQL, MySQL or SQL Server?', t: ['Database'], a: `
+      <ul>
+        <li><strong>PostgreSQL:</strong> <code>pg_stat_statements</code> ordered by <code>total_exec_time</code> and <code>calls</code>, then <code>EXPLAIN (ANALYZE, BUFFERS)</code> on the worst. <code>pg_stat_activity</code> shows what's running and waiting right now.</li>
+        <li><strong>MySQL:</strong> the slow query log with <code>long_query_time</code>, Performance Schema digests, then <code>EXPLAIN ANALYZE</code>.</li>
+        <li><strong>SQL Server:</strong> Query Store for the top queries over time, wait statistics, and the actual execution plan.</li>
+      </ul>
+      <p>In the plan, look for full scans on big tables, nested loops over many rows, sorts spilling to disk, and big gaps between estimated and actual rows (a sign of stale statistics). Sort by <strong>total time</strong> (time × calls), not only the slowest single query. A 5 ms query run 10,000 times a minute often matters more than one 2 s report.</p>` },
+    { q: 'How do you spot and deal with locking and deadlocks under load?', t: ['Database'], a: `
+      <p>Locking problems often don't show up with one user. They appear when many users update the <strong>same rows</strong>, such as a shared counter, a stock level or a balance.</p>
+      <ul>
+        <li><strong>Signs:</strong> throughput levels off with low DB CPU, rising lock wait time, <code>enq: TX</code> waits in Oracle, and deadlock errors in the logs.</li>
+        <li><strong>Find them:</strong> blocking-session views (<code>pg_locks</code>, <code>sys.dm_tran_locks</code>, <code>v$session</code>) and the deadlock graph or log entries.</li>
+        <li><strong>Fixes:</strong> keep transactions short, update rows in a consistent order, add indexes so updates lock fewer rows, avoid a single "hot" row (spread a counter across several rows), or use optimistic locking.</li>
+      </ul>
+      <p>Make sure the test data matches real behaviour. If every virtual user updates the same account, you create contention that production wouldn't have.</p>` },
+    { q: 'How do you use Prometheus and PromQL for performance analysis?', t: ['Observability', 'Monitoring tools'], a: `
+      <p>Prometheus <strong>scrapes</strong> metrics from targets every few seconds and stores them as time series. Grafana charts them.</p>
+      <pre># requests per second, per service
+sum by (service) (rate(http_requests_total[1m]))
+
+# p95 latency from a histogram
+histogram_quantile(0.95,
+  sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+
+# CPU used by pods, in cores
+sum by (pod) (rate(container_cpu_usage_seconds_total[1m]))</pre>
+      <p>Points to know: <code>rate()</code> is for counters. Percentiles have to be calculated from histogram buckets. You can't average p95 values from several pods. Labels with many values, such as user IDs, explode the number of series.</p>` },
+    { q: 'How do you use Splunk for performance analysis?', t: ['Observability', 'Monitoring tools'], a: `
+      <pre>index=app sourcetype=access service="orders"
+| timechart span=1m perc95(response_time) as p95, count as rpm
+
+index=app level=ERROR earliest=-2h
+| stats count by error_code, endpoint | sort -count</pre>
+      <ul>
+        <li>Limit the search to the test window and filter by a test-run ID header, so you only see your own traffic.</li>
+        <li>Use <code>timechart</code> to line up errors with ramp stages. Use <code>stats</code> to find the endpoints and errors that matter most.</li>
+        <li>Save the searches as a dashboard so every run is analysed the same way.</li>
+      </ul>` },
+    { q: 'Dynatrace, AppDynamics, New Relic or Datadog: how do you compare APM tools?', t: ['Observability', 'Monitoring tools'], a: `
+      <ul>
+        <li><strong>Dynatrace:</strong> one agent detects everything automatically. PurePath traces every request, and an AI engine (Davis) does root-cause analysis. Strong for large enterprises and Kubernetes.</li>
+        <li><strong>AppDynamics:</strong> organised around business transactions, with flow maps and baselines. Popular in banking.</li>
+        <li><strong>New Relic:</strong> covers the whole stack, with a query language (NRQL) and a generous free tier.</li>
+        <li><strong>Datadog:</strong> very strong for cloud and infrastructure, with a large set of integrations, APM and logs in one place.</li>
+      </ul>
+      <p>Compare them on: tracing depth, Kubernetes and cloud support, OpenTelemetry support, agent overhead, how easy it is to correlate with load tests, and price. Pricing usually depends on hosts, data volume or both.</p>` },
+  ],
+
+  advanced: [
+    { q: 'How would you start performance engineering for a brand-new product?', t: ['Strategy'], a: `
+      <p>For a greenfield product I go from <strong>demand</strong> to <strong>design</strong> to <strong>proof</strong>:</p>
+      <ol>
+        <li>Understand the business demand: expected users, peak events, growth.</li>
+        <li>Review the architecture early, looking for synchronous chains, shared databases and missing caching.</li>
+        <li>Define NFRs and SLOs and get them signed off.</li>
+        <li>Build a capacity model and a workload model from forecasts.</li>
+        <li>Make sure observability (APM, logs, metrics, tracing) is built in from day one.</li>
+        <li>Test components early, in CI, on every deploy.</li>
+        <li>Then test full load, stress, spike, soak and resilience, including auto-scaling and failover.</li>
+        <li>Set baselines, then hold a production readiness review before go-live.</li>
+      </ol>` },
+    { q: 'What is on your production readiness checklist?', t: ['Strategy'], a: `
+      <ul>
+        <li>NFRs defined and met, with evidence.</li>
+        <li>Peak load and spike tested, and capacity confirmed with headroom.</li>
+        <li>Auto-scaling tested: it scales out fast enough and scales back in.</li>
+        <li>Disaster recovery and failover tested.</li>
+        <li>Monitoring dashboards in place, and alerts configured and tested.</li>
+        <li>Runbooks ready for the likely failure modes.</li>
+        <li>Known risks written down and accepted by the business.</li>
+      </ul>` },
+    { q: 'How do you approach capacity planning?', t: ['Capacity'], a: `
+      <ol>
+        <li>Measure capacity per unit: the maximum TPS one pod or instance sustains within SLA, from a breakpoint test.</li>
+        <li>Forecast peak demand: today's peak × growth × event multipliers (sales, draws, end of month).</li>
+        <li>Required instances = forecast peak ÷ capacity per instance, plus headroom (often 30–50%) and N+1 for failover.</li>
+        <li>Check shared limits that don't scale with pods: DB connections (pods × pool size), licences, downstream rate limits.</li>
+        <li>Review every quarter against what actually happened in production.</li>
+      </ol>
+      <p>A common trap: doubling the pods also doubles the DB connections, and the database becomes the new bottleneck.</p>` },
+    { q: 'Explain how G1GC works.', t: ['JVM'], a: `
+      <p>G1 splits the heap into equal-sized <strong>regions</strong> (1–32 MB). Each region is labelled Eden, Survivor, Old or Humongous, and the label can change over time. Older collectors had fixed young and old areas.</p>
+      <ul>
+        <li><strong>Young collection:</strong> stop-the-world, collects Eden and Survivor regions. Fast and frequent.</li>
+        <li><strong>Concurrent marking:</strong> runs while the application keeps running and finds which old regions are mostly garbage. It starts when old-generation use passes the IHOP threshold (45% by default).</li>
+        <li><strong>Mixed collection:</strong> collects young regions plus the old regions with the <em>most garbage first</em>, which is where the name comes from.</li>
+        <li><strong>Humongous objects:</strong> objects bigger than half a region get their own contiguous regions. They are expensive.</li>
+      </ul>
+      <p><code>-XX:MaxGCPauseMillis=200</code> is a soft target. G1 collects fewer regions per pause to meet it.</p>` },
+    { q: 'p99 latency is bad but the average is fine, in a sawtooth pattern. How do you diagnose it?', t: ['JVM', 'Story'], a: `
+      <p>A good average with a bad p99 means some requests are being <strong>frozen</strong>, not slowed. A sawtooth means something periodic. If every transaction type spikes at the same moment, the cause is global (stop-the-world GC), not one slow query.</p>
+      <div class="say">A Java 17 service at 1,000 RPS saw p99 rise from 220 ms to 800 ms against a 300 ms SLA after a feature grew payloads from 4 KB to 18 KB. The DB and downstream services were healthy. Latency spikes lined up with CPU spikes and GC pauses. The GC logs showed mixed GCs over 700 ms and new humongous allocations: the parsed object graphs had grown to about 4 MB, over half the 8 MB region size. We tuned G1 without changing the collector or the infrastructure.</div>
+      <pre>-XX:G1HeapRegionSize=32m              # larger regions absorb the big objects
+-XX:InitiatingHeapOccupancyPercent=35 # start marking earlier
+-XX:G1MixedGCCountTarget=16           # spread mixed GC work over more cycles
+-XX:G1ReservePercent=15               # more room to copy objects into</pre>
+      <p>Always prove a change by re-running the same workload and comparing the GC logs and p99.</p>` },
+    { q: 'How do you read an Oracle AWR report for a load test?', t: ['Database'], a: `
+      <ol>
+        <li>Limit the snapshots to the exact test window.</li>
+        <li>Compare <strong>DB Time with elapsed time</strong> to confirm the database is actually busy.</li>
+        <li><strong>Top foreground events</strong> show the type of problem: <code>db file scattered read</code> means full table scans, <code>db file sequential read</code> means index or single-block reads, and <code>enq: TX</code> means row-lock contention.</li>
+        <li><strong>SQL ordered by Elapsed Time</strong> finds the worst statement. <strong>By Executions</strong> exposes N+1 patterns. <strong>By Gets</strong> finds statements that read the most buffers.</li>
+        <li>Take the SQL_ID to <code>DBMS_XPLAN.DISPLAY_CURSOR</code> with ALLSTATS. Look for TABLE ACCESS FULL and big gaps between estimated and actual rows, which point to a missing index or stale statistics.</li>
+        <li>Fix it, re-run, and compare the two AWR reports to prove the change.</li>
+      </ol>
+      <p>If a SQL shows %CPU 18 and %IO 79, it's I/O-bound. Tuning the query or adding an index will help more than adding CPU.</p>` },
+    { q: 'How do you find an N+1 query problem?', t: ['Database', 'Story', 'Observability'], a: `
+      <p>An N+1 is when the code loads a parent record, then runs a separate query for each child. It's fine at low load. At high load, the database and connection pool become the bottleneck.</p>
+      <div class="say">A risk API had a p95 of 200 ms at baseline, rising to 1.8 s above 300 RPS. Dashboards suggested infrastructure because app CPU was high. A Dynatrace trace showed most of the time in the DB: one query ran 47 times per request. At 300 RPS the connection pool ran out, and the high CPU was threads waiting. A single JOIN fixed it, and p95 stayed under 250 ms at 500 RPS.</div>
+      <p>To spot it: look at the database call count per request in APM, and at "SQL ordered by Executions" in AWR.</p>` },
+    { q: 'You join a team with an existing performance framework. How do you tell if it\'s fit for purpose?', t: ['Framework', 'Strategy'], a: `
+      <p>I look at it through six lenses:</p>
+      <ol>
+        <li><strong>Coverage:</strong> does it test the journeys that carry business risk?</li>
+        <li><strong>Maintainability:</strong> is the code modular, and how long does adding a journey take?</li>
+        <li><strong>Data and environments:</strong> is the test data realistic, and is the environment close to production scale?</li>
+        <li><strong>Results:</strong> are the thresholds tied to real SLOs, and do results drive decisions?</li>
+        <li><strong>Integration:</strong> is it in CI/CD and owned by the squads, or run by hand by one person?</li>
+        <li><strong>Observability:</strong> can you link load results to app and infrastructure metrics?</li>
+      </ol>
+      <p>I spend the first one or two weeks understanding the current state before I recommend anything. I won't rip up something that works.</p>` },
+    { q: 'How do you report test results so stakeholders actually use them?', t: ['Reporting', 'Observability'], a: `
+      <p>One report per run that pulls everything together:</p>
+      <ul>
+        <li>From k6/InfluxDB: RPS curve, percentiles, error rate, a table per endpoint.</li>
+        <li>From APM: service flow, slowest methods, DB call counts.</li>
+        <li>From logs: error counts per service and the top errors.</li>
+        <li>From CI: pipeline, runner, branch and parameters. From the workload model: what we meant to test.</li>
+      </ul>
+      <p>Save it as a CI artifact and post it to Confluence. Stakeholders open one link and don't need logins to four tools. Engineers follow the linked dashboards to dig in. Making results easy to read drives adoption more than making tests easy to write.</p>` },
+    { q: 'What is coordinated omission?', t: ['Metrics', 'Tools'], a: `
+      <p>In a closed model, when the system stalls, the virtual users wait and send fewer requests. The slow period is therefore <em>under-sampled</em>, and the measured percentiles look better than what real users experienced.</p>
+      <p>To avoid it, use an arrival-rate (open) model so requests keep arriving at the planned rate. Watch for dropped iterations, and compare with server-side and real-user data. Also remember what client-side latency includes: DNS, TCP and TLS setup, the network round trip and the client's own processing.</p>` },
+    { q: 'How do you run load generators on Kubernetes?', t: ['CI/CD', 'Infrastructure', 'k6'], a: `
+      <ul>
+        <li>A GitLab runner with the Kubernetes executor runs each job in a fresh pod, so the environment is clean every time.</li>
+        <li>Set <strong>requests</strong> (guaranteed) and <strong>limits</strong> (maximum) for CPU and memory, for example 8 CPU and 16 Gi, so the load generator has room.</li>
+        <li>Use <strong>tags</strong> and <strong>node selectors</strong> to pin load jobs to dedicated nodes, away from the system under test.</li>
+        <li>For more load, use the k6 Operator or split the load across pods with execution segments.</li>
+      </ul>
+      <p>Be honest about your role. If a platform team owns the Helm install and <code>config.toml</code>, say that you set the tags and resource limits from the pipeline side, and explain why each one matters.</p>` },
+    { q: 'Users report crashes in production. How do you approach it as a performance engineer?', t: ['Strategy', 'Analysis'], a: `
+      <ol>
+        <li>Read the logs, APM data and crash reports first. Is it server-side (5xx errors, out-of-memory, pod restarts) or client-side (JS errors, browser tab crashes)?</li>
+        <li>Reproduce server crashes with protocol-level load (k6 HTTP), not browser tests.</li>
+        <li>Run a <strong>stress test</strong> to find the breaking point, and a <strong>soak test</strong> if it crashes after running for a while.</li>
+        <li>Link the crash to resource metrics (heap, threads, connections) to find the root cause.</li>
+        <li>Fix, re-test with the same workload, and add the scenario to CI so it can't come back.</li>
+        <li>Use browser tests last, to check the user experience at a safe load.</li>
+      </ol>
+      <p>On the client side, a memory leak means the JavaScript heap keeps growing because objects such as detached DOM nodes or forgotten listeners stay referenced, until the browser kills the tab.</p>` },
+    { q: 'How do you validate auto-scaling and resilience?', t: ['Infrastructure', 'Strategy'], a: `
+      <ul>
+        <li><strong>Scale out:</strong> ramp up load and measure how long new pods take to become ready compared with how fast traffic rises. Slow start-up plus a sudden spike means errors before the new pods arrive.</li>
+        <li><strong>Scale in:</strong> make sure connections drain gracefully, with no errors when pods are removed.</li>
+        <li><strong>Limits:</strong> the HPA maximum, node capacity, and shared limits such as the DB that don't scale.</li>
+        <li><strong>Resilience:</strong> kill a pod, slow down a dependency, or fail an availability zone under load. Do timeouts, retries and circuit breakers protect the system, or do retries make the problem worse?</li>
+      </ul>` },
+    { q: 'How do SLOs and error budgets change performance testing?', t: ['Strategy'], a: `
+      <p>An <strong>SLO</strong> is a target such as "99.9% of requests under 500 ms over 30 days". The <strong>error budget</strong> is the 0.1% you are allowed to miss. Performance tests become a way to protect that budget: thresholds in CI match the SLOs, and a release that would use up too much of the budget is blocked.</p>
+      <p>It also changes the conversation with the business, from "is it fast?" to "how much risk are we willing to accept?"</p>` },
+    { q: 'How would you load test an AI or LLM-backed API?', t: ['AI', 'Strategy'], a: `
+      <p>LLM APIs behave differently from normal APIs. Each response is generated one token at a time, so response time depends on how long the output is.</p>
+      <ul>
+        <li>Measure <strong>time to first token</strong> (what users feel when streaming), <strong>tokens per second</strong> and total time, not just the HTTP duration.</li>
+        <li>Build the workload from a realistic mix of prompt and output lengths. Cost and latency scale with tokens.</li>
+        <li>Test the provider's rate limits (requests and tokens per minute), and how your app handles 429s and retries.</li>
+        <li>Watch the cost per test run. Use a mock or smaller model for most runs and the real model for a final check.</li>
+        <li>Check quality under load as well: timeouts and truncated responses count as failures.</li>
+      </ul>` },
+    { q: 'As a performance lead, how do you build and run a team?', t: ['Leadership'], a: `
+      <ul>
+        <li>Set clear goals with the business and measure progress against them.</li>
+        <li>Coach team members: pair on analysis, review scripts, rotate people through tools and domains.</li>
+        <li>Build on each person's strengths and plan around the gaps.</li>
+        <li>Move testing into the squads: shared frameworks and CI templates, with the performance team as experts and enablers rather than a gate at the end.</li>
+        <li>Resolve conflict with data: when dev and ops disagree on the cause, the trace and the metrics settle it.</li>
+      </ul>` },
+    { q: 'How do you choose LoadRunner protocols for a complex application?', t: ['LoadRunner', 'Strategy'], a: `
+      <ul>
+        <li><strong>Web HTTP/HTML:</strong> the default. Very light per user, but you have to handle the JavaScript-generated values yourself through correlation.</li>
+        <li><strong>TruClient:</strong> drives a real browser. Easier to script for heavy single-page apps and gives browser timings, but each user uses much more CPU and memory. Use it for a small share of users.</li>
+        <li><strong>Specialist protocols</strong> for Citrix, SAP GUI, Oracle Forms, mainframe and others, where nothing else works well.</li>
+        <li><strong>Mix them:</strong> most of the load on HTTP/HTML or API scripts, plus a few TruClient users to measure what users actually see.</li>
+      </ul>
+      <p>Licence cost matters too: Vuser licences are often priced per protocol bundle.</p>` },
+    { q: 'How would you plan a migration from LoadRunner to k6 or Gatling?', t: ['LoadRunner', 'k6', 'Gatling', 'Strategy'], a: `
+      <ol>
+        <li><strong>Inventory:</strong> list the scripts, protocols and how often each is used. Leave out protocols the new tool can't handle, such as Citrix and SAP GUI. Keep LoadRunner for those.</li>
+        <li><strong>Prove it on one journey:</strong> rebuild a key journey and run both tools against the same build. The numbers should be within an agreed tolerance.</li>
+        <li><strong>Build the framework before mass porting:</strong> shared clients, data handling, thresholds, CI templates and dashboards.</li>
+        <li><strong>Port by value:</strong> the business-critical journeys first, then retire LoadRunner scripts as each replacement is accepted.</li>
+        <li><strong>Plan for people:</strong> train the team, write guides and pair with the squads.</li>
+      </ol>
+      <p>The business case is usually licence savings plus moving testing into CI. Measure both.</p>` },
+    { q: 'How do you run Gatling at scale and in CI?', t: ['Gatling', 'CI/CD'], a: `
+      <ul>
+        <li>Run it with the Maven or Gradle plugin (<code>mvn gatling:test</code>). Failed <strong>assertions</strong> make the build fail.</li>
+        <li>For more load than one machine can produce, run several injector pods and combine the results, or use Gatling Enterprise, which handles distribution and live reports.</li>
+        <li>Give each injector its own slice of test data.</li>
+        <li>Tune the JVM heap and OS limits (open files, local port range) on the injectors.</li>
+        <li>Keep the HTML report as a build artifact, and send metrics to Graphite/InfluxDB for trends across runs.</li>
+      </ul>` },
+    { q: 'How do you scale k6 beyond one machine?', t: ['k6', 'Infrastructure'], a: `
+      <ul>
+        <li><strong>k6 Operator</strong> on Kubernetes: a <code>TestRun</code> resource sets <code>parallelism: N</code>, and the operator splits the test across N pods using <strong>execution segments</strong>, so each pod runs its share of the rate.</li>
+        <li><strong>Grafana Cloud k6</strong> for managed, multi-region load with no infrastructure to run.</li>
+        <li>Check first how far one machine goes. A tuned single k6 instance can often reach tens of thousands of RPS.</li>
+        <li>Send all pods' metrics to one place and look at the aggregate. Each pod's own summary only shows its share.</li>
+      </ul>` },
+    { q: 'How much overhead do APM agents add, and should they run during load tests?', t: ['Observability', 'Strategy'], a: `
+      <p>APM agents (Dynatrace OneAgent, AppDynamics, New Relic, OpenTelemetry auto-instrumentation) usually add a few percent of CPU and latency. That rises with deep instrumentation, method-level capture or 100% trace sampling.</p>
+      <p>Keep them on: production runs them, so your test should match production. Use the same agent configuration and sampling as production. If you suspect the agent, run one comparison with it off. Never turn on extra debug-level capture for the whole test. Use it for a short targeted run.</p>` },
+    { q: 'How do you set up alerting so performance problems are caught early in production?', t: ['Observability', 'Strategy'], a: `
+      <ul>
+        <li>Alert on <strong>symptoms users feel</strong> (SLO breaches in latency and errors) rather than on every CPU spike.</li>
+        <li>Use <strong>burn-rate alerts</strong>: page someone when the error budget is being used up fast, say 14× the normal rate over an hour, and raise a ticket for a slow burn over days.</li>
+        <li>Add <strong>saturation warnings</strong> for things that fail suddenly: connection pools, disk, queue lag, heap after GC.</li>
+        <li>Feed load-test results back into alerts: if a breakpoint test showed failure at 70% of pool capacity, set the warning below that.</li>
+        <li>Every alert links to a dashboard and a runbook.</li>
+      </ul>` },
+    { q: 'An application is moving from on-premises to the cloud. How do you approach the performance side?', t: ['Cloud', 'Strategy'], a: `
+      <ol>
+        <li><strong>Baseline on-premises first:</strong> run the agreed workload model and record response times, throughput, resource use and the breaking point. Without this, nobody can say whether the cloud version is better or worse.</li>
+        <li><strong>Understand the migration type:</strong> "lift and shift" to VMs, re-platforming (containers, managed DB) or re-architecting. Each one moves the bottlenecks differently.</li>
+        <li><strong>Map out new latency:</strong> calls that used to be in the same data centre may now cross the network: cloud to on-prem through VPN or Direct Connect, between regions, or through new gateways. Chatty services that make many small calls suffer most.</li>
+        <li><strong>Size the cloud resources from data:</strong> map on-prem CPU and memory use to instance types or pod requests, then confirm with tests. Watch for burstable instances and disk IOPS limits.</li>
+        <li><strong>Run the same workload model in the cloud</strong> and compare like for like. Then test what's new: auto-scaling, failover across availability zones and service quotas.</li>
+        <li><strong>Check monitoring before go-live:</strong> APM agents, cloud metrics and log shipping all working in the new environment.</li>
+        <li><strong>Plan the cut-over:</strong> test the hybrid period too, when some services are on-prem and some are in the cloud.</li>
+      </ol>
+      <div class="say">My rule for migrations: baseline before, same workload after, and compare like for like. The surprises are usually new network hops and service quotas, not raw compute.</div>` },
+    { q: 'Why do cloud test results vary between runs, and how do you make them repeatable?', t: ['Cloud', 'Analysis'], a: `
+      <ul>
+        <li><strong>Burstable instances</strong> (AWS T-series, Azure B-series) run fast until their CPU credits run out, then slow down sharply, often partway through a test.</li>
+        <li><strong>Disk limits:</strong> gp2 volumes have burst credits. gp3 and provisioned volumes have fixed IOPS and throughput caps.</li>
+        <li><strong>Noisy neighbours</strong> on shared hardware, and different instance generations behind the same type name.</li>
+        <li><strong>Auto-scaling state:</strong> a test that starts with 2 pods behaves differently from one that starts with 10 warm pods.</li>
+        <li><strong>Caches</strong> in managed services and CDNs, warm or cold.</li>
+      </ul>
+      <p>To make results repeatable: fix the starting state (pod count, cache warmth, data volume), avoid burstable types for systems under test, run each test two or three times and report the range, and record instance types and versions with every result.</p>` },
+    { q: 'How do you bring cost into performance engineering in the cloud?', t: ['Cloud', 'Capacity', 'Strategy'], a: `
+      <p>In the cloud, every performance decision is also a cost decision. A useful measure is <strong>cost per 1,000 transactions</strong> at the target SLA.</p>
+      <ul>
+        <li><strong>Right-size</strong> from test data. Many services are over-provisioned "to be safe".</li>
+        <li>Compare instance families. Newer or ARM-based types (such as AWS Graviton) often give better price for performance. Prove it with the same test.</li>
+        <li>Tune the code before adding hardware. A fixed N+1 query can save more than doubling the database size.</li>
+        <li>Tune auto-scaling so it scales in again after peaks.</li>
+        <li>Keep the cost of testing low: short targeted runs in CI, and tear down environments after full-scale tests.</li>
+      </ul>` },
+    { q: 'How do you test a cloud-managed database such as AWS RDS or Aurora?', t: ['Cloud', 'Database'], a: `
+      <ul>
+        <li><strong>Instance limits:</strong> <code>max_connections</code> depends on the instance size. Many pods or Lambdas can exhaust it. Use RDS Proxy or PgBouncer.</li>
+        <li><strong>Storage limits:</strong> IOPS and throughput caps (and burst credits on gp2) can flatten throughput while CPU stays low.</li>
+        <li><strong>Performance Insights</strong> shows database load split by wait event and by SQL. It's the cloud version of AWR.</li>
+        <li><strong>Read replicas:</strong> measure replication lag under write load. A read straight after a write may return old data.</li>
+        <li><strong>Failover:</strong> trigger a failover during a load test. Measure how long errors last and whether the app reconnects by itself.</li>
+        <li>Fill the test database to production size. A small test database fits in memory and hides I/O problems.</li>
+      </ul>` },
+    { q: 'How do you test database scaling strategies: caching, read replicas, partitioning and sharding?', t: ['Database', 'Capacity'], a: `
+      <ul>
+        <li><strong>Cache</strong> (Redis): measure hit ratio under a realistic spread of data. A test that repeats the same 10 IDs gives a fake 99% hit rate. Also test a cold cache and a cache failure, when all traffic suddenly goes to the database.</li>
+        <li><strong>Read replicas:</strong> check reads really go to the replicas, and measure replication lag under peak writes.</li>
+        <li><strong>Partitioning:</strong> check queries include the partition key so only the right partition is read. Test with several months of data.</li>
+        <li><strong>Sharding:</strong> look for hot shards (uneven keys such as a big customer), and test queries that span several shards, which are slow.</li>
+      </ul>
+      <p>For each strategy, ask what happens when it fails or the data isn't spread evenly, not just when it works.</p>` },
+    { q: 'How do you choose a monitoring stack for a new platform?', t: ['Observability', 'Monitoring tools', 'Strategy'], a: `
+      <ol>
+        <li>Start from the questions to answer: SLOs, how fast to find the root cause, who uses it (developers, SRE, the business).</li>
+        <li>Instrument with <strong>OpenTelemetry</strong> where possible, so you can change vendors without changing code.</li>
+        <li>Decide between commercial APM (Dynatrace, Datadog, New Relic: faster to set up, higher cost at scale) and open source (Prometheus, Grafana, Loki, Tempo, Jaeger: cheaper licences, more effort to run).</li>
+        <li>Plan for cost: data volume, retention, high-cardinality metrics and trace sampling drive the bill.</li>
+        <li>Prove it in a load test: can it show the bottleneck you deliberately create? How much overhead does it add at peak?</li>
+      </ol>` },
+  ],
+  };

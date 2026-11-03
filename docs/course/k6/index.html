@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 in 7 Days: Free Load Testing Email Course — Pawan Sinha</title>
+  <meta name="description" content="Free 7-day k6 email course: one short lesson a day, from your first script to arrival-rate scenarios, SLO thresholds, test data and CI.">
+  <meta property="og:title" content="k6 in 7 Days: Free Load Testing Email Course — Pawan Sinha">
+  <meta property="og:description" content="Learn k6 load testing in 7 short daily lessons: realistic traffic models, SLO thresholds, test data, CI and reading results. Free.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/course/k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/course/k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .course-hero { padding: 56px 16px 16px; }
+    .course-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: start; }
+    .course-hero h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.08; margin: 0 0 16px; }
+    .signup { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--shadow); position: sticky; top: 84px; }
+    .signup h2 { margin: 0 0 6px; font-size: 21px; }
+    .signup > p { margin: 0 0 14px; color: var(--muted); font-size: 15px; }
+    .signup form { display: grid; gap: 10px; }
+    .signup form[hidden] { display: none; }
+    .signup label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+    .signup input:not([type=checkbox]) { font: inherit; font-size: 16px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 13px; min-width: 0; }
+    .signup input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .signup .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; color: var(--muted); font-size: 14px; }
+    .signup .check input { margin-top: 4px; }
+    .signup button { font: inherit; font-weight: 600; cursor: pointer; }
+    .signup button:disabled { opacity: .6; cursor: progress; }
+    .signup .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .signup .status { margin: 0; font-size: 15px; color: var(--muted); }
+    .signup .status:empty { display: none; }
+    .signup .fine { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+    .signup .soon { margin: 0; color: var(--muted); }
+    .days { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 10px; }
+    .days li { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+    .days .d { font: 700 13px "JetBrains Mono", monospace; color: var(--accent); padding-top: 2px; }
+    .days h3 { margin: 0 0 2px; font-size: 16px; }
+    .days p { margin: 0; color: var(--muted); font-size: 15px; }
+    .who { max-width: 820px; }
+    @media (max-width: 900px) {
+      .course-grid { grid-template-columns: 1fr; gap: 24px; }
+      .signup { position: static; }
+    }
+    @media (max-width: 520px) {
+      .days li { grid-template-columns: 1fr; gap: 4px; }
+      .signup { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap course-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/tools/">Free resources</a><span aria-hidden="true">/</span><span aria-current="page">k6 in 7 days</span></nav>
+      <div class="course-grid">
+        <div>
+          <p class="eyebrow">Free email course · 7 lessons · 10 minutes a day</p>
+          <h1>Learn <span class="hl">k6 load testing</span> in 7 days</h1>
+          <p class="lead">One short lesson in your inbox each morning, each with a small task. By day 7 you'll have a realistic load test with SLO thresholds and test data that runs in your CI pipeline, and you'll know how to read the results.</p>
+          <ol class="days" aria-label="What you'll learn">
+            <li><span class="d">Day 1</span><div><h3>Your first load test in 10 minutes</h3><p>Install k6, write a script, and read the three numbers in the summary that matter.</p></div></li>
+            <li><span class="d">Day 2</span><div><h3>Model real traffic</h3><p>Closed vs open models, arrival-rate scenarios, and sizing VUs with Little's Law.</p></div></li>
+            <li><span class="d">Day 3</span><div><h3>Checks and thresholds</h3><p>Turn SLOs into pass/fail rules, per endpoint, that fail the build when they break.</p></div></li>
+            <li><span class="d">Day 4</span><div><h3>Realistic test data</h3><p>CSV data with SharedArray, logins, correlation and keeping secrets out of scripts.</p></div></li>
+            <li><span class="d">Day 5</span><div><h3>Tags, groups and custom metrics</h3><p>Find the slow step, avoid metric explosions and track business numbers.</p></div></li>
+            <li><span class="d">Day 6</span><div><h3>Run it in CI</h3><p>A GitHub Actions workflow with smoke tests on every pull request.</p></div></li>
+            <li><span class="d">Day 7</span><div><h3>Read results and find the bottleneck</h3><p>The order I read a summary in, the live dashboard, and what to check on the server.</p></div></li>
+          </ol>
+        </div>
+        <aside class="signup" id="join">
+          <h2>Start today, free</h2>
+          <p>Lesson 1 arrives in a minute. The others follow one a day at 7am Melbourne time.</p>
+          <form novalidate hidden>
+            <label>First name<input name="name" autocomplete="given-name" maxlength="200"></label>
+            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200"></label>
+            <label class="check"><input type="checkbox" name="digest" value="yes"> Also send me the weekly performance deep dive after the course</label>
+            <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+            <button class="btn" type="submit" data-track="course-join">Send me lesson 1</button>
+            <p class="status" role="status" aria-live="polite"></p>
+          </form>
+          <p class="soon">Loading the sign-up form…</p>
+          <p class="fine">No spam. Every email has a one-click unsubscribe link.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="wrap section who">
+      <p class="eyebrow">Who it's for</p>
+      <h2>Testers and developers who want load tests that mean something</h2>
+      <p class="section-lead">You can write a little JavaScript and you've heard of load testing, but your tests so far have been "100 users for 10 minutes" with no clear pass or fail. This course fixes that, the way I set up k6 on real projects in banking, payments and gaming.</p>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Want the finished framework?</p>
+          <h3>The k6 Performance Test Starter Kit</h3>
+          <p>Everything from the course, already built: open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. A$49, one-off.</p>
+        </div>
+        <a class="btn" href="/shop/" data-track="course-kit">See the kit</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+  (() => {
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
+    const box = document.getElementById('join');
+    const form = box.querySelector('form'), soon = box.querySelector('.soon');
+    const status = form.querySelector('.status'), button = form.querySelector('button');
+    // The form only appears once the Apps Script version with the course is deployed.
+    fetch(ENDPOINT + '?view=features').then(r => r.json()).then(o => {
+      if ((o.features || []).includes('course')) { form.hidden = false; soon.remove(); }
+      else throw new Error('not deployed');
+    }).catch(() => {
+      soon.innerHTML = 'Sign-ups open very soon. Meanwhile, the free <a href="/tools/">calculators</a> and <a href="/blog/">blog</a> cover the same ground.';
+    });
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = form.elements.email;
+      if (!email.value.trim() || !email.checkValidity()) { status.textContent = 'Please enter a valid email address.'; email.focus(); return; }
+      button.disabled = true; status.textContent = 'Signing you up…';
+      const body = new URLSearchParams(new FormData(form));
+      body.append('form', 'course'); body.append('page', location.href);
+      try {
+        const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+        if (!out.ok) { status.textContent = out.error || 'Something went wrong. Please try again.'; return; }
+        form.reset();
+        status.textContent = out.already
+          ? "You're already on the course. Your next lesson arrives tomorrow morning."
+          : "You're in. Lesson 1 is on its way: check your inbox (and the spam folder, just in case).";
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'course-joined', title: 'course-joined', event: true });
+      } catch {
+        status.textContent = "Sorry, that didn't go through. Please try again later.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

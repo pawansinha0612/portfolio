@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>curl to k6 Converter — Pawan Sinha</title>
+  <meta name="description" content="Free curl to k6 converter. Paste curl commands copied from Chrome, Firefox or Edge and get a ready-to-run k6 load test script. Runs in your browser.">
+  <meta property="og:title" content="curl to k6 Converter — Pawan Sinha">
+  <meta property="og:description" content="Paste a curl command, get a k6 load test with checks, thresholds and a realistic load model. Free, and nothing leaves your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/curl-to-k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/curl-to-k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"curl to k6 converter","url":"https://pawansinha.com.au/tools/curl-to-k6/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .conv { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 190px; resize: vertical; display: block; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 640px; white-space: pre; tab-size: 2; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; margin-top: 4px; }
+    .opts fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .opts legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input[type=text], .field input[type=number] { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 6px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .model-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; grid-column: 1 / -1; }
+    .model-fields[hidden] { display: none; }
+    .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 18px; }
+    .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+    .checks input { margin-top: 4px; accent-color: var(--accent); }
+    .checks small { color: var(--muted); display: block; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .out-head button { font: inherit; cursor: pointer; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources" aria-current="page">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · k6 load testing</p>
+      <h1>curl to k6 converter</h1>
+      <p class="lead">Paste a curl command, or several, and get a k6 load test you can run straight away: a realistic load model, status checks, pass/fail thresholds and tidy names for URLs with IDs in them.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you paste is sent anywhere.</p>
+    </section>
+
+    <section class="wrap conv" aria-label="Converter">
+      <div class="panel">
+        <h2><label for="curl-in">1. Paste curl commands</label></h2>
+        <p class="sub">In your browser's developer tools: Network tab → right-click a request → Copy → Copy as cURL. "Copy all as cURL" works too.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="chrome">API call from Chrome</button>
+          <button class="chip-btn" type="button" data-example="journey">Login → product → cart</button>
+          <button class="chip-btn" type="button" data-example="cmd">Windows (cmd)</button>
+          <button class="chip-btn" type="button" id="clear">Clear</button>
+        </div>
+        <textarea id="curl-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder="curl 'https://api.example.com/items' -H 'accept: application/json'"></textarea>
+      </div>
+
+      <div class="panel">
+        <h2>2. Choose the load</h2>
+        <p class="sub">Not sure how many users you need? Work it out with the <a href="/tools/#virtual-users">virtual users calculator</a>.</p>
+        <form id="opts" class="opts" onsubmit="return false">
+          <fieldset>
+            <legend>Load model</legend>
+            <div class="seg">
+              <label><input type="radio" name="model" value="closed" checked> Virtual users</label>
+              <label><input type="radio" name="model" value="open"> Arrival rate</label>
+            </div>
+          </fieldset>
+          <label class="field"><span>Duration</span><input type="text" name="duration" value="1m" inputmode="text" aria-describedby="dur-hint"></label>
+          <label class="field"><span>Think time (seconds)</span><input type="number" name="thinkTime" value="1" min="0" step="0.5"></label>
+          <label class="field"><span>Group name (optional)</span><input type="text" name="group" value="" placeholder="e.g. Checkout"></label>
+
+          <div class="model-fields" data-model="closed">
+            <label class="field"><span>Virtual users</span><input type="number" name="vus" value="10" min="1" step="1"></label>
+          </div>
+          <div class="model-fields" data-model="open" hidden>
+            <label class="field"><span>Iterations per second</span><input type="number" name="rate" value="10" min="1" step="1"></label>
+            <label class="field"><span>Pre-allocated VUs</span><input type="number" name="preAllocatedVUs" value="20" min="1" step="1"></label>
+            <label class="field"><span>Max VUs</span><input type="number" name="maxVUs" value="100" min="1" step="1"></label>
+          </div>
+
+          <label class="field"><span>p95 response time limit (ms)</span><input type="number" name="p95" value="500" min="0" step="50"></label>
+          <label class="field"><span>Max error rate (%)</span><input type="number" name="errorRate" value="1" min="0" step="0.1"></label>
+
+          <div class="checks">
+            <label><input type="checkbox" name="checks" checked><span>Check every response is 2xx<small>and fail the test if under 99% pass</small></span></label>
+            <label><input type="checkbox" name="nameTags" checked><span>Group URLs with IDs under one name<small>/orders/123 and /orders/456 → /orders/{id}</small></span></label>
+            <label><input type="checkbox" name="secretsToEnv" checked><span>Move secrets to environment variables<small>tokens, cookies and API keys become __ENV values</small></span></label>
+            <label><input type="checkbox" name="dropNoisy" checked><span>Drop browser-only headers<small>sec-ch-*, sec-fetch-*, priority, accept-encoding</small></span></label>
+            <label><input type="checkbox" name="keepUserAgent"><span>Keep the browser's User-Agent<small>some firewalls block k6's default one</small></span></label>
+            <label><input type="checkbox" name="skipStatic" checked><span>Skip static files<small>images, scripts, styles and fonts</small></span></label>
+            <label><input type="checkbox" name="baseUrl" checked><span>Use a BASE_URL variable<small>run the same script against any environment</small></span></label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" id="out-panel">
+        <div class="out-head">
+          <h2>3. Your k6 script</h2>
+          <div class="btns">
+            <button class="btn btn-small" type="button" id="copy" data-track="curl-to-k6-copy">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="download" data-track="curl-to-k6-download">Download script.js</button>
+          </div>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <pre class="code" id="out" tabindex="0" aria-label="Generated k6 script"><code>// Paste a curl command above, or try an example.</code></pre>
+        <p class="run" id="run" hidden></p>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How to use it</p>
+      <h2>From a browser request to a load test in two minutes</h2>
+      <ol>
+        <li><strong>Copy the request.</strong> In Chrome or Edge: open DevTools (F12) → Network → right-click the request → Copy → <strong>Copy as cURL (bash)</strong>. In Firefox: right-click → Copy Value → <strong>Copy as cURL</strong>. In Safari, turn on the Develop menu first, then use Web Inspector → Network.</li>
+        <li><strong>Paste it above</strong> and pick a load model. Use <strong>virtual users</strong> to imitate a number of people clicking through, or <strong>arrival rate</strong> to hit a target number of requests per second whatever the response time.</li>
+        <li><strong>Install k6</strong> (<code>brew install k6</code>, <code>winget install k6</code> or the Docker image <code>grafana/k6</code>) and run <code>k6 run script.js</code>.</li>
+        <li><strong>Read the result.</strong> Paste k6's end-of-test summary into the <a href="/tools/k6-results/">k6 results explainer</a> for a plain-English verdict.</li>
+      </ol>
+      <h2 style="margin-top:32px">Before you point it at production</h2>
+      <ul>
+        <li><strong>Tokens copied from a browser expire.</strong> For anything longer than a quick try, log in inside the script (or once in <code>setup()</code>) and reuse the token.</li>
+        <li><strong>Use test data.</strong> A journey that creates orders or sends emails will do it thousands of times. Agree on a test account and a clean-up plan first.</li>
+        <li><strong>Ask before you load test a system you don't own.</strong> To a firewall, a load test looks like an attack.</li>
+        <li><strong>Start small.</strong> Run 1 VU for 30 seconds as a smoke test, then build up.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/#virtual-users">Virtual users calculator →</a>
+        <a href="/tools/">All calculators →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Going further than one script?</p>
+          <h3>The k6 starter kit I set up on day one</h3>
+          <p>Open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. A$49, one-off. Or book a free call and I'll look at your plan with you.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/shop/" data-track="curl-to-k6-kit">See the k6 kit</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="curl-to-k6-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/curl-to-k6/convert.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const input = $('curl-in'), form = $('opts'), out = $('out'), msgs = $('msgs'), run = $('run');
+    const STORE = 'curl-to-k6-options';
+    let script = '';
+
+    // Remember the visitor's options in this browser only.
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) for (const [k, v] of Object.entries(saved)) {
+        const el = form.elements[k];
+        if (!el) continue;
+        if (el instanceof RadioNodeList) { for (const r of el) r.checked = r.value === v; }
+        else if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v;
+      }
+    } catch (e) {}
+
+    function options() {
+      const f = form.elements;
+      return {
+        model: f.model.value, vus: f.vus.value, duration: f.duration.value.trim() || '1m', thinkTime: Math.max(0, +f.thinkTime.value || 0),
+        rate: f.rate.value, timeUnit: '1s', preAllocatedVUs: f.preAllocatedVUs.value, maxVUs: f.maxVUs.value,
+        p95: f.p95.value, errorRate: f.errorRate.value, group: f.group.value.trim(),
+        checks: f.checks.checked, nameTags: f.nameTags.checked, secretsToEnv: f.secretsToEnv.checked, dropNoisy: f.dropNoisy.checked,
+        keepUserAgent: f.keepUserAgent.checked, skipStatic: f.skipStatic.checked, baseUrl: f.baseUrl.checked,
+      };
+    }
+
+    function msg(cls, text) {
+      const p = document.createElement('p');
+      p.className = 'msg ' + cls;
+      p.textContent = text;
+      msgs.appendChild(p);
+    }
+
+    function update() {
+      const o = options();
+      document.querySelectorAll('.model-fields').forEach(el => { el.hidden = el.dataset.model !== o.model; });
+      try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+      msgs.textContent = '';
+      run.hidden = true;
+      if (!/^\s*\d+(\.\d+)?(ms|s|m|h)(\d+(\.\d+)?(ms|s|m|h))*\s*$/.test(o.duration)) msg('warn', 'Duration should look like 30s, 5m or 1h30m.');
+      if (!input.value.trim()) { script = ''; out.firstChild.textContent = '// Paste a curl command above, or try an example.'; return; }
+      let r;
+      try { r = CurlToK6.convert(input.value, o); }
+      catch (e) { r = { error: 'Something went wrong while converting: ' + e.message }; }
+      if (r.error) { script = ''; msg('err', r.error); out.firstChild.textContent = '// ' + r.error; return; }
+      script = r.script;
+      out.firstChild.textContent = script;
+      r.warnings.forEach(w => msg('warn', '⚠️ ' + w));
+      r.info.forEach(w => msg('info', w));
+      const env = r.env.map(e => ` -e ${e.name}='…'`).join('');
+      run.innerHTML = '';
+      run.append('Run it: ');
+      const code = document.createElement('code');
+      code.textContent = `k6 run${env} script.js`;
+      run.append(code);
+      if (r.env.length) run.append(' (replace … with the values from your curl command)');
+      run.hidden = false;
+    }
+
+    let timer;
+    const later = () => { clearTimeout(timer); timer = setTimeout(update, 150); };
+    input.addEventListener('input', later);
+    form.addEventListener('input', later);
+    form.addEventListener('change', update);
+
+    document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => {
+      input.value = CurlToK6.EXAMPLES[b.dataset.example];
+      update();
+      if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'curl-to-k6-example', title: 'curl-to-k6-example', event: true });
+    }));
+    $('clear').addEventListener('click', () => { input.value = ''; update(); input.focus(); });
+
+    $('copy').addEventListener('click', async () => {
+      if (!script) return;
+      const b = $('copy');
+      try { await navigator.clipboard.writeText(script); b.textContent = 'Copied ✓'; }
+      catch (e) {
+        const range = document.createRange(); range.selectNodeContents(out);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        b.textContent = 'Press Ctrl/⌘+C';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+    $('download').addEventListener('click', () => {
+      if (!script) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      a.download = 'script.js';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

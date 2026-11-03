@@ -28,7 +28,10 @@ import urllib.request
 
 SITE = 'pawansinha.com.au'
 PAGES = ['/', '/blog/', '/blog/feed.xml', '/services/performance-testing/', '/shop/', '/perf-advisor/',
-         '/peak-readiness/', '/hire/', '/portfolio-template/', '/tools/']
+         '/peak-readiness/', '/hire/', '/portfolio-template/', '/tools/',
+         '/tools/curl-to-k6/', '/tools/k6-results/', '/peak-readiness/quiz/', '/peak-readiness/quiz/questions.json',
+         '/course/k6/', '/interview-prep/performance-testing/', '/interview-prep/qa.js', '/interview-prep/practice/',
+         '/interview-prep/guide/', '/templates/', '/jobs/']
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today()
 MIN_QUEUED_POSTS = 3

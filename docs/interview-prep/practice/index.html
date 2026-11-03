@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Mock Interview: Performance Testing Practice — Pawan Sinha</title>
+  <meta name="description" content="Practise performance testing interview questions out loud or in writing and get instant AI feedback: a score, gaps and a stronger answer.">
+  <meta property="og:title" content="AI Mock Interview: Performance Testing Practice — Pawan Sinha">
+  <meta property="og:description" content="Answer real performance testing interview questions and get instant feedback: score, what you missed and a stronger answer. 3 free a day.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/interview-prep/practice/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/interview-prep/practice/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .pr-hero { padding: 56px 16px 8px; max-width: 820px; }
+    .pr-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; margin: 0 0 14px; }
+    .pr { max-width: 820px; padding: 12px 16px 72px; }
+    .levels { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+    .levels button { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
+    .levels button[aria-pressed="true"] { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+    .card-q { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--shadow); }
+    .q-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .q-meta b { color: var(--accent); text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+    #question { font-size: clamp(20px, 3vw, 24px); line-height: 1.35; margin: 0 0 16px; }
+    textarea { width: 100%; min-height: 170px; resize: vertical; font: inherit; font-size: 16px; line-height: 1.55; color: var(--text); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+    .row .grow { flex: 1; }
+    .row button { font: inherit; font-weight: 600; cursor: pointer; }
+    .row button:disabled { opacity: .6; cursor: progress; }
+    .mic[aria-pressed="true"] { border-color: #d14343; color: #d14343; }
+    .mic[hidden] { display: none; }
+    .hint { font-size: 13px; color: var(--muted); }
+    .status { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
+    .status:empty { display: none; }
+    .fb { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 18px; }
+    .fb[hidden] { display: none; }
+    .score { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+    .score b { font-size: 34px; line-height: 1; }
+    .score .meter { flex: 1; height: 10px; border-radius: 99px; background: var(--alt); overflow: hidden; }
+    .score .meter span { display: block; height: 100%; background: var(--hl); }
+    .verdict { font-weight: 600; margin: 0 0 12px; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .cols div { background: var(--alt); border-radius: 12px; padding: 12px 14px; }
+    .cols h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; }
+    .cols .good h3 { color: var(--ok); }
+    .cols .gap h3 { color: var(--warn); }
+    .cols ul { margin: 0; padding-left: 18px; font-size: 15px; }
+    .better { margin: 14px 0 0; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; padding: 10px 14px; }
+    .better::before { content: "A stronger answer"; display: block; font-size: 12px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    details.model { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; }
+    details.model summary { cursor: pointer; padding: 10px 14px; font-weight: 600; }
+    details.model .body { padding: 0 14px 12px; color: var(--muted); }
+    details.model .body strong { color: var(--text); }
+    details.model pre { background: var(--alt); border-radius: 10px; padding: 10px 12px; overflow-x: auto; font: 500 13px/1.55 "JetBrains Mono", monospace; color: var(--text); }
+    details.model .say { border-left: 3px solid var(--accent-2); padding-left: 12px; color: var(--text); }
+    .limit { margin-top: 18px; }
+    .limit[hidden] { display: none; }
+    .note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+    @media (max-width: 600px) {
+      .card-q { padding: 18px 16px; }
+      .cols { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap pr-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/performance-testing/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">Practice</span></nav>
+      <p class="eyebrow">Interview practice · Performance engineering</p>
+      <h1>Practise out loud, get <span class="hl">instant feedback</span></h1>
+      <p class="lead">Pick your level, answer a real interview question in your own words, typed or spoken, and get a score, what you missed and a stronger answer. Then compare with the model answer.</p>
+    </section>
+
+    <section class="wrap pr">
+      <div class="levels" role="group" aria-label="Experience level">
+        <button type="button" data-level="basic" aria-pressed="true">Basic · 3–5 yrs</button>
+        <button type="button" data-level="intermediate" aria-pressed="false">Intermediate · 5–7 yrs</button>
+        <button type="button" data-level="advanced" aria-pressed="false">Advanced · 7+ yrs</button>
+      </div>
+      <div class="card-q">
+        <div class="q-meta"><b id="topics"></b><span id="left"></span></div>
+        <h2 id="question">Loading a question…</h2>
+        <label for="answer" class="hint">Your answer (aim for 60 to 120 seconds if you were speaking)</label>
+        <textarea id="answer" placeholder="Answer as you would in the interview. Use an example from your own work if you can." maxlength="4000"></textarea>
+        <div class="row">
+          <button class="btn" type="button" id="check" data-track="practice-check">Get feedback</button>
+          <button class="btn btn-ghost mic" type="button" id="mic" aria-pressed="false" hidden>🎙️ Answer out loud</button>
+          <span class="grow"></span>
+          <button class="btn btn-ghost btn-small" type="button" id="next">Next question →</button>
+        </div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="fb" id="fb" hidden></div>
+        <details class="model" id="model"><summary>Show the model answer</summary><div class="body"></div></details>
+        <div class="offer limit" id="limit" hidden>
+          <div>
+            <p class="eyebrow">That's today's free feedback</p>
+            <h3>Practise with a real interviewer</h3>
+            <p>A 60-minute mock interview at your level, with follow-up questions, a design question and honest written feedback. Or get every question with "what the interviewer is really testing" in the Interview Guide.</p>
+          </div>
+          <div class="row" style="margin:0">
+            <a class="btn" href="/?need=Interview%20coaching#contact" data-track="practice-mock">Book a mock interview</a>
+            <a class="btn btn-ghost" href="/interview-prep/guide/" data-track="practice-guide">Interview Guide</a>
+          </div>
+        </div>
+      </div>
+      <p class="note" id="note">Feedback comes from an AI model, so treat it as a practice partner, not a verdict. Your answer is sent to the AI to be scored and isn't stored with your name. Voice answers use your browser's speech recognition.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/interview-prep/qa.js"></script>
+  <script>
+  (() => {
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
+    const FREE = 3;
+    const $ = id => document.getElementById(id);
+    const QA = window.QA;
+    const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+    const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' });
+    const count = name => window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: name, title: name, event: true });
+    let visitor = store.get('practice-visitor', '');
+    if (!visitor) { visitor = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()); store.set('practice-visitor', visitor); }
+    let level = ['basic', 'intermediate', 'advanced'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'basic';
+    let item = null, ai = false, seen = store.get('practice-seen', {});
+
+    const used = () => { const u = store.get('practice-used', {}); return u.day === today() ? u.n : 0; };
+    const setUsed = n => store.set('practice-used', { day: today(), n });
+    function showLeft() {
+      $('left').textContent = ai ? Math.max(0, FREE - used()) + ' of ' + FREE + ' free feedback left today' : '';
+    }
+
+    function pick() {
+      const list = QA[level];
+      const key = i => level + ':' + i;
+      let pool = list.map((_, i) => i).filter(i => !seen[key(i)]);
+      if (!pool.length) { Object.keys(seen).filter(k => k.startsWith(level + ':')).forEach(k => delete seen[k]); pool = list.map((_, i) => i); }
+      const i = pool[Math.floor(Math.random() * pool.length)];
+      seen[key(i)] = 1; store.set('practice-seen', seen);
+      item = list[i];
+      $('question').textContent = item.q;
+      $('topics').textContent = item.t.join(' · ');
+      $('answer').value = '';
+      $('fb').hidden = true; $('fb').textContent = '';
+      $('status').textContent = '';
+      const m = $('model'); m.open = false; m.querySelector('.body').innerHTML = item.a;  // our own content from qa.js
+      document.querySelectorAll('.levels button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === level)));
+      showLeft();
+    }
+
+    document.querySelectorAll('.levels button').forEach(b => b.addEventListener('click', () => {
+      level = b.dataset.level; history.replaceState(null, '', '#' + level); pick();
+    }));
+    $('next').addEventListener('click', () => { stopMic(); pick(); $('answer').focus(); });
+
+    // AI feedback is available only when the backend has an AI key (GET ?view=features lists "practice").
+    fetch(ENDPOINT + '?view=features').then(r => r.json()).then(o => { ai = (o.features || []).includes('practice'); }).catch(() => {})
+      .finally(() => {
+        if (!ai) {
+          $('check').textContent = 'Compare with the model answer';
+          $('check').dataset.track = 'practice-self';
+          $('note').textContent = 'Say or write your answer first, then open the model answer and compare: did you cover the same points, with an example from your own work?';
+        }
+        showLeft();
+      });
+
+    $('check').addEventListener('click', async () => {
+      const answer = $('answer').value.trim();
+      stopMic();
+      if (!ai) { $('model').open = true; $('model').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); count('practice-self'); return; }
+      if (answer.split(/\s+/).filter(Boolean).length < 8) { $('status').textContent = 'Write (or say) at least a couple of sentences first.'; return; }
+      if (used() >= FREE) { $('limit').hidden = false; $('status').textContent = ''; return; }
+      const btn = $('check'); btn.disabled = true;
+      $('status').textContent = 'Reviewing your answer… this takes 10 to 30 seconds.';
+      const tmp = document.createElement('div'); tmp.innerHTML = item.a;
+      const body = new URLSearchParams({ form: 'practice', level, question: item.q, model: tmp.textContent.replace(/\s+/g, ' ').trim(), answer, visitor });
+      try {
+        const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+        if (!out.ok) {
+          if (out.limit) { setUsed(FREE); $('limit').hidden = false; }
+          $('status').textContent = out.error || 'Something went wrong. Please try again.';
+          showLeft();
+          return;
+        }
+        setUsed(FREE - out.left);
+        render(out.feedback);
+        $('status').textContent = '';
+        count('practice-feedback');
+        if (out.left <= 0) $('limit').hidden = false;
+      } catch {
+        $('status').textContent = "Sorry, that didn't go through. Please try again in a minute.";
+      } finally {
+        btn.disabled = false; showLeft();
+      }
+    });
+
+    function render(f) {
+      const fb = $('fb'); fb.textContent = '';
+      const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+      const score = el('div', 'score');
+      const b = el('b', null, f.score + '/10');
+      const meter = el('div', 'meter'); const fill = el('span'); fill.style.width = (f.score * 10) + '%'; meter.appendChild(fill);
+      meter.setAttribute('role', 'img'); meter.setAttribute('aria-label', 'Score ' + f.score + ' out of 10');
+      score.append(b, meter);
+      fb.append(score, el('p', 'verdict', f.verdict));
+      const cols = el('div', 'cols');
+      [['good', 'What worked', f.strengths], ['gap', 'What to add', f.gaps]].forEach(([cls, h, items]) => {
+        const d = el('div', cls); d.appendChild(el('h3', null, h));
+        const ul = el('ul'); (items.length ? items : ['Nothing major.']).forEach(t => ul.appendChild(el('li', null, t)));
+        d.appendChild(ul); cols.appendChild(d);
+      });
+      fb.appendChild(cols);
+      if (f.better) fb.appendChild(el('p', 'better', f.better));
+      fb.hidden = false;
+      fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Voice answers (Chrome, Edge and Safari support speech recognition; Firefox doesn't, so the button stays hidden).
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null;
+    function stopMic() { if (rec) { rec.stop(); } }
+    if (SR) {
+      const mic = $('mic'); mic.hidden = false;
+      mic.addEventListener('click', () => {
+        if (rec) { rec.stop(); return; }
+        rec = new SR(); rec.lang = 'en-AU'; rec.continuous = true; rec.interimResults = true;
+        const base = $('answer').value.trim();
+        let finalText = '';
+        rec.onresult = e => {
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+            else interim += e.results[i][0].transcript;
+          }
+          $('answer').value = (base ? base + ' ' : '') + finalText + interim;
+        };
+        rec.onerror = e => { $('status').textContent = e.error === 'not-allowed' ? 'Microphone access was blocked. You can type your answer instead.' : 'Voice input stopped. You can carry on typing.'; };
+        rec.onend = () => { rec = null; mic.setAttribute('aria-pressed', 'false'); mic.textContent = '🎙️ Answer out loud'; };
+        try { rec.start(); mic.setAttribute('aria-pressed', 'true'); mic.textContent = '⏹ Stop recording'; $('status').textContent = 'Listening… speak your answer, then press Stop.'; count('practice-voice'); }
+        catch { rec = null; }
+      });
+    }
+    pick();
+  })();
+  </script>
+  <script src="/chat.js" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

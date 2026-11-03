@@ -313,6 +313,10 @@ FOOTER = f'''  <footer class="site-footer">
         <h2>Free resources</h2>
         <a href="/interview-prep/performance-testing/">Interview prep</a>
         <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
         <a href="/blog/">Blog</a>
         <a href="/blog/feed.xml">RSS feed</a>
       </div>
@@ -322,6 +326,8 @@ FOOTER = f'''  <footer class="site-footer">
         <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
         <a href="/portfolio-template/">Portfolio Website Template</a>
         <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
         <a href="/shop/">Shop</a>
       </div>
     </div>

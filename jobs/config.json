@@ -1,0 +1,74 @@
+{
+  "_help": "What the public jobs page (pawansinha.com.au/jobs/) looks for. Edit, push, and the page rebuilds. See jobs/build.py. Words match without caring about capital letters.",
+
+  "max_age_days": 21,
+  "max_jobs": 150,
+  "max_per_company": 3,
+
+  "strong_keywords": [
+    "performance engineer", "performance engineering", "performance test", "performance testing",
+    "performance tester", "performance analyst", "performance specialist", "performance qa",
+    "load test", "load testing", "stress test", "stress testing", "non-functional test",
+    "non-functional testing", "k6", "jmeter", "loadrunner", "load runner", "gatling",
+    "neoload", "locust", "blazemeter", "performance & resilience", "performance and resilience",
+    "capacity testing", "scalability testing", "soak test"
+  ],
+
+  "qa_keywords": [
+    "sdet", "software development engineer in test", "software engineer in test",
+    "test automation", "automation test", "automation tester", "qa automation", "automation qa",
+    "quality engineer", "quality engineering", "qa engineer", "qa lead", "qa analyst",
+    "test engineer", "test lead", "test analyst", "quality assurance", "playwright", "qa",
+    "tester", "testing"
+  ],
+
+  "_software_help": "Jobs without a performance keyword in the title must also mention at least 2 of these, so hardware or lab test jobs are left out.",
+  "software_signals": [
+    "software", "selenium", "playwright", "cypress", "api", "apis", "rest", "ci/cd", "ci", "jenkins",
+    "github actions", "web", "mobile", "java", "python", "javascript", "typescript", "c#", ".net",
+    "saas", "microservices", "cloud", "aws", "azure", "gcp", "sql", "automation", "postman", "agile"
+  ],
+
+  "bonus_keywords": [
+    "dynatrace", "kubernetes", "grafana", "prometheus", "datadog", "new relic", "appdynamics",
+    "observability", "site reliability", "sre"
+  ],
+
+  "exclude_title_words": [
+    "performance marketing", "performance management", "performance manager", "performance creative",
+    "performance coach", "marketing", "sales", "account executive", "account manager", "recruiter",
+    "talent", "human resources", "hr ", "payroll", "nurse", "teacher", "tutor", "copywriter",
+    "writer", "designer", "paid social", "paid media", "seo", "ads specialist", "growth",
+    "customer success", "customer support", "bookkeeper", "accountant", "lawyer", "legal",
+    "physician", "therapist", "clinical", "driver", "warehouse", "ai trainer", "annotation",
+    "athletic", "sports performance", "intern", "internship",
+    "flight", "electrical", "mechanical", "hardware", "embedded", "manufacturing", "production tester",
+    "laboratory", "lab technician", "mechatronic", "penetration", "pentest", "security engineer", "trainer", "projektmanager", "vehicle", "automotive", "civil", "geotechnical"
+  ],
+
+  "_location_help": "Sort boost: Australian and APAC roles first, then worldwide remote.",
+  "location_boost": {
+    "australia": 10, "melbourne": 10, "sydney": 10, "brisbane": 10, "perth": 10, "adelaide": 10,
+    "canberra": 10, "anz": 8, "new zealand": 6, "apac": 8, "asia pacific": 8, "asia-pacific": 8,
+    "worldwide": 6, "anywhere": 6, "global": 4, "remote": 2
+  },
+
+  "australia_words": [
+    "australia", "melbourne", "sydney", "brisbane", "perth", "adelaide", "canberra", "hobart",
+    "darwin", "gold coast", "anz", "apac", "asia pacific", "asia-pacific", "nsw", "vic", "qld"
+  ],
+
+  "sources": {
+    "himalayas": {
+      "enabled": true,
+      "queries": ["performance testing", "performance engineer", "load testing", "k6", "jmeter",
+                  "loadrunner", "gatling", "sdet", "test automation", "qa automation", "playwright"],
+      "australia_queries": ["performance", "qa automation", "test automation", "sdet", "test engineer"]
+    },
+    "remoteok": { "enabled": true },
+    "remotive": { "enabled": true },
+    "jobicy": { "enabled": true, "tags": ["jmeter", "sdet", "playwright", "qa automation", "testing"] },
+    "arbeitnow": { "enabled": true, "pages": 2 },
+    "weworkremotely": { "enabled": true }
+  }
+}

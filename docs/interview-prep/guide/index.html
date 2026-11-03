@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance Testing Interview Guide (PDF) — Pawan Sinha</title>
+  <meta name="description" content="92 performance testing interview questions with model answers, what each one really tests, a cheat sheet, STAR templates and prep plans. A$19 PDF.">
+  <meta property="og:title" content="Performance Testing Interview Guide (PDF)">
+  <meta property="og:description" content="92 questions with model answers, what each question is really testing, common mistakes, a cheat sheet, STAR story templates and 7- and 30-day prep plans.">
+  <meta property="og:type" content="product">
+  <meta property="og:url" content="https://pawansinha.com.au/interview-prep/guide/">
+  <meta property="og:image" content="https://pawansinha.com.au/interview-prep/guide/img/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/interview-prep/guide/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .price { font-size: 15px; color: var(--muted); margin: 14px 0 0; }
+    .price strong { font-size: 28px; color: var(--text); margin-right: 6px; }
+    .hero-split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+    .hero-split img { width: 100%; max-width: 340px; height: auto; display: block; margin-left: auto; border-radius: 10px; box-shadow: var(--shadow); }
+    .facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+    .facts li { font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); }
+    .sample { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 8px; }
+    .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width: 0; }
+    .qcard .code { font: 600 12px "JetBrains Mono", monospace; color: #fff; background: var(--accent); border-radius: 6px; padding: 2px 7px; }
+    .qcard h3 { font-size: 17px; margin: 10px 0 12px; line-height: 1.35; }
+    .box { border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; font-size: 15px; }
+    .box b { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 2px; }
+    .box.testing { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-left: 3px solid var(--accent); }
+    .box.testing b { color: var(--accent); }
+    .box.mistake { background: color-mix(in srgb, #ea580c 10%, var(--surface)); border-left: 3px solid #ea580c; }
+    .box.mistake b { color: #ea580c; }
+    .qcard .ans { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+    .pages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+    .pages figure { margin: 0; }
+    .pages img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .pages figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .compare { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 15px; }
+    .compare th, .compare td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
+    .compare th:not(:first-child), .compare td:not(:first-child) { text-align: center; width: 22%; }
+    .compare thead th { font-size: 13px; color: var(--muted); }
+    .yes { color: var(--ok); font-weight: 700; }
+    .no { color: var(--muted); }
+    @media (max-width: 760px) {
+      .hero-split, .sample, .pages { grid-template-columns: 1fr; }
+      .hero-split img { margin: 0 auto; max-width: 240px; }
+      .compare { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero svc-hero">
+      <div class="wrap hero-split">
+        <div>
+          <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/performance-testing/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">Interview Guide</span></nav>
+          <p class="eyebrow">PDF guide · for performance testers and engineers</p>
+          <h1>Walk into the interview <span class="hl">knowing what they're testing</span></h1>
+          <p class="lead">92 real performance testing interview questions with model answers, plus what each question is really checking and the mistake that costs candidates the job. A cheat sheet, STAR story templates and prep plans turn reading into practice.</p>
+          <div class="cta">
+            <a class="btn" href="[interview-guide-url]" target="_blank" rel="noopener" data-track="interview-guide-buy">Get the guide for A$19</a>
+            <a class="btn btn-ghost" href="#sample" data-track="interview-guide-sample">See a free sample</a>
+          </div>
+          <p class="price"><strong>A$19</strong>one-off · 64-page PDF · instant download</p>
+          <ul class="facts" aria-label="At a glance">
+            <li>92 questions</li><li>Basic · intermediate · advanced</li><li>k6 · JMeter · LoadRunner · Gatling</li>
+          </ul>
+        </div>
+        <img src="img/cover.jpg" alt="Cover of the Performance Testing Interview Guide" width="700" height="990">
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">What's inside</p>
+        <h2>More than a list of questions</h2>
+        <div class="grid">
+          <article class="card"><div class="icon">🎯</div><h3>What they're really testing</h3><p>Every question says which skill or judgement the interviewer is checking, so you aim your answer at what earns the marks.</p></article>
+          <article class="card"><div class="icon">⚠️</div><h3>The mistake that loses marks</h3><p>The weak answer for each question, from mixing up checks and thresholds to averaging percentiles. Know it, avoid it.</p></article>
+          <article class="card"><div class="icon">🧮</div><h3>Cheat sheet</h3><p>Little's Law, pacing, utilisation and error budgets with worked numbers, plus key k6, JMeter, LoadRunner, Gatling, JVM, Linux and PromQL syntax.</p></article>
+          <article class="card"><div class="icon">⭐</div><h3>STAR story templates</h3><p>Five fill-in templates for the behavioural questions that decide senior interviews, and which story to use for which question.</p></article>
+          <article class="card"><div class="icon">🧠</div><h3>Whiteboard scenarios</h3><p>Flash sale, 3× payments peak, slow 9 am logins, microservices migration and "Black Friday in two weeks", with a frame for any scenario.</p></article>
+          <article class="card"><div class="icon">📅</div><h3>7-day and 30-day plans</h3><p>Day-by-day prep, questions to ask the interviewer, and a self-review scorecard you can use after every practice answer.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sample" class="wrap section">
+      <p class="eyebrow">Free sample</p>
+      <h2>Two questions, as they appear in the guide</h2>
+      <p class="section-lead">The model answers are shortened here. In the guide each one is in full, with a "Say it like this" line where it helps.</p>
+      <div class="sample">
+        <article class="qcard">
+          <span class="code">B4</span>
+          <h3>Why use percentiles like p95 instead of the average response time?</h3>
+          <div class="box testing"><b>Really testing</b>That you understand distributions and tail latency, the basis of every SLA conversation.</div>
+          <p class="ans">Averages hide pain. If 95 requests take 200 ms and 5 take 8 seconds, the average is about 590 ms, which looks fine. But 1 in 20 users waited 8 seconds…</p>
+          <div class="box mistake"><b>Common mistake</b>Saying "p95 is the average of the top 5%". It is the value 95% of requests are faster than.</div>
+        </article>
+        <article class="qcard">
+          <span class="code">B12</span>
+          <h3>In k6, what is the difference between checks and thresholds?</h3>
+          <div class="box testing"><b>Really testing</b>Whether you know which mechanism actually fails a run (and a CI pipeline).</div>
+          <p class="ans">Checks are assertions on individual responses, such as "status is 200". A failed check doesn't fail the test; it's recorded as a pass rate. Thresholds are pass/fail rules for the whole test…</p>
+          <div class="box mistake"><b>Common mistake</b>Believing failed checks fail the test. Only thresholds change the exit code (99).</div>
+        </article>
+      </div>
+      <div class="pages">
+        <figure><img src="img/sample-page.jpg" alt="A page of basic-level questions from the guide" width="900" height="1272" loading="lazy"><figcaption>A question page: really testing, model answer, common mistake.</figcaption></figure>
+        <figure><img src="img/cheat-sheet.jpg" alt="The first page of the cheat sheet, partly blurred" width="900" height="1272" loading="lazy"><figcaption>The cheat sheet opens with formulas and worked numbers.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">Free page or guide?</p>
+        <h2>What the guide adds</h2>
+        <p class="section-lead">The questions and model answers are free on the <a href="/interview-prep/performance-testing/">interview prep page</a>. The guide is for when you want to prepare properly.</p>
+        <table class="compare">
+          <thead><tr><th scope="col">Included</th><th scope="col">Free page</th><th scope="col">Guide (A$19)</th></tr></thead>
+          <tbody>
+            <tr><td>92 questions with model answers</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>What each question is really testing</td><td class="no">–</td><td class="yes">✓</td></tr>
+            <tr><td>Common mistake for every question</td><td class="no">–</td><td class="yes">✓</td></tr>
+            <tr><td>Cheat sheet: formulas, tool syntax, JVM and Linux</td><td class="no">–</td><td class="yes">✓</td></tr>
+            <tr><td>STAR templates and whiteboard scenarios</td><td class="no">–</td><td class="yes">✓</td></tr>
+            <tr><td>7-day and 30-day prep plans, questions to ask, scorecard</td><td class="no">–</td><td class="yes">✓</td></tr>
+            <tr><td>Offline and printable, with contents and page numbers</td><td class="no">–</td><td class="yes">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="wrap section svc-split">
+      <div>
+        <p class="eyebrow">Who it's for</p>
+        <h2>Performance testing interviews at any level</h2>
+        <ul class="ticks">
+          <li><strong>3–5 years:</strong> concepts, metrics, scripting and one tool known well.</li>
+          <li><strong>5–7 years:</strong> bottlenecks, monitoring, cloud and CI/CD.</li>
+          <li><strong>7+ years and leads:</strong> tuning, capacity, strategy and leading a team.</li>
+          <li><strong>Moving in from functional QA or development:</strong> the 30-day plan takes you through it in order.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="eyebrow">Questions</p>
+        <h2>Common questions</h2>
+        <div class="faq">
+          <details><summary>What format is it?</summary><p>A 64-page A4 PDF with a clickable contents page. It reads well on a laptop, tablet or phone, and prints cleanly.</p></details>
+          <details><summary>Which tools does it cover?</summary><p>k6, JMeter, LoadRunner and Gatling, plus APM and observability (Dynatrace, Datadog, Prometheus, Grafana, Splunk), JVM and databases, and cloud and Kubernetes. Tool details were checked in November 2026.</p></details>
+          <details><summary>Are the answers made up?</summary><p>No. They're questions I've been asked, or asked candidates, over 12+ years in banking, payments and gaming. The guide never invents stories for you: the STAR templates help you tell your own.</p></details>
+          <details><summary>Do I get updates?</summary><p>Yes. When the guide is updated, you can download the new version from your Gumroad library at no cost.</p></details>
+          <details><summary>Something wrong with the file?</summary><p>Email <a href="mailto:hello@pawansinha.com.au?subject=Interview%20guide">hello@pawansinha.com.au</a> and I'll sort it out. Please don't share or resell the PDF.</p></details>
+          <details><summary>Want to practise with a real interviewer?</summary><p>Book a <a href="/interview-prep/performance-testing/#coaching">mock performance testing interview</a>: a paid 60-minute session at your level, with written feedback.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Prepare like the interviewer is already on your side</h2>
+        <p>A$19, one-off. 92 questions, cheat sheet, STAR templates and prep plans.</p>
+        <div class="cta">
+          <a class="btn btn-light" href="[interview-guide-url]" target="_blank" rel="noopener" data-track="interview-guide-buy-bottom">Get the guide for A$19</a>
+          <a class="btn btn-outline-light" href="/interview-prep/performance-testing/">Try the free questions first</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+    // Until the Gumroad link replaces [interview-guide-url], the buy buttons send an email instead.
+    document.querySelectorAll('a[href="[interview-guide-url]"]').forEach(a => {
+      a.href = 'mailto:hello@pawansinha.com.au?subject=Buy%20the%20Performance%20Testing%20Interview%20Guide';
+      a.removeAttribute('target');
+      a.textContent = 'Email me to buy (A$19)';
+    });
+  </script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

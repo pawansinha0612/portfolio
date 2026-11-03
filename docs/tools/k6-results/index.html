@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 Results Explainer — Pawan Sinha</title>
+  <meta name="description" content="Paste your k6 end-of-test summary or JSON and get a plain-English verdict: thresholds, response times, errors, throughput and what to fix next.">
+  <meta property="og:title" content="k6 Results Explainer — Pawan Sinha">
+  <meta property="og:description" content="Free tool: turn k6 output into a plain-English verdict with the likely causes of slow responses, errors and dropped iterations.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/k6-results/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/k6-results/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"k6 results explainer","url":"https://pawansinha.com.au/tools/k6-results/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .explainer { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel, .panel + #result { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+    .actions button { font: inherit; cursor: pointer; }
+    .err { margin: 12px 0 0; border-radius: 10px; padding: 10px 14px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; }
+    .err[hidden] { display: none; }
+
+    #result { margin-top: 16px; scroll-margin-top: 80px; }
+    #result[hidden] { display: none; }
+    .verdict { border-radius: 16px; padding: 20px 22px; border: 1px solid var(--border); background: var(--surface); }
+    .verdict.pass { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .verdict.fail { background: color-mix(in srgb, #d6452f 12%, var(--surface)); border-color: color-mix(in srgb, #d6452f 40%, transparent); }
+    .verdict.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+    .verdict h2 { margin: 0 0 6px; font-size: clamp(22px, 3vw, 28px); line-height: 1.25; }
+    .verdict.pass h2 { color: var(--ok); }
+    .verdict.fail h2 { color: var(--bad); }
+    .verdict.warn h2 { color: var(--warn); }
+    .verdict p { margin: 0; color: var(--text); }
+    .verdict .fmt { margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    .stat b { display: block; font-size: 24px; letter-spacing: -0.02em; line-height: 1.2; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .stat.ok b { color: var(--ok); } .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); }
+    .block { margin-top: 16px; }
+    .block h3 { font-size: 17px; margin: 0 0 10px; }
+    .th-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .th-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+    .th-list .mark { font-weight: 800; }
+    .th-list .ok .mark { color: var(--ok); } .th-list .bad .mark { color: var(--bad); }
+    .th-list code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .th-list .act { color: var(--muted); font-size: 13px; }
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; }
+    .card-x p { margin: 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+    .card-x p b { color: var(--text); }
+    .card-x.ok { border-left-color: var(--ok); } .card-x.warn { border-left-color: var(--warn); } .card-x.bad { border-left-color: var(--bad); } .card-x.info { border-left-color: var(--accent); }
+    .missing { margin-top: 12px; font-size: 14px; color: var(--muted); }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    :root { --bad: #c2341d; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a7a; } }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .verdict { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/#resources" aria-current="page">Resources</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · k6 load testing</p>
+      <h1>k6 results explainer</h1>
+      <p class="lead">Paste what k6 printed at the end of your test, or its JSON summary, and get a plain-English verdict: did it pass, how fast was it for real users, what failed, and what to look at next.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you paste is sent anywhere.</p>
+    </section>
+
+    <section class="wrap explainer" aria-label="Explainer">
+      <div class="panel">
+        <h2><label for="k6-in">Paste your k6 output</label></h2>
+        <p class="sub">The end-of-test summary from the terminal (k6 v1 or older), a <code>--summary-export</code> file, or JSON from <code>handleSummary()</code>.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="v1">k6 v1 summary</button>
+          <button class="chip-btn" type="button" data-example="legacy">Older k6 summary</button>
+          <button class="chip-btn" type="button" data-example="exportJson">--summary-export JSON</button>
+          <button class="chip-btn" type="button" data-example="handleSummaryJson">handleSummary JSON</button>
+        </div>
+        <textarea id="k6-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder="  █ THRESHOLDS&#10;&#10;    http_req_duration&#10;    ✓ 'p(95)<500' p(95)=212.4ms&#10;&#10;  █ TOTAL RESULTS&#10;    http_req_duration....: avg=96.4ms min=22.1ms med=71.3ms ..."></textarea>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="k6-results-explain">Explain my results</button>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+        </div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How to get the output</p>
+      <h2>Three ways to give it your results</h2>
+      <ol>
+        <li><strong>Copy from the terminal.</strong> After <code>k6 run script.js</code> finishes, copy everything from <strong>█ THRESHOLDS</strong> (or the metric lines on older k6) to the end. For the full breakdown of connection, waiting and download times, run with <code>--summary-mode=full</code>.</li>
+        <li><strong>Export a JSON file.</strong> <code>k6 run --summary-export=summary.json script.js</code>, then open <code>summary.json</code> and paste its contents.</li>
+        <li><strong>From handleSummary().</strong> If your script has a <code>handleSummary(data)</code> function, write <code>JSON.stringify(data)</code> to a file and paste that.</li>
+      </ol>
+      <h2 style="margin-top:32px">What this can and can't tell you</h2>
+      <ul>
+        <li>The summary shows <strong>what</strong> happened over the whole test. It can't show <strong>when</strong>: a system that was fine for 9 minutes and fell over in the 10th looks like a mild tail here. Look at results over time (k6's web dashboard: <code>K6_WEB_DASHBOARD=true k6 run script.js</code>, or Grafana).</li>
+        <li>It can't see your servers. The hints point at likely causes; confirm them with server CPU, memory, garbage collection, database and pool metrics from the same time window.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/curl-to-k6/">curl to k6 converter →</a>
+        <a href="/tools/#coordinated-omission">Why load tools under-report the tail →</a>
+        <a href="/tools/">All calculators →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Get the full picture</p>
+          <h3>Turn every k6 run into a report your whole team can read</h3>
+          <p><strong>Perf Advisor</strong> is a self-hosted app (A$129, one-off): it writes the k6 test from your OpenAPI spec, says whether a change needs a load test at all, and turns results into a shareable report. Or book a free 30-minute call and I'll go through your results with you.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/perf-advisor/" data-track="k6-results-perf-advisor">See Perf Advisor</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="k6-results-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/k6-results/explain.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const input = $('k6-in'), result = $('result'), err = $('err');
+    const E = window.K6Explain;
+    const esc = E.esc;
+    const marks = { ok: '✓', bad: '✗' };
+
+    function render(r) {
+      const h = [];
+      h.push(`<div class="verdict ${r.verdict}"><h2>${esc(r.headline)}</h2><p>${esc(r.summary)}</p><p class="fmt">Read as: ${esc(r.format)}</p></div>`);
+      if (r.stats.length) {
+        h.push('<div class="stats">' + r.stats.map(s => `<div class="stat ${s.level}"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join('') + '</div>');
+      }
+      if (r.thresholds.length) {
+        h.push('<div class="block"><h3>Thresholds</h3><ul class="th-list">' + r.thresholds.map(t =>
+          `<li class="${t.ok ? 'ok' : 'bad'}"><span class="mark" aria-label="${t.ok ? 'passed' : 'failed'}">${t.ok ? marks.ok : marks.bad}</span>` +
+          `<code>${esc(t.metric)}</code> <code>${esc(t.expr)}</code>${t.actual ? ` <span class="act">${esc(t.actual)}</span>` : ''}</li>`).join('') + '</ul></div>');
+      }
+      // section and hint texts are built by explain.js from numbers and escaped names, so they may contain <b>
+      if (r.sections.length) {
+        h.push('<div class="block"><h3>What happened</h3><div class="cards">' + r.sections.map(s =>
+          `<div class="card-x ${s.level}"><h4>${esc(s.title)}</h4><p>${s.text}</p></div>`).join('') + '</div></div>');
+      }
+      if (r.hints.length) {
+        h.push('<div class="block"><h3>What to look at next</h3><div class="cards">' + r.hints.map(s =>
+          `<div class="card-x ${s.level}"><h4>${esc(s.title)}</h4><p>${s.text}</p></div>`).join('') + '</div></div>');
+      }
+      if (r.missing.length) {
+        h.push(`<p class="missing">Not in your output, so not judged: ${r.missing.map(esc).join('; ')}.</p>`);
+      }
+      result.innerHTML = h.join('');
+      result.hidden = false;
+    }
+
+    function go(scroll) {
+      err.hidden = true;
+      try {
+        const r = E.explain(input.value);
+        render(r);
+        if (scroll) result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'k6-results-explained', title: 'k6-results-explained', event: true });
+      } catch (e) {
+        result.hidden = true;
+        err.textContent = e.message;
+        err.hidden = false;
+      }
+    }
+
+    $('go').addEventListener('click', () => go(true));
+    $('clear').addEventListener('click', () => { input.value = ''; result.hidden = true; err.hidden = true; input.focus(); });
+    input.addEventListener('paste', () => setTimeout(() => go(true), 0));
+    document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => {
+      input.value = E.EXAMPLES[b.dataset.example];
+      go(true);
+    }));
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
