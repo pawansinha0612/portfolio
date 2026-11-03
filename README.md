@@ -10,6 +10,7 @@ docs/        The website: plain HTML, CSS and JavaScript, no build step
   styles.css   Design, layout and animation styles
   main.js      Animations, scroll effects, booking button, placeholder hiding
   CNAME        Tells GitHub Pages to serve the site at pawansinha.com.au
+  learn/       Learn hub: interview prep, AI practice, k6 course, jobs (menu: Tools · Learn)
   tools/       Calculators, curl → k6 and JMeter → k6 converters, k6 results explainer, SLO and capacity
                calculators (all run in the browser)
   interview-prep/  Interview questions (qa.js), AI practice page, Interview Guide page

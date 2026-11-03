@@ -31,6 +31,9 @@
  * AI interview practice (docs/interview-prep/practice/): form=practice scores an answer with AI.
  *   Script Property GEMINI_API_KEY (fast, free, from aistudio.google.com) is used first; AI_API_KEY (NVIDIA, free
  *   but often slow) is the fallback. With neither key the AI part stays hidden (Project Settings → Script properties).
+ * Daily plan (just for you): sendDailyPlan() emails OWNER_EMAIL every morning at 9am: live checks (today's blog post,
+ *   LinkedIn share, pull requests to merge, failed GitHub jobs), new leads in the sheet, and your reminders from the
+ *   "Daily plan" tab (edit that tab to change them). Optional Script property GITHUB_TOKEN adds the private repo.
  * GET ?view=features lists what this deployed version supports, so new forms only appear once it is deployed.
  * The signup form stays hidden on the site until GET ?view=subscribe answers, so it only appears once this
  * version is deployed.
@@ -76,9 +79,11 @@ function setup() {
   courseSheet();
   practiceSheet();
   jobsSheet();
+  dailyPlanSheet();
   installWeeklyDigest();
   installCourseLessons();
   installJobAlerts();
+  installDailyPlan();
 }
 
 function subscriberSheet() {
@@ -433,7 +438,7 @@ function emailShell(o) {
     // footer
     '<tr><td style="padding:22px 8px;font-size:13px;line-height:1.6;color:' + E.muted + ';text-align:center">' +
     'Pawan Sinha · QA &amp; performance engineer, Melbourne · <a href="mailto:hello@pawansinha.com.au" style="color:' + E.muted + '">hello@pawansinha.com.au</a><br>' +
-    esc(why) + ' Reply any time, I read every email.<br>' +
+    esc(why) + (o.ownerOnly ? '' : ' Reply any time, I read every email.') + '<br>' +
     (unsub ? '<a href="' + unsub + '" style="color:' + E.muted + ';text-decoration:underline">Unsubscribe with one click</a> · ' : '') +
     '<a href="' + SITE_URL + '/blog/" style="color:' + E.muted + '">All posts</a> · ABN 43 627 514 346</td></tr>' +
     '</table></td></tr></table></body></html>';
@@ -1261,4 +1266,248 @@ function sendJobsEmail(to, jobs, prefs, token, welcome, prefix) {
 function previewJobAlert() {
   const jobs = matchingJobs(jobsData().jobs, 'australia+remote', 'all', '').slice(0, 5);
   sendJobsEmail(OWNER_EMAIL, jobs, { where: 'australia+remote', roles: 'all', often: 'daily' }, 'preview', false, '[Preview] ');
+}
+
+// =====================================================================================================
+// Daily plan email (added 2026-11-03): one email to you each morning with today's checks and to-dos.
+// Reminders live in the "Daily plan" tab: edit, add or switch off rows there (no code changes needed).
+//   when = daily | weekdays | weekends | Mon, Thu (day names) | 2026-11-27 | 2026-11-20 to 2026-11-27 | open
+//   ("open" = a one-off to-do shown every day until you set active to No)
+// =====================================================================================================
+const PLAN_SHEET = 'Daily plan';
+const PLAN_HEADERS = ['task', 'when', 'link', 'active', 'notes'];
+const GH_PUBLIC = 'pawansinha0612/portfolio';
+const GH_PRIVATE = 'pawansinha0612/portfolio-private';
+const OPS_URL = 'https://github.com/' + GH_PRIVATE + '/blob/main/OPERATIONS.md';
+const PLAN_SEED = [
+  // routine
+  ['Skim the Job leads issue from the job radar', 'daily', 'https://github.com/' + GH_PRIVATE + '/issues', 'Yes', ''],
+  ['New blog drafts PR arrives today: ask Claude to fact-check it, then merge it before Saturday', 'Sun', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', ''],
+  ['Last day to merge this week\'s blog drafts PR (fact-checked), so the daily posts keep going', 'Sat', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', ''],
+  ['LinkedIn carousels and YouTube scripts issues arrived: pick this week\'s', 'Sun', 'https://github.com/' + GH_PRIVATE + '/issues', 'Yes', ''],
+  ['Post a LinkedIn carousel (PDF from Sunday\'s issue, post text in its .md file)', 'Tue, Thu', 'https://github.com/' + GH_PRIVATE + '/tree/main/linkedin/carousels', 'Yes', ''],
+  ['LinkedIn: invite this week\'s new connections to follow your page (page → Grow → Invite to follow)', 'Mon', 'https://www.linkedin.com/', 'Yes', ''],
+  ['LinkedIn: repost one blog post with a short question', 'Wed', 'https://pawansinha.com.au/blog/', 'Yes', ''],
+  ['Check GoatCounter: which pages and tools got visits this week', 'Fri', 'https://pawansinha.goatcounter.com/', 'Yes', ''],
+  // one-off to-dos
+  ['List the Interview Guide (A$19) on Gumroad, then send Claude the link', 'open', OPS_URL, 'Yes', 'products/interview-guide/LISTING.md'],
+  ['List the Templates Pack (A$15) on Gumroad, then send Claude the link', 'open', OPS_URL, 'Yes', 'products/test-templates/LISTING.md'],
+  ['List the k6 kit, Perf Advisor and portfolio template on Gumroad', 'open', OPS_URL, 'Yes', 'each product folder has a LISTING.md'],
+  ['Turn on auto-renew for pawansinha.com.au in Hostinger', 'open', 'https://hpanel.hostinger.com/', 'Yes', ''],
+  ['Send 3–4 testimonial requests', 'open', OPS_URL, 'Yes', 'profile/testimonial-requests.md'],
+  ['Google Search Console: request indexing of the home page', 'open', 'https://search.google.com/search-console', 'Yes', ''],
+  ['Try the new tools on your phone (JMeter → k6, SLO, capacity) and turn on a job alert', 'open', 'https://pawansinha.com.au/tools/', 'Yes', ''],
+  // dates
+  ['Leaving the work Mac: copy personal files, sign out of personal accounts, revoke the GitHub token', '2026-11-05 to 2026-11-08', OPS_URL, 'Yes', ''],
+  ['Black Friday 27 Nov: post the peak-readiness quiz and offer on LinkedIn', '2026-11-17 to 2026-11-27', 'https://pawansinha.com.au/peak-readiness/quiz/', 'Yes', ''],
+  ['Renew the LinkedIn token before it expires (~28 Dec): Actions → LinkedIn token', '2026-12-18 to 2026-12-28', 'https://github.com/' + GH_PUBLIC + '/actions', 'Yes', ''],
+];
+// Tabs counted in "new since yesterday": tab → [label, link to show]
+const PLAN_COUNTS = [
+  ['Enquiries', 'enquiries'], ['Quiz', 'quiz leads'], ['Course', 'course sign-ups'], ['Subscribers', 'digest subscribers'],
+  ['Job alerts', 'job alert sign-ups'], ['Chat', 'chats'], ['Testimonials', 'testimonials'], ['Practice', 'practice answers'],
+];
+
+function dailyPlanSheet() {
+  const ss = SpreadsheetApp.getActive();
+  const existing = ss.getSheetByName(PLAN_SHEET);
+  if (existing) return existing;
+  const sh = sheetWithHeaders(PLAN_SHEET, PLAN_HEADERS);
+  try { sh.getRange(2, 2, 200, 1).setNumberFormat('@'); } catch (err) {}  // keep "when" as text, not dates
+  sh.getRange(2, 1, PLAN_SEED.length, PLAN_HEADERS.length).setValues(PLAN_SEED);
+  dropdown(sh, PLAN_HEADERS.indexOf('active') + 1, ['Yes', 'No']);
+  return sh;
+}
+
+// Emails you the plan every morning at 9am Melbourne (after the blog publishes at ~7am and ~8:37am). Safe to run again.
+function installDailyPlan() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'sendDailyPlan')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('sendDailyPlan').timeBased().everyDays(1).atHour(9).inTimezone('Australia/Melbourne').create();
+}
+
+const DAY_NAMES = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+// Does a "when" value match today? Returns 'today', 'open', 'soon' (dated, within 7 days) or ''.
+function planWhen(when, today, weekday) {
+  const ymd = v => (Object.prototype.toString.call(v) === '[object Date]' ? melbDay(v) : String(v).trim());
+  const w = ymd(when).toLowerCase();
+  if (!w) return '';
+  if (w === 'daily' || w === 'every day') return 'today';
+  if (w === 'open' || w === 'todo' || w === 'to do') return 'open';
+  if (w === 'weekdays') return weekday <= 5 ? 'today' : '';
+  if (w === 'weekends') return weekday >= 6 ? 'today' : '';
+  const range = /^(\d{4}-\d{2}-\d{2})(?:\s*(?:to|-|–|\.\.)\s*(\d{4}-\d{2}-\d{2}))?$/.exec(w);
+  if (range) {
+    const from = range[1], to = range[2] || range[1];
+    if (today >= from && today <= to) return 'today';
+    const soon = melbDay(new Date(Date.now() + 7 * 86400000));
+    return from > today && from <= soon ? 'soon' : '';
+  }
+  const days = w.split(/[\s,\/]+/).filter(Boolean).map(d => DAY_NAMES.indexOf(d.slice(0, 3)));
+  if (days.length && days.every(d => d >= 0)) return days.indexOf(weekday - 1) >= 0 ? 'today' : '';
+  return '';
+}
+
+function ghGet(path) {
+  const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'pawansinha-daily-plan' };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  try {
+    const r = UrlFetchApp.fetch('https://api.github.com' + path, { headers: headers, muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return null;
+    return JSON.parse(r.getContentText());
+  } catch (err) { return null; }
+}
+
+function fetchText(url) {
+  try {
+    const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    return r.getResponseCode() === 200 ? r.getContentText() : null;
+  } catch (err) { return null; }
+}
+
+// Everything the email shows, as plain data (so it can be tested).
+function buildDailyPlan() {
+  const now = new Date();
+  const today = melbDay(now);
+  const weekday = Number(Utilities.formatDate(now, 'Australia/Melbourne', 'u'));  // 1 = Monday
+  const checks = [];   // { ok: true/false/null, text, link }
+  const add = (ok, text, link) => checks.push({ ok: ok, text: text, link: link || '' });
+
+  // 1. Today's blog post is live (newest item in the RSS feed is dated today)
+  const feed = fetchText(FEED_URL + '?t=' + now.getTime());
+  if (feed === null) add(false, "Couldn't read the blog feed: is the site up?", SITE_URL + '/blog/');
+  else {
+    const item = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>[\s\S]*?<pubDate>([\s\S]*?)<\/pubDate>/.exec(feed);
+    const unx = t => String(t).replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    const day = item ? melbDay(new Date(item[3].trim())) : '';
+    if (item && day === today) add(true, "Today's blog post is live: " + unx(item[1].trim()), item[2].trim());
+    else add(false, "No blog post went live today" + (item ? ' (latest is from ' + day + ')' : '') + '. Check Actions → Blog publish, and that a drafts PR was merged.', 'https://github.com/' + GH_PUBLIC + '/actions/workflows/blog-publish.yml');
+  }
+
+  // 2. Shared on LinkedIn (blog/linkedin-posted.json records each share)
+  const shared = fetchText('https://raw.githubusercontent.com/' + GH_PUBLIC + '/main/blog/linkedin-posted.json?t=' + now.getTime());
+  let log = null;
+  try { log = shared ? JSON.parse(shared) : null; } catch (err) {}
+  if (!log) add(null, "Couldn't check LinkedIn today: look at your profile's latest post.", 'https://www.linkedin.com/in/pawan-sinha-b5a356b6/recent-activity/all/');
+  else {
+    const hit = Object.keys(log).find(k => log[k] && log[k].date === today);
+    if (hit) add(true, 'Shared on LinkedIn: open it and reply to any comments', 'https://www.linkedin.com/feed/update/' + log[hit].id + '/');
+    else add(false, 'Not shared on LinkedIn today. Check Actions → Blog publish → "Share on LinkedIn" (an expired token is the usual cause).', 'https://github.com/' + GH_PUBLIC + '/actions/workflows/blog-publish.yml');
+  }
+
+  // 3. Pull requests waiting (public repo)
+  const pulls = ghGet('/repos/' + GH_PUBLIC + '/pulls?state=open&per_page=10');
+  if (pulls === null) add(null, "Couldn't reach GitHub to check pull requests: have a look yourself.", 'https://github.com/' + GH_PUBLIC + '/pulls');
+  else pulls.forEach(p => {
+    const days = Math.floor((now - new Date(p.created_at)) / 86400000);
+    add(false, 'Pull request waiting: "' + p.title + '" (open ' + days + (days === 1 ? ' day' : ' days') + '). Ask Claude to check it, then merge.', p.html_url);
+  });
+
+  // 4. Failed GitHub jobs (latest run of each workflow failed) and open issues
+  const repos = [GH_PUBLIC].concat(PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN') ? [GH_PRIVATE] : []);
+  const issues = [];
+  let runsRead = false, failed = 0;
+  repos.forEach(repo => {
+    const runs = ghGet('/repos/' + repo + '/actions/runs?per_page=30');
+    if (runs && runs.workflow_runs) {
+      runsRead = true;
+      const latest = {};
+      runs.workflow_runs.forEach(r => { if (!latest[r.name]) latest[r.name] = r; });
+      Object.keys(latest).forEach(name => {
+        const r = latest[name];
+        if (r.status === 'completed' && /failure|timed_out|startup_failure/.test(r.conclusion || '') && now - new Date(r.created_at) < 3 * 86400000) {
+          failed++;
+          add(false, 'GitHub job failed: ' + name + (repo === GH_PRIVATE ? ' (private repo)' : '') + '. Open it, read the red step, see OPERATIONS.md → Something failed.', r.html_url);
+        }
+      });
+    }
+    const open = ghGet('/repos/' + repo + '/issues?state=open&per_page=15');
+    (open || []).filter(i => !i.pull_request).forEach(i => issues.push({ title: i.title, link: i.html_url, repo: repo }));
+  });
+  if (runsRead && !failed) add(true, 'No failed GitHub jobs', 'https://github.com/' + GH_PUBLIC + '/actions');
+
+  // 5. New since yesterday in the sheet
+  const ss = SpreadsheetApp.getActive();
+  const since = now.getTime() - 86400000;
+  const counts = [];
+  PLAN_COUNTS.forEach(([tab, label]) => {
+    const sh = ss.getSheetByName(tab);
+    if (!sh) return;
+    const rows = sh.getDataRange().getValues().slice(1);
+    const n = rows.filter(r => { const d = r[0]; return Object.prototype.toString.call(d) === '[object Date]' && d.getTime() >= since; }).length;
+    if (n) counts.push({ n: n, label: label, tab: tab });
+  });
+  const enq = ss.getSheetByName(ENQUIRY_SHEET);
+  let unanswered = 0;
+  if (enq) {
+    const c = ENQUIRY_HEADERS.indexOf('status');
+    unanswered = enq.getDataRange().getValues().slice(1).filter(r => !r[c] || String(r[c]) === 'New').length;
+  }
+
+  // 6. Reminders from the Daily plan tab
+  const plan = { today: [], open: [], soon: [] };
+  const psh = ss.getSheetByName(PLAN_SHEET) || dailyPlanSheet();
+  psh.getDataRange().getValues().slice(1).forEach(r => {
+    const task = String(r[0] || '').trim();
+    if (!task || String(r[3]).trim().toLowerCase() === 'no') return;
+    const kind = planWhen(r[1], today, weekday);
+    if (kind) plan[kind].push({ task: task, link: /^https?:\/\//.test(String(r[2])) ? String(r[2]) : '', notes: String(r[4] || ''), when: String(r[1]) });
+  });
+
+  let quota = null;
+  try { quota = MailApp.getRemainingDailyQuota(); } catch (err) {}
+  return { today: today, weekday: weekday, checks: checks, issues: issues, counts: counts, unanswered: unanswered, plan: plan,
+    quota: quota, sheetUrl: ss.getUrl ? ss.getUrl() : '' };
+}
+
+function sendDailyPlan() {
+  const d = buildDailyPlan();
+  const E = EMAIL;
+  const problems = d.checks.filter(c => c.ok === false).length;
+  const dayLabel = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'EEE d MMM');
+  const icon = ok => (ok === true ? '✅' : ok === false ? '❌' : '❔');
+  const row = (lead, text, link, sub) =>
+    '<tr><td style="padding:7px 10px 7px 0;vertical-align:top;font-size:16px;width:24px">' + lead + '</td>' +
+    '<td style="padding:7px 0;font-size:15px;line-height:1.5;border-bottom:1px solid ' + E.border + '">' +
+    (link ? '<a href="' + esc(link) + '" style="color:' + E.text + ';text-decoration:underline">' + esc(text) + '</a>' : esc(text)) +
+    (sub ? '<br><span style="font-size:13px;color:' + E.muted + '">' + esc(sub) + '</span>' : '') + '</td></tr>';
+  const section = (title, rows) => rows.length
+    ? '<h2 style="margin:22px 0 6px;font-size:17px">' + esc(title) + '</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + rows.join('') + '</table>' : '';
+  const leads = d.counts.map(c => row('🆕', c.n + ' new ' + c.label, d.sheetUrl, 'tab: ' + c.tab));
+  if (d.unanswered) leads.push(row('✉️', d.unanswered + (d.unanswered === 1 ? ' enquiry' : ' enquiries') + ' still marked New: reply, then set the status', d.sheetUrl, ''));
+  if (!leads.length) leads.push(row('·', 'Nothing new in the sheet since yesterday', '', ''));
+  const body =
+    section("Checked for you", d.checks.map(c => row(icon(c.ok), c.text, c.link, ''))) +
+    section("Today's to-dos", d.plan.today.map(p => row('☐', p.task, p.link, p.notes))) +
+    section('New since yesterday', leads) +
+    section('Open GitHub issues', d.issues.map(i => row('📌', i.title, i.link, i.repo === GH_PRIVATE ? 'private repo' : ''))) +
+    section('Still to do (one-off)', d.plan.open.map(p => row('☐', p.task, p.link, p.notes))) +
+    section('Coming up this week', d.plan.soon.map(p => row('📅', p.task, p.link, p.when))) +
+    '<p style="margin:22px 0 0;font-size:13px;color:' + E.muted + '">Change these reminders in the <a href="' + esc(d.sheetUrl) + '" style="color:' + E.muted + '">Daily plan tab</a> ' +
+    '(when = daily, weekdays, Mon, Thu, a date, a date range like 2026-11-20 to 2026-11-27, or open; set active to No when done).' +
+    (d.quota !== null ? ' Emails the site can still send today: ' + d.quota + '.' : '') + '</p>';
+  const html = emailShell({
+    preheader: (problems ? problems + ' to look at · ' : 'All checks green · ') + d.plan.today.length + ' to-dos today',
+    eyebrow: 'Daily plan · ' + dayLabel,
+    heading: problems ? problems + (problems === 1 ? ' thing needs' : ' things need') + ' a look today' : 'All good this morning ✅',
+    intro: 'Your website, LinkedIn and GitHub, checked at 9am, plus what to do today.',
+    body: body,
+    reason: 'Your daily plan from your website backend (sendDailyPlan in Code.gs).',
+    ownerOnly: true,
+  });
+  const line = (lead, text, link) => lead + ' ' + text + (link ? '\n   ' + link : '');
+  const text = 'Daily plan, ' + dayLabel + '\n\nCHECKED FOR YOU\n' + d.checks.map(c => line(icon(c.ok), c.text, c.link)).join('\n') +
+    '\n\nTODAY\'S TO-DOS\n' + (d.plan.today.map(p => line('-', p.task, p.link)).join('\n') || '(none)') +
+    '\n\nNEW SINCE YESTERDAY\n' + (d.counts.map(c => '- ' + c.n + ' new ' + c.label).join('\n') || '(nothing)') +
+    (d.unanswered ? '\n- ' + d.unanswered + ' enquiries still marked New' : '') +
+    (d.issues.length ? '\n\nOPEN GITHUB ISSUES\n' + d.issues.map(i => line('-', i.title, i.link)).join('\n') : '') +
+    (d.plan.open.length ? '\n\nSTILL TO DO\n' + d.plan.open.map(p => line('-', p.task, p.link)).join('\n') : '') +
+    (d.plan.soon.length ? '\n\nCOMING UP\n' + d.plan.soon.map(p => line('-', p.task + ' (' + p.when + ')', p.link)).join('\n') : '') +
+    '\n\nEdit reminders: Daily plan tab in the sheet ' + d.sheetUrl;
+  const subject = '📋 ' + dayLabel + ': ' + (problems ? '⚠️ ' + problems + ' to check, ' : '✅ all good, ') +
+    d.plan.today.length + (d.plan.today.length === 1 ? ' to-do' : ' to-dos');
+  MailApp.sendEmail({ to: OWNER_EMAIL, name: 'Daily plan', subject: subject, body: text, htmlBody: html });
 }

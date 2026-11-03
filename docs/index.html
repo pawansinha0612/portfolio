@@ -67,7 +67,8 @@
       <nav id="site-menu" aria-label="Main">
         <a href="#services">Services</a>
         <a href="#work">Work</a>
-        <a href="#resources">Resources</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
         <a href="/blog/">Blog</a>
         <a href="#contact" class="btn btn-small">Hire me</a>
       </nav>
@@ -117,6 +118,15 @@
         </figure>
       </div>
     </section>
+
+    <nav class="wrap paths" aria-label="What are you here for?">
+      <p class="paths-label">What are you here for?</p>
+      <div class="paths-grid">
+        <a class="path" href="#services" data-track="path-hire"><span class="path-icon" aria-hidden="true">🤝</span><span><strong>I need testing or performance help</strong><small>Services, case studies and a free call</small></span></a>
+        <a class="path" href="/learn/" data-track="path-learn"><span class="path-icon" aria-hidden="true">🎓</span><span><strong>I'm learning or preparing for interviews</strong><small>Interview prep, AI practice, a k6 course and jobs</small></span></a>
+        <a class="path" href="/tools/" data-track="path-tools"><span class="path-icon" aria-hidden="true">🧰</span><span><strong>I want free performance tools</strong><small>JMeter → k6, curl → k6, SLO and capacity calculators</small></span></a>
+      </div>
+    </nav>
 
     <section class="trust">
       <div class="wrap">
@@ -304,7 +314,10 @@
           <h3>Will your site hold up on your biggest sales day?</h3>
           <p>A fixed-price peak-readiness load test: your forecast peak, realistic shopper journeys, bottlenecks traced to the cause and a go/no-go report, in about a week.</p>
         </div>
-        <a href="/peak-readiness/" class="btn" data-track="peak-home">See the peak-readiness test</a>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a href="/peak-readiness/" class="btn" data-track="peak-home">See the peak-readiness test</a>
+          <a href="/peak-readiness/quiz/" class="btn btn-ghost" data-track="peak-quiz-home">Take the 2-minute quiz</a>
+        </div>
       </div>
       <div class="offer">
         <div>
@@ -418,64 +431,29 @@
 
     <section id="resources" class="wrap section">
       <p class="eyebrow">Free resources</p>
-      <h2>Interview practice, courses, tools and jobs</h2>
-      <p class="section-lead">Interview questions with model answers and AI practice, a free k6 course, deep dives on performance engineering, calculators and k6 tools, and a daily jobs board.</p>
+      <h2>For engineers: tools, learning and a daily blog</h2>
+      <p class="section-lead">Everything I've built for the performance testing community, free. The paid extras are in the <a href="/shop/">shop</a>.</p>
       <div class="grid">
-        <a class="card project-card" href="/interview-prep/performance-testing/">
-          <div class="icon">⚡</div>
-          <h3>Performance testing &amp; engineering</h3>
-          <p>From load-test basics to GC tuning, AWR analysis and capacity planning. Pick your level: basic (3–5 years), intermediate (5–7) or advanced (7+). Mock interviews available.</p>
-          <ul class="chips project-chips"><li>k6</li><li>JMeter</li><li>LoadRunner</li><li>APM</li></ul>
-          <span class="project-link">Start practising →</span>
+        <a class="card project-card" href="/tools/" data-track="tools-resources">
+          <div class="icon">🧰</div>
+          <h3>Free tools</h3>
+          <p>Convert JMeter plans and curl commands to k6, explain k6 results, and size capacity, virtual users and error budgets.</p>
+          <ul class="chips project-chips"><li>JMeter → k6</li><li>SLOs</li><li>Capacity</li></ul>
+          <span class="project-link">Open the tools →</span>
         </a>
-        <a class="card project-card" href="/blog/">
+        <a class="card project-card" href="/learn/" data-track="learn-resources">
+          <div class="icon">🎓</div>
+          <h3>Learn</h3>
+          <p>Interview questions with model answers, AI mock interview practice, a free k6 email course and a daily jobs board with email alerts.</p>
+          <ul class="chips project-chips"><li>Interviews</li><li>k6 course</li><li>Jobs</li></ul>
+          <span class="project-link">Start learning →</span>
+        </a>
+        <a class="card project-card" href="/blog/" data-track="blog-resources">
           <div class="icon">✍️</div>
           <h3>Blog</h3>
-          <p>Deep dives on bottlenecks, load testing, caching, load balancers, cloud and capacity planning, most with an interactive calculator. A new one every day.</p>
-          <ul class="chips project-chips"><li>Performance</li><li>Capacity</li><li>Cloud</li><li>Databases</li></ul>
+          <p>A performance engineering deep dive every day: bottlenecks, load testing, caching, databases and capacity, most with a calculator.</p>
+          <ul class="chips project-chips"><li>Performance</li><li>Capacity</li><li>Databases</li></ul>
           <span class="project-link">Read the latest →</span>
-        </a>
-        <a class="card project-card" href="/tools/">
-          <div class="icon">🧮</div>
-          <h3>Performance calculators</h3>
-          <p>Size virtual users, capacity and error budgets, convert JMeter plans and curl commands into k6 scripts, and get a plain-English read of your k6 results. Free.</p>
-          <ul class="chips project-chips"><li>JMeter → k6</li><li>SLOs</li><li>Capacity</li></ul>
-          <span class="project-link">Open the calculators →</span>
-        </a>
-        <a class="card project-card" href="/interview-prep/practice/" data-track="practice-resources">
-          <div class="icon">🎙️</div>
-          <h3>Mock interview practice</h3>
-          <p>Answer real performance testing interview questions out loud or in writing, and get instant feedback: a score, what you missed and a stronger answer.</p>
-          <ul class="chips project-chips"><li>Voice answers</li><li>Instant feedback</li><li>3 levels</li></ul>
-          <span class="project-link">Practise now →</span>
-        </a>
-        <a class="card project-card" href="/course/k6/" data-track="course-resources">
-          <div class="icon">📬</div>
-          <h3>k6 in 7 days</h3>
-          <p>A free email course: one short lesson a day, from your first script to arrival-rate scenarios, SLO thresholds, test data and CI.</p>
-          <ul class="chips project-chips"><li>k6</li><li>Email course</li><li>Free</li></ul>
-          <span class="project-link">Start the course →</span>
-        </a>
-        <a class="card project-card" href="/peak-readiness/quiz/" data-track="quiz-resources">
-          <div class="icon">🚦</div>
-          <h3>Peak-readiness quiz</h3>
-          <p>Will your site hold up on Black Friday or launch day? 10 questions, a readiness score and a prioritised fix list in 2 minutes.</p>
-          <ul class="chips project-chips"><li>Black Friday</li><li>Launches</li><li>2 minutes</li></ul>
-          <span class="project-link">Take the quiz →</span>
-        </a>
-        <a class="card project-card" href="/jobs/" data-track="jobs-resources">
-          <div class="icon">💼</div>
-          <h3>Performance &amp; QA jobs</h3>
-          <p>Performance engineering and test automation roles from public job boards, Australia first, refreshed every morning. Get new roles by email.</p>
-          <ul class="chips project-chips"><li>Performance</li><li>SDET</li><li>Remote</li></ul>
-          <span class="project-link">See today's jobs →</span>
-        </a>
-        <a class="card project-card" href="/shop/" data-track="shop-resources">
-          <div class="icon">🛒</div>
-          <h3>Shop</h3>
-          <p>Perf Advisor, the k6 Starter Kit, the Performance Testing Interview Guide, test plan templates and a portfolio website template. Instant download.</p>
-          <ul class="chips project-chips"><li>k6</li><li>Templates</li><li>Interview practice</li></ul>
-          <span class="project-link">Visit the shop →</span>
         </a>
       </div>
     </section>
