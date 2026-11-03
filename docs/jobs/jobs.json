@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-03T05:23:40+00:00",
- "count": 83,
+ "updated": "2026-11-03T09:27:42+00:00",
+ "count": 88,
  "sources": {
   "himalayas": "ok",
   "remoteok": "ok",
@@ -375,6 +375,19 @@
    "first_seen": "2026-10-24T21:11:48+00:00"
   },
   {
+   "title": "Automation Test Engineer",
+   "company": "H.W. Kaufman Financial Group",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/h-w-kaufman-financial-group/jobs/automation-test-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/h-w-kaufman-financial-group/jobs/automation-test-engineer",
+   "posted": "2026-11-03T08:30:59+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 29,
+   "first_seen": "2026-11-03T09:27:42+00:00"
+  },
+  {
    "title": "Ubuntu Linux Kernel Test Engineer",
    "company": "Canonical",
    "location": "American Samoa, Australia, Bangladesh, Bhutan, British Indian Ocean Territory, Brunei Darussalam, Cambodia, China, Christmas Island, Cocos (Keeling) Islands, Fiji, French Polynesia, Guam, Hong Kong, India, Indonesia, Japan, Kiribati, Lao People's Democratic Republic, Macao, Malaysia, Maldives, Marshall Islands, Micronesia, Federated States of, Mongolia, Myanmar, Nauru, Nepal, New Caledonia, New Zealand, Niue, Norfolk Island, Northern Mariana Islands, Pakistan, Palau, Papua New Guinea, Philippines, Pitcairn, Russian Federation, Samoa, Singapore, Solomon Islands, South Korea, Sri Lanka, Taiwan, Thailand, Timor-Leste, Tokelau, Tonga, Tuvalu, United States Minor Outlying Islands, Vanuatu, Vietnam, Wallis and Futuna",
@@ -412,6 +425,19 @@
    "region": "remote",
    "score": 29,
    "first_seen": "2026-10-29T09:11:28+00:00"
+  },
+  {
+   "title": "Senior QA Automation Developer (Platform)",
+   "company": "Upgrade",
+   "location": "Canada",
+   "url": "https://jobicy.com/jobs/152334-senior-qa-automation-developer-platform",
+   "source": "Jobicy",
+   "id": "Jobicy:152334",
+   "posted": "2026-11-03T03:35:23+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 28,
+   "first_seen": "2026-11-03T09:27:42+00:00"
   },
   {
    "title": "Senior SDET (Manual + Playwright Automation)",
@@ -687,6 +713,19 @@
    "first_seen": "2026-10-25T15:59:52+00:00"
   },
   {
+   "title": "Senior QA Automation Engineer",
+   "company": "FYST",
+   "location": "Portugal",
+   "url": "https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer",
+   "posted": "2026-11-03T08:10:16+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-03T09:27:42+00:00"
+  },
+  {
    "title": "Senior Quality Engineer",
    "company": "Just Eat Takeaway.com",
    "location": "Canada",
@@ -882,6 +921,19 @@
    "first_seen": "2026-10-27T03:28:39+00:00"
   },
   {
+   "title": "Automation QA Engineer - Senior",
+   "company": "SOFTSWISS",
+   "location": "Bulgaria, Georgia, Poland, Serbia",
+   "url": "https://himalayas.app/companies/softswiss/jobs/automation-qa-engineer-senior?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/softswiss/jobs/automation-qa-engineer-senior",
+   "posted": "2026-11-03T05:41:19+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 16,
+   "first_seen": "2026-11-03T09:27:42+00:00"
+  },
+  {
    "title": "QA Engineer – Salesforce & Enterprise Applications",
    "company": "Labcorp",
    "location": "India",
@@ -932,6 +984,19 @@
    "region": "remote",
    "score": 16,
    "first_seen": "2026-10-28T16:54:55+00:00"
+  },
+  {
+   "title": "QA Analyst (Future Roles)",
+   "company": "Testlio",
+   "location": "Argentina, Brazil, Canada, Czechia, Estonia, Ireland, Mexico, Poland, Portugal, Romania, Spain, UK, Ukraine, USA",
+   "url": "https://jobicy.com/jobs/152333-qa-analyst-future-roles",
+   "source": "Jobicy",
+   "id": "Jobicy:152333",
+   "posted": "2026-11-03T03:35:22+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 15,
+   "first_seen": "2026-11-03T09:27:42+00:00"
   },
   {
    "title": "Freelance Software Tester (Remote in Martinique)",
