@@ -920,8 +920,9 @@ const PRACTICE_DAILY_CAP = 150;       // for the whole site, protects the free A
 // Gemini first (answers in seconds); NVIDIA only as a fallback. Measured 3 Nov 2026: NVIDIA's free gpt-oss-20b took
 // 65 s at best with reasoning_effort low and usually timed out; gemma-4 timed out; llama/mistral/qwen were removed (410/404).
 // Tried in order. Override without editing code: Script property GEMINI_MODELS = comma-separated names.
-// 3 Nov 2026: Google said gemini-2.5-flash is closed to new users and to use gemini-3.8-flash.
-const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+// 3 Nov 2026: gemini-2.5-flash is closed to new users; gemini-3.8-flash was often busy (503); gemini-flash-latest
+// sometimes hung for minutes (Apps Script can't time out a request), so it's left out; flash-lite answered reliably.
+const GEMINI_MODELS = ['gemini-flash-lite-latest', 'gemini-3.8-flash'];
 function geminiModels() {
   const p = PropertiesService.getScriptProperties().getProperty('GEMINI_MODELS');
   return p ? p.split(',').map(x => x.trim()).filter(Boolean) : GEMINI_MODELS;
