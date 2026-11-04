@@ -149,16 +149,43 @@
 
   function toPrep() {
     answers.reason = 'Interview prep';
-    finish('The <a href="/interview-prep/performance-testing/">performance testing interview questions</a> are grouped by experience, from 3 to 7+ years. Good luck!');
+    finish('The <a href="/interview-prep/">interview questions</a> cover six testing roles (performance, manual, API, Playwright, mobile and QA lead), each from basic to advanced. Good luck!');
   }
+
+  const ROLES = [['Performance testing', 'performance-testing'], ['Manual testing', 'manual-testing'], ['API testing', 'api-testing'],
+    ['Playwright automation', 'playwright'], ['Mobile testing', 'mobile-testing'], ['QA lead / test manager', 'qa-lead']];
+  const OTHER_LEVELS = [['Under 2 years', 'basic'], ['2–5 years', 'intermediate'], ['5+ years', 'advanced']];
 
   function interview() {
     answers.reason = 'Interview prep';
-    say('Good luck! How many years of experience do you have?');
+    say('Good luck! Which role are you preparing for?');
+    options(ROLES.map(([label, slug]) => [label, () => { answers.role = label; slug === 'performance-testing' ? perfLevel() : otherLevel(label, slug); }]));
+  }
+
+  function perfLevel() {
+    say('How many years of experience do you have?');
     options(LEVELS.map(([label, lvl]) => [label, () => { answers.level = label; pickTopic(lvl); }]));
   }
 
+  function otherLevel(role, slug) {
+    say('How many years of experience do you have?');
+    options(OTHER_LEVELS.map(([label, lvl]) => [label, () => {
+      answers.level = label;
+      if (prep() && location.pathname.indexOf('/interview-prep/' + slug + '/') === 0) {
+        const n = prep().show(lvl, '');
+        say(`I've opened the ${lvl} level: ${n} question${n === 1 ? '' : 's'}. Tick "Practised" as you go.`);
+      } else {
+        say(`Here are the <a href="/interview-prep/${slug}/#${lvl}">${role.toLowerCase()} questions at ${lvl} level</a>. You can also <a href="/interview-prep/practice/">practise them with AI feedback</a>.`);
+      }
+      missingTopic();
+    }]));
+  }
+
   function pickTopic(lvl) {
+    if (prep() && location.pathname.indexOf('/interview-prep/performance-testing/') !== 0) {  // on another role's page
+      say(`Have a look at the <a href="/interview-prep/performance-testing/#${lvl}">performance testing ${lvl} questions</a>.`);
+      return missingTopic();
+    }
     say('Which tool or topic do you want to focus on?');
     options([...TOPICS, 'Everything'].map(t => [t, () => {
       answers.topics = t;

@@ -2,7 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://pawansinha.com.au/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
   <url><loc>https://pawansinha.com.au/projects/deal-finder/</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/interview-prep/performance-testing/</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/manual-testing/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/api-testing/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/playwright/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/mobile-testing/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/interview-prep/qa-lead/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/tools/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/portfolio-template/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/perf-advisor/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

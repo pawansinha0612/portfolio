@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Mock Interview: Performance Testing Practice — Pawan Sinha</title>
-  <meta name="description" content="Practise performance testing interview questions out loud or in writing and get instant AI feedback: a score, gaps and a stronger answer.">
-  <meta property="og:title" content="AI Mock Interview: Performance Testing Practice — Pawan Sinha">
-  <meta property="og:description" content="Answer real performance testing interview questions and get instant feedback: score, what you missed and a stronger answer. 3 free a day.">
+  <title>AI Mock Interview: Software Testing Practice — Pawan Sinha</title>
+  <meta name="description" content="Practise testing interview questions out loud or in writing and get instant AI feedback: performance, manual, API, Playwright, mobile and QA lead.">
+  <meta property="og:title" content="AI Mock Interview: Software Testing Practice — Pawan Sinha">
+  <meta property="og:description" content="Answer real software testing interview questions and get instant feedback: score, what you missed and a stronger answer. 3 free a day.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pawansinha.com.au/interview-prep/practice/">
   <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
@@ -24,6 +24,9 @@
     .pr-hero { padding: 56px 16px 8px; max-width: 820px; }
     .pr-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; margin: 0 0 14px; }
     .pr { max-width: 820px; padding: 12px 16px 72px; }
+    .role-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+    .role-row label { font-weight: 600; font-size: 14px; }
+    .role-row select { font: inherit; font-size: 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
     .levels { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
     .levels button { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); background: var(--surface);
       border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
@@ -92,17 +95,28 @@
 
   <main>
     <section class="wrap pr-hero">
-      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/performance-testing/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">Practice</span></nav>
-      <p class="eyebrow">Interview practice · Performance engineering</p>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">Practice</span></nav>
+      <p class="eyebrow">Interview practice · every testing role</p>
       <h1>Practise out loud, get <span class="hl">instant feedback</span></h1>
-      <p class="lead">Pick your level, answer a real interview question in your own words, typed or spoken, and get a score, what you missed and a stronger answer. Then compare with the model answer.</p>
+      <p class="lead">Pick your role and level, answer a real interview question in your own words, typed or spoken, and get a score, what you missed and a stronger answer. Then compare with the model answer.</p>
     </section>
 
     <section class="wrap pr">
+      <div class="role-row">
+        <label for="role">Role</label>
+        <select id="role">
+          <option value="performance">⚡ Performance testing</option>
+          <option value="manual">🧪 Manual &amp; functional testing</option>
+          <option value="api">🔌 API testing</option>
+          <option value="playwright">🎭 Playwright automation</option>
+          <option value="mobile">📱 Mobile app testing</option>
+          <option value="lead">🧭 QA lead &amp; test manager</option>
+        </select>
+      </div>
       <div class="levels" role="group" aria-label="Experience level">
-        <button type="button" data-level="basic" aria-pressed="true">Basic · 3–5 yrs</button>
-        <button type="button" data-level="intermediate" aria-pressed="false">Intermediate · 5–7 yrs</button>
-        <button type="button" data-level="advanced" aria-pressed="false">Advanced · 7+ yrs</button>
+        <button type="button" data-level="basic" aria-pressed="true">Basic</button>
+        <button type="button" data-level="intermediate" aria-pressed="false">Intermediate</button>
+        <button type="button" data-level="advanced" aria-pressed="false">Advanced</button>
       </div>
       <div class="card-q">
         <div class="q-meta"><b id="topics"></b><span id="left"></span></div>
@@ -152,7 +166,7 @@
       </div>
       <div>
         <h2>Free resources</h2>
-        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/interview-prep/">Interview prep</a>
         <a href="/tools/">Calculators</a>
         <a href="/interview-prep/practice/">Interview practice</a>
         <a href="/course/k6/">k6 email course</a>
@@ -184,13 +198,29 @@
     const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
     const FREE = 3;
     const $ = id => document.getElementById(id);
-    const QA = window.QA;
+    // Each role's questions live in their own file; performance (qa.js) is loaded with the page, the others on demand.
+    const FILES = { performance: 'qa.js', manual: 'qa-manual.js', api: 'qa-api.js', playwright: 'qa-playwright.js', mobile: 'qa-mobile.js', lead: 'qa-lead.js' };
+    const YEARS = {
+      performance: ['3–5 yrs', '5–7 yrs', '7+ yrs'],
+      lead: ['first lead role', 'test lead / manager', 'head of QA'],
+    };
+    const tracks = () => window.QA_TRACKS || {};
+    function loadTrack(name) {
+      if (tracks()[name]) return Promise.resolve();
+      return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = '/interview-prep/' + FILES[name]; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+    }
     const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
     const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' });
     const count = name => window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: name, title: name, event: true });
     let visitor = store.get('practice-visitor', '');
     if (!visitor) { visitor = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()); store.set('practice-visitor', visitor); }
-    let level = ['basic', 'intermediate', 'advanced'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'basic';
+    // URL hash: #basic (performance, as before), #api or #api-intermediate.
+    const LEVELS = ['basic', 'intermediate', 'advanced'];
+    let [hTrack, hLevel] = location.hash.slice(1).split('-');
+    if (LEVELS.includes(hTrack)) { hLevel = hTrack; hTrack = 'performance'; }
+    let track = FILES[hTrack] ? hTrack : 'performance';
+    let level = LEVELS.includes(hLevel) ? hLevel : 'basic';
+    const setHash = () => history.replaceState(null, '', '#' + (track === 'performance' ? level : track + '-' + level));
     let item = null, ai = false, seen = store.get('practice-seen', {});
 
     const used = () => { const u = store.get('practice-used', {}); return u.day === today() ? u.n : 0; };
@@ -200,10 +230,13 @@
     }
 
     function pick() {
+      const QA = tracks()[track];
+      if (!QA) { $('question').textContent = 'Loading questions…'; return; }
       const list = QA[level];
-      const key = i => level + ':' + i;
+      const prefix = (track === 'performance' ? '' : track + ':') + level + ':';  // performance keeps its old keys
+      const key = i => prefix + i;
       let pool = list.map((_, i) => i).filter(i => !seen[key(i)]);
-      if (!pool.length) { Object.keys(seen).filter(k => k.startsWith(level + ':')).forEach(k => delete seen[k]); pool = list.map((_, i) => i); }
+      if (!pool.length) { Object.keys(seen).filter(k => k.startsWith(prefix)).forEach(k => delete seen[k]); pool = list.map((_, i) => i); }
       const i = pool[Math.floor(Math.random() * pool.length)];
       seen[key(i)] = 1; store.set('practice-seen', seen);
       item = list[i];
@@ -217,8 +250,20 @@
       showLeft();
     }
 
+    function labelLevels() {
+      const y = YEARS[track] || ['0–2 yrs', '2–5 yrs', '5+ yrs'];
+      document.querySelectorAll('.levels button').forEach((b, i) => { b.textContent = ['Basic', 'Intermediate', 'Advanced'][i] + ' · ' + y[i]; });
+      $('role').value = track;
+    }
+
+    function switchTrack(name) {
+      track = name; labelLevels(); setHash();
+      $('question').textContent = 'Loading questions…';
+      loadTrack(name).then(pick).catch(() => { $('question').textContent = "Couldn't load the questions. Please reload the page."; });
+    }
+
     document.querySelectorAll('.levels button').forEach(b => b.addEventListener('click', () => {
-      level = b.dataset.level; history.replaceState(null, '', '#' + level); pick();
+      level = b.dataset.level; setHash(); pick();
     }));
     $('next').addEventListener('click', () => { stopMic(); pick(); $('answer').focus(); });
 
@@ -242,7 +287,7 @@
       const btn = $('check'); btn.disabled = true;
       $('status').textContent = 'Reviewing your answer… this takes 10 to 30 seconds.';
       const tmp = document.createElement('div'); tmp.innerHTML = item.a;
-      const body = new URLSearchParams({ form: 'practice', level, question: item.q, model: tmp.textContent.replace(/\s+/g, ' ').trim(), answer, visitor });
+      const body = new URLSearchParams({ form: 'practice', track, level, question: item.q, model: tmp.textContent.replace(/\s+/g, ' ').trim(), answer, visitor });
       try {
         const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
         if (!out.ok) {
@@ -309,7 +354,8 @@
         catch { rec = null; }
       });
     }
-    pick();
+    $('role').addEventListener('change', () => { stopMic(); switchTrack($('role').value); });
+    switchTrack(track);
   })();
   </script>
   <script src="/chat.js" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>

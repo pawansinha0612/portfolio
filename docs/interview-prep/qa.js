@@ -725,3 +725,6 @@ index=app level=ERROR earliest=-2h
       </ol>` },
   ],
   };
+
+// Same questions, registered with the other roles (see qa-*.js) for the role pages and the practice page.
+(window.QA_TRACKS = window.QA_TRACKS || {}).performance = window.QA;

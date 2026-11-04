@@ -77,6 +77,10 @@
     .topic { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--alt); color: var(--muted); }
     .mark { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
     .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+    .roles { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+    .roles a { font-size: 14px; font-weight: 600; text-decoration: none; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; }
+    .roles a[aria-current="page"] { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+    .roles a:hover { color: var(--text); }
     .prose { max-width: 720px; color: var(--muted); }
     .prose strong { color: var(--text); }
 
@@ -107,6 +111,7 @@
 
   <main>
     <section class="wrap project-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">Performance testing</span></nav>
       <p class="eyebrow">Interview prep · Performance engineering</p>
       <h1>Performance testing interview questions</h1>
       <p class="lead">Questions I've been asked, or asked other candidates, over 12+ years of performance testing in banking, payments and gaming. Each one has a model answer you can adapt to your own projects. Pick your experience level to start.</p>
@@ -119,6 +124,7 @@
         <span class="tag">Cloud &amp; Kubernetes</span>
         <span class="tag">CI/CD</span>
       </div>
+      <nav class="roles" aria-label="Other roles"><a href="/interview-prep/performance-testing/" aria-current="page">⚡ Performance testing</a><a href="/interview-prep/manual-testing/">🧪 Manual testing</a><a href="/interview-prep/api-testing/">🔌 API testing</a><a href="/interview-prep/playwright/">🎭 Playwright</a><a href="/interview-prep/mobile-testing/">📱 Mobile testing</a><a href="/interview-prep/qa-lead/">🧭 QA lead</a></nav>
     </section>
 
     <section id="questions" class="wrap" style="padding: 8px 16px 48px;">
@@ -154,7 +160,7 @@
         <p><strong>Use STAR for "tell me about a time" questions:</strong> Situation, Task, Action, Result. Finish with the lesson. A good story takes 60 to 90 seconds to tell.</p>
         <p><strong>Only claim what you did.</strong> If a platform team ran the Kubernetes runners and you consumed them, say so, and show you understand why each setting matters. Knowing it is not the same as having done it, and good interviewers can tell the difference.</p>
         <p><strong>Tick "Practised"</strong> on each question once you can answer it out loud without looking. Your ticks are saved in this browser only.</p>
-        <p><strong>Then test yourself:</strong> <a href="/interview-prep/practice/">practise out loud with instant feedback</a> on a random question at your level. Want every question with what the interviewer is really testing, a cheat sheet and a prep plan? Get the <a href="/interview-prep/guide/">Performance Testing Interview Guide</a>.</p>
+        <p><strong>Then test yourself:</strong> <a href="/interview-prep/practice/#performance">practise out loud with instant feedback</a> on a random question at your level. Want every question with what the interviewer is really testing, a cheat sheet and a prep plan? Get the <a href="/interview-prep/guide/">Performance Testing Interview Guide</a>.</p>
       </div>
     </section>
 
@@ -188,7 +194,7 @@
       </div>
       <div>
         <h2>Free resources</h2>
-        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/interview-prep/">Interview prep</a>
         <a href="/tools/">Calculators</a>
         <a href="/interview-prep/practice/">Interview practice</a>
         <a href="/course/k6/">k6 email course</a>
@@ -216,7 +222,7 @@
 
   <script src="/interview-prep/qa.js"></script>
   <script>
-  const QA = window.QA;
+  const QA = window.QA_TRACKS['performance'];
 
   (() => {
     const STORE = 'perf-prep-done';

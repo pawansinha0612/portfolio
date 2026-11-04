@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}} — Pawan Sinha</title>
+  <meta name="description" content="{{DESC}}">
+  <meta property="og:title" content="{{TITLE}} — Pawan Sinha">
+  <meta property="og:description" content="{{OGDESC}}">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/interview-prep/{{SLUG}}/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <link rel="canonical" href="https://pawansinha.com.au/interview-prep/{{SLUG}}/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../chat.css">
+  <style>
+    .project-hero { padding: 64px 16px 24px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+
+    .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 20px; }
+    .level {
+      font: inherit; text-align: left; cursor: pointer; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px;
+    }
+    .level b { display: block; font-size: 17px; }
+    .level span { color: var(--muted); font-size: 13px; }
+    .level[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .level[aria-selected="true"] b { color: var(--accent); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 16px; }
+    .toolbar input {
+      flex: 1 1 260px; min-width: 0; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+    }
+    .toolbar input:focus { outline: none; border-color: var(--accent); }
+    .toolbar button { cursor: pointer; font: inherit; font-weight: 600; }
+    .progress-line { color: var(--muted); font-size: 14px; }
+    .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 16px; }
+    .tool {
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px;
+    }
+    .tool[aria-pressed="true"] { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+
+    .qa-list { display: flex; flex-direction: column; gap: 10px; }
+    .qa { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+    .qa summary {
+      list-style: none; cursor: pointer; padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+      font-weight: 600; font-size: 16px; line-height: 1.45;
+    }
+    .qa summary::-webkit-details-marker { display: none; }
+    .qa summary::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 500; font-size: 20px; line-height: 1; }
+    .qa[open] summary::after { content: "−"; }
+    .qa .num { font: 600 13px "JetBrains Mono", monospace; color: var(--accent); flex: none; }
+    .qa.done .num::after { content: " ✓"; color: var(--ok); }
+    .qa-body { padding: 0 18px 16px; color: var(--muted); }
+    .qa-body strong { color: var(--text); }
+    .qa-body p { margin: 0 0 10px; }
+    .qa-body ul, .qa-body ol { margin: 0 0 10px; padding-left: 22px; }
+    .qa-body pre {
+      background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+      overflow-x: auto; font: 500 13px/1.55 "JetBrains Mono", monospace; color: var(--text); margin: 0 0 10px;
+    }
+    .qa-body code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .say {
+      border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0;
+      padding: 10px 14px; margin: 4px 0 10px; color: var(--text);
+    }
+    .say::before { content: "Say it like this"; display: block; font-size: 12px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .qa-foot { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
+    .topics { display: flex; flex-wrap: wrap; gap: 6px; }
+    .topic { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--alt); color: var(--muted); }
+    .mark { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+    .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+    .roles { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+    .roles a { font-size: 14px; font-weight: 600; text-decoration: none; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; }
+    .roles a[aria-current="page"] { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+    .roles a:hover { color: var(--text); }
+    .prose { max-width: 720px; color: var(--muted); }
+    .prose strong { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .levels { grid-template-columns: 1fr; }
+      .project-hero { padding-top: 40px; }
+      .qa summary { padding: 12px 14px; font-size: 15px; }
+      .qa-body { padding: 0 14px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <nav class="subnav wrap" aria-label="On this page"><a href="#questions">Questions</a><a href="#how">How to use</a><a href="/interview-prep/practice/">Practise with feedback</a><a href="#coaching">Mock interview</a></nav>
+
+  <main>
+    <section class="wrap project-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/interview-prep/">Interview prep</a><span aria-hidden="true">/</span><span aria-current="page">{{SHORT}}</span></nav>
+      <p class="eyebrow">Interview prep · {{EYEBROW}}</p>
+      <h1>{{H1}}</h1>
+      <p class="lead">{{LEAD}}</p>
+      <div class="meta-row">
+{{TAGS}}
+      </div>
+      <nav class="roles" aria-label="Other roles">{{ROLES}}</nav>
+    </section>
+
+    <section id="questions" class="wrap" style="padding: 8px 16px 48px;">
+      <div class="levels" role="tablist" aria-label="Experience level">
+        {{LEVELS}}
+      </div>
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="{{SEARCH}}" aria-label="Search questions">
+        <button id="toggle-all" class="btn btn-ghost btn-small" type="button">Expand all</button>
+        <span id="progress" class="progress-line" aria-live="polite"></span>
+      </div>
+      <div class="tools" role="group" aria-label="Filter by tool or topic">
+        <button class="tool" type="button" data-tool="" aria-pressed="true">All topics</button>
+{{CHIPS}}
+      </div>
+      <div id="list" class="qa-list"></div>
+    </section>
+
+    <section id="how" class="wrap section" style="padding-top: 24px;">
+      <p class="eyebrow">How to use this page</p>
+      <h2>Turn the answers into your own stories</h2>
+      <div class="prose">
+        <p><strong>Don't memorise the wording.</strong> Interviewers can tell. Learn the structure of each answer, then swap in a system, numbers and tools from your own work.</p>
+        <p><strong>Use STAR for "tell me about a time" questions:</strong> Situation, Task, Action, Result. Finish with the lesson. A good story takes 60 to 90 seconds to tell.</p>
+        <p><strong>Only claim what you did.</strong> {{CLAIM}} Knowing it is not the same as having done it, and good interviewers can tell the difference.</p>
+        <p><strong>Tick "Practised"</strong> on each question once you can answer it out loud without looking. Your ticks are saved in this browser only.</p>
+        <p><strong>Then test yourself:</strong> <a href="/interview-prep/practice/#{{TRACK}}">practise out loud with instant feedback</a> on a random question at your level.{{GUIDE}}</p>
+      </div>
+    </section>
+
+    <section id="coaching" class="wrap" style="padding: 0 16px 80px;">
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Interview coming up?</p>
+          <h3>Practise with a mock {{MOCK}} interview</h3>
+          <p>A 60-minute mock interview at your level, run the way senior interviewers run them: scenario questions, follow-ups and {{MOCKX}}. You get honest feedback on each answer and a short written list of what to work on. It's a paid session. I'll confirm the price and a time by email.</p>
+        </div>
+        <a class="btn" href="/?need=Interview%20coaching#contact" data-track="mock-interview">Request a mock interview</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/interview-prep/{{QAFILE}}"></script>
+  <script>
+  const QA = window.QA_TRACKS['{{TRACK}}'];
+
+  (() => {
+    const STORE = '{{STORE}}';
+    const $ = id => document.getElementById(id);
+    let level = 'basic';
+    let tool = '';
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem(STORE)) || {}; } catch { done = {}; }
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(done)); } catch {} };
+    const key = (lvl, i) => lvl + ':' + QA[lvl][i].q;
+
+    const fromHash = location.hash.slice(1);
+    if (QA[fromHash]) level = fromHash;
+
+    function render() {
+      const term = $('q').value.trim().toLowerCase();
+      const list = $('list');
+      list.textContent = '';
+      document.querySelectorAll('.level').forEach(b => b.setAttribute('aria-selected', b.dataset.level === level));
+      const items = QA[level];
+      let shown = 0;
+      items.forEach((item, i) => {
+        const text = (item.q + ' ' + item.a + ' ' + item.t.join(' ')).toLowerCase();
+        if (term && !text.includes(term)) return;
+        if (tool && !item.t.includes(tool)) return;
+        shown++;
+        const k = key(level, i);
+        const d = document.createElement('details');
+        d.className = 'qa' + (done[k] ? ' done' : '');
+        if (term) d.open = true;
+        d.innerHTML = `<summary><span class="num">Q${i + 1}</span><span></span></summary>
+          <div class="qa-body">${item.a}
+            <div class="qa-foot"><div class="topics">${item.t.map(t => `<span class="topic">${t}</span>`).join('')}</div>
+            <label class="mark"><input type="checkbox"> Practised</label></div></div>`;
+        d.querySelector('summary span:last-of-type').textContent = item.q;
+        const cb = d.querySelector('input');
+        cb.checked = !!done[k];
+        cb.addEventListener('change', () => {
+          if (cb.checked) done[k] = 1; else delete done[k];
+          d.classList.toggle('done', cb.checked);
+          save(); progress();
+        });
+        list.appendChild(d);
+      });
+      if (!shown) list.innerHTML = '<p class="empty">No questions match at this level. Try another level or topic.</p>';
+      document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === tool));
+      $('toggle-all').textContent = 'Expand all';
+      progress();
+      return shown;
+    }
+
+    function progress() {
+      const n = QA[level].length;
+      const d = QA[level].filter((_, i) => done[key(level, i)]).length;
+      $('progress').textContent = `${n} questions · ${d} practised`;
+    }
+
+    document.querySelectorAll('.level').forEach(b => b.addEventListener('click', () => {
+      level = b.dataset.level;
+      history.replaceState(null, '', '#' + level);
+      render();
+    }));
+    document.querySelectorAll('.tool').forEach(b => b.addEventListener('click', () => {
+      tool = b.dataset.tool;
+      render();
+    }));
+    $('q').addEventListener('input', render);
+
+    // Lets the chat assistant jump to the visitor's level and topic. Returns how many questions are shown.
+    window.prepPage = {
+      show(lvl, topic) {
+        if (QA[lvl]) { level = lvl; history.replaceState(null, '', '#' + level); }
+        tool = topic || '';
+        const n = render();
+        $('questions').scrollIntoView({ behavior: 'smooth' });
+        return n;
+      },
+    };
+    $('toggle-all').addEventListener('click', () => {
+      const all = [...document.querySelectorAll('.qa')];
+      const open = all.some(d => !d.open);
+      all.forEach(d => { d.open = open; });
+      $('toggle-all').textContent = open ? 'Collapse all' : 'Expand all';
+    });
+    render();
+  })();
+  </script>
+  <script src="../../chat.js" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="../../glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

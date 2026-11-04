@@ -312,7 +312,7 @@ FOOTER = f'''  <footer class="site-footer">
       </div>
       <div>
         <h2>Free resources</h2>
-        <a href="/interview-prep/performance-testing/">Interview prep</a>
+        <a href="/interview-prep/">Interview prep</a>
         <a href="/tools/">Calculators</a>
         <a href="/interview-prep/practice/">Interview practice</a>
         <a href="/course/k6/">k6 email course</a>

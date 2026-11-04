@@ -958,6 +958,7 @@ function practiceSheet() {
 function practiceFeedback(p) {
   if (!aiKey()) return json({ ok: false, error: 'Practice is switched off right now.' });
   const level = ['basic', 'intermediate', 'advanced'].indexOf(p.level) >= 0 ? p.level : 'basic';
+  const track = PRACTICE_ROLES[p.track] ? p.track : 'performance';
   const question = String(p.question || '').trim().slice(0, 400);
   const model = String(p.model || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 3500);
   const answer = String(p.answer || '').trim().slice(0, 4000);
@@ -977,7 +978,7 @@ function practiceFeedback(p) {
     return json({ ok: false, limit: true, error: 'Practice is very busy today. Please try again tomorrow.' });
   }
 
-  const result = askAi(level, question, model, answer);
+  const result = askAi(track, level, question, model, answer);
   if (!result) return json({ ok: false, error: "The AI reviewer didn't answer in time. Please try again in a minute." });
 
   cache.put(mineKey, String(mine + 1), 21600);
@@ -990,16 +991,29 @@ function practiceFeedback(p) {
   } catch (err) {} finally { lock.releaseLock(); }
   try {
     practiceSheet();
-    appendRow(PRACTICE_SHEET, [new Date(), level, safe(question), answer.length, result.score, result.model, visitor]);
+    appendRow(PRACTICE_SHEET, [new Date(), (track === 'performance' ? '' : track + ' ') + level, safe(question), answer.length, result.score, result.model, visitor]);
   } catch (err) {}
 
   return json({ ok: true, feedback: result.feedback, left: PRACTICE_FREE_PER_DAY - mine - 1 });
 }
 
-function askAi(level, question, model, answer) {
-  const years = { basic: '3 to 5', intermediate: '5 to 7', advanced: '7 or more' }[level];
-  const system = 'You are a senior performance engineering interviewer. You score a candidate\'s spoken interview answer ' +
-    'for a role needing ' + years + ' years of experience. Be fair, specific and encouraging, and judge content, not grammar ' +
+// Interview practice roles: who the AI plays, and what each level means. Keys match the practice page's role picker.
+const PRACTICE_ROLES = {
+  performance: { who: 'performance engineering', levels: { basic: '3 to 5 years of experience', intermediate: '5 to 7 years of experience', advanced: '7 or more years of experience' } },
+  manual: { who: 'manual and functional software testing', levels: JUNIOR_LEVELS_() },
+  api: { who: 'API testing', levels: JUNIOR_LEVELS_() },
+  playwright: { who: 'Playwright test automation (TypeScript)', levels: JUNIOR_LEVELS_() },
+  mobile: { who: 'mobile app testing (Android and iOS)', levels: JUNIOR_LEVELS_() },
+  lead: { who: 'QA leadership', levels: { basic: 'a first QA lead role, leading 1 to 3 testers', intermediate: 'a test lead or test manager role', advanced: 'a head of QA role' } },
+};
+function JUNIOR_LEVELS_() {
+  return { basic: 'up to 2 years of experience', intermediate: '2 to 5 years of experience', advanced: '5 or more years of experience' };
+}
+
+function askAi(track, level, question, model, answer) {
+  const role = PRACTICE_ROLES[track] || PRACTICE_ROLES.performance;
+  const system = 'You are a senior ' + role.who + ' interviewer. You score a candidate\'s spoken interview answer ' +
+    'for ' + role.levels[level] + '. Be fair, specific and encouraging, and judge content, not grammar ' +
     '(answers may be voice transcripts). Use the reference answer only as a guide: other correct points also count. ' +
     'Never invent facts about the candidate. Reply with JSON only, no markdown, in exactly this shape: ' +
     '{"score": <integer 1-10>, "verdict": "<one sentence>", "strengths": ["<up to 3 short points>"], ' +
@@ -1082,7 +1096,7 @@ function parseFeedback(text) {
 
 // Run once from the editor after adding AI_API_KEY: checks the key and model work (look at the log).
 function testPractice() {
-  const r = askAi('basic', 'Why use percentiles like p95 instead of the average response time?',
+  const r = askAi('performance', 'basic', 'Why use percentiles like p95 instead of the average response time?',
     'Averages hide slow requests; p95 shows what nearly all users experience.',
     'Because the average hides the slow requests. If most are fast and a few are very slow the average still looks fine, but p95 tells you what 95 percent of users get.');
   console.log((geminiKey() ? 'Using Gemini. ' : nvidiaKey() ? 'Using NVIDIA (slow): add GEMINI_API_KEY for fast answers. ' : 'No AI key set. ') +
