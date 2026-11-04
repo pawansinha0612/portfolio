@@ -14,5 +14,9 @@
   "thread-pool-sizing-from-first-principles": {
     "date": "2026-11-03",
     "id": "urn:li:share:7523205415224913920"
+  },
+  "load-balancer-algorithms-under-real-load": {
+    "date": "2026-11-04",
+    "id": "urn:li:share:7523543023599828993"
   }
 }
