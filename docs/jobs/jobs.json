@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-03T10:08:25+00:00",
- "count": 88,
+ "updated": "2026-11-04T00:56:34+00:00",
+ "count": 97,
  "sources": {
   "himalayas": "ok",
   "remoteok": "ok",
@@ -375,6 +375,19 @@
    "first_seen": "2026-10-24T21:11:48+00:00"
   },
   {
+   "title": "Senior Aircraft Performance Engineer (all genders)",
+   "company": "væridion",
+   "location": "Munich HQ",
+   "url": "https://www.arbeitnow.com/jobs/companies/vaeridion/senior-aircraft-performance-engineer-all-genders-munich-287390",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:senior-aircraft-performance-engineer-all-genders-munich-287390",
+   "posted": "2026-11-03T18:40:31+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
    "title": "Automation Test Engineer",
    "company": "H.W. Kaufman Financial Group",
    "location": "United States",
@@ -635,6 +648,19 @@
    "first_seen": "2026-10-30T05:44:34+00:00"
   },
   {
+   "title": "API Test Engineer",
+   "company": "EdgeQ Technologies Private Limited",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/api-test-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/api-test-engineer",
+   "posted": "2026-10-25T15:48:14+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 24,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
    "title": "Senior Tester",
    "company": "Steampunk",
    "location": "United States",
@@ -700,6 +726,19 @@
    "first_seen": "2026-10-25T03:35:11+00:00"
   },
   {
+   "title": "Test Automation Engineer (f/m/d)",
+   "company": "ecosio",
+   "location": "Austria, Croatia, Germany, Hungary, Italy, Portugal, Spain, UK",
+   "url": "https://jobicy.com/jobs/158729-test-automation-engineer-f-m-d",
+   "source": "Jobicy",
+   "id": "Jobicy:158729",
+   "posted": "2026-11-03T15:22:20+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
    "title": "Senior QA & Automation Engineer (Python)",
    "company": "Brady Technologies",
    "location": "India",
@@ -715,15 +754,28 @@
   {
    "title": "Senior QA Automation Engineer",
    "company": "FYST",
-   "location": "Portugal",
-   "url": "https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer?utm_source=api",
+   "location": "Czechia",
+   "url": "https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer-6004353242?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer",
-   "posted": "2026-11-03T08:10:16+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/fyst/jobs/senior-qa-automation-engineer-6004353242",
+   "posted": "2026-11-03T21:16:05+00:00",
    "group": "qa",
    "region": "remote",
    "score": 19,
-   "first_seen": "2026-11-03T09:27:42+00:00"
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Automation QA Engineer (QVAC) (100% remote)",
+   "company": "Tether Operations Limited",
+   "location": "Georgia",
+   "url": "https://himalayas.app/companies/tether-operations-limited/jobs/automation-qa-engineer-qvac-100-remote-2330213338?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/tether-operations-limited/jobs/automation-qa-engineer-qvac-100-remote-2330213338",
+   "posted": "2026-11-03T11:03:52+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
    "title": "Senior Quality Engineer",
@@ -895,6 +947,19 @@
    "first_seen": "2026-11-01T03:48:10+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "Workwize",
+   "location": "Europe",
+   "url": "https://jobicy.com/jobs/151950-qa-engineer-4",
+   "source": "Jobicy",
+   "id": "Jobicy:151950",
+   "posted": "2026-10-29T03:10:20+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
    "title": "SDET(Software Development Engineer in Test)",
    "company": "NearSource Technologies",
    "location": "Canada",
@@ -984,6 +1049,32 @@
    "region": "remote",
    "score": 16,
    "first_seen": "2026-10-28T16:54:55+00:00"
+  },
+  {
+   "title": "Software Test Engineer",
+   "company": "SwissPeak Partners GmbH",
+   "location": "Remote job (remote)",
+   "url": "https://www.arbeitnow.ch/jobs/companies/swisspeak-partners-gmbh/remote-software-test-engineer-bern-122043",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:remote-software-test-engineer-bern-122043",
+   "posted": "2026-11-03T21:31:09+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 15,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Senior QA Specialist",
+   "company": "Rentman",
+   "location": "Utrecht",
+   "url": "https://www.arbeitnow.nl/jobs/companies/rentman/senior-qa-specialist-utrecht-65997",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:senior-qa-specialist-utrecht-65997",
+   "posted": "2026-11-03T18:40:36+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 15,
+   "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
    "title": "QA Analyst (Future Roles)",
@@ -1077,6 +1168,19 @@
    "first_seen": "2026-10-29T05:43:35+00:00"
   },
   {
+   "title": "Working Student QA in Mobile App Development (m|w|d)",
+   "company": "idealo internet GmbH",
+   "location": "Berlin, Berlin, Deutschland",
+   "url": "https://www.arbeitnow.com/jobs/companies/idealo-internet-gmbh/working-student-qa-in-mobile-app-development-mwd-berlin-79055",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:working-student-qa-in-mobile-app-development-mwd-berlin-79055",
+   "posted": "2026-11-03T18:51:24+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 14,
+   "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
    "title": "System Test Engineer",
    "company": "Salience Labs",
    "location": "Oxford, United Kingdom",
@@ -1127,6 +1231,19 @@
    "region": "remote",
    "score": 14,
    "first_seen": "2026-10-30T08:56:45+00:00"
+  },
+  {
+   "title": "Software Quality Engineer",
+   "company": "Ping Identity",
+   "location": "Israel",
+   "url": "https://jobicy.com/jobs/157888-software-quality-engineer",
+   "source": "Jobicy",
+   "id": "Jobicy:157888",
+   "posted": "2026-10-29T16:29:18+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 14,
+   "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
    "title": "Professional ICT Test Manager (m/w/d) - SIP / VISO / Test Automation (60-80%) (Ref.Nr.: 47713)",
