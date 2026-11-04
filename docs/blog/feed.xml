@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>One GC pause, everyone&#x27;s p99</title>
+      <link>https://pawansinha.com.au/blog/load-balancer-algorithms-under-real-load/</link>
+      <guid>https://pawansinha.com.au/blog/load-balancer-algorithms-under-real-load/</guid>
+      <pubDate>Wed, 04 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Round robin assumes every request costs the same. It doesn&#x27;t. Least outstanding requests, power of two choices, the connection-level imbalance that L4 hides, slow start, draining, and how to load test the balancer itself.</description>
+    </item>
+    <item>
       <title>Why 500 threads made it slower</title>
       <link>https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/</link>
       <guid>https://pawansinha.com.au/blog/thread-pool-sizing-from-first-principles/</guid>
