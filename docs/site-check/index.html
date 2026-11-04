@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Website Speed Check for Online Shops — Pawan Sinha</title>
+  <meta name="description" content="Is your online store ready for Black Friday? Free website speed check: enter your shop's address and get a plain-English report on what slows it down on phones and what to fix first.">
+  <meta property="og:title" content="Is your site ready for Black Friday? Free speed check">
+  <meta property="og:description" content="Enter your shop's address and get a plain-English report: what slows it down on phones, and what to fix before your busiest day.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/site-check/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/site-check/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Website speed check for online shops","url":"https://pawansinha.com.au/site-check/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Does this check put load on my website?","acceptedAnswer":{"@type":"Answer","text":"No. Google loads the page once from its own servers, the same as one visitor would. It shows how the page is built, not how your servers cope with heavy traffic."}},
+    {"@type":"Question","name":"Why is my score different every time?","acceptedAnswer":{"@type":"Answer","text":"Each check is a single page load, so network conditions, ads and third-party scripts change the result a little. Look at the findings rather than chasing a few points of score."}},
+    {"@type":"Question","name":"Will a good score mean my site survives Black Friday?","acceptedAnswer":{"@type":"Answer","text":"Not on its own. Sale-day failures usually come from the server, database, payment provider or third-party apps under many visitors at once. Only a load test at your expected peak shows that."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .sc { max-width: 900px; padding: 24px 16px 0; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .sc-form { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+    .sc-form input[type=text], .lead-form input { width: 100%; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; }
+    .sc-form input:focus, .lead-form input:focus { outline: none; border-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 10px 12px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .sc-note { color: var(--muted); font-size: 14px; margin: 12px 0 0; }
+    .sc-status { margin: 12px 0 0; font-weight: 600; min-height: 1.4em; }
+    .sc-status.err { color: #d14343; }
+    .off-note { background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 12px 14px; margin: 12px 0 0; font-size: 15px; }
+    .progress { height: 6px; border-radius: 999px; background: var(--alt); overflow: hidden; margin-top: 12px; }
+    .progress > i { display: block; height: 100%; width: 0; background: var(--hl); transition: width .8s ease; }
+    .summary { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+    .ring { width: 116px; height: 116px; border-radius: 50%; display: grid; place-items: center;
+      background: conic-gradient(var(--ring) calc(var(--v) * 1%), var(--alt) 0); }
+    .ring > b { width: 92px; height: 92px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 34px; font-weight: 800; color: var(--ring); }
+    .summary h2 { margin: 0 0 4px; font-size: clamp(22px, 3vw, 28px); }
+    .summary p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 18px 0 0; }
+    .metric { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+    .metric span { display: block; font-size: 13px; color: var(--muted); }
+    .metric b { font-size: 20px; }
+    .metric b.bad { color: #d14343; } .metric b.mid { color: #c27c00; } .metric b.ok { color: var(--ok); }
+    .finding { border-top: 1px solid var(--border); padding: 14px 0; }
+    .finding:first-of-type { border-top: 0; }
+    .finding h3 { margin: 4px 0 4px; font-size: 17px; }
+    .finding p { margin: 0 0 4px; color: var(--muted); }
+    .finding p.fix { color: var(--text); }
+    .sev { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; }
+    .sev-3 { background: #fde8e8; color: #b42318; } .sev-2 { background: var(--warn-bg); color: var(--warn); } .sev-1 { background: var(--alt); color: var(--muted); }
+    .good li { margin: 4px 0; }
+    .limits { background: var(--warn-bg); border-radius: 14px; padding: 16px 18px; }
+    .limits h3 { margin: 0 0 4px; font-size: 17px; color: var(--text); }
+    .limits p { margin: 0; color: var(--text); }
+    .lead-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
+    .lead-form .btn { justify-self: start; }
+    .lead-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .owner { display: none; }
+    .owner-on .owner { display: block; }
+    .owner textarea, .owner input { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .owner textarea { min-height: 110px; resize: vertical; }
+    .print-head { display: none; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide li { color: var(--muted); }
+    .guide strong { color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .sev-3 { background: #4a1d1d; color: #ffb4ab; } }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .sc-form { grid-template-columns: 1fr; }
+      .seg label { flex: 1; }
+      .summary { grid-template-columns: 1fr; justify-items: start; }
+    }
+    @media print {
+      .nav, .site-footer, .project-hero, .sc-input, .no-print, .guide, .tools-end, .chat-launcher, .chat-panel, [class*="chat-"] { display: none !important; }
+      body { background: #fff; color: #000; }
+      .print-head { display: block; margin: 0 0 12px; }
+      .panel { border: 1px solid #ccc; }
+      .finding, .summary, .metric, .limits { break-inside: avoid; }
+      .ring, .sev, .metric b { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .owner textarea, .owner input { border: 0; padding: 0; resize: none; }
+      .owner-empty { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free site check · Black Friday 2026</p>
+      <h1>Is your site ready for Black Friday?</h1>
+      <p class="lead">Enter your shop's address. In under a minute you get a plain-English report: what makes it slow on phones, what to fix first, and what a quick check like this can't tell you.</p>
+    </section>
+
+    <section class="wrap sc" aria-label="Site check">
+      <div class="panel sc-input">
+        <form id="sc-form" class="sc-form" novalidate>
+          <input type="text" id="sc-url" name="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourshop.com.au" aria-label="Website address" maxlength="500" required>
+          <div class="seg" role="radiogroup" aria-label="Device">
+            <label><input type="radio" name="device" value="mobile" checked>Phone</label>
+            <label><input type="radio" name="device" value="desktop">Desktop</label>
+          </div>
+          <button class="btn" type="submit" id="sc-go" data-track="sitecheck-run">Check my site</button>
+        </form>
+        <div class="progress" id="sc-progress" hidden><i></i></div>
+        <p class="sc-status" id="sc-status" role="status" aria-live="polite"></p>
+        <p class="sc-note">Google loads your page once from its servers (one visitor, no load test). Checking a product or checkout page? Paste its full address. Up to 5 checks a day.</p>
+        <p class="off-note" id="sc-off" hidden>The checker is being switched on and will be ready soon. Until then, try the <a href="/peak-readiness/quiz/">2-minute peak-readiness quiz</a> or <a href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="sitecheck-off-book">book a free call</a> and I'll check your site for you.</p>
+      </div>
+
+      <div id="sc-result" hidden>
+        <div class="print-head"><b>Site check report</b> · Pawan Sinha, QA &amp; performance engineering · pawansinha.com.au · ABN 43 627 514 346</div>
+        <div class="panel owner" id="owner-head">
+          <label><span class="eyebrow">Prepared for</span><input id="owner-for" placeholder="Business name (shown on the printed report)"></label>
+        </div>
+        <div class="panel">
+          <div class="summary">
+            <div class="ring" id="sc-ring" style="--v:0;--ring:var(--accent)"><b id="sc-score">–</b></div>
+            <div>
+              <h2 id="sc-verdict"></h2>
+              <p id="sc-meta"></p>
+            </div>
+          </div>
+          <div class="metrics" id="sc-metrics"></div>
+          <p class="sc-note" id="sc-field"></p>
+        </div>
+        <div class="panel">
+          <p class="eyebrow">What to fix, most important first</p>
+          <div id="sc-findings"></div>
+        </div>
+        <div class="panel" id="sc-good-panel">
+          <p class="eyebrow">Already good</p>
+          <ul class="good" id="sc-good"></ul>
+        </div>
+        <div class="panel owner" id="owner-notes-panel">
+          <p class="eyebrow">My notes</p>
+          <textarea id="owner-notes" placeholder="Anything you saw yourself: checkout steps, broken links, slow search, mobile menu. Printed with the report."></textarea>
+        </div>
+        <div class="panel limits">
+          <h3>What this check can't tell you</h3>
+          <p>This was one visit. On sale days it's the server, database, payment provider and third-party apps that fail, when thousands of people arrive at once. Only a load test at your expected peak shows how much traffic you can really take.</p>
+        </div>
+        <div class="panel no-print" id="sc-lead">
+          <p class="eyebrow">Keep this report</p>
+          <h3 style="margin:0 0 4px">Email me this report</h3>
+          <p style="margin:0;color:var(--muted)">One email with your results and fixes. No newsletter unless you ask for it.</p>
+          <form class="lead-form" id="lead-form" novalidate>
+            <input name="name" placeholder="Your name" autocomplete="name" maxlength="200" aria-label="Your name">
+            <input name="email" type="email" placeholder="you@yourshop.com.au" autocomplete="email" maxlength="200" required aria-label="Email address">
+            <input name="company" placeholder="Business (optional)" autocomplete="organization" maxlength="200" aria-label="Business">
+            <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+            <button class="btn" type="submit" data-track="sitecheck-email">Email me the report</button>
+          </form>
+          <p class="sc-status" id="lead-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="panel no-print">
+          <div class="offer" style="margin:0;padding:0;border:0;background:none;box-shadow:none">
+            <div>
+              <p class="eyebrow">Big sale coming up?</p>
+              <h3>Find out how much traffic you can really take</h3>
+              <p>A peak-readiness load test models your real traffic, tests it at your forecast and beyond, and gives you a clear go/no-go with what to fix first.</p>
+            </div>
+            <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+              <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="sitecheck-book">Book a free 30-min call</a>
+              <a class="btn btn-ghost" href="/peak-readiness/sample-report/" data-track="sitecheck-sample">See a sample report</a>
+            </div>
+          </div>
+          <p style="margin:14px 0 0"><button class="btn btn-ghost btn-small" type="button" id="sc-print" data-track="sitecheck-print">Print / save as PDF</button></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>What the check looks at</h2>
+      <p>The check asks Google PageSpeed Insights to load your page once, on a mid-range phone over a mobile connection (or a desktop), and turns the results into plain English:</p>
+      <ul>
+        <li><strong>How fast the main content appears</strong> (Largest Contentful Paint). Google's target is 2.5 seconds or less.</li>
+        <li><strong>How quickly the page responds to taps</strong>, measured as time the browser is blocked running scripts.</li>
+        <li><strong>Whether things jump around</strong> while loading (Cumulative Layout Shift, target 0.1 or less).</li>
+        <li><strong>How long your server takes to answer</strong>. This is the number that grows fastest under heavy traffic.</li>
+        <li><strong>Page weight, images and third-party apps</strong>: what's being downloaded, and what could go.</li>
+      </ul>
+      <p>If Chrome has enough data about your site, you also see how fast it is for <strong>real visitors</strong> over the last 28 days.</p>
+      <h2 style="margin-top:36px">FAQ</h2>
+      <h3>Does this check put load on my website?</h3>
+      <p>No. Google loads the page once, like one visitor would. It's safe to run on any public site.</p>
+      <h3>Why is my score different every time?</h3>
+      <p>Each check is a single page load, so network conditions, ads and third-party scripts move it a few points. Look at the findings, not the exact score.</p>
+      <h3>Will a good score mean my site survives Black Friday?</h3>
+      <p>Not on its own. A fast page for one visitor can still fail with five thousand. Sale-day problems come from servers, databases, payment providers and apps under load. That's what a <a href="/peak-readiness/">peak-readiness load test</a> checks.</p>
+      <h3>What happens to the address I enter?</h3>
+      <p>It's sent to Google PageSpeed Insights to run the check, and logged with the score so I can see how the tool is used. If you ask for the report by email, I get your name and email too, and may reply once. That's it.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz →</a>
+        <a href="/peak-readiness/sample-report/">Sample load test report →</a>
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec';
+    const $ = id => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const owner = params.get('report') === '1';
+    if (owner) document.body.classList.add('owner-on');
+    const count = name => window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: name, title: name, event: true });
+    let visitor = '';
+    try { visitor = localStorage.getItem('sc-visitor') || ''; if (!visitor) { visitor = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('sc-visitor', visitor); } } catch (e) { visitor = 'v' + Math.random().toString(36).slice(2); }
+    let last = null, enabled = null;
+    const ready = fetch(ENDPOINT + '?view=features').then(r => r.json()).then(o => (enabled = (o.features || []).includes('sitecheck'))).catch(() => (enabled = false));
+    ready.then(on => { if (!on) { $('sc-off').hidden = false; $('sc-go').disabled = true; } else if (params.get('url')) { $('sc-url').value = params.get('url'); if (params.get('device') === 'desktop') document.querySelector('input[value=desktop]').checked = true; run(); } });
+
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const secs = ms => (ms / 1000).toFixed(1) + ' s';
+    const size = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB';
+    const grade = (v, good, poor) => v === null || v === undefined ? '' : v <= good ? 'ok' : v <= poor ? 'mid' : 'bad';
+    const status = (el, msg, err) => { el.textContent = msg; el.classList.toggle('err', !!err); };
+
+    let timer = null;
+    function progress(on) {
+      const bar = $('sc-progress'), fill = bar.firstElementChild;
+      clearInterval(timer);
+      if (!on) { fill.style.width = '100%'; setTimeout(() => { bar.hidden = true; fill.style.width = '0'; }, 400); return; }
+      bar.hidden = false; fill.style.width = '4%';
+      const steps = ['Asking Google to load your page…', 'Loading it on a mid-range phone…', 'Measuring images, scripts and third-party apps…', 'Checking server response…', 'Writing it up in plain English…', 'Big pages take a little longer…'];
+      let t = 0;
+      timer = setInterval(() => { t++; fill.style.width = Math.min(92, 4 + t * 2.2) + '%'; if (t % 6 === 0) status($('sc-status'), steps[Math.min(steps.length - 1, t / 6)]); }, 500);
+      status($('sc-status'), steps[0]);
+    }
+
+    async function run() {
+      const url = $('sc-url').value.trim();
+      if (!url) { status($('sc-status'), 'Enter your website address first.', true); $('sc-url').focus(); return; }
+      if (!enabled) return;
+      const device = document.querySelector('input[name=device]:checked').value;
+      $('sc-go').disabled = true; progress(true);
+      try {
+        const body = new URLSearchParams({ form: 'sitecheck', url, device, visitor });
+        const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+        progress(false);
+        if (!out.ok) { status($('sc-status'), out.error || 'Something went wrong. Please try again.', true); count(out.limit ? 'sitecheck-limit' : 'sitecheck-error'); return; }
+        status($('sc-status'), '');
+        last = out.report; show(out.report); count('sitecheck-done');
+        if (!owner) try { history.replaceState(null, '', '?url=' + encodeURIComponent(out.report.url) + (device === 'desktop' ? '&device=desktop' : '')); } catch (e) {}
+      } catch (e) {
+        progress(false); status($('sc-status'), "The check didn't finish. Please try again in a minute.", true);
+      } finally { $('sc-go').disabled = false; }
+    }
+
+    function show(r) {
+      const colour = r.score >= 90 ? 'var(--ok)' : r.score >= 50 ? '#c27c00' : '#d14343';
+      const ring = $('sc-ring'); ring.style.setProperty('--v', r.score || 0); ring.style.setProperty('--ring', colour);
+      $('sc-score').textContent = r.score === null ? '–' : r.score;
+      $('sc-verdict').textContent = r.verdict.replace(/ on phones$/, '') + (r.device === 'desktop' ? ' on desktop' : ' on phones');
+      $('sc-meta').textContent = r.url + ' · checked ' + new Date(r.checked).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
+      const m = r.metrics, w = r.weight;
+      const cells = [
+        ['Main content appears', m.lcp !== null ? secs(m.lcp) : '–', grade(m.lcp, 2500, 4000)],
+        ['Busy running code', m.tbt !== null ? Math.round(m.tbt) + ' ms' : '–', grade(m.tbt, 200, 600)],
+        ['Layout shift', m.cls !== null ? m.cls.toFixed(2) : '–', grade(m.cls, 0.1, 0.25)],
+        ['Server response', m.server !== null ? Math.round(m.server) + ' ms' : '–', grade(m.server, 600, 1800)],
+        ['Page size', w.bytes ? size(w.bytes) : '–', grade(w.bytes, 3145728, 5242880)],
+        ['Files loaded', w.requests || '–', grade(w.requests, 150, 300)],
+      ];
+      $('sc-metrics').innerHTML = cells.map(c => '<div class="metric"><span>' + c[0] + '</span><b class="' + c[2] + '">' + esc(c[1]) + '</b></div>').join('');
+      const f = r.field;
+      const rate = x => ({ FAST: 'good', AVERAGE: 'needs improvement', SLOW: 'poor' }[x] || String(x || '').toLowerCase());
+      $('sc-field').textContent = f && (f.lcp || f.inp) ? 'Real Chrome visitors to this ' + (f.scope === 'page' ? 'page' : 'site') + ' (last 28 days, 75th percentile): ' +
+        [f.lcp ? 'main content in ' + secs(f.lcp.p75) + ' (' + rate(f.lcp.rating) + ')' : '', f.inp ? 'response to taps ' + f.inp.p75 + ' ms (' + rate(f.inp.rating) + ')' : '',
+         f.cls ? 'layout shift ' + Number(f.cls.p75).toFixed(2) + ' (' + rate(f.cls.rating) + ')' : ''].filter(Boolean).join(', ') + '.'
+        : "Google doesn't have enough real-visitor data for this site yet, so these are lab numbers from one load.";
+      const label = { 3: 'Fix first', 2: 'Worth fixing', 1: 'Nice to have' };
+      $('sc-findings').innerHTML = r.findings.length ? r.findings.map((x, i) => '<div class="finding"><span class="sev sev-' + x.sev + '">' + label[x.sev] + '</span><h3>' + (i + 1) + '. ' + esc(x.title) + '</h3><p>' + esc(x.detail) + '</p><p class="fix"><b>Fix:</b> ' + esc(x.fix) + '</p></div>').join('')
+        : '<p>No big problems on this page. Check your product, cart and checkout pages too: paste their addresses above.</p>';
+      $('sc-good').innerHTML = r.good.map(g => '<li>✅ ' + esc(g) + '</li>').join('');
+      $('sc-good-panel').hidden = !r.good.length;
+      $('sc-result').hidden = false;
+      $('lead-status').textContent = '';
+      if (!owner) $('sc-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    $('sc-form').addEventListener('submit', e => { e.preventDefault(); run(); });
+    $('sc-print').addEventListener('click', () => {
+      $('owner-head').classList.toggle('owner-empty', !$('owner-for').value.trim());
+      $('owner-notes-panel').classList.toggle('owner-empty', !$('owner-notes').value.trim());
+      window.print();
+    });
+    $('lead-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      if (fd.get('company_site')) return;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.get('email') || '')) { status($('lead-status'), 'Please enter a valid email address.', true); return; }
+      if (!last) return;
+      status($('lead-status'), 'Sending…');
+      try {
+        const body = new URLSearchParams({ form: 'sitecheck-email', url: last.url, device: last.device, visitor, name: fd.get('name') || '', email: fd.get('email'), company: fd.get('company') || '', page: location.pathname });
+        const out = await (await fetch(ENDPOINT, { method: 'POST', body })).json();
+        if (out.ok) { status($('lead-status'), 'Sent. Check your inbox (and the spam folder, just in case).'); e.target.reset(); }
+        else status($('lead-status'), out.error || 'Something went wrong. Please try again.', true);
+      } catch (err) { status($('lead-status'), "That didn't send. Please try again in a minute.", true); }
+    });
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

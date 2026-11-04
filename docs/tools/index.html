@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Performance Testing Calculators — Pawan Sinha</title>
-  <meta name="description" content="Free performance testing calculators: Little&#x27;s Law, capacity planning, thread pools, queueing, coordinated omission, load balancing and CDN hit ratio.">
+  <meta name="description" content="Free performance testing tools: Postman, OpenAPI, JMeter and curl to k6 converters, a site speed check, and calculators for Little&#x27;s Law, capacity planning, thread pools, queueing, coordinated omission, load balancing and CDN hit ratio.">
   <meta property="og:title" content="Performance Testing Calculators — Pawan Sinha">
   <meta property="og:description" content="Free, interactive calculators for load testing and capacity planning. Size virtual users, thread pools and capacity, and see what caches, CDNs and load balancers do under load.">
   <meta property="og:type" content="website">
@@ -61,7 +61,10 @@
       <h1>Performance testing calculators</h1>
       <p class="lead">The arithmetic behind load testing and capacity planning, as calculators you can try with your own numbers. Each one starts from a realistic example. Change the sliders and the result updates straight away.</p>
       <ul class="jump" aria-label="Calculators on this page">
+        <li><a href="/site-check/">Site speed check</a></li>
         <li><a href="/tools/curl-to-k6/">curl → k6 converter</a></li>
+        <li><a href="/tools/postman-to-k6/">Postman → k6</a></li>
+        <li><a href="/tools/openapi-to-k6/">OpenAPI → k6</a></li>
         <li><a href="/tools/k6-results/">k6 results explainer</a></li>
         <li><a href="/tools/jmeter-to-k6/">JMeter → k6 converter</a></li>
         <li><a href="/tools/slo-calculator/">SLO &amp; error budget</a></li>
@@ -84,8 +87,12 @@
         <a class="card project-card" href="/tools/curl-to-k6/" data-track="tools-curl"><div class="icon">🔁</div><h3>curl → k6 converter</h3><p>Paste "Copy as cURL" from your browser and get a ready-to-run k6 script with checks, thresholds and a realistic load model.</p><span class="project-link">Convert a request →</span></a>
         <a class="card project-card" href="/tools/k6-results/" data-track="tools-results"><div class="icon">🩺</div><h3>k6 results explainer</h3><p>Paste your k6 summary or JSON and get a plain-English verdict: what passed, what's slow and what to look at next.</p><span class="project-link">Explain my results →</span></a>
         <a class="card project-card" href="/tools/jmeter-to-k6/" data-track="tools-jmeter"><div class="icon">🔀</div><h3>JMeter → k6 converter</h3><p>Upload a .jmx test plan and get a k6 script: thread groups, requests, CSV data, extractors, assertions and controllers. Nothing is uploaded.</p><span class="project-link">Convert a test plan →</span></a>
+        <a class="card project-card" href="/tools/postman-to-k6/" data-track="tools-postman"><div class="icon">📮</div><h3>Postman → k6 converter</h3><p>Upload a Postman collection and get a k6 load test: folders become groups, variables and auth carry over, and your Postman tests become checks. Nothing is uploaded.</p><span class="project-link">Convert a collection →</span></a>
+        <a class="card project-card" href="/tools/openapi-to-k6/" data-track="tools-openapi"><div class="icon">📘</div><h3>OpenAPI → k6 converter</h3><p>Paste or upload an OpenAPI or Swagger file (JSON or YAML), pick the endpoints, and get a k6 script with example data, auth from environment variables and status checks.</p><span class="project-link">Convert a spec →</span></a>
         <a class="card project-card" href="/tools/slo-calculator/" data-track="tools-slo"><div class="icon">🎯</div><h3>SLO &amp; error budget calculator</h3><p>Turn 99.9% into minutes of downtime and failed requests, check your burn rate, and copy k6 thresholds and Prometheus burn-rate alerts.</p><span class="project-link">Work out my budget →</span></a>
         <a class="card project-card" href="/tools/capacity-calculator/" data-track="tools-capacity"><div class="icon">📈</div><h3>Load test capacity calculator</h3><p>From orders per day to peak requests per second, cores, pods and database connections, then the virtual users and k6 scenario to prove it.</p><span class="project-link">Size my peak →</span></a>
+        <a class="card project-card" href="/site-check/" data-track="tools-sitecheck"><div class="icon">🛒</div><h3>Is your site ready for Black Friday?</h3><p>Enter a shop's address and get a plain-English speed report for phones: what slows it down, what to fix first, and what only a load test can tell you.</p><span class="project-link">Check a site →</span></a>
+        <a class="card project-card" href="/compare/" data-track="tools-compare"><div class="icon">⚖️</div><h3>Load testing tools compared</h3><p>k6 vs JMeter, Gatling, Locust and LoadRunner: honest verdicts, comparison tables and the same test written in both tools.</p><span class="project-link">Compare tools →</span></a>
         <a class="card project-card" href="/course/k6/" data-track="tools-course"><div class="icon">📬</div><h3>k6 in 7 days</h3><p>Free email course: one short lesson a day, from your first script to SLO thresholds and CI.</p><span class="project-link">Start the course →</span></a>
       </div>
     </section>

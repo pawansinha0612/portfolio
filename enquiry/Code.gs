@@ -34,6 +34,10 @@
  * Daily plan (just for you): sendDailyPlan() emails OWNER_EMAIL every morning at 9am: live checks (today's blog post,
  *   LinkedIn share, pull requests to merge, failed GitHub jobs), new leads in the sheet, and your reminders from the
  *   "Daily plan" tab (edit that tab to change them). Optional Script property GITHUB_TOKEN adds the private repo.
+ * Site checker (docs/site-check/): form=sitecheck runs Google PageSpeed Insights on the visitor's page (Script property
+ *   PAGESPEED_API_KEY) and returns plain-English findings; form=sitecheck-email emails the report and you the lead ("Site checks" tab).
+ * Leads tab (outreach): rows you add get an opt-out link (GET ?optout=TOKEN); the daily plan lists follow-ups and check-ins.
+ * Weekly stats (Mondays 8am): visits from GoatCounter (GOATCOUNTER_TOKEN), leads, outreach and Gumroad sales (GUMROAD_TOKEN).
  * GET ?view=features lists what this deployed version supports, so new forms only appear once it is deployed.
  * The signup form stays hidden on the site until GET ?view=subscribe answers, so it only appears once this
  * version is deployed.
@@ -80,10 +84,13 @@ function setup() {
   practiceSheet();
   jobsSheet();
   dailyPlanSheet();
+  siteCheckSheet();
+  leadsSheet();
   installWeeklyDigest();
   installCourseLessons();
   installJobAlerts();
   installDailyPlan();
+  installWeeklyStats();
 }
 
 function subscriberSheet() {
@@ -131,6 +138,7 @@ function doGet(e) {
   if (q.view === 'subscribe') return json({ ok: true, subscribe: true });
   if (q.view === 'features') return json({ ok: true, features: features() });
   if (q.unsubscribe) return unsubscribePage(q.unsubscribe);
+  if (q.optout) return optOutPage(q.optout);
   if (q.view === 'testimonials') {
     const sh = SpreadsheetApp.getActive().getSheetByName(TESTIMONIAL_SHEET);
     const rows = sh ? sh.getDataRange().getValues().slice(1) : [];
@@ -161,6 +169,8 @@ function doPost(e) {
   if (p.form === 'course') return saveCourse(p);
   if (p.form === 'practice') return practiceFeedback(p);
   if (p.form === 'jobs') return saveJobAlert(p);
+  if (p.form === 'sitecheck') return siteCheck(p);
+  if (p.form === 'sitecheck-email') return siteCheckEmail(p);
   return p.form === 'testimonial' ? saveTestimonial(p) : saveEnquiry(p);
 }
 
@@ -580,6 +590,7 @@ function json(obj) {
 function features() {
   const list = ['subscribe', 'quiz', 'course', 'jobs'];
   if (aiKey()) list.push('practice');
+  if (pagespeedKey()) list.push('sitecheck');
   return list;
 }
 
@@ -1320,6 +1331,7 @@ const PLAN_SEED = [
 const PLAN_COUNTS = [
   ['Enquiries', 'enquiries'], ['Quiz', 'quiz leads'], ['Course', 'course sign-ups'], ['Subscribers', 'digest subscribers'],
   ['Job alerts', 'job alert sign-ups'], ['Chat', 'chats'], ['Testimonials', 'testimonials'], ['Practice', 'practice answers'],
+  ['Site checks', 'site checks'],
 ];
 
 function dailyPlanSheet() {
@@ -1471,10 +1483,15 @@ function buildDailyPlan() {
     if (kind) plan[kind].push({ task: task, link: /^https?:\/\//.test(String(r[2])) ? String(r[2]) : '', notes: String(r[4] || ''), when: String(r[1]) });
   });
 
+  // 7. Outreach (Leads tab) and Gumroad sales since yesterday (added 2026-11-04)
+  let extra = { outreach: [], sales: null };
+  try { extra = dailyPlanExtras(today, now); } catch (err) {}
+  if (extra.sales && extra.sales.error) add(null, "Couldn't read Gumroad sales: check the GUMROAD_TOKEN Script property.", 'https://app.gumroad.com/settings/advanced');
+
   let quota = null;
   try { quota = MailApp.getRemainingDailyQuota(); } catch (err) {}
   return { today: today, weekday: weekday, checks: checks, issues: issues, counts: counts, unanswered: unanswered, plan: plan,
-    quota: quota, sheetUrl: ss.getUrl ? ss.getUrl() : '' };
+    quota: quota, sheetUrl: ss.getUrl ? ss.getUrl() : '', outreach: extra.outreach, sales: extra.sales };
 }
 
 function sendDailyPlan() {
@@ -1493,10 +1510,16 @@ function sendDailyPlan() {
   const leads = d.counts.map(c => row('🆕', c.n + ' new ' + c.label, d.sheetUrl, 'tab: ' + c.tab));
   if (d.unanswered) leads.push(row('✉️', d.unanswered + (d.unanswered === 1 ? ' enquiry' : ' enquiries') + ' still marked New: reply, then set the status', d.sheetUrl, ''));
   if (!leads.length) leads.push(row('·', 'Nothing new in the sheet since yesterday', '', ''));
+  const sales = d.sales && !d.sales.error
+    ? (d.sales.sales.length ? d.sales.sales.map(x => row('💰', x.product + (x.shown ? ' · ' + x.shown : ''), 'https://app.gumroad.com/customers', ''))
+      .concat([row('Σ', d.sales.sales.length + (d.sales.sales.length === 1 ? ' sale' : ' sales') + ' since yesterday: ' + d.sales.totalText, '', '')])
+      : [row('·', 'No Gumroad sales since yesterday', 'https://app.gumroad.com/dashboard', '')]) : [];
   const body =
     section("Checked for you", d.checks.map(c => row(icon(c.ok), c.text, c.link, ''))) +
     section("Today's to-dos", d.plan.today.map(p => row('☐', p.task, p.link, p.notes))) +
     section('New since yesterday', leads) +
+    section('Sales', sales) +
+    section('Outreach (Leads tab)', (d.outreach || []).map(o => row(o.icon, o.text, o.link || d.sheetUrl, ''))) +
     section('Open GitHub issues', d.issues.map(i => row('📌', i.title, i.link, i.repo === GH_PRIVATE ? 'private repo' : ''))) +
     section('Still to do (one-off)', d.plan.open.map(p => row('☐', p.task, p.link, p.notes))) +
     section('Coming up this week', d.plan.soon.map(p => row('📅', p.task, p.link, p.when))) +
@@ -1517,6 +1540,8 @@ function sendDailyPlan() {
     '\n\nTODAY\'S TO-DOS\n' + (d.plan.today.map(p => line('-', p.task, p.link)).join('\n') || '(none)') +
     '\n\nNEW SINCE YESTERDAY\n' + (d.counts.map(c => '- ' + c.n + ' new ' + c.label).join('\n') || '(nothing)') +
     (d.unanswered ? '\n- ' + d.unanswered + ' enquiries still marked New' : '') +
+    (d.sales && !d.sales.error ? '\n\nSALES\n' + (d.sales.sales.length ? d.sales.sales.map(x => '- ' + x.product + ' ' + x.shown).join('\n') + '\nTotal: ' + d.sales.totalText : '(none since yesterday)') : '') +
+    ((d.outreach || []).length ? '\n\nOUTREACH\n' + d.outreach.map(o => '- ' + o.text).join('\n') : '') +
     (d.issues.length ? '\n\nOPEN GITHUB ISSUES\n' + d.issues.map(i => line('-', i.title, i.link)).join('\n') : '') +
     (d.plan.open.length ? '\n\nSTILL TO DO\n' + d.plan.open.map(p => line('-', p.task, p.link)).join('\n') : '') +
     (d.plan.soon.length ? '\n\nCOMING UP\n' + d.plan.soon.map(p => line('-', p.task + ' (' + p.when + ')', p.link)).join('\n') : '') +
@@ -1524,4 +1549,643 @@ function sendDailyPlan() {
   const subject = '📋 ' + dayLabel + ': ' + (problems ? '⚠️ ' + problems + ' to check, ' : '✅ all good, ') +
     d.plan.today.length + (d.plan.today.length === 1 ? ' to-do' : ' to-dos');
   MailApp.sendEmail({ to: OWNER_EMAIL, name: 'Daily plan', subject: subject, body: text, htmlBody: html });
+}
+
+// =====================================================================================================
+// Features added 2026-11-04: site checker, Leads tab for outreach, weekly stats email, Gumroad sales.
+// =====================================================================================================
+
+// ----- Site checker (docs/site-check/) -----
+// form=sitecheck asks Google PageSpeed Insights for one page load of the visitor's site (no load is put on it) and
+// returns plain-English findings. Needs a free API key in Script property PAGESPEED_API_KEY (Google Cloud console →
+// enable "PageSpeed Insights API" → Credentials → Create API key). Without it the checker stays hidden on the site.
+// form=sitecheck-email emails the visitor their report and you the lead.
+const SITECHECK_SHEET = 'Site checks';
+const SITECHECK_HEADERS = ['received', 'url', 'device', 'score', 'main content (s)', 'server (ms)', 'page size (MB)', 'findings',
+  'visitor', 'name', 'email', 'company', 'status'];
+const SITECHECK_PER_VISITOR = 5;    // checks per visitor per day
+const SITECHECK_DAILY_CAP = 300;    // whole site per day (Google's free quota is far higher; this only stops abuse)
+
+function pagespeedKey() {
+  return PropertiesService.getScriptProperties().getProperty('PAGESPEED_API_KEY') || '';
+}
+
+function siteCheckSheet() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SITECHECK_SHEET);
+  if (sh) return sh;
+  const created = sheetWithHeaders(SITECHECK_SHEET, SITECHECK_HEADERS);
+  dropdown(created, SITECHECK_HEADERS.length, ['', 'New', 'Replied', 'Call booked', 'Won', 'Lost']);
+  return created;
+}
+
+// A public website address, or '' (no localhost, private names or bare IP addresses).
+function cleanSiteUrl(raw) {
+  let u = String(raw || '').trim().slice(0, 500);
+  if (!u) return '';
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  const m = /^(https?):\/\/([^\/?#:\s@]+)(:\d{2,5})?([\/?#][^\s]*)?$/i.exec(u);
+  if (!m) return '';
+  const host = m[2].toLowerCase().replace(/\.$/, '');
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host)) return '';
+  if (/(^|\.)(localhost|local|internal|lan|home|corp)$/.test(host)) return '';
+  return m[1].toLowerCase() + '://' + host + (m[3] || '') + (m[4] || '/');
+}
+
+function md5Hex(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, s).map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
+}
+
+function siteCheck(p) {
+  if (!pagespeedKey()) return json({ ok: false, error: 'The site checker is switched off right now.' });
+  const url = cleanSiteUrl(p.url);
+  if (!url) return json({ ok: false, error: 'Please enter a public website address, like yourshop.com.au.' });
+  const device = p.device === 'desktop' ? 'desktop' : 'mobile';
+  const visitor = String(p.visitor || '').replace(/[^\w-]/g, '').slice(0, 64) || 'anon';
+  const cache = CacheService.getScriptCache();
+  const ck = 'psi:' + md5Hex(device + ' ' + url);
+  const hit = cache.get(ck);
+  if (hit) return json({ ok: true, report: JSON.parse(hit), cached: true });
+
+  const today = melbDay();
+  const mineKey = 'sitecheck:' + visitor + ':' + today;
+  const mine = Number(cache.get(mineKey) || 0);
+  if (mine >= SITECHECK_PER_VISITOR) return json({ ok: false, limit: true, error: "You've used today's free checks. Try again tomorrow, or book a call and I'll look for you." });
+  const props = PropertiesService.getScriptProperties();
+  const siteKey = 'sitecheck-count-' + today;
+  if (Number(props.getProperty(siteKey) || 0) >= SITECHECK_DAILY_CAP) return json({ ok: false, limit: true, error: 'The checker is very busy today. Please try again tomorrow.' });
+
+  const r = runPagespeed(url, device);
+  if (r.error) {
+    const msg = {
+      unreachable: "Google couldn't load that page. Check the address works in your browser (and isn't behind a login).",
+      busy: 'Google is busy right now. Please try again in a minute.',
+    }[r.error] || "The check didn't finish. Please try again in a minute.";
+    return json({ ok: false, error: msg });
+  }
+  r.url = url;
+  r.device = device;
+  r.checked = new Date().toISOString();
+  try { cache.put(ck, JSON.stringify(r), 21600); } catch (err) {}
+  cache.put(mineKey, String(mine + 1), 21600);
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    Object.keys(props.getProperties()).filter(k => k.indexOf('sitecheck-count-') === 0 && k !== siteKey).forEach(k => props.deleteProperty(k));
+    props.setProperty(siteKey, String(Number(props.getProperty(siteKey) || 0) + 1));
+  } catch (err) {} finally { lock.releaseLock(); }
+  try {
+    siteCheckSheet();
+    appendRow(SITECHECK_SHEET, siteCheckRow(r, visitor, '', '', '', ''));
+  } catch (err) {}
+  return json({ ok: true, report: r });
+}
+
+function siteCheckRow(r, visitor, name, email, company, status) {
+  return [new Date(), safe(r.url), r.device, r.score, r.metrics.lcp === null ? '' : Math.round(r.metrics.lcp / 100) / 10,
+    r.metrics.server === null ? '' : Math.round(r.metrics.server), r.weight.bytes ? Math.round(r.weight.bytes / 104857.6) / 10 : '',
+    safe(r.findings.map(f => f.title).join(' | ').slice(0, 900)), visitor, safe(name), email, safe(company), status];
+}
+
+function runPagespeed(url, device) {
+  const api = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed?category=performance&strategy=' + device +
+    '&url=' + encodeURIComponent(url) + '&key=' + encodeURIComponent(pagespeedKey());
+  let code = 0, data = null;
+  try {
+    const res = UrlFetchApp.fetch(api, { muteHttpExceptions: true });
+    code = res.getResponseCode();
+    data = JSON.parse(res.getContentText());
+  } catch (err) { return { error: 'failed' }; }
+  const msg = (data && data.error && data.error.message) || (data && data.lighthouseResult && data.lighthouseResult.runtimeError && data.lighthouseResult.runtimeError.code) || '';
+  if (code === 429) return { error: 'busy' };
+  if (code !== 200 || !data || !data.lighthouseResult || (data.lighthouseResult.runtimeError && data.lighthouseResult.runtimeError.code)) {
+    return { error: /FAILED_DOCUMENT_REQUEST|ERRORED_DOCUMENT_REQUEST|DNS|NO_FCP|NOT_HTML|unreachable|status code/i.test(msg) ? 'unreachable' : 'failed' };
+  }
+  return summarizePsi(data);
+}
+
+// Turns a PageSpeed Insights response (or a raw Lighthouse result) into a short report with plain-English findings.
+// Pure function (no Apps Script services), so it can be tested outside Apps Script. Handles Lighthouse 12 and 13 audit names.
+function summarizePsi(data) {
+  const lr = data.lighthouseResult || data;
+  const a = lr.audits || {};
+  const au = id => a[id] || null;
+  const num = id => (au(id) && typeof a[id].numericValue === 'number' ? a[id].numericValue : null);
+  const failing = id => au(id) && typeof a[id].score === 'number' && a[id].score < 0.9;
+  const kb = b => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB');
+  const secs = ms => (ms / 1000).toFixed(1) + ' s';
+  // Bytes a fix would save: old opportunity audits report details.overallSavingsBytes, new insights a displayValue.
+  const savedBytes = id => {
+    const x = au(id);
+    if (!x || !failing(id)) return 0;
+    const d = x.details || {};
+    if (typeof d.overallSavingsBytes === 'number') return d.overallSavingsBytes;
+    const m = /([\d,.]+)\s*(KiB|MiB|KB|MB|B)\b/.exec(x.displayValue || '');
+    if (!m) return 0;
+    const v = parseFloat(m[1].replace(/,/g, ''));
+    return /M/.test(m[2]) ? v * 1048576 : /K/.test(m[2]) ? v * 1024 : v;
+  };
+  const perf = lr.categories && lr.categories.performance;
+  const score = perf && typeof perf.score === 'number' ? Math.round(perf.score * 100) : null;
+
+  let server = num('server-response-time');
+  const dl = au('document-latency-insight');
+  if (server === null && dl && dl.details && dl.details.debugData && typeof dl.details.debugData.serverResponseTime === 'number') server = dl.details.debugData.serverResponseTime;
+  const dlItems = (dl && dl.details && dl.details.items) || {};
+  const noCompression = (dlItems.usesCompression && dlItems.usesCompression.value === false) || savedBytes('uses-text-compression') > 50000;
+
+  const rs = (au('resource-summary') && a['resource-summary'].details && a['resource-summary'].details.items) || [];
+  const rsOf = t => rs.filter(i => i.resourceType === t)[0] || {};
+  const bytes = rsOf('total').transferSize || num('total-byte-weight') || 0;
+  const requests = rsOf('total').requestCount || null;
+
+  const tpAudit = au('third-parties-insight') || au('third-party-summary');
+  const third = ((tpAudit && tpAudit.details && tpAudit.details.items) || [])
+    .map(i => ({ name: typeof i.entity === 'string' ? i.entity : (i.entity && i.entity.text) || '', bytes: i.transferSize || 0, ms: i.mainThreadTime || i.blockingTime || 0 }))
+    .filter(t => t.name).sort((x, y) => y.bytes - x.bytes);
+  const thirdBytes = third.reduce((s, t) => s + t.bytes, 0);
+  const thirdMs = third.reduce((s, t) => s + t.ms, 0);
+
+  const metrics = {
+    fcp: num('first-contentful-paint'), lcp: num('largest-contentful-paint'), tbt: num('total-blocking-time'),
+    cls: num('cumulative-layout-shift'), si: num('speed-index'), server: server,
+  };
+
+  // Real-user data from Chrome (only for sites with enough traffic): the URL itself, else the whole site.
+  const le = (data.loadingExperience && data.loadingExperience.metrics) ? data.loadingExperience
+    : (data.originLoadingExperience && data.originLoadingExperience.metrics) ? data.originLoadingExperience : null;
+  let field = null;
+  if (le) {
+    const m = le.metrics, pick = k => (m[k] ? { p75: m[k].percentile, rating: m[k].category } : null);
+    field = { scope: le === data.loadingExperience && !le.origin_fallback ? 'page' : 'site',
+      lcp: pick('LARGEST_CONTENTFUL_PAINT_MS'), inp: pick('INTERACTION_TO_NEXT_PAINT'), cls: pick('CUMULATIVE_LAYOUT_SHIFT_SCORE'),
+      ttfb: pick('EXPERIMENTAL_TIME_TO_FIRST_BYTE'), overall: le.overall_category || '' };
+    if (field.cls) field.cls.p75 = field.cls.p75 / 100;  // CrUX reports CLS × 100
+  }
+
+  const findings = [], good = [];
+  const add = (sev, key, title, detail, fix) => findings.push({ sev: sev, key: key, title: title, detail: detail, fix: fix });
+
+  if (metrics.server !== null) {
+    if (metrics.server > 600) add(metrics.server > 1800 ? 3 : 2, 'server', 'Your server takes ' + Math.round(metrics.server) + ' ms to start sending the page',
+      "This is the number that grows fastest when traffic jumps. If the server is slow with one visitor, it will be much slower with hundreds at once, and that's when checkouts time out.",
+      'Cache whole pages where you can, look for slow database queries and apps that run on every page, and check your hosting plan. A load test shows the traffic level where it breaks.');
+    else good.push('Fast server response (' + Math.round(metrics.server) + ' ms) for a single visitor');
+  }
+  if (metrics.lcp !== null) {
+    if (metrics.lcp > 2500) add(metrics.lcp > 4000 ? 3 : 2, 'lcp', 'The main content takes ' + secs(metrics.lcp) + ' to appear',
+      "Google's target is 2.5 seconds or less. Shoppers leave slow pages, and Google uses this in search rankings.",
+      'Make the main image smaller and load it first (not lazy-loaded), and cut the code that has to run before it.');
+    else good.push('Main content appears quickly (' + secs(metrics.lcp) + ')');
+  }
+  if (metrics.tbt !== null) {
+    if (metrics.tbt > 200) add(metrics.tbt > 600 ? 3 : 2, 'tbt', 'The page is busy running code for ' + Math.round(metrics.tbt) + ' ms, so taps feel laggy',
+      'While the browser runs scripts it can\'t respond to taps, so buttons like "Add to cart" feel broken on cheaper phones.',
+      'Remove apps and tracking tags you no longer use, and load chat widgets, reviews and pop-ups after the page is ready.');
+    else good.push('Responds quickly to taps and clicks');
+  }
+  if (metrics.cls !== null) {
+    if (metrics.cls > 0.1) add(metrics.cls > 0.25 ? 3 : 2, 'cls', 'Things move around while the page loads (layout shift ' + metrics.cls.toFixed(2) + ')',
+      'Content that jumps makes people tap the wrong thing. Google\'s target is 0.1 or less.',
+      'Give images, videos and banners a fixed width and height, and don\'t add banners above the content after it has loaded.');
+    else good.push('Stable layout: nothing jumps around');
+  }
+  if (bytes > 3145728) add(bytes > 5242880 ? 3 : 2, 'weight', 'The page downloads ' + kb(bytes) + (requests ? ' in ' + requests + ' files' : ''),
+    'On a phone over 4G that takes seconds on its own, and on a sale day every extra megabyte is multiplied by every visitor.',
+    'Start with images and third-party scripts: they are usually most of the weight.');
+  else if (bytes) good.push('Light page (' + kb(bytes) + ')');
+  const imgSave = Math.max(savedBytes('image-delivery-insight'),
+    savedBytes('modern-image-formats') + savedBytes('uses-optimized-images') + savedBytes('uses-responsive-images') + savedBytes('offscreen-images'));
+  if (imgSave > 300000) add(imgSave > 1500000 ? 3 : 2, 'images', 'Images could be about ' + kb(imgSave) + ' smaller',
+    'Oversized images are the most common reason shop pages are slow on phones.',
+    'Use WebP or AVIF, serve images at the size they are shown, and lazy-load images below the fold (but not the main one).');
+  const jsSave = savedBytes('unused-javascript');
+  if (jsSave > 300000) add(jsSave > 800000 ? 2 : 1, 'js', 'About ' + kb(jsSave) + ' of JavaScript is downloaded but not used on this page',
+    'Every script has to be downloaded and run before the page feels ready.',
+    'Remove apps you have uninstalled (they often leave code behind), and ask your developer to split code so each page loads only what it needs.');
+  if (thirdBytes > 1048576 || thirdMs > 500) add(thirdMs > 1000 ? 3 : 2, 'third', third.length + ' third-party services add ' + kb(thirdBytes) +
+    (third.length ? ' (biggest: ' + third.slice(0, 3).map(t => t.name).join(', ') + ')' : ''),
+    'Tag managers, chat, reviews, ads and analytics all load on every page. You don\'t control their servers, and on a busy day a slow one can hold your page up.',
+    'Keep a list of every tag and app, remove what you don\'t use, and load the rest after the page.');
+  const lcpLate = (failing('lcp-discovery-insight') && a['lcp-discovery-insight'].score === 0) || failing('prioritize-lcp-image') || failing('lcp-lazy-loaded');
+  if (lcpLate && metrics.lcp > 2500) add(1, 'lcp-late', 'The browser finds the main image late',
+    'The biggest image is requested only after other files, so the page looks empty for longer.',
+    "Don't lazy-load the main image, and mark it as high priority (fetchpriority=\"high\").");
+  if ((failing('render-blocking-insight') || failing('render-blocking-resources')) && metrics.lcp > 2500) add(1, 'blocking', 'Some files stop the page from showing until they load',
+    'Stylesheets and scripts in the page head must finish before anything appears.',
+    'Inline the small amount of CSS needed for the top of the page and defer the rest, and add defer to scripts.');
+  const cacheSave = savedBytes('cache-insight') || savedBytes('uses-long-cache-ttl');
+  if (cacheSave > 300000 || (!cacheSave && failing('uses-long-cache-ttl') && a['uses-long-cache-ttl'].score < 0.5)) add(1, 'cache', 'Returning visitors download files again' + (cacheSave ? ' (about ' + kb(cacheSave) + ')' : ''),
+    'Files that could be kept by the browser are fetched again on every visit, which adds load to your servers when it matters most.',
+    'Set long cache lifetimes for images, fonts, CSS and JavaScript that have a version in their file name.');
+  if (noCompression) add(2, 'compress', 'Text files are not compressed',
+    'HTML, CSS and JavaScript can usually be made 60–80% smaller in transit.', 'Turn on gzip or Brotli compression on your server or CDN.');
+  const redirectMs = num('redirects');
+  if (redirectMs > 300 && failing('redirects')) add(1, 'redirects', 'Redirects add ' + Math.round(redirectMs) + ' ms before the page starts',
+    'Each redirect is another round trip before anything loads.', 'Link straight to the final address (for example with or without www, and https).');
+  const dom = num('dom-size-insight') || num('dom-size');
+  if (dom > 2500) add(1, 'dom', 'The page is very large (' + dom.toLocaleString('en-AU') + ' elements)',
+    'Big pages take longer to draw and to update when people interact.', 'Trim hidden menus, repeated product grids and leftover app widgets.');
+
+  findings.sort((x, y) => y.sev - x.sev);
+  const verdict = score === null ? '' : score >= 90 ? 'In good shape' : score >= 50 ? 'Needs work' : 'Slow';
+  return {
+    score: score, verdict: verdict, metrics: metrics, field: field,
+    weight: { bytes: bytes, requests: requests, thirdParties: third.slice(0, 5).map(t => ({ name: t.name, bytes: t.bytes })) },
+    findings: findings.slice(0, 6), good: good.slice(0, 4),
+    finalUrl: lr.finalDisplayedUrl || lr.finalUrl || '', lighthouse: lr.lighthouseVersion || '',
+  };
+}
+
+function siteCheckEmail(p) {
+  const d = clean(p, ['name', 'email', 'company'], {});
+  d.email = d.email.toLowerCase();
+  if (!EMAIL_RE.test(d.email)) return json({ ok: false, error: 'Please enter a valid email address.' });
+  const url = cleanSiteUrl(p.url);
+  if (!url) return json({ ok: false, error: 'Run a check first.' });
+  const device = p.device === 'desktop' ? 'desktop' : 'mobile';
+  const hit = CacheService.getScriptCache().get('psi:' + md5Hex(device + ' ' + url));
+  if (!hit) return json({ ok: false, error: 'That report has expired. Please run the check again.' });
+  if (isRepeat('sitecheck', d.email)) return json({ ok: true });
+  const r = JSON.parse(hit);
+  const visitor = String(p.visitor || '').replace(/[^\w-]/g, '').slice(0, 64);
+  try { siteCheckSheet(); appendRow(SITECHECK_SHEET, siteCheckRow(r, visitor, d.name, d.email, d.company, 'New')); } catch (err) {}
+  sendSiteCheckReport(d, r, '');
+  MailApp.sendEmail({
+    to: OWNER_EMAIL, replyTo: d.email,
+    subject: 'Site check lead: ' + (d.name || d.email) + (d.company ? ' (' + d.company + ')' : '') + ' · ' + r.url + ' · ' + r.score + '/100',
+    body: 'Name:     ' + (d.name || '-') + '\nEmail:    ' + d.email + '\nCompany:  ' + (d.company || '-') + '\nSite:     ' + r.url +
+      '\nScore:    ' + r.score + '/100 (' + r.verdict + ', ' + r.device + ')\n\nFindings:\n' +
+      (r.findings.map(f => '- ' + f.title).join('\n') || '- none') +
+      '\n\nThey got the report by email. Reply within a day with one personal observation and an offer of a call' +
+      ' (CLIENT-PLAYBOOK.md P4). Full report: ' + SITE_URL + '/site-check/?url=' + encodeURIComponent(r.url) + '&report=1',
+  });
+  return json({ ok: true });
+}
+
+function sendSiteCheckReport(d, r, prefix) {
+  const E = EMAIL;
+  const colour = r.score >= 90 ? E.accent2 : r.score >= 50 ? '#c27c00' : '#d14343';
+  const sevLabel = s => (s === 3 ? 'Fix first' : s === 2 ? 'Worth fixing' : 'Nice to have');
+  const rows = r.findings.map((f, i) =>
+    '<tr><td valign="top" style="padding:12px 0;border-top:1px solid ' + E.border + ';width:34px;font-weight:800;color:' + E.accent + '">' + (i + 1) + '</td>' +
+    '<td style="padding:12px 0;border-top:1px solid ' + E.border + '"><p style="margin:0 0 2px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:' + E.muted + '">' + sevLabel(f.sev) + '</p>' +
+    '<p style="margin:0 0 4px;font-weight:700;font-size:15px">' + esc(f.title) + '</p>' +
+    '<p style="margin:0 0 4px;font-size:14px;line-height:1.55;color:' + E.muted + '">' + esc(f.detail) + '</p>' +
+    '<p style="margin:0;font-size:15px;line-height:1.55"><b>Fix:</b> ' + esc(f.fix) + '</p></td></tr>').join('');
+  const body =
+    '<div style="margin:16px 0 4px;padding:20px;border-radius:14px;background:#f7f9fc;text-align:center">' +
+    '<p style="margin:0;font-size:44px;font-weight:800;color:' + colour + '">' + r.score + '<span style="font-size:20px;color:' + E.muted + '">/100</span></p>' +
+    '<p style="margin:4px 0 0;font-size:18px;font-weight:700">' + esc(r.verdict) + '</p>' +
+    '<p style="margin:6px 0 0;font-size:14px;color:' + E.muted + '">' + esc(r.url) + ' · ' + esc(r.device) + '</p></div>' +
+    (r.findings.length ? '<h2 style="margin:22px 0 4px;font-size:19px">What to fix, most important first</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + rows + '</table>'
+      : '<p style="font-size:15px">No big problems found on this page. Check your product, cart and checkout pages too.</p>') +
+    (r.good.length ? '<h2 style="margin:22px 0 6px;font-size:17px">Already good</h2><p style="margin:0;font-size:15px;line-height:1.7">' + r.good.map(g => '✅ ' + esc(g)).join('<br>') + '</p>' : '') +
+    '<div style="margin:22px 0 0;padding:18px 20px;border-radius:14px;background:#fff7e6">' +
+    '<p style="margin:0 0 4px;font-size:16px;font-weight:700">What this check can\'t tell you</p>' +
+    '<p style="margin:0;font-size:14px;line-height:1.55;color:' + E.muted + '">This was one visit from Google\'s servers. It shows how the page is built, not what happens when thousands of people arrive at once. ' +
+    'On sale days the server, database, payment provider and third-party apps are what fail, and only a load test shows that.</p></div>' +
+    '<div style="margin:14px 0 0;padding:18px 20px;border-radius:14px;border:1px solid ' + E.border + '">' +
+    '<p style="margin:0 0 4px;font-size:16px;font-weight:700">Want to know how much traffic you can really take?</p>' +
+    '<p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:' + E.muted + '">In a free 30-minute call we go through this report and your busiest day. ' +
+    'If a peak-readiness load test makes sense, you get a fixed price the same day.</p>' +
+    '<a href="' + BOOKING_URL + '" style="display:inline-block;background:' + E.accent2 + ';color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:10px">Book a free 30-minute call</a>' +
+    ' &nbsp; <a href="' + SITE_URL + '/peak-readiness/sample-report/" style="font-size:14px;font-weight:700;color:' + E.accent + '">See a sample load test report →</a></div>';
+  const html = emailShell({
+    preheader: r.url + ' scored ' + r.score + '/100 on ' + r.device + '. Here is what to fix first.',
+    eyebrow: 'Site check report',
+    heading: (d.name ? firstName(d.name) + ', your' : 'Your') + ' site check',
+    intro: 'Here are the results for ' + r.url + ', in plain English, with the fixes that matter most first.',
+    body: body, token: '',
+    reason: "You're getting this because you asked for your site check report at pawansinha.com.au. It's a one-off email.",
+  });
+  const text = 'Hi' + (d.name ? ' ' + firstName(d.name) : '') + ',\n\nSite check for ' + r.url + ' (' + r.device + '): ' + r.score + '/100, ' + r.verdict +
+    '\n\nWhat to fix, most important first:\n\n' + (r.findings.map((f, i) => (i + 1) + '. ' + f.title + '\n   ' + f.detail + '\n   Fix: ' + f.fix).join('\n\n') || 'No big problems found.') +
+    '\n\nThis was one visit from Google\'s servers, not a load test. Free 30-minute call: ' + BOOKING_URL +
+    '\nSample load test report: ' + SITE_URL + '/peak-readiness/sample-report/\n\n' + signature();
+  MailApp.sendEmail({ to: d.email, name: MY_NAME, replyTo: OWNER_EMAIL,
+    subject: (prefix || '') + 'Your site check: ' + r.score + '/100 for ' + r.url.replace(/^https?:\/\//, '').replace(/\/$/, ''), body: text, htmlBody: html });
+}
+
+// Emails you a sample report for your own site, to check the design. Needs PAGESPEED_API_KEY.
+function previewSiteCheck() {
+  const r = runPagespeed(SITE_URL + '/', 'mobile');
+  if (r.error) throw new Error('PageSpeed check failed: ' + r.error + ' (is PAGESPEED_API_KEY set and the API enabled?)');
+  r.url = SITE_URL + '/'; r.device = 'mobile';
+  sendSiteCheckReport({ name: MY_NAME, email: OWNER_EMAIL }, r, '[Preview] ');
+}
+
+// ----- Leads tab (outreach, see portfolio-private/OUTREACH-PLAN.md) -----
+// You add rows by hand. Each row gets an opt-out link to paste at the end of your email; opening it marks the lead
+// as unsubscribed. The 9am daily plan lists follow-ups due, check-ins due and this week's count.
+const LEADS_SHEET = 'Leads';
+const LEADS_HEADERS = ['date', 'company', 'website', 'group', 'contact name', 'role', 'email', 'where published', 'channel',
+  'first line used', 'sent', 'follow-up sent', 'reply', 'next step', 'next date', 'outcome', 'value', 'notes', 'opt-out link', 'token'];
+const LEAD_GROUPS = ['1 Online shop', '2 Agency', '3 Startup', '4 Hiring', '5 Testers', '6 Recruiter'];
+const LEAD_CLOSED = ['won', 'lost', 'unsubscribed'];
+const LEAD_FOLLOW_UP_DAYS = 5;
+
+function leadsSheet() {
+  const ss = SpreadsheetApp.getActive();
+  const existing = ss.getSheetByName(LEADS_SHEET);
+  if (existing) return existing;
+  const sh = sheetWithHeaders(LEADS_SHEET, LEADS_HEADERS);
+  const c = h => LEADS_HEADERS.indexOf(h) + 1;
+  dropdown(sh, c('group'), LEAD_GROUPS);
+  dropdown(sh, c('channel'), ['Email', 'LinkedIn', 'Contact form', 'Phone', 'Meetup', 'Referral']);
+  dropdown(sh, c('reply'), ['No reply', 'Yes', 'Not now', 'No thanks']);
+  dropdown(sh, c('outcome'), ['Open', 'Call booked', 'Proposal sent', 'Won', 'Lost', 'Unsubscribed']);
+  ['date', 'sent', 'follow-up sent', 'next date'].forEach(h => {
+    try { sh.getRange(2, c(h), sh.getMaxRows() - 1).setNumberFormat('yyyy-mm-dd'); } catch (err) {}
+  });
+  sh.getRange(2, 1).setNote('Add one row per business. Dates: type them as 2026-11-05. The opt-out link fills itself in: paste it at the end of your email.');
+  return sh;
+}
+
+// Column numbers by header name (0-based), so the tab still works if you move or add columns.
+function headerIndex(sh) {
+  const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
+  return h => head.indexOf(h);
+}
+
+// Simple trigger: when you type in the Leads tab, give new rows a token and an opt-out link (no setup needed).
+function onEdit(e) {
+  try {
+    const sh = e && e.range && e.range.getSheet();
+    if (!sh || sh.getName() !== LEADS_SHEET) return;
+    fillLeadTokens(sh, e.range.getRow(), e.range.getNumRows());
+  } catch (err) {}
+}
+
+function fillLeadTokens(sh, fromRow, count) {
+  sh = sh || SpreadsheetApp.getActive().getSheetByName(LEADS_SHEET);
+  if (!sh) return;
+  const col = headerIndex(sh);
+  const ti = col('token'), li = col('opt-out link'), ci = col('company'), ei = col('email'), di = col('date');
+  if (ti < 0 || li < 0) return;
+  const start = Math.max(2, fromRow || 2);
+  const last = Math.min(sh.getLastRow(), fromRow ? start + (count || 1) - 1 : sh.getLastRow());
+  if (last < start) return;
+  const range = sh.getRange(start, 1, last - start + 1, sh.getLastColumn());
+  const rows = range.getValues();
+  let changed = false;
+  rows.forEach(r => {
+    const used = (ci >= 0 && String(r[ci]).trim()) || (ei >= 0 && String(r[ei]).trim());
+    if (!used) return;
+    if (!String(r[ti]).trim()) { r[ti] = Utilities.getUuid().replace(/-/g, '').slice(0, 16); changed = true; }
+    const link = WEB_APP_URL + '?optout=' + r[ti];
+    if (r[li] !== link) { r[li] = link; changed = true; }
+    if (di >= 0 && !r[di]) { r[di] = new Date(); changed = true; }
+  });
+  if (changed) range.setValues(rows);
+}
+
+function optOutPage(token) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(LEADS_SHEET);
+  let done = false, company = '';
+  if (sh && token) {
+    const col = headerIndex(sh);
+    const rows = sh.getDataRange().getValues();
+    const i = rows.findIndex((r, n) => n > 0 && String(r[col('token')]) === String(token).replace(/[^\w]/g, ''));
+    if (i > 0) {
+      const set = (h, v) => { if (col(h) >= 0) sh.getRange(i + 1, col(h) + 1).setValue(v); };
+      set('reply', 'No thanks');
+      set('outcome', 'Unsubscribed');
+      set('notes', (String(rows[i][col('notes')] || '') + ' Opted out by link ' + melbDay() + '.').trim());
+      company = String(rows[i][col('company')] || rows[i][col('email')] || '');
+      done = true;
+      try {
+        MailApp.sendEmail({ to: OWNER_EMAIL, subject: 'Outreach opt-out: ' + company,
+          body: company + ' opened their opt-out link. The Leads tab is updated (outcome = Unsubscribed). Don\'t email them again.' });
+      } catch (err) {}
+    }
+  }
+  const msg = done ? "Done. You won't get any more emails from me. Sorry for the interruption, and thanks for letting me know."
+    : "That link wasn't recognised, but don't worry: reply \"no thanks\" to my email and I won't contact you again.";
+  return HtmlService.createHtmlOutput(
+    '<div style="font:17px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:' + EMAIL.text + ';max-width:560px;margin:60px auto;padding:0 16px">' +
+    '<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:' + EMAIL.accent + '">Pawan Sinha</p>' +
+    '<h2 style="margin:0 0 12px">' + (done ? "You're opted out" : 'Link not recognised') + '</h2><p>' + msg + '</p></div>')
+    .setTitle('Opt out');
+}
+
+// A sheet cell as 'yyyy-MM-dd' (Melbourne), or '' if it isn't a date.
+function cellDay(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v)) return melbDay(v);
+  const s = String(v || '').trim();
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);  // Australian d/m/yyyy
+  if (m) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  return '';
+}
+
+function daysBetween(fromDay, toDay) {
+  return Math.round((Date.parse(toDay + 'T00:00:00Z') - Date.parse(fromDay + 'T00:00:00Z')) / 86400000);
+}
+
+// Outreach status for the daily plan and the weekly stats. Returns null when there's no Leads tab yet.
+function leadsSummary(today) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(LEADS_SHEET);
+  if (!sh || sh.getLastRow() < 1) return null;
+  try { fillLeadTokens(sh); } catch (err) {}
+  const col = headerIndex(sh);
+  const v = (r, h) => (col(h) >= 0 ? r[col(h)] : '');
+  const rows = sh.getDataRange().getValues().slice(1).filter(r => String(v(r, 'company')).trim() || String(v(r, 'email')).trim());
+  const weekday = Number(Utilities.formatDate(new Date(Date.parse(today + 'T12:00:00Z')), 'UTC', 'u'));
+  const monday = melbDay(new Date(Date.parse(today + 'T12:00:00Z') - (weekday - 1) * 86400000));
+  const out = { total: rows.length, sentThisWeek: 0, sent7: 0, replies7: 0, followUps: [], checkIns: [], doNotEmail: [], won: 0, value: 0, open: 0, calls: 0 };
+  const optedOut = {};
+  rows.forEach(r => {
+    const outcome = String(v(r, 'outcome')).trim().toLowerCase();
+    const reply = String(v(r, 'reply')).trim().toLowerCase();
+    if (outcome === 'unsubscribed' || reply === 'no thanks') String(v(r, 'email')).toLowerCase().split(/[\s,;]+/).filter(Boolean).forEach(e => { optedOut[e] = true; });
+  });
+  rows.forEach(r => {
+    const name = String(v(r, 'company') || v(r, 'email')).trim();
+    const email = String(v(r, 'email')).trim().toLowerCase();
+    const outcome = String(v(r, 'outcome')).trim().toLowerCase();
+    const reply = String(v(r, 'reply')).trim().toLowerCase();
+    const closed = LEAD_CLOSED.indexOf(outcome) >= 0 || reply === 'no thanks';
+    const sent = cellDay(v(r, 'sent')), follow = cellDay(v(r, 'follow-up sent')), next = cellDay(v(r, 'next date'));
+    if (sent && sent >= monday && sent <= today) out.sentThisWeek++;
+    if (sent && daysBetween(sent, today) < 7 && daysBetween(sent, today) >= 0) out.sent7++;
+    if (reply && reply !== 'no reply' && sent && daysBetween(sent, today) < 14) out.replies7++;
+    if (outcome === 'won') { out.won++; out.value += Number(String(v(r, 'value')).replace(/[^\d.]/g, '')) || 0; }
+    if (outcome === 'call booked') out.calls++;
+    if (!closed) out.open++;
+    if (!sent && email && optedOut[email] && outcome !== 'unsubscribed' && reply !== 'no thanks') out.doNotEmail.push(name);
+    if (closed) return;
+    if (sent && !follow && (!reply || reply === 'no reply') && daysBetween(sent, today) >= LEAD_FOLLOW_UP_DAYS) {
+      out.followUps.push({ name: name, days: daysBetween(sent, today) });
+    }
+    if (next && next <= today) out.checkIns.push({ name: name, step: String(v(r, 'next step') || '').trim(), late: daysBetween(next, today) });
+  });
+  return out;
+}
+
+// ----- Gumroad sales (Script property GUMROAD_TOKEN: Gumroad → Settings → Advanced → Applications →
+// create an application → Generate access token). Without it, sales are left out of the emails. -----
+function gumroadSales(sinceMs) {
+  const token = PropertiesService.getScriptProperties().getProperty('GUMROAD_TOKEN');
+  if (!token) return null;
+  const after = Utilities.formatDate(new Date(sinceMs - 86400000), 'UTC', 'yyyy-MM-dd');
+  let url = 'https://api.gumroad.com/v2/sales?after=' + after;
+  const sales = [];
+  for (let page = 0; url && page < 5; page++) {
+    let o;
+    try {
+      const res = UrlFetchApp.fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'access_token=' + encodeURIComponent(token), { muteHttpExceptions: true });
+      if (res.getResponseCode() !== 200) return { error: true, sales: [] };
+      o = JSON.parse(res.getContentText());
+    } catch (err) { return { error: true, sales: [] }; }
+    if (!o.success) return { error: true, sales: [] };
+    (o.sales || []).forEach(s => {
+      const when = new Date(s.created_at);
+      if (isNaN(when) || when.getTime() < sinceMs || s.refunded || s.chargedback) return;
+      sales.push({ product: s.product_name || 'Product', price: Number(s.price || 0) / 100,
+        shown: s.formatted_display_price || s.formatted_total_price || '', currency: String(s.currency || s.currency_symbol || '').toUpperCase(), when: when });
+    });
+    const next = o.next_page_url || '';
+    url = next ? (/^https?:/.test(next) ? next : 'https://api.gumroad.com' + next) : '';
+  }
+  const totals = {};
+  sales.forEach(s => { totals[s.currency || '$'] = (totals[s.currency || '$'] || 0) + s.price; });
+  return { error: false, sales: sales, totalText: Object.keys(totals).map(c => c + ' ' + totals[c].toFixed(2)).join(' + ') };
+}
+
+// Daily plan add-ons: outreach and sales (called from buildDailyPlan).
+function dailyPlanExtras(today, now) {
+  const extra = { outreach: [], sales: null };
+  let L = null;
+  try { L = leadsSummary(today); } catch (err) {}
+  if (L) {
+    L.doNotEmail.forEach(n => extra.outreach.push({ icon: '⛔', text: "Don't email " + n + ': this address opted out before', link: '' }));
+    L.followUps.slice(0, 10).forEach(f => extra.outreach.push({ icon: '↩️', text: 'Follow up ' + f.name + ' (sent ' + f.days + ' days ago, no reply): same thread, one new useful thing', link: '' }));
+    L.checkIns.slice(0, 10).forEach(c => extra.outreach.push({ icon: '📞', text: 'Check in with ' + c.name + (c.step ? ': ' + c.step : '') + (c.late ? ' (' + c.late + ' days overdue)' : ''), link: '' }));
+    extra.outreach.push({ icon: L.sentThisWeek >= 10 ? '✅' : '📨', text: 'Outreach this week: ' + L.sentThisWeek + ' sent (target 10–15)' + (L.calls ? ', ' + L.calls + ' calls booked' : ''), link: '' });
+  }
+  try { extra.sales = gumroadSales(now.getTime() - 86400000); } catch (err) {}
+  return extra;
+}
+
+// ----- Weekly stats email (Mondays 8am Melbourne): visits, leads, outreach and sales for the past 7 days -----
+// Visits need Script property GOATCOUNTER_TOKEN (GoatCounter → your name in the top menu → API → New key,
+// tick "Read statistics"). Without it the email still sends with everything else.
+const GOATCOUNTER_API = 'https://pawansinha.goatcounter.com/api/v0';
+
+function installWeeklyStats() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'sendWeeklyStats')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('sendWeeklyStats').timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).inTimezone('Australia/Melbourne').create();
+}
+
+function goatcounter(path, params) {
+  const token = PropertiesService.getScriptProperties().getProperty('GOATCOUNTER_TOKEN');
+  if (!token) return null;
+  const qs = Object.keys(params).map(k => k + '=' + encodeURIComponent(params[k])).join('&');
+  try {
+    const res = UrlFetchApp.fetch(GOATCOUNTER_API + path + '?' + qs, {
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return { error: res.getResponseCode() };
+    return JSON.parse(res.getContentText());
+  } catch (err) { return { error: String(err).slice(0, 100) }; }
+}
+
+function buildWeeklyStats() {
+  const now = new Date();
+  const hour = 3600000;
+  const end = new Date(Math.floor(now.getTime() / hour) * hour);
+  const start = new Date(end.getTime() - 7 * 24 * hour), prevStart = new Date(start.getTime() - 7 * 24 * hour);
+  const iso = d => Utilities.formatDate(d, 'UTC', "yyyy-MM-dd'T'HH:00:00'Z'");
+  const s = { range: Utilities.formatDate(start, 'Australia/Melbourne', 'd MMM') + ' – ' + Utilities.formatDate(new Date(end.getTime() - 1), 'Australia/Melbourne', 'd MMM'),
+    visits: null, visitsPrev: null, pages: [], events: [], refs: [], gcError: '', tabs: [], leads: null, sales: null, posts: 0, checks: null };
+
+  const tot = goatcounter('/stats/total', { start: iso(start), end: iso(end) });
+  if (tot && !tot.error) {
+    s.visits = Number(tot.total || 0) - Number(tot.total_events || 0);
+    const prev = goatcounter('/stats/total', { start: iso(prevStart), end: iso(start) });
+    if (prev && !prev.error) s.visitsPrev = Number(prev.total || 0) - Number(prev.total_events || 0);
+    const hits = goatcounter('/stats/hits', { start: iso(start), end: iso(end), limit: 40 });
+    const list = (hits && hits.hits) || [];
+    s.pages = list.filter(h => !h.event).slice(0, 10).map(h => ({ path: h.path, title: h.title || '', count: h.count }));
+    s.events = list.filter(h => h.event).slice(0, 10).map(h => ({ path: h.path, count: h.count }));
+    const refs = goatcounter('/stats/toprefs', { start: iso(start), end: iso(end), limit: 6 });
+    s.refs = ((refs && refs.stats) || []).map(r => ({ name: r.name || '(direct / unknown)', count: r.count }));
+  } else if (tot && tot.error) s.gcError = 'GoatCounter answered ' + tot.error + ': check GOATCOUNTER_TOKEN.';
+
+  const ss = SpreadsheetApp.getActive();
+  PLAN_COUNTS.forEach(([tab, label]) => {
+    const sh = ss.getSheetByName(tab);
+    if (!sh) return;
+    let n = 0, p = 0;
+    sh.getDataRange().getValues().slice(1).forEach(r => {
+      const d = r[0];
+      if (Object.prototype.toString.call(d) !== '[object Date]') return;
+      if (d >= start && d < end) n++; else if (d >= prevStart && d < start) p++;
+    });
+    if (n || p) s.tabs.push({ label: label, n: n, prev: p });
+  });
+  const sc = ss.getSheetByName(SITECHECK_SHEET);
+  if (sc) {
+    const rows = sc.getDataRange().getValues().slice(1).filter(r => r[0] >= start && r[0] < end);
+    const scores = rows.map(r => Number(r[3])).filter(x => !isNaN(x) && x > 0);
+    s.checks = { n: rows.length, emails: rows.filter(r => r[10]).length, avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null };
+  }
+  try { s.leads = leadsSummary(melbDay(now)); } catch (err) {}
+  try { s.sales = gumroadSales(start.getTime()); } catch (err) {}
+  try { s.posts = recentPosts(7).length; } catch (err) {}
+  return s;
+}
+
+function sendWeeklyStats() {
+  const s = buildWeeklyStats();
+  const E = EMAIL;
+  const change = (n, p) => (p === null || p === undefined ? '' : p === 0 ? (n ? ' (new)' : '') : ' (' + (n >= p ? '+' : '') + Math.round((n - p) / p * 100) + '% vs the week before)');
+  const row = (a, b) => '<tr><td style="padding:6px 12px 6px 0;font-size:15px;border-bottom:1px solid ' + E.border + '">' + a + '</td>' +
+    '<td style="padding:6px 0;font-size:15px;text-align:right;font-weight:700;border-bottom:1px solid ' + E.border + '">' + b + '</td></tr>';
+  const table = (title, rows) => rows.length ? '<h2 style="margin:22px 0 6px;font-size:17px">' + esc(title) + '</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + rows.join('') + '</table>' : '';
+  const lines = [];
+  let body = '';
+  if (s.visits !== null) {
+    body += '<div style="margin:16px 0 4px;padding:18px;border-radius:14px;background:#f7f9fc;text-align:center">' +
+      '<p style="margin:0;font-size:40px;font-weight:800;color:' + E.accent + '">' + s.visits + '</p>' +
+      '<p style="margin:2px 0 0;font-size:15px;color:' + E.muted + '">visitors' + esc(change(s.visits, s.visitsPrev)) + '</p></div>';
+    lines.push('Visitors: ' + s.visits + change(s.visits, s.visitsPrev));
+    body += table('Top pages', s.pages.map(p => row(esc(p.path), p.count)));
+    body += table('Where visitors came from', s.refs.map(r => row(esc(r.name), r.count)));
+    body += table('Button clicks (book a call, buy, copy…)', s.events.map(e => row(esc(e.path), e.count)));
+    lines.push('Top pages:\n' + s.pages.map(p => '  ' + p.count + '  ' + p.path).join('\n'));
+  } else {
+    body += '<p style="margin:16px 0 0;font-size:14px;color:' + E.muted + '">' + esc(s.gcError ||
+      'Visits are not shown: add a GoatCounter API key as Script property GOATCOUNTER_TOKEN (OPERATIONS.md).') + '</p>';
+  }
+  body += table('Leads and sign-ups', s.tabs.map(t => row(esc(t.label), t.n + '<span style="font-weight:400;color:' + E.muted + '"> (' + t.prev + ' before)</span>')));
+  lines.push('Leads and sign-ups:\n' + (s.tabs.map(t => '  ' + t.n + ' ' + t.label + ' (' + t.prev + ' the week before)').join('\n') || '  none'));
+  if (s.checks && s.checks.n) {
+    body += table('Site checker', [row('Checks run', s.checks.n), row('Reports emailed (leads)', s.checks.emails)].concat(s.checks.avg !== null ? [row('Average score', s.checks.avg + '/100')] : []));
+    lines.push('Site checks: ' + s.checks.n + ' (' + s.checks.emails + ' emailed)');
+  }
+  if (s.leads) {
+    body += table('Outreach', [row('Emails sent (last 7 days)', s.leads.sent7), row('Replies', s.leads.replies7), row('Follow-ups due', s.leads.followUps.length),
+      row('Calls booked', s.leads.calls), row('Open leads', s.leads.open)].concat(s.leads.won ? [row('Won (all time)', s.leads.won + (s.leads.value ? ' · ' + s.leads.value : ''))] : []));
+    lines.push('Outreach: ' + s.leads.sent7 + ' sent, ' + s.leads.replies7 + ' replies, ' + s.leads.followUps.length + ' follow-ups due');
+  }
+  if (s.sales) {
+    body += s.sales.error ? '<p style="font-size:14px;color:#d14343">Couldn\'t read Gumroad sales: check GUMROAD_TOKEN.</p>'
+      : table('Gumroad sales', s.sales.sales.length ? s.sales.sales.map(x => row(esc(x.product), esc(x.shown || x.price.toFixed(2)))).concat([row('<b>Total</b>', esc(s.sales.totalText))]) : [row('No sales this week', '–')]);
+    lines.push('Sales: ' + (s.sales.error ? 'could not read Gumroad' : s.sales.sales.length + (s.sales.sales.length ? ' (' + s.sales.totalText + ')' : '')));
+  }
+  body += table('Blog', [row('Posts published', s.posts)]);
+  body += '<p style="margin:22px 0 0;font-size:13px;color:' + E.muted + '">Full numbers: <a href="https://pawansinha.goatcounter.com/" style="color:' + E.muted + '">GoatCounter</a> · ' +
+    '<a href="' + esc(SpreadsheetApp.getActive().getUrl()) + '" style="color:' + E.muted + '">your sheet</a>. Ask yourself one question: which page or email brought a real conversation this week? Do more of that.</p>';
+  const html = emailShell({
+    preheader: (s.visits !== null ? s.visits + ' visitors · ' : '') + s.tabs.reduce((a, t) => a + t.n, 0) + ' leads and sign-ups',
+    eyebrow: 'Weekly stats · ' + s.range, heading: 'Your website this week',
+    intro: 'Visits, leads, outreach and sales for the past 7 days, compared with the week before.',
+    body: body, reason: 'Your weekly stats from your website backend (sendWeeklyStats in Code.gs).', ownerOnly: true,
+  });
+  MailApp.sendEmail({ to: OWNER_EMAIL, name: 'Weekly stats', subject: '📊 Week of ' + s.range + (s.visits !== null ? ': ' + s.visits + ' visitors' : ''),
+    body: 'Weekly stats, ' + s.range + '\n\n' + lines.join('\n\n'), htmlBody: html });
 }

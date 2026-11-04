@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample Load Test Report (Black Friday) — Pawan Sinha</title>
+  <meta name="description" content="A full sample peak-readiness load test report for a made-up online store: traffic forecast, workload model, test results against SLOs, bottlenecks with fixes, retest and a day-of-event runbook.">
+  <meta property="og:title" content="Sample Load Test Report (Black Friday) — Pawan Sinha">
+  <meta property="og:description" content="See exactly what a peak-readiness load test delivers: go/no-go verdict, workload model, results vs SLOs, bottlenecks found and fixed, and a Black Friday runbook.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/peak-readiness/sample-report/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/peak-readiness/sample-report/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root { --bad: #b42318; --bad-bg: #fde8e6; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a80; --bad-bg: #3a1513; } }
+    .report { max-width: 900px; padding: 40px 16px 24px; }
+    .report h2 { font-size: clamp(22px, 3vw, 28px); margin: 44px 0 10px; line-height: 1.25; scroll-margin-top: 80px; }
+    .report h2 .num { color: var(--accent); margin-right: 8px; }
+    .report h3 { font-size: 18px; margin: 26px 0 6px; }
+    .report p, .report li { color: var(--muted); }
+    .report strong { color: var(--text); }
+    .report ul, .report ol { padding-left: 22px; }
+    .report code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--text); }
+    .sample-banner { display: flex; gap: 12px; align-items: flex-start; margin: 22px 0 0; padding: 14px 16px; border-radius: 14px;
+      background: var(--warn-bg); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); font-size: 15px; font-weight: 600; max-width: 760px; }
+    .sample-banner span { font-size: 20px; line-height: 1.2; }
+    .report-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 22px 0 0; padding: 0; list-style: none; max-width: 860px; }
+    .report-meta li { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 14px; color: var(--muted); }
+    .report-meta b { display: block; color: var(--text); font-size: 15px; }
+    .toc { margin: 28px 0 0; padding: 16px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+    .toc ol { margin: 6px 0 0; columns: 2 220px; column-gap: 28px; }
+    .toc a { color: var(--text); text-decoration: none; font-weight: 500; }
+    .toc a:hover { color: var(--accent); }
+    .verdict { margin: 14px 0 0; padding: 20px 22px; border-radius: 16px; background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+    .verdict .big { margin: 0; font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; color: var(--ok); line-height: 1.2; }
+    .verdict p { margin: 8px 0 0; color: var(--text); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 16px 0 0; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+    .stat b { display: block; font-size: 26px; line-height: 1.15; color: var(--text); font-weight: 800; }
+    .stat span { font-size: 14px; color: var(--muted); }
+    .tbl { overflow-x: auto; margin: 14px 0 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+    .tbl table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 14px; }
+    .tbl th, .tbl td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text); }
+    .tbl th { background: var(--alt); font-weight: 700; font-size: 13px; color: var(--muted); }
+    .tbl tr:last-child td { border-bottom: 0; }
+    .tbl td.n, .tbl th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .tbl tfoot td { font-weight: 700; background: var(--alt); }
+    .rtag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .rtag.pass { background: var(--ok-bg); color: var(--ok); }
+    .rtag.fail { background: var(--bad-bg); color: var(--bad); }
+    .rtag.warn { background: var(--warn-bg); color: var(--warn); }
+    .note { font-size: 14px; margin: 8px 0 0; }
+    .formula { font: 500 14px/1.7 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; overflow-x: auto; white-space: pre; margin: 12px 0 0; }
+    figure.chart { margin: 18px 0 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+    .chart-scroll { overflow-x: auto; }
+    .scroll-hint { display: none; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+    @media (max-width: 560px) { .scroll-hint { display: block; } }
+    figure.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+    figure.chart figcaption { font-size: 14px; color: var(--muted); margin: 10px 0 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+    .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .c-grid { stroke: var(--border); stroke-width: 1; }
+    .c-axis { stroke: var(--muted); stroke-width: 1; }
+    .c-label { fill: var(--muted); font: 500 13px Inter, system-ui, sans-serif; }
+    .c-strong { fill: var(--text); font: 700 13px Inter, system-ui, sans-serif; }
+    .c-before { stroke: var(--bad); fill: none; stroke-width: 3; stroke-linejoin: round; }
+    .c-after { stroke: var(--ok); fill: none; stroke-width: 3; stroke-linejoin: round; }
+    .d-before { fill: var(--bad); }
+    .d-after { fill: var(--ok); }
+    .c-slo { stroke: var(--warn); stroke-width: 2; stroke-dasharray: 6 5; }
+    .c-mark { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 4; }
+    .c-mark-t { fill: var(--accent); font: 700 12px Inter, system-ui, sans-serif; }
+    .finding { margin: 18px 0 0; padding: 18px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+    .finding h3 { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .finding dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; margin: 10px 0 0; font-size: 15px; }
+    .finding dt { font-weight: 700; color: var(--text); }
+    .finding dd { margin: 0; color: var(--muted); }
+    .checklist { list-style: none; padding: 0 !important; display: grid; gap: 8px; }
+    .checklist li { padding: 10px 14px 10px 40px; position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .checklist li::before { content: ""; position: absolute; left: 14px; top: 13px; width: 14px; height: 14px; border: 2px solid var(--muted); border-radius: 4px; }
+    pre.k6 { font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0 0; tab-size: 2; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+    .report-end { max-width: 900px; padding: 24px 16px 72px; }
+    @media (max-width: 600px) {
+      .finding dl { grid-template-columns: 1fr; gap: 2px; }
+      .finding dd { margin-bottom: 8px; }
+    }
+    @media print {
+      :root { --bg: #fff; --surface: #fff; --alt: #f4f5f8; --text: #121620; --muted: #3f4757; --border: #d5d9e1; --accent: #2557d6;
+        --ok: #12804f; --ok-bg: #e3f6ec; --warn: #8a5a00; --warn-bg: #fdf1d8; --bad: #b42318; --bad-bg: #fde8e6; }
+      body { background: #fff; }
+      header.nav, .site-footer, .no-print, .cursor-glow, [class*="chat-"] { display: none !important; }
+      .hero::before { display: none; }
+      .hero { padding: 0 0 8px !important; }
+      .report { padding-top: 0; }
+      .report h2 { break-after: avoid; margin-top: 28px; }
+      .finding, figure.chart, .tbl, .verdict, .stat, pre.k6 { break-inside: avoid; }
+      .tbl { overflow: visible; }
+      .tbl table { min-width: 0; font-size: 11.5px; }
+      .tbl th, .tbl td { padding: 6px 8px; }
+      .tbl th.n { white-space: normal; }
+      .hl { background: none !important; color: var(--accent) !important; -webkit-text-fill-color: var(--accent) !important; animation: none !important; }
+      figure.chart svg { min-width: 0; }
+      .formula { font-size: 11.5px; white-space: pre-wrap; }
+      .chart-scroll { overflow: visible; }
+      a { color: inherit; text-decoration: none; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs no-print" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/peak-readiness/">Peak-readiness load test</a><span aria-hidden="true">/</span><span aria-current="page">Sample report</span></nav>
+        <p class="eyebrow">Sample report · Peak-readiness load test</p>
+        <h1>Black Friday load test report: <span class="hl">Northwind Outdoor Co.</span></h1>
+        <p class="lead">This is what you get at the end of a peak-readiness load test: a clear verdict, the evidence behind it, what broke and how it was fixed, and a plan for the day itself.</p>
+        <p class="sample-banner" role="note"><span aria-hidden="true">⚠️</span>Sample report. The shop and numbers are made up, but the structure, method and level of detail are what you get.</p>
+        <ul class="report-meta">
+          <li><b>Northwind Outdoor Co.</b>A fictional online outdoor-gear store</li>
+          <li><b>Event</b>Black Friday and Cyber Monday</li>
+          <li><b>Tested by</b>Pawan Sinha, performance engineer</li>
+          <li><b>Timeline</b>Week 1 tests, Week 2 retest</li>
+        </ul>
+        <div class="actions no-print">
+          <button class="btn btn-ghost btn-small" type="button" id="print" data-track="sample-report-print">Print / Save as PDF</button>
+          <a class="btn btn-small" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="sample-report-book-top">Book a free 30-min call</a>
+        </div>
+      </div>
+    </section>
+
+    <article class="wrap report">
+      <nav class="toc no-print" aria-label="Report contents">
+        <p class="eyebrow" style="margin:0">Contents</p>
+        <ol>
+          <li><a href="#summary">Executive summary</a></li>
+          <li><a href="#scope">Scope and environment</a></li>
+          <li><a href="#workload">Workload model</a></li>
+          <li><a href="#tests">Tests run</a></li>
+          <li><a href="#results">Results against targets</a></li>
+          <li><a href="#charts">Charts</a></li>
+          <li><a href="#findings">Bottlenecks and fixes</a></li>
+          <li><a href="#runbook">Recommendations and runbook</a></li>
+          <li><a href="#appendix">Appendix: k6 scenario</a></li>
+        </ol>
+      </nav>
+
+      <!-- 1 -->
+      <h2 id="summary"><span class="num">1</span>Executive summary</h2>
+      <div class="verdict">
+        <p class="big">GO, after two fixes</p>
+        <p>Both must-fix issues, plus two smaller changes, were made by Northwind's developers in Week 2 and retested. The site now handles <strong>2× the forecast Black Friday peak</strong> with all journeys inside their targets and an error rate of 0.04%.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>97 req/s</b><span>Forecast peak (email-blast minute)</span></div>
+        <div class="stat"><b>200 req/s</b><span>Proven in the retest (2.06× forecast)</span></div>
+        <div class="stat"><b>1.4× → 2.4×</b><span>Breaking point, before → after fixes</span></div>
+        <div class="stat"><b>56 orders/min</b><span>Checkout rate held at 2×, no failed orders</span></div>
+      </div>
+      <h3>Three things the business needs to know</h3>
+      <ol>
+        <li><strong>Checkout would have failed at 1.4× the forecast.</strong> The checkout held a database connection open while waiting for the payment provider, so the connections ran out and orders failed (6.2% errors). Fixed: the order is saved before the payment call, and the pool was resized. Checkout now holds 2× with no errors.</li>
+        <li><strong>Search was slow even at normal peak.</strong> Filtering by size and colour took 1.9 s (p95) because a database index was missing. Fixed: 390 ms at forecast peak, 420 ms at 2×.</li>
+        <li><strong>A slow payment provider could slow the whole site.</strong> 30-second timeouts with 3 retries tied up the API, so browsing slowed too. Now the timeout is 10 s with one retry and a circuit breaker, and a slow provider only affects the payment step.</li>
+      </ol>
+      <p>Also in place for the event: <strong>pre-scaling</strong> to 10 API containers from 6 pm on each peak day, because autoscaling was too slow for the email blast (finding 4), and a <strong>release freeze</strong> from 20 November. Remaining risks are listed in <a href="#risks">section 8</a>.</p>
+
+      <!-- 2 -->
+      <h2 id="scope"><span class="num">2</span>Scope and environment</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>System</td><td>Headless store: web front end, Node.js API (6–12 containers, autoscaled), PostgreSQL database, CDN in front</td></tr>
+          <tr><td>Test environment</td><td>Staging, built to production size: same container sizes, same database size, same autoscaling rules, production CDN settings</td></tr>
+          <tr><td>Test data</td><td>Copy of the product catalogue (4,800 products, 180,000 size and colour variants), 20,000 test customer accounts, test cards only</td></tr>
+          <tr><td>Payment</td><td>The provider's sandbox for functional checks; a stub with realistic delays (600 ms median, 1.2 s p95) for load. The real gateway was never put under load.</td></tr>
+          <tr><td>Load generation</td><td>k6, run from two cloud machines in the same region as real shoppers</td></tr>
+          <tr><td>Monitoring</td><td>Northwind's APM and database dashboards, plus k6 results, watched live during every run</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Tested</h3>
+      <ul>
+        <li>Home, category and product pages (through the CDN, so cache behaviour is included)</li>
+        <li>Search with filters, add to cart, cart updates, guest and signed-in checkout, payment</li>
+        <li>Autoscaling, database connections, the payment timeout path</li>
+      </ul>
+      <h3>Not tested</h3>
+      <ul>
+        <li>The CDN provider's own edge capacity and the payment provider itself (both run by third parties)</li>
+        <li>The email platform that sends the campaign, and the overnight warehouse stock sync</li>
+        <li>The mobile app (it uses the same API, so the API results apply, but app screens weren't measured)</li>
+      </ul>
+      <h3>Timeline</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>When</th><th>What</th></tr></thead>
+        <tbody>
+          <tr><td>Week 1, Monday</td><td>Kick-off call, analytics review, workload model agreed and signed off</td></tr>
+          <tr><td>Week 1, Tuesday–Wednesday</td><td>k6 scripts for four shopper journeys, test data, smoke tests</td></tr>
+          <tr><td>Week 1, Thursday–Friday</td><td>Baseline, load, stress, spike and soak tests, root-cause analysis</td></tr>
+          <tr><td>Week 2, Monday</td><td>First report and fix list to Northwind</td></tr>
+          <tr><td>Week 2, Wednesday</td><td>Retest after fixes</td></tr>
+          <tr><td>Week 2, Thursday</td><td>Final report (this document) and runbook walkthrough</td></tr>
+        </tbody>
+      </table></div>
+
+      <!-- 3 -->
+      <h2 id="workload"><span class="num">3</span>Workload model</h2>
+      <p>The forecast comes from last year's analytics and this year's campaign plan, not a guess.</p>
+      <div class="formula">Last Black Friday, busiest hour        600 orders
+× growth since last year (+20%)        × 1.20
+× campaign uplift (bigger email list,
+  first paid social campaign)          × 1.17
+= forecast busiest hour                ≈ 840 orders
+
+÷ conversion rate (analytics: 3%)      = 28,000 shopper sessions in that hour
+÷ 60                                   ≈ 467 sessions per minute (hour average)
+× email-blast burst (8 pm send, last
+  year's busiest minute was 2× the hour) = 933 sessions per minute at peak</div>
+      <p>Shopper behaviour comes from last year's funnel: most visitors browse, few buy. Each journey makes a set number of requests to the site (pages and API calls that reach the servers; cached images and scripts are not counted).</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Journey</th><th class="n">Share of sessions</th><th class="n">Requests per session</th><th class="n">Sessions/min at forecast</th><th class="n">Requests/s at forecast</th><th class="n">Sessions/min at 2×</th></tr></thead>
+        <tbody>
+          <tr><td>Browse (home, category, products)</td><td class="n">60%</td><td class="n">5</td><td class="n">560</td><td class="n">46.7</td><td class="n">1,120</td></tr>
+          <tr><td>Search with filters, then browse</td><td class="n">25%</td><td class="n">7</td><td class="n">233</td><td class="n">27.2</td><td class="n">467</td></tr>
+          <tr><td>Add to cart, then leave</td><td class="n">12%</td><td class="n">9</td><td class="n">112</td><td class="n">16.8</td><td class="n">224</td></tr>
+          <tr><td>Checkout and pay</td><td class="n">3%</td><td class="n">14</td><td class="n">28</td><td class="n">6.5</td><td class="n">56</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="n">100%</td><td class="n">6.25 avg</td><td class="n">933</td><td class="n">97.2</td><td class="n">1,867</td></tr></tfoot>
+      </table></div>
+      <p class="note"><strong>Targets:</strong> forecast peak = <strong>97 requests per second</strong> and 28 orders a minute. Headroom test = <strong>2× forecast, about 194 requests per second</strong> (the retest ran slightly above, at 200). Testing at 2× covers a forecast that's wrong, a second email send, or a competitor's site going down.</p>
+      <p>How many virtual users that takes, with Little's Law (users = arrival rate × time each session lasts). Each request takes about 0.5 s and shoppers pause about 8 s between pages:</p>
+      <div class="formula">Browse     18.7 sessions/s × (5 × 8.5 s = 42.5 s)  ≈   793 users
+Search      7.8 sessions/s × (7 × 8.5 s = 59.5 s)  ≈   462 users
+Cart        3.7 sessions/s × (9 × 8.5 s = 76.5 s)  ≈   286 users
+Checkout    0.9 sessions/s × (14 × 8.5 s = 119 s)  ≈   111 users
+Total at 2× forecast                               ≈ 1,650 concurrent shoppers</div>
+      <p>The tests use an <strong>arrival rate</strong> (new shoppers per minute), not a fixed pool of users. Real shoppers keep arriving when the site slows down, so this is the honest way to test a sale.</p>
+
+      <!-- 4 -->
+      <h2 id="tests"><span class="num">4</span>Tests run</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Test</th><th>Load</th><th>Duration</th><th>What it showed</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Smoke</td><td>5 users</td><td>5 min</td><td>Scripts, test data and monitoring all working</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td>Baseline</td><td>10% of forecast (10 req/s)</td><td>15 min</td><td>Normal-day response times to compare against</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td>Load at forecast peak</td><td>100% (97 req/s)</td><td>45 min</td><td>Search too slow (1.9 s p95); everything else inside target</td><td><span class="rtag fail">Fail: search</span></td></tr>
+          <tr><td>Stress to breaking point</td><td>50% → 250%, in steps of 25%, 10 min each</td><td>~1.5 h</td><td>Checkout errors from 1.4× (6.2% at 140 req/s): database connection pool exhausted</td><td><span class="rtag fail">Fail at 1.4×</span></td></tr>
+          <tr><td>Spike</td><td>20% → 200% in 60 s (the email blast)</td><td>15 min</td><td>3.1% errors for 3 minutes while autoscaling added containers (took about 4 min)</td><td><span class="rtag fail">Fail</span></td></tr>
+          <tr><td>Soak</td><td>75% of forecast (73 req/s)</td><td>1 h</td><td>Memory flat (±3%), connections steady, no error growth, logs 1.2 GB/h with plenty of disk</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td><strong>Retest</strong> after fixes: load, stress and spike</td><td>Up to 250%</td><td>~2 h</td><td>All journeys inside target at 2× (200 req/s); breaking point now about 2.4×; spike 0.06% errors</td><td><span class="rtag pass">Pass</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <!-- 5 -->
+      <h2 id="results"><span class="num">5</span>Results against targets</h2>
+      <p>Targets (SLOs) were agreed with Northwind before testing. p95 means 95% of requests were at least this fast; p99 is the slowest 1%.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Journey</th><th class="n">Target p95</th><th class="n">Before fixes, at forecast<br>p95 / p99</th><th class="n">After fixes, at 2×<br>p95 / p99</th><th class="n">Errors after</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Browse pages</td><td class="n">800 ms</td><td class="n">410 / 780 ms</td><td class="n">460 / 890 ms</td><td class="n">0.03%</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td>Search with filters</td><td class="n">1,000 ms</td><td class="n">1,900 / 3,400 ms</td><td class="n">420 / 760 ms</td><td class="n">0.02%</td><td><span class="rtag pass">Pass (was fail)</span></td></tr>
+          <tr><td>Add to cart</td><td class="n">800 ms</td><td class="n">380 / 700 ms</td><td class="n">440 / 820 ms</td><td class="n">0.04%</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td>Checkout steps</td><td class="n">1,500 ms</td><td class="n">1,250 / 2,900 ms</td><td class="n">980 / 1,700 ms</td><td class="n">0.08%</td><td><span class="rtag pass">Pass</span></td></tr>
+          <tr><td>Payment (stub with real delays)</td><td class="n">3,000 ms</td><td class="n">2,100 / 4,800 ms</td><td class="n">1,400 / 2,600 ms</td><td class="n">0.05%</td><td><span class="rtag pass">Pass</span></td></tr>
+        </tbody>
+        <tfoot><tr><td>Whole site</td><td class="n">errors &lt; 0.5%</td><td class="n">97 req/s, 0.1% errors</td><td class="n">200 req/s</td><td class="n">0.04%</td><td><span class="rtag pass">Pass</span></td></tr></tfoot>
+      </table></div>
+      <p class="note">"Before fixes" was measured at the forecast peak, because the site couldn't hold 2× before the fixes. Before the fixes, checkout passed at forecast but with little margin: it failed at 1.4×.</p>
+
+      <!-- 6 -->
+      <h2 id="charts"><span class="num">6</span>Charts</h2>
+      <figure class="chart">
+        <div class="legend" aria-hidden="true"><span><i style="background:var(--bad)"></i>Before fixes</span><span><i style="background:var(--ok)"></i>After fixes</span><span><i style="background:var(--warn)"></i>Target (1,500 ms)</span></div>
+        <p class="scroll-hint no-print" aria-hidden="true">Swipe sideways to see the whole chart →</p>
+        <div class="chart-scroll">
+        <svg viewBox="0 0 640 330" role="img" aria-labelledby="c1t c1d">
+          <title id="c1t">Checkout p95 response time as load increases</title>
+          <desc id="c1d">Before fixes, checkout p95 rises sharply after 100% of forecast and passes 4.8 seconds at 140%, where errors start. After fixes it stays under 1 second up to 200% and only passes the 1.5 second target at about 230%.</desc>
+          <g>
+            <line class="c-grid" x1="60" y1="20" x2="620" y2="20"/><line class="c-grid" x1="60" y1="70" x2="620" y2="70"/>
+            <line class="c-grid" x1="60" y1="120" x2="620" y2="120"/><line class="c-grid" x1="60" y1="170" x2="620" y2="170"/>
+            <line class="c-grid" x1="60" y1="220" x2="620" y2="220"/>
+            <line class="c-axis" x1="60" y1="270" x2="620" y2="270"/><line class="c-axis" x1="60" y1="20" x2="60" y2="270"/>
+          </g>
+          <g class="c-label" text-anchor="end">
+            <text x="52" y="274">0</text><text x="52" y="224">1 s</text><text x="52" y="174">2 s</text>
+            <text x="52" y="124">3 s</text><text x="52" y="74">4 s</text><text x="52" y="24">5 s</text>
+          </g>
+          <g class="c-label" text-anchor="middle">
+            <text x="60" y="292">0%</text><text x="172" y="292">50%</text><text x="284" y="292">100%</text>
+            <text x="396" y="292">150%</text><text x="508" y="292">200%</text><text x="620" y="292">250%</text>
+            <text x="340" y="318">Load, as % of forecast Black Friday peak (100% = 97 req/s)</text>
+          </g>
+          <line class="c-mark" x1="284" y1="20" x2="284" y2="270"/><text class="c-mark-t" x="290" y="262">Forecast</text>
+          <line class="c-mark" x1="508" y1="20" x2="508" y2="270"/><text class="c-mark-t" x="514" y="262">2× target</text>
+          <line class="c-slo" x1="60" y1="195" x2="620" y2="195"/>
+          <polyline class="c-before" points="116,239 172,236 228,232 284,207.5 340,150 373.6,30"/>
+          <g class="d-before"><circle cx="116" cy="239" r="4"/><circle cx="172" cy="236" r="4"/><circle cx="228" cy="232" r="4"/><circle cx="284" cy="207.5" r="4"/><circle cx="340" cy="150" r="4"/><circle cx="373.6" cy="30" r="5"/></g>
+          <text class="c-strong" x="384" y="34">Breaks at 1.4×</text><text class="c-label" x="384" y="52">6.2% errors</text>
+          <polyline class="c-after" points="116,240 172,239.5 228,238 284,235 340,233 396,230.5 452,227.5 508,221 564,202.5 620,155"/>
+          <g class="d-after"><circle cx="116" cy="240" r="4"/><circle cx="172" cy="239.5" r="4"/><circle cx="228" cy="238" r="4"/><circle cx="284" cy="235" r="4"/><circle cx="340" cy="233" r="4"/><circle cx="396" cy="230.5" r="4"/><circle cx="452" cy="227.5" r="4"/><circle cx="508" cy="221" r="4"/><circle cx="564" cy="202.5" r="4"/><circle cx="620" cy="155" r="4"/></g>
+          <text class="c-strong" x="612" y="146" text-anchor="end">Knee now at ~2.4×</text>
+        </svg>
+        </div>
+        <figcaption><strong>Checkout p95 as load increases.</strong> Before the fixes, response time bent upwards just past the forecast and checkout broke at 1.4×. After the fixes the curve stays flat to 2× and the knee has moved out to about 2.4×.</figcaption>
+      </figure>
+
+      <figure class="chart">
+        <div class="legend" aria-hidden="true"><span><i style="background:var(--bad)"></i>Before fixes</span><span><i style="background:var(--ok)"></i>After fixes</span></div>
+        <p class="scroll-hint no-print" aria-hidden="true">Swipe sideways to see the whole chart →</p>
+        <div class="chart-scroll">
+        <svg viewBox="0 0 640 270" role="img" aria-labelledby="c2t c2d">
+          <title id="c2t">p95 response time at forecast peak, before and after fixes</title>
+          <desc id="c2d">At the same load (forecast peak): search 1,900 ms before, 390 ms after. Payment 2,100 ms before, 1,300 ms after. Checkout 1,250 ms before, 700 ms after. Browse 410 ms before, 380 ms after.</desc>
+          <g>
+            <line class="c-grid" x1="190" y1="12" x2="190" y2="232"/><line class="c-grid" x1="270" y1="12" x2="270" y2="232"/>
+            <line class="c-grid" x1="350" y1="12" x2="350" y2="232"/><line class="c-grid" x1="430" y1="12" x2="430" y2="232"/>
+            <line class="c-grid" x1="510" y1="12" x2="510" y2="232"/><line class="c-grid" x1="590" y1="12" x2="590" y2="232"/>
+          </g>
+          <g class="c-label" text-anchor="middle">
+            <text x="190" y="252">0</text><text x="270" y="252">500 ms</text><text x="350" y="252">1 s</text>
+            <text x="430" y="252">1.5 s</text><text x="510" y="252">2 s</text><text x="590" y="252">2.5 s</text>
+          </g>
+          <g class="c-strong" text-anchor="end">
+            <text x="178" y="44">Search</text><text x="178" y="99">Payment</text><text x="178" y="154">Checkout</text><text x="178" y="209">Browse</text>
+          </g>
+          <g class="d-before">
+            <rect x="190" y="22" width="304" height="18" rx="3"/><rect x="190" y="77" width="336" height="18" rx="3"/>
+            <rect x="190" y="132" width="200" height="18" rx="3"/><rect x="190" y="187" width="65.6" height="18" rx="3"/>
+          </g>
+          <g class="d-after">
+            <rect x="190" y="43" width="62.4" height="18" rx="3"/><rect x="190" y="98" width="208" height="18" rx="3"/>
+            <rect x="190" y="153" width="112" height="18" rx="3"/><rect x="190" y="208" width="60.8" height="18" rx="3"/>
+          </g>
+          <g class="c-label">
+            <text x="500" y="36">1,900</text><text x="258" y="57">390</text>
+            <text x="532" y="91">2,100</text><text x="404" y="112">1,300</text>
+            <text x="396" y="146">1,250</text><text x="308" y="167">700</text>
+            <text x="262" y="201">410</text><text x="257" y="222">380</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption><strong>p95 at the same load (forecast peak), before and after.</strong> The search index made the biggest difference. Payment and checkout improved because requests no longer queue for database connections.</figcaption>
+      </figure>
+
+      <!-- 7 -->
+      <h2 id="findings"><span class="num">7</span>Bottlenecks and fixes</h2>
+      <p>Ranked by risk to Black Friday sales. Each one was traced to a cause during the test runs, not guessed afterwards.</p>
+
+      <div class="finding">
+        <h3>1. Checkout runs out of database connections at 1.4× <span class="rtag fail">Must fix</span> <span class="rtag pass">Fixed and retested</span></h3>
+        <dl>
+          <dt>What</dt><dd>From 140 req/s, 6.2% of checkout requests failed with "timed out waiting for a database connection".</dd>
+          <dt>Evidence</dt><dd>Connection pool wait time rose from 2 ms to 4.8 s; all 60 connections (10 per container × 6) were busy; database CPU was only 41%, so the database itself had room.</dd>
+          <dt>Cause</dt><dd>Checkout opened a database transaction, then called the payment provider inside it. Each order held a connection for the whole payment call (1.2 s at p95), so the pool emptied as orders rose.</dd>
+          <dt>Fix</dt><dd>Save the order as "pending" and commit, call the payment provider with no connection held, then update the order. Pool raised from 10 to 20 per container. At the 12-container maximum that's 240 connections, inside the database's limit of 300 with room for admin and background jobs.</dd>
+          <dt>Retest</dt><dd>At 2× forecast: pool wait p95 3 ms, at most 148 of 240 connections in use, no checkout errors. Breaking point moved from 1.4× to about 2.4×.</dd>
+        </dl>
+      </div>
+
+      <div class="finding">
+        <h3>2. Search with filters is slow at normal peak <span class="rtag fail">Must fix</span> <span class="rtag pass">Fixed and retested</span></h3>
+        <dl>
+          <dt>What</dt><dd>Search p95 was 1.9 s at forecast peak against a 1 s target, and 3.4 s at p99.</dd>
+          <dt>Evidence</dt><dd>The database's slowest-queries view showed the size and colour filter query at 620 ms on average, 41% of all database time. Its query plan was a full scan of the 180,000-row variants table.</dd>
+          <dt>Cause</dt><dd>No index covering category, stock status and size, the three columns the filter uses together.</dd>
+          <dt>Fix</dt><dd>One composite index, added in a quiet window without locking the table. Query time 620 ms → 18 ms.</dd>
+          <dt>Retest</dt><dd>Search p95 390 ms at forecast, 420 ms at 2×. Database CPU at forecast peak dropped from 41% to 24%.</dd>
+        </dl>
+      </div>
+
+      <div class="finding">
+        <h3>3. A slow payment provider can slow the whole site <span class="rtag warn">Should fix</span> <span class="rtag pass">Fixed and retested</span></h3>
+        <dl>
+          <dt>What</dt><dd>With 5 s of extra delay added to the payment stub, browse and search p95 rose to over 6 s, not just payment.</dd>
+          <dt>Evidence</dt><dd>API containers filled up with waiting payment calls; request queues grew on every endpoint.</dd>
+          <dt>Cause</dt><dd>Payment calls used a 30 s timeout with 3 automatic retries, so one slow minute at the provider tied up the API for much longer.</dd>
+          <dt>Fix</dt><dd>10 s timeout, one retry using the provider's idempotency key (so a customer is never charged twice), and a circuit breaker that pauses payment calls for 30 s if more than 20% fail. The shopper sees "Payment is busy, please try again in a moment" and keeps their cart.</dd>
+          <dt>Retest</dt><dd>Same 5 s delay: only the payment step slowed; browse and search stayed under 500 ms p95.</dd>
+        </dl>
+      </div>
+
+      <div class="finding">
+        <h3>4. Autoscaling is too slow for the email blast <span class="rtag warn">Should fix</span> <span class="rtag pass">Fixed and retested</span></h3>
+        <dl>
+          <dt>What</dt><dd>In the spike test, 3.1% of requests failed for about 3 minutes.</dd>
+          <dt>Evidence</dt><dd>Containers went from 6 to 10, but scaling started only after CPU had been over 80% for 2 minutes, and new containers took about 2 minutes to start and pass health checks.</dd>
+          <dt>Cause</dt><dd>Reactive scaling can't keep up with a jump from 20% to 200% in one minute.</dd>
+          <dt>Fix</dt><dd>Scheduled pre-scale to 10 containers from 6 pm on each peak day (the email goes at 8 pm), and scale on requests per container instead of CPU.</dd>
+          <dt>Retest</dt><dd>Same spike: 0.06% errors; checkout p95 peaked at 1,350 ms in the first minute, then settled under 1 s.</dd>
+        </dl>
+      </div>
+
+      <!-- 8 -->
+      <h2 id="runbook"><span class="num">8</span>Recommendations and day-of-event runbook</h2>
+      <h3>Before the event</h3>
+      <ol>
+        <li><strong>Release freeze from 20 November</strong> until the Tuesday after Cyber Monday. Any change after the retest invalidates part of this result.</li>
+        <li><strong>Keep the pre-scale schedule</strong> for Black Friday, the Saturday and Cyber Monday (10 containers from 6 pm, back to normal after midnight).</li>
+        <li><strong>Agree a stagger with marketing:</strong> send the email in two halves, 15 minutes apart. It halves the spike for free.</li>
+        <li><strong>Check the CDN hit ratio</strong> stays above 90% for product and category pages after the sale prices go in (a price change can clear the cache).</li>
+        <li><strong>Tell the payment provider</strong> your expected peak (about 56 orders a minute at 2×) and ask about their rate limits.</li>
+      </ol>
+      <h3>Watch on the day (one dashboard)</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Metric</th><th>Normal at peak</th><th>Act when</th></tr></thead>
+        <tbody>
+          <tr><td>Orders per minute</td><td>about 28</td><td>Drops below 15 while traffic is high: checkout or payment problem</td></tr>
+          <tr><td>Checkout p95</td><td>under 1 s</td><td>Over 1.5 s for 5 minutes</td></tr>
+          <tr><td>Error rate (whole site)</td><td>under 0.1%</td><td>Over 0.5% for 2 minutes</td></tr>
+          <tr><td>Database connections in use</td><td>about 75 of 200 (10 containers × 20)</td><td>Over 160</td></tr>
+          <tr><td>Containers running</td><td>10 (pre-scaled)</td><td>At the maximum of 12: raise the limit or turn off extras</td></tr>
+          <tr><td>Payment failures and circuit breaker</td><td>under 1%, breaker closed</td><td>Breaker opens: call the payment provider</td></tr>
+          <tr><td>CDN hit ratio</td><td>over 90%</td><td>Under 80%</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Day-of checklist</h3>
+      <ul class="checklist">
+        <li>6 pm: pre-scale has run (10 containers), dashboard open, everyone on the call</li>
+        <li>Who to call is agreed: on-call developer, hosting support, payment provider support line, and the performance engineer watching the dashboard</li>
+        <li>Last known good release is tagged, and rolling back has been practised once in staging</li>
+        <li>Feature flags ready to switch off under load, in this order: product recommendations, live reviews widget, "recently viewed"</li>
+        <li>8 pm email send confirmed with marketing (two halves, 15 minutes apart)</li>
+        <li>First 30 minutes after the send: check every metric above every 5 minutes</li>
+        <li>Next morning: short review of what happened against this report, kept for next year's test</li>
+      </ul>
+      <h3 id="risks">Risks and limits of this test</h3>
+      <ul>
+        <li>Staging matched production size, but real shoppers on mobile networks will see slower pages than the test machines did.</li>
+        <li>The payment provider and the CDN were not load tested (they're run by third parties). The circuit breaker limits the damage if the provider slows down.</li>
+        <li>No queue or waiting room is set up. Above about 2.4× the site will slow down for everyone. If marketing expects more than 2× (for example a TV mention), set one up and test it.</li>
+        <li>The forecast relies on a 3% conversion rate. If last year's analytics under-counted sessions, peak traffic could be higher, which is why the test went to 2×.</li>
+      </ul>
+
+      <!-- 9 -->
+      <h2 id="appendix"><span class="num">9</span>Appendix: k6 scenario and thresholds</h2>
+      <p>The full scripts, test data generator and raw results are handed over in Northwind's repository, so the test can be run again before every peak. This is the load model:</p>
+<pre class="k6"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE = __ENV.BASE_URL;                 // staging URL
+const PEAK = Number(__ENV.PEAK || 2);         // 1 = forecast, 2 = headroom test
+
+// New shopper sessions per minute at the forecast peak (section 3),
+// and the virtual users needed at 2× (Little's Law).
+export const options = {
+  scenarios: {
+    browse:   journey('browse',   560, 800),
+    search:   journey('search',   233, 470),
+    cart:     journey('cart',     112, 290),
+    checkout: journey('checkout',  28, 120),
+  },
+  thresholds: {
+    http_req_failed: ['rate&lt;0.005'],
+    'http_req_duration{scenario:browse}':   ['p(95)&lt;800'],
+    'http_req_duration{scenario:search}':   ['p(95)&lt;1000'],
+    'http_req_duration{scenario:cart}':     ['p(95)&lt;800'],
+    'http_req_duration{scenario:checkout}': ['p(95)&lt;1500'],
+  },
+};
+
+function journey(fn, perMinute, vus) {
+  return {
+    executor: 'ramping-arrival-rate',   // shoppers keep arriving when the site slows
+    exec: fn,
+    timeUnit: '1m',
+    startRate: 0,
+    preAllocatedVUs: vus,
+    maxVUs: Math.ceil(vus * 1.5),
+    stages: [
+      { duration: '5m',  target: perMinute * PEAK },  // ramp up
+      { duration: '45m', target: perMinute * PEAK },  // hold the peak
+      { duration: '2m',  target: 0 },
+    ],
+  };
+}
+
+export function browse() {
+  const pages = ['/', '/c/tents', '/p/alpine-2-tent', '/p/trail-pack-40', '/p/merino-tee'];
+  for (const path of pages) {
+    const res = http.get(`${BASE}${path}`, { tags: { name: path.split('/')[1] || 'home' } });
+    check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+    sleep(8);                                   // think time between pages
+  }
+}
+
+// search(), cart() and checkout() follow the same pattern, with test
+// accounts, product IDs from a CSV and test cards for the payment stub.
+export function search() { /* ... */ }
+export function cart() { /* ... */ }
+export function checkout() { /* ... */ }</code></pre>
+      <p class="note">Runs with <code>k6 run -e BASE_URL=https://staging.example -e PEAK=2 peak.js</code>. A failed threshold makes k6 exit with an error, so the same script can gate future releases in CI.</p>
+    </article>
+
+    <section class="wrap report-end no-print">
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Want this for your shop?</p>
+          <h3>Get your own peak-readiness report before Black Friday</h3>
+          <p>Your real traffic, your shopper journeys and your systems, with a fixed scope and price agreed after a free call. Results in about 5 business days, and a retest after fixes is included.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="sample-report-book">Book a free 30-min call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="sample-report-peak">About the peak-readiness test</a>
+          <button class="btn btn-ghost" type="button" id="print-2" data-track="sample-report-print-bottom">Print / Save as PDF</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('#print, #print-2').forEach(b => b.addEventListener('click', () => window.print()));
+  </script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

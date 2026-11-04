@@ -31,7 +31,8 @@ PAGES = ['/', '/blog/', '/blog/feed.xml', '/services/performance-testing/', '/sh
          '/peak-readiness/', '/hire/', '/portfolio-template/', '/tools/',
          '/learn/', '/tools/curl-to-k6/', '/tools/k6-results/', '/tools/jmeter-to-k6/', '/tools/slo-calculator/', '/tools/capacity-calculator/', '/jobs/jobs.json', '/peak-readiness/quiz/', '/peak-readiness/quiz/questions.json',
          '/course/k6/', '/interview-prep/performance-testing/', '/interview-prep/qa.js', '/interview-prep/practice/',
-         '/interview-prep/guide/', '/templates/', '/jobs/']
+         '/interview-prep/guide/', '/templates/', '/jobs/',
+         '/site-check/', '/tools/postman-to-k6/', '/tools/openapi-to-k6/', '/peak-readiness/sample-report/', '/compare/', '/glossary/']
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today()
 MIN_QUEUED_POSTS = 3

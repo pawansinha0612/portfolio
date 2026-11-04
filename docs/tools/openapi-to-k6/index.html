@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenAPI to k6 Converter — Pawan Sinha</title>
+  <meta name="description" content="Free OpenAPI and Swagger to k6 converter. Paste or upload an OpenAPI 3 or Swagger 2.0 file (JSON or YAML), pick the endpoints, and get a ready-to-run k6 load test. Runs in your browser.">
+  <meta property="og:title" content="OpenAPI to k6 Converter — Pawan Sinha">
+  <meta property="og:description" content="Turn an OpenAPI or Swagger definition into a k6 load test: one request per endpoint, example data, auth from environment variables, status checks and thresholds. Free, and nothing leaves your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/openapi-to-k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/openapi-to-k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"OpenAPI to k6 converter","url":"https://pawansinha.com.au/tools/openapi-to-k6/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Can I convert a Swagger 2.0 file to a k6 script?","acceptedAnswer":{"@type":"Answer","text":"Yes. The converter reads Swagger 2.0 and OpenAPI 3.0 and 3.1, in JSON or YAML. It takes the base URL from host, basePath and schemes in Swagger 2.0, or from servers in OpenAPI 3."}},
+    {"@type":"Question","name":"Where do the request values come from?","acceptedAnswer":{"@type":"Answer","text":"From the examples in your definition first, then defaults and enums, and finally values generated from the schema, such as user@example.com for an email field. Replace generated IDs with ones that exist in your test environment."}},
+    {"@type":"Question","name":"Why are only GET requests selected at first?","acceptedAnswer":{"@type":"Answer","text":"GET requests read data. POST, PUT, PATCH and DELETE create, change or remove it, and a load test repeats every request thousands of times. Add them only when you run against a test environment with test data."}},
+    {"@type":"Question","name":"Is a script generated from OpenAPI a realistic load test?","acceptedAnswer":{"@type":"Answer","text":"It is a good start for checking every endpoint under load. A realistic test also follows the journeys real users take, in the proportions they take them, so reorder and weight the requests using your production traffic."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .conv { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 190px; resize: vertical; display: block; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 640px; white-space: pre; tab-size: 2; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; margin-top: 4px; }
+    .opts fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .opts legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input[type=text], .field input[type=number] { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 6px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .model-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; grid-column: 1 / -1; }
+    .model-fields[hidden] { display: none; }
+    .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 18px; }
+    .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+    .checks input { margin-top: 4px; accent-color: var(--accent); }
+    .checks small { color: var(--muted); display: block; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .out-head button { font: inherit; cursor: pointer; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p { color: var(--muted); }
+    .sub code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .row-btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .file-name { font-size: 13px; color: var(--muted); }
+    .pick-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .pick-head .count { font-size: 14px; color: var(--muted); font-weight: 600; }
+    .ops { max-height: 420px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--alt); }
+    .ops:empty::before { content: "Paste a definition above and its endpoints appear here."; display: block; padding: 14px; color: var(--muted); font-size: 14px; }
+    .ops h3 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--muted);
+      background: var(--surface); border-bottom: 1px solid var(--border); text-transform: none; }
+    .op { display: flex; gap: 10px; align-items: flex-start; padding: 8px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); min-width: 0; }
+    .op:last-child { border-bottom: 0; }
+    .op input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+    .op .m { flex: none; min-width: 58px; text-align: center; font: 700 11px/1.9 "JetBrains Mono", monospace; border-radius: 6px; padding: 0 6px;
+      background: var(--ok-bg); color: var(--ok); }
+    .op .m.unsafe { background: var(--warn-bg); color: var(--warn); }
+    .op .p { font: 500 13px/1.6 "JetBrains Mono", monospace; color: var(--text); word-break: break-all; }
+    .op small { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .op .dep { color: var(--warn); font-weight: 600; }
+    .op-text { min-width: 0; }
+    .field.wide { grid-column: 1 / -1; }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .op { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · k6 load testing</p>
+      <h1>OpenAPI to k6 converter</h1>
+      <p class="lead">Paste or upload an OpenAPI or Swagger definition, pick the endpoints, and get a k6 load test you can run straight away: example data for every request, auth read from environment variables, status checks and pass/fail thresholds.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you paste is sent anywhere.</p>
+    </section>
+
+    <section class="wrap conv" aria-label="Converter">
+      <div class="panel">
+        <h2><label for="spec-in">1. Paste or upload your API definition</label></h2>
+        <p class="sub">OpenAPI 3.0, 3.1 or Swagger 2.0, as JSON or YAML. It's usually at a URL like <code>/openapi.json</code>, <code>/v3/api-docs</code> or <code>/swagger.json</code>, or behind the link at the top of your Swagger UI page.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="openapi3">OpenAPI 3 (YAML): bookshop</button>
+          <button class="chip-btn" type="button" data-example="swagger2">Swagger 2.0 (JSON): petstore</button>
+          <button class="chip-btn" type="button" id="clear">Clear</button>
+        </div>
+        <textarea id="spec-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder="openapi: 3.0.3&#10;info:&#10;  title: My API&#10;  version: 1.0.0&#10;paths:&#10;  /items:&#10;    get: ..."></textarea>
+        <div class="row-btns">
+          <span class="btn btn-ghost btn-small file-btn">Upload a file<input type="file" id="file" accept=".json,.yaml,.yml,application/json,text/yaml" aria-label="Upload an OpenAPI or Swagger file"></span>
+          <span class="file-name" id="file-name"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="pick-head">
+          <h2>2. Pick the endpoints</h2>
+          <span class="count" id="count"></span>
+        </div>
+        <p class="sub">Only <strong>GET</strong> requests are ticked at first, because they only read data. POST, PUT, PATCH and DELETE create, change or delete it, and a load test repeats every request thousands of times. Tick them only for a test environment with test data.</p>
+        <div class="examples">
+          <button class="chip-btn" type="button" id="sel-get">Only GET (read-only)</button>
+          <button class="chip-btn" type="button" id="sel-all">Select all</button>
+          <button class="chip-btn" type="button" id="sel-none">None</button>
+        </div>
+        <div class="ops" id="ops" role="group" aria-label="Endpoints to include"></div>
+      </div>
+
+      <div class="panel">
+        <h2>3. Choose the load</h2>
+        <p class="sub">Not sure how many users you need? Work it out with the <a href="/tools/#virtual-users">virtual users calculator</a>.</p>
+        <form id="opts" class="opts" onsubmit="return false">
+          <label class="field wide"><span>Base URL (optional: overrides the one in the definition)</span><input type="text" name="baseUrl" value="" placeholder="https://staging-api.example.com" inputmode="url" autocomplete="off"></label>
+          <fieldset>
+            <legend>Load model</legend>
+            <div class="seg">
+              <label><input type="radio" name="model" value="closed" checked> Virtual users</label>
+              <label><input type="radio" name="model" value="open"> Arrival rate</label>
+            </div>
+          </fieldset>
+          <label class="field"><span>Duration</span><input type="text" name="duration" value="1m" inputmode="text"></label>
+          <label class="field"><span>Think time (seconds)</span><input type="number" name="thinkTime" value="1" min="0" step="0.5"></label>
+
+          <div class="model-fields" data-model="closed">
+            <label class="field"><span>Virtual users</span><input type="number" name="vus" value="10" min="1" step="1"></label>
+          </div>
+          <div class="model-fields" data-model="open" hidden>
+            <label class="field"><span>Iterations per second</span><input type="number" name="rate" value="10" min="1" step="1"></label>
+            <label class="field"><span>Pre-allocated VUs</span><input type="number" name="preAllocatedVUs" value="20" min="1" step="1"></label>
+            <label class="field"><span>Max VUs</span><input type="number" name="maxVUs" value="100" min="1" step="1"></label>
+          </div>
+
+          <label class="field"><span>p95 response time limit (ms)</span><input type="number" name="p95" value="500" min="0" step="50"></label>
+          <label class="field"><span>Max error rate (%)</span><input type="number" name="errorRate" value="1" min="0" step="0.1"></label>
+
+          <div class="checks">
+            <label><input type="checkbox" name="checks" checked><span>Check each response status<small>the success code your definition documents, and fail the test if under 99% pass</small></span></label>
+            <label><input type="checkbox" name="optionalQuery" checked><span>List optional query parameters<small>as a comment above each request, so you can add them</small></span></label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" id="out-panel">
+        <div class="out-head">
+          <h2>4. Your k6 script</h2>
+          <div class="btns">
+            <button class="btn btn-small" type="button" id="copy" data-track="openapi-to-k6-copy">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="download" data-track="openapi-to-k6-download">Download script.js</button>
+          </div>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <pre class="code" id="out" tabindex="0" aria-label="Generated k6 script"><code>// Paste an OpenAPI or Swagger definition above, or try an example.</code></pre>
+        <p class="run" id="run" hidden></p>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>From an API definition to a load test</h2>
+      <ol>
+        <li><strong>One request per endpoint.</strong> Each operation you tick becomes one k6 request, grouped by its first tag, so the results show times per area of the API (Books, Cart, Orders…). Every request is tagged with its path template, like <code>/books/{bookId}</code>, so thousands of different IDs still show as one line in the results.</li>
+        <li><strong>Example data.</strong> Values come from the <code>example</code> and <code>examples</code> in your definition first, then <code>default</code> and <code>enum</code>, and finally values made from the schema (a UUID for <code>format: uuid</code>, <code>user@example.com</code> for an email). <code>$ref</code>, <code>allOf</code>, <code>oneOf</code> and <code>anyOf</code> are followed, read-only fields are left out of request bodies, and circular references stop safely.</li>
+        <li><strong>Auth from environment variables.</strong> Bearer tokens, basic auth, API keys (header, query or cookie) and OAuth 2 become <code>__ENV</code> values, so no secret ends up in the script. Pass them with <code>-e TOKEN=...</code> when you run k6.</li>
+        <li><strong>Checks and thresholds.</strong> Each request checks for the success status the definition documents (201 for a create, 204 for a delete), and the test fails if p95 response time or the error rate goes over your limits.</li>
+        <li><strong>Run it.</strong> Install k6 (<code>brew install k6</code>, <code>winget install k6</code> or the Docker image <code>grafana/k6</code>), then <code>k6 run script.js</code>. Paste the summary into the <a href="/tools/k6-results/">k6 results explainer</a> for a plain-English verdict.</li>
+      </ol>
+      <h2 style="margin-top:32px">Before you point it at a real system</h2>
+      <ul>
+        <li><strong>Replace example IDs.</strong> <code>/pets/1</code> or a made-up UUID will often return 404. Use IDs that exist in your test environment, or read a list from a CSV with <code>SharedArray</code>.</li>
+        <li><strong>Make it realistic.</strong> Real users don't call every endpoint once in order. Reorder and weight the requests to match your production traffic: most visitors search and browse, few check out.</li>
+        <li><strong>Use test data.</strong> Requests that create orders or send emails will do it thousands of times. Agree on a test account and a clean-up plan first.</li>
+        <li><strong>Ask before you load test a system you don't own,</strong> and start small: 1 VU for 30 seconds as a smoke test, then build up.</li>
+      </ul>
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Can I convert a Swagger 2.0 file?</h3>
+      <p>Yes. Swagger 2.0 and OpenAPI 3.0 and 3.1 all work, in JSON or YAML. For Swagger 1.x, convert the file to 2.0 or 3.0 first.</p>
+      <h3>My definition is split across several files.</h3>
+      <p>References to other files can't be followed in the browser. Bundle it into one file first, for example with <code>npx @redocly/cli bundle openapi.yaml -o bundled.yaml</code>, then upload that.</p>
+      <h3>Is a script generated from OpenAPI a realistic load test?</h3>
+      <p>It's a good start for checking every endpoint under load and catching the slow ones. A realistic test follows the journeys real users take, in the proportions they take them. If you have browser traffic, the <a href="/tools/curl-to-k6/">curl to k6 converter</a> turns a recorded journey into a script.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/postman-to-k6/">Postman → k6 converter →</a>
+        <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Going further than one script?</p>
+          <h3>The k6 starter kit I set up on day one</h3>
+          <p>Open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. A$49, one-off. Or book a free call and I'll look at your plan with you.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/shop/" data-track="openapi-to-k6-kit">See the k6 kit</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="openapi-to-k6-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/tools/openapi-to-k6/convert.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const input = $('spec-in'), form = $('opts'), out = $('out'), msgs = $('msgs'), run = $('run'), opsEl = $('ops'), count = $('count');
+    const STORE = 'openapi-to-k6-options';
+    const UNSAFE = ['POST', 'PUT', 'PATCH', 'DELETE'];
+    let script = '', ops = [], signature = '', selected = new Set();
+
+    // Remember the visitor's options in this browser only (not the definition itself).
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) for (const [k, v] of Object.entries(saved)) {
+        const el = form.elements[k];
+        if (!el || k === 'baseUrl') continue;
+        if (el instanceof RadioNodeList) { for (const r of el) r.checked = r.value === v; }
+        else if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v;
+      }
+    } catch (e) {}
+
+    function options() {
+      const f = form.elements;
+      return {
+        model: f.model.value, vus: f.vus.value, duration: f.duration.value.trim() || '1m', thinkTime: Math.max(0, +f.thinkTime.value || 0),
+        rate: f.rate.value, timeUnit: '1s', preAllocatedVUs: f.preAllocatedVUs.value, maxVUs: f.maxVUs.value,
+        p95: f.p95.value, errorRate: f.errorRate.value, checks: f.checks.checked, optionalQuery: f.optionalQuery.checked,
+        baseUrl: f.baseUrl.value.trim(),
+      };
+    }
+
+    function msg(cls, text) {
+      const p = document.createElement('p');
+      p.className = 'msg ' + cls;
+      p.textContent = text;
+      msgs.appendChild(p);
+    }
+
+    function renderOps() {
+      opsEl.textContent = '';
+      const byTag = new Map();
+      ops.forEach(o => { if (!byTag.has(o.tag)) byTag.set(o.tag, []); byTag.get(o.tag).push(o); });
+      for (const [tag, list] of byTag) {
+        const h = document.createElement('h3'); h.textContent = tag; opsEl.appendChild(h);
+        for (const o of list) {
+          const l = document.createElement('label'); l.className = 'op';
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = o.id; cb.checked = selected.has(o.id);
+          cb.addEventListener('change', () => { cb.checked ? selected.add(o.id) : selected.delete(o.id); update(); });
+          const m = document.createElement('span'); m.className = 'm' + (UNSAFE.includes(o.method) ? ' unsafe' : ''); m.textContent = o.method;
+          const t = document.createElement('span'); t.className = 'op-text';
+          const p = document.createElement('span'); p.className = 'p'; p.textContent = o.path; t.appendChild(p);
+          if (o.summary || o.deprecated) {
+            const s = document.createElement('small'); s.textContent = o.summary;
+            if (o.deprecated) { const d = document.createElement('span'); d.className = 'dep'; d.textContent = (o.summary ? ' · ' : '') + 'deprecated'; s.appendChild(d); }
+            t.appendChild(s);
+          }
+          l.append(cb, m, t); opsEl.appendChild(l);
+        }
+      }
+      count.textContent = ops.length ? `${selected.size} of ${ops.length} selected` : '';
+    }
+
+    function setSelection(fn) { selected = new Set(ops.filter(fn).map(o => o.id)); renderOps(); update(); }
+
+    function update() {
+      const o = options();
+      document.querySelectorAll('.model-fields').forEach(el => { el.hidden = el.dataset.model !== o.model; });
+      try { const s = Object.assign({}, o); delete s.baseUrl; localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
+      msgs.textContent = '';
+      run.hidden = true;
+      if (!/^\s*\d+(\.\d+)?(ms|s|m|h)(\d+(\.\d+)?(ms|s|m|h))*\s*$/.test(o.duration)) msg('warn', 'Duration should look like 30s, 5m or 1h30m.');
+      if (!input.value.trim()) {
+        script = ''; ops = []; signature = ''; renderOps();
+        out.firstChild.textContent = '// Paste an OpenAPI or Swagger definition above, or try an example.'; return;
+      }
+      // A new definition resets the selection to its GET operations.
+      let list = null;
+      try { list = OpenApiToK6.listOperations(input.value); } catch (e) { list = null; }
+      if (list) {
+        const sig = list.map(x => x.id).join('\n');
+        if (sig !== signature) {
+          signature = sig; ops = list;
+          selected = new Set(list.filter(x => x.method === 'GET').map(x => x.id));
+          if (!selected.size) selected = new Set(list.map(x => x.id));
+          renderOps();
+        }
+      } else if (ops.length) { ops = []; signature = ''; renderOps(); }
+      o.include = list ? [...selected] : null;
+      let r;
+      try { r = OpenApiToK6.convert(input.value, o); }
+      catch (e) { r = { error: 'Something went wrong while converting: ' + e.message }; }
+      count.textContent = ops.length ? `${selected.size} of ${ops.length} selected` : '';
+      if (r.error) { script = ''; msg('err', r.error); out.firstChild.textContent = '// ' + r.error; return; }
+      script = r.script;
+      out.firstChild.textContent = script;
+      r.warnings.forEach(w => msg('warn', '⚠️ ' + w));
+      r.info.forEach(w => msg('info', w));
+      const env = r.env.map(e => ` -e ${e.name}='…'`).join('');
+      run.innerHTML = '';
+      run.append('Run it: ');
+      const code = document.createElement('code');
+      code.textContent = `k6 run${env} script.js`;
+      run.append(code);
+      if (r.env.length) run.append(' (replace … with your test credentials)');
+      run.hidden = false;
+    }
+
+    let timer;
+    const later = () => { clearTimeout(timer); timer = setTimeout(update, 200); };
+    input.addEventListener('input', later);
+    form.addEventListener('input', later);
+    form.addEventListener('change', update);
+
+    document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => {
+      input.value = OpenApiToK6.EXAMPLES[b.dataset.example];
+      $('file-name').textContent = '';
+      update();
+      if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'openapi-to-k6-example', title: 'openapi-to-k6-example', event: true });
+    }));
+    $('clear').addEventListener('click', () => { input.value = ''; $('file-name').textContent = ''; update(); input.focus(); });
+    $('sel-get').addEventListener('click', () => setSelection(x => x.method === 'GET'));
+    $('sel-all').addEventListener('click', () => setSelection(() => true));
+    $('sel-none').addEventListener('click', () => setSelection(() => false));
+
+    $('file').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (f.size > 15 * 1024 * 1024) { msgs.textContent = ''; msg('err', 'That file is over 15 MB. Upload a smaller definition, or only the part you want to test.'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        input.value = String(reader.result || '');
+        $('file-name').textContent = f.name;
+        update();
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'openapi-to-k6-upload', title: 'openapi-to-k6-upload', event: true });
+      };
+      reader.onerror = () => { msgs.textContent = ''; msg('err', "Couldn't read that file. Try pasting its contents instead."); };
+      reader.readAsText(f);
+      e.target.value = '';
+    });
+
+    $('copy').addEventListener('click', async () => {
+      if (!script) return;
+      const b = $('copy');
+      try { await navigator.clipboard.writeText(script); b.textContent = 'Copied ✓'; }
+      catch (e) {
+        const range = document.createRange(); range.selectNodeContents(out);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        b.textContent = 'Press Ctrl/⌘+C';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+    $('download').addEventListener('click', () => {
+      if (!script) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      a.download = 'script.js';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Postman to k6 Converter — Pawan Sinha</title>
+  <meta name="description" content="Free Postman to k6 converter. Upload a Postman collection (v2.1 or v2.0) and get a k6 load test: folders as groups, variables, auth, tests as checks and token chaining. Runs in your browser.">
+  <meta property="og:title" content="Postman to k6 Converter — Pawan Sinha">
+  <meta property="og:description" content="Turn a Postman collection into a k6 load test with groups, variables, checks and thresholds. Free, and nothing leaves your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/postman-to-k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/postman-to-k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Postman to k6 converter","url":"https://pawansinha.com.au/tools/postman-to-k6/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type": "Question", "name": "Can I run a Postman collection as a load test?", "acceptedAnswer": {"@type": "Answer", "text": "Postman's runner sends requests one after another, so it suits functional checks rather than load. Converting the collection to a k6 script lets you run it with many virtual users or a fixed request rate, with pass/fail thresholds on response time and errors."}},
+    {"@type": "Question", "name": "Do my Postman tests carry over to k6?", "acceptedAnswer": {"@type": "Answer", "text": "Common assertions do: status codes, response time, headers, body text and simple JSON values become k6 checks. More complex scripts are kept as comments for you to rewrite."}},
+    {"@type": "Question", "name": "How do Postman variables work in the k6 script?", "acceptedAnswer": {"@type": "Answer", "text": "Collection and environment variables go into a VARS object, and {{name}} is filled in when each request is sent. Values saved with pm.environment.set() from a response are passed to later requests, and any variable can be overridden with k6 run -e name=value."}},
+    {"@type": "Question", "name": "Is my Postman collection uploaded anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. The converter runs in your browser, so the collection, environment and any tokens or passwords never leave your computer."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .conv { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 190px; resize: vertical; display: block; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 640px; white-space: pre; tab-size: 2; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; margin-top: 4px; }
+    .opts fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .opts legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input[type=text], .field input[type=number] { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 6px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .model-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; grid-column: 1 / -1; }
+    .model-fields[hidden] { display: none; }
+    .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 18px; }
+    .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+    .checks input { margin-top: 4px; accent-color: var(--accent); }
+    .checks small { color: var(--muted); display: block; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .out-head button { font: inherit; cursor: pointer; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .file-btn { display: inline-flex; align-items: center; }
+    .file-name { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+    .env { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+    .env summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+    .env .sub { margin-top: 8px; }
+    textarea.env-code { min-height: 110px; }
+    .project-hero .lead code { font: 500 0.85em "JetBrains Mono", monospace; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p { color: var(--muted); }
+    .guide code, .lead code { overflow-wrap: anywhere; }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · k6 load testing</p>
+      <h1>Postman to k6 converter</h1>
+      <p class="lead">Turn a Postman collection into a k6 load test. Folders become groups, <code>{{variables}}</code> keep working, your Postman tests become k6 checks, and tokens saved with <code>pm.environment.set()</code> are passed on to the next request.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you paste is sent anywhere.</p>
+    </section>
+
+    <section class="wrap conv" aria-label="Converter">
+      <div class="panel">
+        <h2><label for="col-in">1. Paste or upload a Postman collection</label></h2>
+        <p class="sub">In Postman: click ⋯ next to the collection → Export → <strong>Collection v2.1</strong> (v2.0 works too). Then upload the .json file or paste what's in it.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="api">Shop API with login (v2.1)</button>
+          <button class="chip-btn" type="button" data-example="v20">Forms, upload, GraphQL (v2.0)</button>
+          <label class="chip-btn file-btn">Upload .json<input type="file" id="col-file" accept=".json,.postman_collection,application/json" hidden></label>
+          <button class="chip-btn" type="button" id="clear">Clear</button>
+        </div>
+        <textarea id="col-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder='{ "info": { "name": "My API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" }, "item": [ … ] }'></textarea>
+        <p class="file-name" id="col-name" hidden></p>
+
+        <details class="env" id="env-box">
+          <summary>Add a Postman environment (optional)</summary>
+          <p class="sub">Environments → ⋯ → Export. Its values win over the collection's, like in Postman. Values marked secret are kept out of the script.</p>
+          <div class="examples">
+            <button class="chip-btn" type="button" id="env-example">Use the sample environment</button>
+            <label class="chip-btn file-btn">Upload .json<input type="file" id="env-file" accept=".json,.postman_environment,application/json" hidden></label>
+            <button class="chip-btn" type="button" id="env-clear">Clear</button>
+          </div>
+          <textarea id="env-in" class="code env-code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Postman environment JSON"
+            placeholder='{ "name": "Staging", "values": [ { "key": "baseUrl", "value": "https://staging.example.com", "enabled": true } ] }'></textarea>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h2>2. Choose the load</h2>
+        <p class="sub">Not sure how many users you need? Work it out with the <a href="/tools/#virtual-users">virtual users calculator</a>.</p>
+        <form id="opts" class="opts" onsubmit="return false">
+          <fieldset>
+            <legend>Load model</legend>
+            <div class="seg">
+              <label><input type="radio" name="model" value="closed" checked> Virtual users</label>
+              <label><input type="radio" name="model" value="open"> Arrival rate</label>
+            </div>
+          </fieldset>
+          <label class="field"><span>Duration</span><input type="text" name="duration" value="1m" inputmode="text"></label>
+          <label class="field"><span>Think time (seconds)</span><input type="number" name="thinkTime" value="1" min="0" step="0.5"></label>
+
+          <div class="model-fields" data-model="closed">
+            <label class="field"><span>Virtual users</span><input type="number" name="vus" value="10" min="1" step="1"></label>
+          </div>
+          <div class="model-fields" data-model="open" hidden>
+            <label class="field"><span>Iterations per second</span><input type="number" name="rate" value="10" min="1" step="1"></label>
+            <label class="field"><span>Pre-allocated VUs</span><input type="number" name="preAllocatedVUs" value="20" min="1" step="1"></label>
+            <label class="field"><span>Max VUs</span><input type="number" name="maxVUs" value="100" min="1" step="1"></label>
+          </div>
+
+          <label class="field"><span>p95 response time limit (ms)</span><input type="number" name="p95" value="500" min="0" step="50"></label>
+          <label class="field"><span>Max error rate (%)</span><input type="number" name="errorRate" value="1" min="0" step="0.1"></label>
+
+          <div class="checks">
+            <label><input type="checkbox" name="checks" checked><span>Turn Postman tests into k6 checks<small>and check for 2xx when a request has no status test</small></span></label>
+            <label><input type="checkbox" name="groups" checked><span>One group per folder<small>results are broken down by folder</small></span></label>
+            <label><input type="checkbox" name="nameTags" checked><span>Name requests by URL template<small>/products/{productId}, not one line per ID</small></span></label>
+            <label><input type="checkbox" name="secretsToEnv" checked><span>Move secrets to environment variables<small>tokens, passwords and API keys become -e values</small></span></label>
+            <label><input type="checkbox" name="keepScripts" checked><span>Keep scripts that weren't converted<small>as comments, so you can rewrite them</small></span></label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" id="out-panel">
+        <div class="out-head">
+          <h2>3. Your k6 script</h2>
+          <div class="btns">
+            <button class="btn btn-small" type="button" id="copy" data-track="postman-to-k6-copy">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="download" data-track="postman-to-k6-download">Download script.js</button>
+          </div>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <pre class="code" id="out" tabindex="0" aria-label="Generated k6 script"><code>// Paste a Postman collection above, or try an example.</code></pre>
+        <p class="run" id="run" hidden></p>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>What gets converted</h2>
+      <ul>
+        <li><strong>Requests and folders.</strong> Every request runs in the order the Postman collection runner uses. Each folder becomes a k6 <code>group()</code>, so the end-of-test summary is broken down the same way. Disabled headers and query parameters are left out.</li>
+        <li><strong>Variables.</strong> <code>{{name}}</code> stays in the script and is filled in when the request is sent, from a <code>VARS</code> object built from the collection and environment. Change any value at run time with <code>-e name=value</code>. Path variables like <code>/users/:id</code> and dynamic variables like <code>{{$guid}}</code>, <code>{{$timestamp}}</code> and <code>{{$randomInt}}</code> work too.</li>
+        <li><strong>Auth.</strong> Bearer, Basic, API key (header or query) and a saved OAuth 2.0 token, inherited from the folder or collection like in Postman.</li>
+        <li><strong>Bodies.</strong> Raw (JSON or text), x-www-form-urlencoded, form-data with files, GraphQL and binary files.</li>
+        <li><strong>Tests.</strong> Common assertions become k6 checks: <code>pm.response.to.have.status(200)</code>, <code>pm.expect(pm.response.code).to.be.oneOf([…])</code>, response time, headers, body text and simple JSON values such as <code>pm.expect(jsonData.id).to.eql(42)</code>.</li>
+        <li><strong>Chaining.</strong> <code>pm.environment.set("token", pm.response.json().token)</code> and the same for collection variables, globals and response headers become <code>setVar()</code>, so a token from the login request is sent with the next ones.</li>
+      </ul>
+      <h2 style="margin-top:32px">What you'll need to finish by hand</h2>
+      <ul>
+        <li><strong>Pre-request scripts and complex tests</strong> (loops, schema validation, <code>pm.sendRequest</code>). They're kept as comments next to the request, and the warnings above the script list them.</li>
+        <li><strong>Files for uploads.</strong> Put them next to the script. k6 reads them once at the start with <code>open()</code>.</li>
+        <li><strong>Test data.</strong> A collection that works for one person sends the same user, cart and order a thousand times under load. Give each virtual user its own data, for example from a CSV with <code>SharedArray</code>.</li>
+      </ul>
+      <h2 style="margin-top:32px">Run it</h2>
+      <ol>
+        <li><strong>Install k6</strong> (<code>brew install k6</code>, <code>winget install k6</code> or the Docker image <code>grafana/k6</code>).</li>
+        <li><strong>Start with a smoke test:</strong> <code>k6 run --vus 1 --iterations 1 script.js</code>, and check every check passes.</li>
+        <li><strong>Then run the real load</strong> with <code>k6 run script.js</code>, and paste the summary into the <a href="/tools/k6-results/">k6 results explainer</a>.</li>
+        <li><strong>Ask before you load test a system you don't own.</strong> To a firewall, a load test looks like an attack.</li>
+      </ol>
+
+      <h2 style="margin-top:36px">FAQ</h2>
+      <h3>Can I run a Postman collection as a load test?</h3>
+      <p>Postman's own runner sends requests one after another, so it suits functional checks, not real load. Converting the collection to a k6 script lets you run it with many virtual users or a fixed number of requests per second, with pass/fail thresholds on response time and errors.</p>
+      <h3>Do my Postman tests carry over?</h3>
+      <p>The common ones do: status codes, response time, headers, body text and simple JSON values become k6 checks. Anything more complex is kept as a comment for you to rewrite, and listed in the warnings.</p>
+      <h3>Is the old postman-to-k6 command-line tool still an option?</h3>
+      <p>The open-source postman-to-k6 tool from the k6 project is no longer maintained, and it depends on extra libraries at run time. This converter writes plain k6 JavaScript with no extra modules, apart from the official FormData helper for multipart uploads.</p>
+      <h3>Is my collection uploaded anywhere?</h3>
+      <p>No. The conversion runs in your browser. Your collection, environment, tokens and passwords never leave your computer.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
+        <a href="/tools/openapi-to-k6/">OpenAPI → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Going further than one script?</p>
+          <h3>The k6 starter kit I set up on day one</h3>
+          <p>Open-model scenarios, SLO thresholds, test data, CI gates for GitHub Actions and GitLab, and readable reports. A$49, one-off. Or book a free call and I'll look at your plan with you.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/shop/" data-track="postman-to-k6-kit">See the k6 kit</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="postman-to-k6-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/postman-to-k6/convert.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const input = $('col-in'), envIn = $('env-in'), form = $('opts'), out = $('out'), msgs = $('msgs'), run = $('run');
+    const STORE = 'postman-to-k6-options';
+    const MAX_BYTES = 15 * 1024 * 1024;
+    let script = '';
+
+    // Remember the visitor's options in this browser only (never the collection itself).
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) for (const [k, v] of Object.entries(saved)) {
+        const el = form.elements[k];
+        if (!el) continue;
+        if (el instanceof RadioNodeList) { for (const r of el) r.checked = r.value === v; }
+        else if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v;
+      }
+    } catch (e) {}
+
+    function options() {
+      const f = form.elements;
+      return {
+        model: f.model.value, vus: f.vus.value, duration: f.duration.value.trim() || '1m', thinkTime: Math.max(0, +f.thinkTime.value || 0),
+        rate: f.rate.value, timeUnit: '1s', preAllocatedVUs: f.preAllocatedVUs.value, maxVUs: f.maxVUs.value,
+        p95: f.p95.value, errorRate: f.errorRate.value,
+        checks: f.checks.checked, groups: f.groups.checked, nameTags: f.nameTags.checked, secretsToEnv: f.secretsToEnv.checked, keepScripts: f.keepScripts.checked,
+      };
+    }
+
+    function msg(cls, text) {
+      const p = document.createElement('p');
+      p.className = 'msg ' + cls;
+      p.textContent = text;
+      msgs.appendChild(p);
+    }
+
+    function update() {
+      const o = options();
+      document.querySelectorAll('.model-fields').forEach(el => { el.hidden = el.dataset.model !== o.model; });
+      try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+      msgs.textContent = '';
+      run.hidden = true;
+      if (!/^\s*\d+(\.\d+)?(ms|s|m|h)(\d+(\.\d+)?(ms|s|m|h))*\s*$/.test(o.duration)) msg('warn', 'Duration should look like 30s, 5m or 1h30m.');
+      if (!input.value.trim()) { script = ''; out.firstChild.textContent = '// Paste a Postman collection above, or try an example.'; return; }
+      let r;
+      try { r = PostmanToK6.convert(input.value, envIn.value, o); }
+      catch (e) { r = { error: 'Something went wrong while converting: ' + e.message }; }
+      if (r.error) { script = ''; msg('err', r.error); out.firstChild.textContent = '// ' + r.error; return; }
+      script = r.script;
+      out.firstChild.textContent = script;
+      r.warnings.forEach(w => msg('warn', '⚠️ ' + w));
+      r.info.forEach(w => msg('info', w));
+      const env = r.env.map(e => ` -e ${e.name}='…'`).join('');
+      run.innerHTML = '';
+      run.append('Run it: ');
+      const code = document.createElement('code');
+      code.textContent = `k6 run${env} script.js`;
+      run.append(code);
+      if (r.env.length) run.append(' (replace … with your values)');
+      run.hidden = false;
+    }
+
+    let timer;
+    const later = () => { clearTimeout(timer); timer = setTimeout(update, 200); };
+    input.addEventListener('input', () => { $('col-name').hidden = true; later(); });
+    envIn.addEventListener('input', later);
+    form.addEventListener('input', later);
+    form.addEventListener('change', update);
+
+    const track = (name) => { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true }); };
+
+    document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => {
+      input.value = PostmanToK6.EXAMPLES[b.dataset.example];
+      $('col-name').hidden = true;
+      update();
+      track('postman-to-k6-example');
+    }));
+    $('clear').addEventListener('click', () => { input.value = ''; $('col-name').hidden = true; update(); input.focus(); });
+    $('env-example').addEventListener('click', () => { envIn.value = PostmanToK6.ENV_EXAMPLE; update(); });
+    $('env-clear').addEventListener('click', () => { envIn.value = ''; update(); });
+
+    function readFile(fileInput, target, label) {
+      fileInput.addEventListener('change', () => {
+        const f = fileInput.files && fileInput.files[0];
+        fileInput.value = '';
+        if (!f) return;
+        if (f.size > MAX_BYTES) { msgs.textContent = ''; msg('err', `${f.name} is ${(f.size / 1048576).toFixed(1)} MB. Collections over 15 MB are usually full of saved example responses: delete those in Postman and export again.`); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          target.value = String(reader.result || '');
+          if (label) { label.textContent = 'Loaded ' + f.name + ' (' + Math.max(1, Math.round(f.size / 1024)) + ' KB)'; label.hidden = false; }
+          if (target === envIn) $('env-box').open = true;
+          update();
+          track('postman-to-k6-upload');
+        };
+        reader.onerror = () => { msgs.textContent = ''; msg('err', "Couldn't read " + f.name + '.'); };
+        reader.readAsText(f);
+      });
+    }
+    readFile($('col-file'), input, $('col-name'));
+    readFile($('env-file'), envIn, null);
+
+    // Drop a file anywhere on the collection box
+    [input, envIn].forEach(box => {
+      box.addEventListener('dragover', e => { e.preventDefault(); });
+      box.addEventListener('drop', e => {
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        e.preventDefault();
+        const dt = new DataTransfer(); dt.items.add(f);
+        const fi = box === input ? $('col-file') : $('env-file');
+        fi.files = dt.files;
+        fi.dispatchEvent(new Event('change'));
+      });
+    });
+
+    $('copy').addEventListener('click', async () => {
+      if (!script) return;
+      const b = $('copy');
+      try { await navigator.clipboard.writeText(script); b.textContent = 'Copied ✓'; }
+      catch (e) {
+        const range = document.createRange(); range.selectNodeContents(out);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        b.textContent = 'Press Ctrl/⌘+C';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+    $('download').addEventListener('click', () => {
+      if (!script) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      a.download = 'script.js';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
