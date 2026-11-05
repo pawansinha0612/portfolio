@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-04T01:39:25+00:00",
- "count": 97,
+ "updated": "2026-11-05T01:07:09+00:00",
+ "count": 107,
  "sources": {
   "himalayas": "ok",
   "remoteok": "ok",
@@ -310,13 +310,26 @@
    "first_seen": "2026-10-24T23:18:52+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "EvoPoint Solutions",
+   "location": "Colombia",
+   "url": "https://himalayas.app/companies/evopoint-solutions/jobs/qa-engineer-3467406968?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/evopoint-solutions/jobs/qa-engineer-3467406968",
+   "posted": "2026-10-24T02:34:40+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
    "title": "Senior QA Engineer – Remote (Asia Pacific)",
    "company": "InTalent Asia",
    "location": "American Samoa, Australia, Bangladesh, Bhutan, British Indian Ocean Territory, Brunei Darussalam, Cambodia, China, Christmas Island, Cocos (Keeling) Islands, Fiji, French Polynesia, Guam, Hong Kong, India, Indonesia, Japan, Kiribati, Lao People's Democratic Republic, Macao, Malaysia, Maldives, Marshall Islands, Micronesia, Federated States of, Mongolia, Myanmar, Nauru, Nepal, New Caledonia, New Zealand, Niue, Norfolk Island, Northern Mariana Islands, Pakistan, Palau, Papua New Guinea, Philippines, Pitcairn, Russian Federation, Samoa, Singapore, Solomon Islands, South Korea, Sri Lanka, Taiwan, Thailand, Timor-Leste, Tokelau, Tonga, Tuvalu, United States Minor Outlying Islands, Vanuatu, Vietnam, Wallis and Futuna",
    "url": "https://himalayas.app/companies/intalentglobal/jobs/senior-qa-engineer-remote-asia-pacific?utm_source=api",
    "source": "Himalayas",
    "id": "Himalayas:https://himalayas.app/companies/intalentglobal/jobs/senior-qa-engineer-remote-asia-pacific",
-   "posted": "2026-11-01T13:05:41+00:00",
+   "posted": "2026-11-04T19:00:12+00:00",
    "group": "qa",
    "region": "remote",
    "score": 32,
@@ -347,6 +360,19 @@
    "region": "remote",
    "score": 32,
    "first_seen": "2026-10-29T17:39:51+00:00"
+  },
+  {
+   "title": "Senior SDET - Framework Team",
+   "company": "Semble",
+   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
+   "url": "https://himalayas.app/companies/semble/jobs/senior-sdet-framework-team?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/semble/jobs/senior-sdet-framework-team",
+   "posted": "2026-11-04T02:20:41+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "Senior Software Development Engineer in Test (SDET) – Digital Banking",
@@ -386,6 +412,19 @@
    "region": "onsite",
    "score": 30,
    "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Senior Quality Engineer (Playwright)",
+   "company": "Future Processing",
+   "location": "Poland",
+   "url": "https://himalayas.app/companies/future-processing/jobs/senior-quality-engineer-playwright?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/future-processing/jobs/senior-quality-engineer-playwright",
+   "posted": "2026-10-16T20:35:07+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 30,
+   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "Automation Test Engineer",
@@ -529,6 +568,19 @@
    "region": "remote",
    "score": 27,
    "first_seen": "2026-11-01T12:21:08+00:00"
+  },
+  {
+   "title": "Quality Assurance Tester/Test Engineer Manual and Automation",
+   "company": "Peraton",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/peraton/jobs/quality-assurance-tester-test-engineer-manual-and-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/peraton/jobs/quality-assurance-tester-test-engineer-manual-and-automation",
+   "posted": "2026-11-04T14:13:26+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 26,
+   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "Senior Software Engineer, Quality Engineering",
@@ -687,6 +739,19 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "SumatoSoft",
+   "location": "Remote (worldwide)",
+   "url": "https://himalayas.app/companies/sumatosoft/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/sumatosoft/jobs/qa-engineer",
+   "posted": "2026-11-04T22:19:07+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
    "title": "QA/Test Automation Engineer (Journeyman)",
    "company": "DecisionPoint Corporation",
    "location": "United States",
@@ -750,6 +815,19 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-10-25T15:59:52+00:00"
+  },
+  {
+   "title": "Senior QA Automation Specialist",
+   "company": "Flexspring",
+   "location": "Canada",
+   "url": "https://himalayas.app/companies/flexspring/jobs/senior-qa-automation-specialist?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/flexspring/jobs/senior-qa-automation-specialist",
+   "posted": "2026-10-24T22:13:15+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "Senior QA Automation Engineer",
@@ -882,6 +960,19 @@
    "first_seen": "2026-10-29T00:11:06+00:00"
   },
   {
+   "title": "Test Automation Engineer",
+   "company": "Lingaro",
+   "location": "Poland",
+   "url": "https://himalayas.app/companies/lingaro/jobs/test-automation-engineer-6892775773?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/lingaro/jobs/test-automation-engineer-6892775773",
+   "posted": "2026-10-25T13:22:47+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
    "title": "QA JUNIOR - REPÚBLICA DOMINICANA",
    "company": "XKTalent Inc. - Rimutee",
    "location": "Dominican Republic",
@@ -986,6 +1077,45 @@
    "first_seen": "2026-10-27T03:28:39+00:00"
   },
   {
+   "title": "Freelance Software Tester for Payments testing (Remote in Germany & the Netherlands)",
+   "company": "Testlio",
+   "location": "Germany, Netherlands",
+   "url": "https://jobicy.com/jobs/158931-freelance-software-tester-for-payments-testing-remote-in-germany-the-netherlands-2",
+   "source": "Jobicy",
+   "id": "Jobicy:158931",
+   "posted": "2026-11-04T13:47:37+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 16,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
+   "title": "IT QA Engineer (Automation & End-to-End Testing)",
+   "company": "Exclusively Remote",
+   "location": "South Africa",
+   "url": "https://himalayas.app/companies/exclusively-remote/jobs/it-qa-engineer-automation-end-to-end-testing?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/exclusively-remote/jobs/it-qa-engineer-automation-end-to-end-testing",
+   "posted": "2026-11-04T09:24:19+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 16,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
+   "title": "QA Engineer",
+   "company": "5Blue Software",
+   "location": "Bulgaria, Croatia, Germany, Montenegro, Poland, Ukraine",
+   "url": "https://himalayas.app/companies/5blue-software/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/5blue-software/jobs/qa-engineer",
+   "posted": "2026-11-04T05:43:46+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 16,
+   "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
    "title": "Automation QA Engineer - Senior",
    "company": "SOFTSWISS",
    "location": "Bulgaria, Georgia, Poland, Serbia",
@@ -1036,19 +1166,6 @@
    "region": "remote",
    "score": 16,
    "first_seen": "2026-11-01T02:44:24+00:00"
-  },
-  {
-   "title": "Freelance Software Tester for Payments testing (Remote in Germany & the Netherlands)",
-   "company": "Testlio",
-   "location": "Germany, Netherlands",
-   "url": "https://jobicy.com/jobs/157674-freelance-software-tester-for-payments-testing-remote-in-germany-the-netherlands",
-   "source": "Jobicy",
-   "id": "Jobicy:157674",
-   "posted": "2026-10-28T16:54:55+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-10-28T16:54:55+00:00"
   },
   {
    "title": "Software Test Engineer",
@@ -1244,6 +1361,19 @@
    "region": "remote",
    "score": 14,
    "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Software Engineer, Quality Engineering",
+   "company": "sonyinteractiveentertainmentglobal",
+   "location": "Bristol",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/sonyinteractiveentertainmentglobal/software-engineer-quality-engineering-bristol-102422",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:software-engineer-quality-engineering-bristol-102422",
+   "posted": "2026-11-04T21:55:20+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 13,
+   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "Professional ICT Test Manager (m/w/d) - SIP / VISO / Test Automation (60-80%) (Ref.Nr.: 47713)",
