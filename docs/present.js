@@ -18,7 +18,9 @@
 
   const set = (on, push) => {
     root.classList.toggle('present', on);
-    btn.textContent = on ? 'Exit presenter mode (Esc)' : '▶ Presenter mode';
+    btn.textContent = on ? '✕' : '▶';
+    btn.title = on ? 'Exit presenter mode (Esc)' : 'Presenter mode (for screen recording)';
+    btn.setAttribute('aria-label', btn.title);
     btn.setAttribute('aria-pressed', String(on));
     if (push) {
       const u = new URL(location.href);

@@ -93,3 +93,6 @@ html.present .ex-hero .lead { font-size: 20px; }
 html.present .ex-stat b { font-size: 24px; }
 
 @media (prefers-reduced-motion: reduce) { .ex-anim { display: none; } }
+
+/* Keep running text readable inside wide panels (layout audit 6 Nov 2026). */
+.ex-panel .hint, .ex-callout, .ex-list li, .cta-panel p { max-width: 66ch; }

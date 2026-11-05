@@ -1,9 +1,12 @@
 /* Presenter mode (docs/present.js). Only the toggle button shows outside presenter mode. */
 .present-toggle { position: fixed; left: 16px; bottom: 16px; z-index: 30; font: 600 13px Inter, system-ui, sans-serif; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; cursor: pointer; box-shadow: var(--shadow); }
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px; width: 40px; height: 40px; padding: 0; line-height: 1; cursor: pointer; box-shadow: var(--shadow); }
+/* Small and out of the content's way (content starts at 96px on 1280px screens); faint while recording. */
+html.present .present-toggle { opacity: .2; }
+html.present .present-toggle:hover, html.present .present-toggle:focus-visible { opacity: 1; }
 .present-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .present-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (max-width: 860px), print { .present-toggle { display: none; } }
+@media (max-width: 1219px), print { html:not(.present) .present-toggle { display: none; } }
 
 html.present .nav, html.present .site-footer, html.present .crumbs, html.present .chat-launch, html.present .chat-teaser,
 html.present .chat-panel, html.present [data-present-hide], html.present .cta-end, html.present .share-row { display: none !important; }
