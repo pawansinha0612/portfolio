@@ -2,7 +2,7 @@
 """Builds the performance testing glossary.
 
 Writes docs/glossary/index.html (A–Z hub with a filter box) and docs/glossary/<slug>/index.html for every term.
-Terms live in glossary/terms_testing.py, terms_metrics.py and terms_systems.py (one dict per term).
+Terms live in glossary/terms_testing.py, terms_metrics.py, terms_systems.py and terms_ai.py (one dict per term).
 The build checks the data first and stops on a problem: related terms that don't exist, tool links to pages that
 aren't in docs/, prose outside 120–250 words, or semicolons in prose (house style).
 
@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from terms_testing import TERMS as T1  # noqa: E402
 from terms_metrics import TERMS as T2  # noqa: E402
 from terms_systems import TERMS as T3  # noqa: E402
+from terms_ai import TERMS as T4  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / 'docs'
@@ -27,7 +28,7 @@ SITE = 'https://pawansinha.com.au'
 BOOKING = 'https://calendly.com/pawansinha4u/30min'
 ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec'
 
-TERMS = sorted(T1 + T2 + T3, key=lambda t: t['name'].lower())
+TERMS = sorted(T1 + T2 + T3 + T4, key=lambda t: t['name'].lower())
 BY_SLUG = {t['slug']: t for t in TERMS}
 CATS = {'testing': 'Test design', 'metrics': 'Metrics and SLOs', 'systems': 'System behaviour', 'observability': 'Observability'}
 PROSE = ('definition', 'why', 'example', 'measure')

@@ -219,6 +219,7 @@
     ['Test my app and report bugs', 'Test & bug report'],
     ['Set up test automation', 'Automation setup'],
     ['Performance or load testing', 'Performance & load testing'],
+    ['Load testing an AI / LLM feature', 'AI / LLM load testing'],
     ['Ongoing QA support', 'Ongoing QA partner'],
     ['Something else', 'Something else'],
   ];

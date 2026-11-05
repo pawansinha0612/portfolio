@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Load Test Generator for k6 — Pawan Sinha</title>
+  <meta name="description" content="Free k6 load test generator for LLM APIs: OpenAI-compatible, Azure OpenAI, Anthropic or any JSON endpoint. Measures time to first token, tokens per second, 429 rate limits and cost.">
+  <meta property="og:title" content="LLM Load Test Generator for k6 — Pawan Sinha">
+  <meta property="og:description" content="Load test your chatbot, RAG or agent API before launch: time to first token, tokens per second, 429s, retries and cost per 1,000 answers. Free, runs in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/llm-load-test/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/llm-load-test/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"LLM load test generator for k6","url":"https://pawansinha.com.au/tools/llm-load-test/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How do you load test an LLM API?","acceptedAnswer":{"@type":"Answer","text":"Send realistic prompts at the rate you expect at peak, with streaming on if your app streams, and measure time to first token, total response time, output tokens per second, the share of 429 rate-limit responses and the token cost. Ramp up gradually and use a separate API key so the test cannot throttle production."}},
+    {"@type":"Question","name":"Can k6 measure time to first token?","acceptedAnswer":{"@type":"Answer","text":"Approximately. k6's HTTP client waits for the whole response, so it cannot see individual streamed tokens. With streaming on, the time to first byte (timings.waiting) is a close stand-in, because providers usually send the first byte with the first token. A proxy that sends headers early makes it look faster."}},
+    {"@type":"Question","name":"Why do LLM APIs return 429 under load?","acceptedAnswer":{"@type":"Answer","text":"Providers limit requests per minute (RPM) and tokens per minute (TPM) for each key or deployment. Long prompts and large max_tokens settings use up the token limit long before the request limit. A load test shows which limit you hit first and whether your retries make it worse."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .conv { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; box-sizing: border-box; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 150px; resize: vertical; display: block; }
+    textarea.code.short { min-height: 80px; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 640px; white-space: pre; tab-size: 2; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; margin-top: 4px; }
+    .opts fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .opts legend, .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input[type=text], .field input[type=number], .field input[type=url] { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .field small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .wide { grid-column: 1 / -1; }
+    .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { flex: 1 1 auto; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 10px; color: var(--muted); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .sub-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 18px; grid-column: 1 / -1; }
+    .sub-fields[hidden] { display: none; }
+    .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 18px; }
+    .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+    .checks input { margin-top: 4px; accent-color: var(--accent); }
+    .checks small { color: var(--muted); display: block; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .out-head button { font: inherit; cursor: pointer; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; margin: 0; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide li { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
+    .table-wrap { overflow-x: auto; }
+    table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.t th, table.t td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--muted); }
+    table.t th { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    table.t td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      table.t td:first-child { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · Load testing AI features</p>
+      <h1>LLM load test generator for k6</h1>
+      <p class="lead">Launching a chatbot, RAG search or AI agent? Find out before your users do how it copes at peak: time to first token, tokens per second, how often the provider answers 429 "too many requests", and what each 1,000 answers cost. Pick your API, paste a few real prompts, and get a k6 script.</p>
+      <p class="private-note">🔒 Runs in your browser. Your API key is never put in the script.</p>
+    </section>
+
+    <section class="wrap conv" aria-label="Generator">
+      <div class="panel">
+        <h2>1. Your endpoint</h2>
+        <p class="sub">OpenAI-compatible covers OpenAI, OpenRouter, Groq, Together, Mistral, vLLM, Ollama, LiteLLM and most gateways.</p>
+        <form id="opts" class="opts" onsubmit="return false">
+          <fieldset class="wide">
+            <legend>API shape</legend>
+            <div class="seg">
+              <label><input type="radio" name="provider" value="openai" checked> OpenAI-compatible</label>
+              <label><input type="radio" name="provider" value="azure"> Azure OpenAI</label>
+              <label><input type="radio" name="provider" value="anthropic"> Anthropic</label>
+              <label><input type="radio" name="provider" value="custom"> Custom JSON</label>
+            </div>
+          </fieldset>
+          <label class="field"><span>Base URL</span><input type="text" name="baseUrl" value="" spellcheck="false" autocomplete="off" inputmode="url"><small id="base-hint"></small></label>
+          <label class="field"><span id="model-label">Model</span><input type="text" name="model" value="" spellcheck="false" autocomplete="off"><small>Use the model you'll run in production.</small></label>
+          <label class="field"><span>Max output tokens</span><input type="number" name="maxTokens" value="256" min="1" step="1"><small>Your app's real setting. It drives cost and rate limits.</small></label>
+          <div class="sub-fields" data-for="azure" hidden>
+            <label class="field"><span>API version</span><input type="text" name="apiVersion" value="2024-10-21" spellcheck="false" autocomplete="off"><small>The model box holds your deployment name.</small></label>
+          </div>
+          <div class="sub-fields" data-for="custom" hidden>
+            <label class="field"><span>Path</span><input type="text" name="path" value="/generate" spellcheck="false" autocomplete="off"></label>
+            <label class="field"><span>API key header</span><input type="text" name="authHeader" value="Authorization" spellcheck="false" autocomplete="off"><small>Authorization sends "Bearer &lt;key&gt;". Any other header sends the key as is.</small></label>
+            <label class="field wide"><span>Request body (JSON with {{prompt}}, {{model}}, {{max_tokens}})</span><textarea class="code short" name="bodyTemplate" spellcheck="false">{"model": "{{model}}", "prompt": "{{prompt}}", "max_tokens": {{max_tokens}}}</textarea></label>
+            <label class="field"><span>Path to the answer text</span><input type="text" name="textPath" value="text" spellcheck="false" autocomplete="off"><small>Dots for nesting, e.g. output.0.text</small></label>
+            <label class="field"><span>Path to input tokens</span><input type="text" name="inputTokensPath" value="usage.input_tokens" spellcheck="false" autocomplete="off"></label>
+            <label class="field"><span>Path to output tokens</span><input type="text" name="outputTokensPath" value="usage.output_tokens" spellcheck="false" autocomplete="off"><small>Leave empty to estimate (4 characters a token).</small></label>
+          </div>
+          <label class="field wide"><span>System prompt (optional)</span><input type="text" name="system" value="" placeholder="e.g. You are a helpful support assistant for an online shop." autocomplete="off"><small>Paste your real one: its length counts towards every request's tokens.</small></label>
+          <div class="checks">
+            <label><input type="checkbox" name="stream" checked><span>Stream the answer<small>turn on if your app streams. Needed to measure time to first token</small></span></label>
+            <label><input type="checkbox" name="retry429" checked><span>Retry 429s like your app would<small>waits for Retry-After (or backs off), up to 3 tries</small></span></label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2><label for="prompts">2. Prompts</label></h2>
+        <p class="sub">One per line. Use real ones from your logs with a realistic mix of short and long. A single repeated prompt hits the provider's cache and flatters the results.</p>
+        <div class="examples">
+          <button class="chip-btn" type="button" id="example">Use example prompts</button>
+          <button class="chip-btn" type="button" id="clear">Clear</button>
+        </div>
+        <textarea id="prompts" class="code" spellcheck="false" placeholder="Summarise our refund policy in three bullet points.&#10;Write a friendly reply to a customer whose parcel is late."></textarea>
+      </div>
+
+      <div class="panel">
+        <h2>3. Load and budgets</h2>
+        <p class="sub">Don't know your peak yet? Work it out with the <a href="/tools/llm-capacity/">LLM capacity &amp; cost calculator</a>.</p>
+        <form id="load" class="opts" onsubmit="return false">
+          <fieldset class="wide">
+            <legend>Load model</legend>
+            <div class="seg">
+              <label><input type="radio" name="loadModel" value="vus" checked> Concurrent users</label>
+              <label><input type="radio" name="loadModel" value="rate"> Requests / minute</label>
+            </div>
+          </fieldset>
+          <div class="sub-fields" data-load="vus">
+            <label class="field"><span>Concurrent users (VUs)</span><input type="number" name="vus" value="10" min="1" step="1"></label>
+            <label class="field"><span>Pause between prompts (s)</span><input type="number" name="thinkTime" value="5" min="0" step="1"><small>Reading the answer and typing the next question.</small></label>
+          </div>
+          <div class="sub-fields" data-load="rate" hidden>
+            <label class="field"><span>Requests per minute at peak</span><input type="number" name="rpm" value="120" min="1" step="1"></label>
+            <label class="field"><span>Expected seconds per answer</span><input type="number" name="expectedLatency" value="8" min="1" step="1"><small>Used to size the VU pool (Little's law).</small></label>
+          </div>
+          <label class="field"><span>Ramp up</span><input type="text" name="rampUp" value="2m" autocomplete="off"></label>
+          <label class="field"><span>Hold at peak</span><input type="text" name="hold" value="5m" autocomplete="off"></label>
+          <label class="field"><span>Ramp down</span><input type="text" name="rampDown" value="30s" autocomplete="off"></label>
+          <label class="field"><span>Request timeout</span><input type="text" name="timeout" value="120s" autocomplete="off"><small>LLM answers are slow: k6's default 60s is often too short.</small></label>
+
+          <label class="field"><span>p95 time to first token (ms)</span><input type="number" name="ttftP95" value="2000" min="0" step="100"><small>How long before the first word appears.</small></label>
+          <label class="field"><span>p95 full answer time (ms)</span><input type="number" name="latencyP95" value="20000" min="0" step="1000"></label>
+          <label class="field"><span>Min output tokens / second</span><input type="number" name="minTokensPerSec" value="20" min="0" step="1"><small>For 90% of answers. Reading speed is about 5–8.</small></label>
+          <label class="field"><span>Max 429 rate (% of attempts)</span><input type="number" name="max429Pct" value="1" min="0" step="0.5"></label>
+          <label class="field"><span>Max error rate (%)</span><input type="number" name="maxErrorPct" value="1" min="0" step="0.5"><small>Requests that still failed after retries.</small></label>
+          <label class="field"><span>Price, US$ per 1M input tokens</span><input type="number" name="priceIn" value="" min="0" step="0.01" placeholder="from your provider's pricing page"></label>
+          <label class="field"><span>Price, US$ per 1M output tokens</span><input type="number" name="priceOut" value="" min="0" step="0.01" placeholder="from your provider's pricing page"><small>Optional: adds a cost estimate to the results.</small></label>
+        </form>
+      </div>
+
+      <div class="panel" id="out-panel">
+        <div class="out-head">
+          <h2>4. Your k6 script</h2>
+          <div class="btns">
+            <button class="btn btn-small" type="button" id="copy" data-track="llm-k6-copy">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="download" data-track="llm-k6-download">Download llm-test.js</button>
+          </div>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <pre class="code" id="out" tabindex="0" aria-label="Generated k6 script"><code>// Add some prompts above, or use the example prompts.</code></pre>
+        <p class="run" id="run" hidden></p>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How to use it</p>
+      <h2>Before you run it: an LLM load test costs real money</h2>
+      <ol>
+        <li><strong>Use a separate API key or project</strong> with its own spending cap. Rate limits are usually per key or per organisation, so a test on the production key can throttle real users.</li>
+        <li><strong>Check your provider's rate limits and terms.</strong> Note your requests-per-minute and tokens-per-minute limits first. For a big test, tell the provider or your account manager.</li>
+        <li><strong>Smoke test first:</strong> <code>k6 run --vus 1 --iterations 3 -e LLM_API_KEY=… llm-test.js</code>. Check the answers aren't empty and the token counts look right.</li>
+        <li><strong>Then run the real test</strong> and watch the 429 rate and cost lines at the end.</li>
+      </ol>
+
+      <h2 style="margin-top:32px">What the script measures</h2>
+      <div class="table-wrap"><table class="t">
+        <thead><tr><th>Metric</th><th>What it tells you</th></tr></thead>
+        <tbody>
+          <tr><td>llm_ttft</td><td>Time to first token: how long users stare at a blank chat bubble. <strong>An approximation:</strong> k6 can't read a response while it streams, so this is the time to the first byte. Providers usually send the first byte with the first token, so it's close, but a gateway that sends headers early will make it look better than it is. Only measured with streaming on.</td></tr>
+          <tr><td>llm_latency</td><td>Full answer time for successful requests.</td></tr>
+          <tr><td>llm_output_tokens_per_s</td><td>Generation speed once the answer starts (with streaming), or end to end (without). It drops when a provider or your own GPU server is busy.</td></tr>
+          <tr><td>llm_rate_limited</td><td>Share of attempts answered with 429. The first sign you've hit requests-per-minute or tokens-per-minute limits.</td></tr>
+          <tr><td>llm_errors</td><td>Requests that still failed after retries, plus empty answers.</td></tr>
+          <tr><td>llm_input_tokens / llm_output_tokens</td><td>Read from the response's usage block. If the API doesn't return one, the script estimates at 4 characters a token and says so.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Reading the result</h3>
+      <ul>
+        <li><strong>429s with low tokens per second:</strong> you hit the provider's limit. Ask for a higher tier, spread load over several deployments or regions, or cut max_tokens. Many providers count max_tokens against your limit, even when the answer is shorter.</li>
+        <li><strong>TTFT climbs with load but tokens per second holds:</strong> requests are queuing before the model starts. Typical of self-hosted vLLM or Ollama with too few GPUs, or a gateway with too few connections.</li>
+        <li><strong>Tokens per second falls as load rises:</strong> the model server is saturated. Batch size, GPU memory and KV cache are the usual suspects.</li>
+        <li><strong>Retries make things worse:</strong> if your app retries instantly, a 429 becomes three requests. Compare runs with retries on and off.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/llm-capacity/">LLM capacity &amp; cost calculator →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/slo-calculator/">SLO &amp; error budget →</a>
+        <a href="/glossary/ttft/">What is TTFT? →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Launching an AI feature?</p>
+          <h3>Get it load tested before launch day</h3>
+          <p>I'll find which limit you hit first (RPM, TPM, GPUs or your own backend), check that your retries and fallbacks behave, and tell you what peak traffic will cost. Fixed scope, quoted after a free call.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/services/llm-load-testing/" data-track="llm-k6-service">How it works</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="llm-k6-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/llm-load-test/generate.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const prompts = $('prompts'), form = $('opts'), load = $('load'), out = $('out'), msgs = $('msgs'), run = $('run');
+    const STORE = 'llm-load-test-options';
+    const P = LlmToK6.PROVIDERS;
+    const HINTS = {
+      openai: 'Ends in /v1. Local: http://localhost:8000/v1 (vLLM) or http://localhost:11434/v1 (Ollama).',
+      azure: 'https://<resource>.openai.azure.com',
+      anthropic: 'https://api.anthropic.com',
+      custom: 'The host. The path goes below.',
+    };
+    let script = '';
+    let lastProvider = null;
+
+    const forms = [form, load];
+    const fieldNames = [];
+    forms.forEach(f => [...f.elements].forEach(el => { if (el.name && !fieldNames.includes(el.name)) fieldNames.push(el.name); }));
+    const el = (n) => form.elements[n] || load.elements[n];
+
+    function setVal(n, v) {
+      const e = el(n);
+      if (!e) return;
+      if (e instanceof RadioNodeList) { for (const r of e) r.checked = r.value === v; }
+      else if (e.type === 'checkbox') e.checked = !!v;
+      else e.value = v;
+    }
+    function getVal(n) {
+      const e = el(n);
+      if (e instanceof RadioNodeList) return e.value;
+      if (e.type === 'checkbox') return e.checked;
+      return e.value;
+    }
+
+    // Remember the visitor's choices in this browser only. Never anything secret: there is no key field.
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (saved) { for (const [k, v] of Object.entries(saved)) if (k !== 'prompts') setVal(k, v); if (saved.prompts) prompts.value = saved.prompts; }
+    } catch (e) {}
+    // Links from the capacity calculator prefill the load: ?loadModel=rate&rpm=180&expectedLatency=6&...
+    const ALLOWED = ['loadModel', 'rpm', 'expectedLatency', 'vus', 'maxTokens', 'priceIn', 'priceOut', 'provider', 'stream'];
+    new URLSearchParams(location.search).forEach((v, k) => {
+      if (!ALLOWED.includes(k)) return;
+      setVal(k, k === 'stream' ? v !== '0' && v !== 'false' : v);
+    });
+
+    function options() {
+      const o = {};
+      fieldNames.forEach(n => { o[n] = getVal(n); });
+      ['maxTokens', 'vus', 'thinkTime', 'rpm', 'expectedLatency'].forEach(k => { o[k] = Number(o[k]); });
+      o.prompts = prompts.value;
+      return o;
+    }
+
+    function msg(cls, text) {
+      const p = document.createElement('p');
+      p.className = 'msg ' + cls;
+      p.textContent = text;
+      msgs.appendChild(p);
+    }
+
+    function update() {
+      const o = options();
+      // Provider switch: swap the placeholder base URL and model, keep anything the visitor typed themselves.
+      if (o.provider !== lastProvider) {
+        const prev = lastProvider && P[lastProvider];
+        if (!o.baseUrl || (prev && o.baseUrl === prev.baseUrl)) { setVal('baseUrl', P[o.provider].baseUrl); o.baseUrl = P[o.provider].baseUrl; }
+        if (!o.model || (prev && o.model === prev.model)) { setVal('model', P[o.provider].model); o.model = P[o.provider].model; }
+        lastProvider = o.provider;
+      }
+      $('base-hint').textContent = HINTS[o.provider];
+      $('model-label').textContent = o.provider === 'azure' ? 'Deployment name' : 'Model';
+      document.querySelectorAll('[data-for]').forEach(d => { d.hidden = d.dataset.for !== o.provider; });
+      document.querySelectorAll('[data-load]').forEach(d => { d.hidden = d.dataset.load !== o.loadModel; });
+      try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+
+      msgs.textContent = '';
+      run.hidden = true;
+      if (!prompts.value.trim()) { script = ''; out.firstChild.textContent = '// Add some prompts above, or use the example prompts.'; return; }
+      let r;
+      try { r = LlmToK6.generate(o); }
+      catch (e) { r = { error: 'Something went wrong: ' + e.message }; }
+      if (r.error) { script = ''; msg('err', r.error); out.firstChild.textContent = '// ' + r.error; return; }
+      script = r.script;
+      out.firstChild.textContent = script;
+      r.warnings.forEach(w => msg('warn', '⚠️ ' + w));
+      r.info.forEach(w => msg('info', w));
+      run.innerHTML = '';
+      run.append('Smoke test first: ');
+      const c1 = document.createElement('code');
+      c1.textContent = "k6 run --vus 1 --iterations 3 -e LLM_API_KEY='…' llm-test.js";
+      run.append(c1, document.createElement('br'), 'Then the full test: ');
+      const c2 = document.createElement('code');
+      c2.textContent = "k6 run -e LLM_API_KEY='…' llm-test.js";
+      run.append(c2);
+      run.hidden = false;
+    }
+
+    let timer;
+    const later = () => { clearTimeout(timer); timer = setTimeout(update, 150); };
+    prompts.addEventListener('input', later);
+    forms.forEach(f => { f.addEventListener('input', later); f.addEventListener('change', update); });
+
+    const track = (path) => { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path, title: path, event: true }); };
+    $('example').addEventListener('click', () => { prompts.value = LlmToK6.EXAMPLE_PROMPTS.join('\n'); update(); track('llm-k6-example'); });
+    $('clear').addEventListener('click', () => { prompts.value = ''; update(); prompts.focus(); });
+
+    $('copy').addEventListener('click', async () => {
+      if (!script) return;
+      const b = $('copy');
+      try { await navigator.clipboard.writeText(script); b.textContent = 'Copied ✓'; }
+      catch (e) {
+        const range = document.createRange(); range.selectNodeContents(out);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        b.textContent = 'Press Ctrl/⌘+C';
+      }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+    $('download').addEventListener('click', () => {
+      if (!script) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      a.download = 'llm-test.js';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    if (!prompts.value.trim()) prompts.value = LlmToK6.EXAMPLE_PROMPTS.join('\n');
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

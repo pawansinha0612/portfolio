@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Capacity &amp; Cost Calculator — Pawan Sinha</title>
+  <meta name="description" content="Free LLM capacity and cost calculator: turn users and token sizes into peak requests and tokens per minute, check them against your RPM and TPM limits, and estimate monthly cost.">
+  <meta property="og:title" content="LLM Capacity &amp; Cost Calculator — Pawan Sinha">
+  <meta property="og:description" content="Will your AI feature hit 429 rate limits at peak, and what will it cost a month? Peak RPM and TPM, headroom, concurrency and cost from your own numbers. Free, runs in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/llm-capacity/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/llm-capacity/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"LLM capacity and cost calculator","url":"https://pawansinha.com.au/tools/llm-capacity/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How do I work out tokens per minute for an LLM feature?","acceptedAnswer":{"@type":"Answer","text":"Peak requests per minute multiplied by the tokens each request uses: input tokens (system prompt, retrieved context, chat history and the question) plus output tokens. Many providers count the max_tokens setting rather than the real answer length against the limit."}},
+    {"@type":"Question","name":"Why does an AI agent hit rate limits so quickly?","acceptedAnswer":{"@type":"Answer","text":"One user request can make many model calls, often with a long, growing context each time. Eight calls of 6,000 tokens is 48,000 tokens for a single question, so the tokens-per-minute limit runs out at a fraction of the users a simple chatbot could serve."}}
+  ]}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .calc { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; align-items: center; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 18px; }
+    .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field { display: block; min-width: 0; }
+    .field input { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .field small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; grid-column: 1 / -1; }
+    .check input { margin-top: 4px; accent-color: var(--accent); }
+    .check small { color: var(--muted); display: block; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 0 0 14px; }
+    .kpi { background: var(--alt); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+    .kpi span { display: block; font-size: 12px; color: var(--muted); }
+    .kpi b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .kpi.ok b { color: var(--ok); } .kpi.warn { background: var(--warn-bg); } .kpi.warn b { color: var(--warn); }
+    .table-wrap { overflow-x: auto; }
+    table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.t th, table.t td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; vertical-align: top; }
+    table.t th { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    .bar { height: 8px; border-radius: 999px; background: var(--alt); overflow: hidden; min-width: 80px; margin-top: 6px; }
+    .bar i { display: block; height: 100%; background: var(--ok); }
+    .bar i.tight { background: #d08a00; } .bar i.over { background: var(--warn); }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; margin: 12px 0 0; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.ok { background: var(--ok-bg); color: var(--ok); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg[hidden] { display: none; }
+    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide li { color: var(--muted); }
+    .guide ul { padding-left: 22px; }
+    .guide strong { color: var(--text); }
+    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .kpi b { font-size: 18px; }
+      .kpis { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+      table.t th, table.t td { padding-right: 8px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Free tool · Load testing AI features</p>
+      <h1>LLM capacity &amp; cost calculator</h1>
+      <p class="lead">Will your chatbot, RAG search or agent hit 429 "too many requests" at peak, and what will it cost a month? Enter your users, token sizes and your provider's limits. You get peak requests and tokens per minute, how much headroom you have, how many answers are in flight at once and the monthly bill.</p>
+      <p class="private-note">🔒 Runs in your browser. Nothing you type is sent anywhere.</p>
+    </section>
+
+    <form class="wrap calc" id="f" onsubmit="return false" aria-label="LLM capacity calculator">
+      <div class="panel">
+        <h2>1. Traffic</h2>
+        <p class="sub">Start from a typical feature, then change the numbers to yours.</p>
+        <div class="chips" id="presets">Start from:</div>
+        <div class="fgrid">
+          <label class="field"><span>Daily active users</span><input type="text" name="dau" inputmode="numeric" autocomplete="off"></label>
+          <label class="field"><span>Requests per user per day</span><input type="text" name="reqPerUserDay" inputmode="decimal" autocomplete="off"><small>Questions asked, searches run, drafts written.</small></label>
+          <label class="field"><span>Model calls per request</span><input type="text" name="callsPerRequest" inputmode="decimal" autocomplete="off"><small>1 for a chatbot. RAG rewrites + answers: 2. Agents: often 5–15.</small></label>
+          <label class="field"><span>Busiest hour (% of the day)</span><input type="text" name="busyHourPct" inputmode="decimal" autocomplete="off"><small>Office tools ~12–15%. Evening consumer apps ~10%. Launch day: higher.</small></label>
+          <label class="field"><span>Peak factor within that hour</span><input type="text" name="peakFactor" inputmode="decimal" autocomplete="off"><small>Busiest minute ÷ average minute. 2 is a safe start.</small></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. Tokens and speed</h2>
+        <p class="sub">Input is everything you send: system prompt, retrieved documents, chat history and the question.</p>
+        <div class="fgrid">
+          <label class="field"><span>Input tokens per call</span><input type="text" name="inTokens" inputmode="numeric" autocomplete="off"></label>
+          <label class="field"><span>Output tokens per call</span><input type="text" name="outTokens" inputmode="numeric" autocomplete="off"><small>The real average answer length.</small></label>
+          <label class="field"><span>max_tokens setting</span><input type="text" name="maxTokens" inputmode="numeric" autocomplete="off"></label>
+          <label class="field"><span>Time to first token (s)</span><input type="text" name="ttft" inputmode="decimal" autocomplete="off"></label>
+          <label class="field"><span>Output tokens per second</span><input type="text" name="tokensPerSec" inputmode="decimal" autocomplete="off"><small>Measure yours with the <a href="/tools/llm-load-test/">LLM load test</a>.</small></label>
+          <label class="check"><input type="checkbox" name="countMaxTokens"><span>My provider counts max_tokens against the limit<small>Some providers reserve the full max_tokens when the request arrives, however short the answer turns out. Check your provider's rate-limit docs.</small></span></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>3. Your limits and prices</h2>
+        <p class="sub">From your provider's limits page for your tier, key or deployment. Leave a limit at 0 if it doesn't apply. Prices are examples only: <strong>enter your model's current price</strong>.</p>
+        <div class="fgrid">
+          <label class="field"><span>Requests per minute limit</span><input type="text" name="rpmLimit" inputmode="numeric" autocomplete="off"></label>
+          <label class="field"><span>Tokens per minute limit</span><input type="text" name="tpmLimit" inputmode="numeric" autocomplete="off"><small>Input + output.</small></label>
+          <label class="field"><span>Output tokens per minute limit</span><input type="text" name="otpmLimit" inputmode="numeric" autocomplete="off"><small>Only if your provider has a separate one.</small></label>
+          <label class="field"><span>US$ per 1M input tokens</span><input type="text" name="priceIn" inputmode="decimal" autocomplete="off"></label>
+          <label class="field"><span>US$ per 1M output tokens</span><input type="text" name="priceOut" inputmode="decimal" autocomplete="off"></label>
+          <label class="field"><span>Input served from prompt cache (%)</span><input type="text" name="cachedPct" inputmode="decimal" autocomplete="off"><small>A long system prompt that never changes can often be cached.</small></label>
+          <label class="field"><span>US$ per 1M cached input tokens</span><input type="text" name="priceCached" inputmode="decimal" autocomplete="off"></label>
+        </div>
+        <p class="msg warn" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="results">
+        <div class="panel">
+          <h2>4. At peak</h2>
+          <div class="kpis" id="peak"></div>
+          <div class="table-wrap"><table class="t" id="limits"><thead><tr><th>Limit</th><th>You need</th><th>You have</th><th>Used</th></tr></thead><tbody></tbody></table></div>
+          <p class="msg" id="verdict" hidden></p>
+        </div>
+        <div class="panel">
+          <h2>5. Concurrency</h2>
+          <p class="sub">Little's law: answers in flight = arrival rate × seconds per answer. This is what your gateway, connection pools, serverless concurrency limits or GPU batch need to hold.</p>
+          <div class="kpis" id="conc"></div>
+        </div>
+        <div class="panel">
+          <h2>6. Cost per month</h2>
+          <p class="sub" id="cost-sub"></p>
+          <div class="kpis" id="cost"></div>
+        </div>
+        <div class="panel">
+          <h2>7. Prove it with a load test</h2>
+          <p class="sub" id="test-sub"></p>
+          <a class="btn" id="to-test" href="/tools/llm-load-test/" data-track="llm-cap-to-test">Build the k6 test with these numbers →</a>
+        </div>
+      </div>
+    </form>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How the numbers work</p>
+      <h2>Why AI features hit limits that normal APIs don't</h2>
+      <ul>
+        <li><strong>The token limit usually bites first.</strong> A chatbot with a 1,500-token system prompt and retrieved context uses 1,800 tokens per question. 150 questions a minute is 270,000 tokens a minute, long before any requests-per-minute limit.</li>
+        <li><strong>Agents multiply everything.</strong> Each user request becomes several model calls, and the context grows with every step. Set "model calls per request" honestly.</li>
+        <li><strong>Limits are per minute, traffic isn't.</strong> Even at 70% of the limit on average, a burst inside one minute can get 429s. That's why the result says "tight" from 70%.</li>
+        <li><strong>Slow answers need lots of concurrency.</strong> At 3 answers a second and 6 seconds each, 18 are in flight at once. Your gateway, connection pool and any serverless limit must allow that.</li>
+        <li><strong>A calculation is not a test.</strong> Real limits depend on your tier, region and how the provider meters them. The load test shows what really happens, including your retries.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/llm-load-test/">LLM load test generator →</a>
+        <a href="/glossary/tpm-and-rpm/">TPM and RPM explained →</a>
+        <a href="/glossary/prompt-caching/">Prompt caching →</a>
+        <a href="/tools/capacity-calculator/">Capacity calculator (web apps) →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Launching an AI feature?</p>
+          <h3>Know your limits before your users find them</h3>
+          <p>A fixed-scope, pre-launch load test of your AI feature: rate limits and quotas, time to first token under load, retry and fallback behaviour, and cost at peak. Quoted after a free call.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/services/llm-load-testing/" data-track="llm-cap-service">How it works</a>
+          <a class="btn btn-ghost" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="llm-cap-book">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/llm-capacity/capacity.js"></script>
+  <script>
+  (() => {
+    const C = LlmCapacity, f = document.getElementById('f'), $ = (id) => document.getElementById(id);
+    const STORE = 'llm-capacity-inputs';
+    const fmt = (n, d = 0) => Number.isFinite(n) ? n.toLocaleString('en-AU', { maximumFractionDigits: d, minimumFractionDigits: 0 }) : '–';
+    const big = (n) => n >= 1e9 ? fmt(n / 1e9, 2) + 'B' : n >= 1e6 ? fmt(n / 1e6, 2) + 'M' : n >= 1e4 ? fmt(n / 1e3, 1) + 'k' : fmt(n, n < 10 ? 2 : 0);
+    const money = (n) => 'US$' + (n >= 100 ? fmt(n, 0) : n >= 1 ? fmt(n, 2) : n.toLocaleString('en-AU', { maximumFractionDigits: 4 }));
+    const kpi = (label, value, cls) => `<div class="kpi ${cls || ''}"><span>${label}</span><b>${value}</b></div>`;
+
+    function fill(values) {
+      for (const [k, v] of Object.entries(values)) {
+        const el = f.elements[k];
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+      }
+    }
+    fill(C.DEFAULTS);
+    try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s) fill(s); } catch (e) {}
+
+    const presets = $('presets');
+    for (const [key, p] of Object.entries(C.PRESETS)) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip-btn'; b.textContent = p.label;
+      b.addEventListener('click', () => {
+        const v = Object.assign({}, p); delete v.label; fill(v); update();
+        presets.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+        if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'llm-cap-preset-' + key, title: 'llm-cap-preset', event: true });
+      });
+      presets.appendChild(b);
+    }
+
+    function read() {
+      const o = {};
+      for (const el of f.elements) if (el.name) o[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+      return o;
+    }
+
+    function update() {
+      const o = read();
+      try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+      const r = C.calc(o);
+      const err = $('err');
+      if (r.errors) { err.textContent = r.errors.join(' '); err.hidden = false; $('results').hidden = true; return; }
+      err.hidden = true; $('results').hidden = false;
+
+      $('peak').innerHTML = kpi('Model calls a day', big(r.dailyCalls)) + kpi('Peak requests / minute', fmt(r.peakRpm, 1)) +
+        kpi('Peak requests / second', fmt(r.peakRps, 2)) + kpi('Peak tokens / minute', big(r.peakTpm)) +
+        kpi('Tokens per call (as metered)', fmt(r.tokensPerCallForLimit));
+
+      const tb = $('limits').querySelector('tbody');
+      tb.innerHTML = r.limits.length ? r.limits.map(l => {
+        const cls = l.used > 1 ? 'over' : l.used > 0.7 ? 'tight' : '';
+        return `<tr><td>${l.name}</td><td>${big(l.need)}</td><td>${big(l.limit)}</td><td>${fmt(l.used * 100, 1)}%<div class="bar"><i class="${cls}" style="width:${Math.min(100, l.used * 100)}%"></i></div></td></tr>`;
+      }).join('') : '<tr><td colspan="4">Enter at least one limit to compare.</td></tr>';
+
+      const v = $('verdict');
+      v.hidden = !r.binding;
+      if (r.binding) {
+        const name = r.binding.name.replace(/ \(.*\)/, '');
+        if (r.verdict === 'over') { v.className = 'msg warn'; v.textContent = `⛔ Over the ${name} limit at peak: about ${fmt(r.rejectedShare * 100, 0)}% of calls in the busiest minutes would get 429s (more if your app retries straight away). This limit supports about ${fmt(r.maxDau)} daily users. Ask for a higher tier, spread load across keys, deployments or regions, cut tokens per call, or queue non-urgent work.`; }
+        else if (r.verdict === 'tight') { v.className = 'msg warn'; v.textContent = `⚠️ Tight: ${fmt(r.used * 100, 0)}% of the ${name} limit at peak. Bursts inside a minute will likely get some 429s. Headroom for about ${fmt(r.maxDau)} daily users.`; }
+        else { v.className = 'msg ok'; v.textContent = `✓ Headroom: ${fmt(r.used * 100, 0)}% of the ${name} limit at peak. The limit would hold about ${fmt(r.maxDau)} daily users with this mix.`; }
+      }
+
+      $('conc').innerHTML = kpi('Seconds per answer', fmt(r.latency, 1)) + kpi('Answers in flight at peak', fmt(Math.ceil(r.concurrency))) +
+        kpi('With a 1.5× safety margin', fmt(Math.ceil(r.concurrency * 1.5)));
+
+      const k = r.inputs;
+      $('cost-sub').textContent = `${big(r.monthCalls)} model calls over ${k.days} days: ${big(r.monthIn)} input and ${big(r.monthOut)} output tokens. List prices you entered, before batch discounts or committed-use deals.`;
+      $('cost').innerHTML = kpi('Total per month', money(r.cost)) + kpi('Input', money(r.costIn)) + kpi('Output', money(r.costOut)) +
+        kpi('Per daily user', money(r.perUser)) + kpi('Per 1,000 calls', money(r.per1000));
+
+      $('test-sub').textContent = `Test above your forecast, not at it: about ${fmt(r.testRpm)} requests a minute (1.5× peak), held for at least 5 minutes so per-minute limits reset a few times. Expect about ${fmt(Math.ceil(r.concurrency * 1.5))} answers in flight.`;
+      const q = new URLSearchParams({ loadModel: 'rate', rpm: r.testRpm, expectedLatency: Math.max(1, Math.round(r.latency)), maxTokens: k.maxTokens, priceIn: k.priceIn, priceOut: k.priceOut });
+      $('to-test').href = '/tools/llm-load-test/?' + q.toString();
+    }
+
+    f.addEventListener('input', update);
+    f.addEventListener('change', update);
+    update();
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
