@@ -545,3 +545,13 @@ html.lenis, html.lenis body { height: auto; }
 .path small { display: block; margin-top: 3px; font-size: 13px; color: var(--muted); line-height: 1.4; }
 @media (max-width: 820px) { .paths-grid { grid-template-columns: 1fr; } }
 
+
+/* Line length: running text in wide columns (tool pages, comparisons, reports) stays near the blog's reading
+   measure (~90 characters). Wrapped in :where() so it has zero specificity: any page rule that sets its own
+   max-width still wins, and it only ever caps. Lists with a class (grids, tick lists), centred messages and the
+   centred contact band are left alone. */
+:where(main :is(section, article, .wrap, .panel, .widget) > p:not(.empty, .jobs-empty, .jobs-empty-static, .result, [style*="center"], .contact *),
+       main :is(section, article, .wrap, .panel, .widget) > :is(ul, ol):not([class], .contact *)) { max-width: 75ch; }
+
+/* Headings: balance the lines so a short heading never ends with one word on its own line on phones. */
+:where(h1, h2, h3) { text-wrap: balance; }

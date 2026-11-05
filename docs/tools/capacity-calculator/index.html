@@ -27,7 +27,7 @@
     {"@type":"Question","name":"How much headroom should a load test prove?","acceptedAnswer":{"@type":"Answer","text":"Test at least 1.5 to 2 times the forecast peak, and plan for CPU around 60 to 70% at peak, because queueing makes latency climb steeply above that."}}
   ]}</script>
   <style>
-    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
       background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
@@ -37,7 +37,7 @@
     .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; }
     .steps li { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; font-size: 14px; color: var(--muted); }
     .steps b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
-    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
     .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
     .guide h3 { font-size: 18px; margin: 24px 0 6px; }
     .guide p, .guide li { color: var(--muted); }
@@ -46,7 +46,8 @@
     .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
     .formula { font: 500 14px/1.6 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt); border: 1px solid var(--border);
       border-radius: 12px; padding: 12px 14px; overflow-x: auto; white-space: pre; }
-    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
     .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }

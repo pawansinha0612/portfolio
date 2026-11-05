@@ -27,7 +27,7 @@
     {"@type":"Question","name":"Why do LLM APIs return 429 under load?","acceptedAnswer":{"@type":"Answer","text":"Providers limit requests per minute (RPM) and tokens per minute (TPM) for each key or deployment. Long prompts and large max_tokens settings use up the token limit long before the request limit. A load test shows which limit you hit first and whether your retries make it worse."}}
   ]}</script>
   <style>
-    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
       background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
@@ -76,7 +76,7 @@
     .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
     .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
     .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
-    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
     .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
     .guide h3 { font-size: 18px; margin: 24px 0 6px; }
     .guide p, .guide li { color: var(--muted); }
@@ -89,7 +89,8 @@
     table.t th, table.t td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--muted); }
     table.t th { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
     table.t td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
-    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
     .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }

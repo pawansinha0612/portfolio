@@ -27,7 +27,7 @@
     {"@type":"Question","name":"What is a burn rate?","acceptedAnswer":{"@type":"Answer","text":"How fast you are spending the error budget compared with spending it evenly over the SLO window. A burn rate of 1 uses the whole budget exactly at the end of the window; 14.4 uses 2% of a 30-day budget in one hour."}}
   ]}</script>
   <style>
-    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
       background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
@@ -74,14 +74,15 @@
     .out-head button { font: inherit; cursor: pointer; }
     pre.code { width: 100%; box-sizing: border-box; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
       background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; overflow: auto; max-height: 520px; white-space: pre; }
-    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
     .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
     .guide h3 { font-size: 18px; margin: 24px 0 6px; }
     .guide p, .guide li { color: var(--muted); }
     .guide ol, .guide ul { padding-left: 22px; }
     .guide strong { color: var(--text); }
     .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
-    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
     .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }

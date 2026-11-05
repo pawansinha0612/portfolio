@@ -48,7 +48,7 @@
     .days .d { font: 700 13px "JetBrains Mono", monospace; color: var(--accent); padding-top: 2px; }
     .days h3 { margin: 0 0 2px; font-size: 16px; }
     .days p { margin: 0; color: var(--muted); font-size: 15px; }
-    .who { max-width: 820px; }
+    .who > :not(p, ul, ol) { max-width: 788px; }
     @media (max-width: 900px) {
       .course-grid { grid-template-columns: 1fr; gap: 24px; }
       .signup { position: static; }

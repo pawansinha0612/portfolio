@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/chat.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"curl to k6 converter","url":"https://pawansinha.com.au/tools/curl-to-k6/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
   <style>
-    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
       background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
@@ -68,13 +68,14 @@
     .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
     .run { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
     .run code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--alt); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
-    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
     .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
     .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
     .guide li { margin-bottom: 6px; }
     .guide strong { color: var(--text); }
     .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); }
-    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
     .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }

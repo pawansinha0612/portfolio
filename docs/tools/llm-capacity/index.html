@@ -26,7 +26,7 @@
     {"@type":"Question","name":"Why does an AI agent hit rate limits so quickly?","acceptedAnswer":{"@type":"Answer","text":"One user request can make many model calls, often with a long, growing context each time. Eight calls of 6,000 tokens is 48,000 tokens for a single question, so the tokens-per-minute limit runs out at a fraction of the users a simple chatbot could serve."}}
   ]}</script>
   <style>
-    .project-hero { padding: 64px 16px 8px; max-width: 900px; }
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
     .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
       background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
@@ -66,13 +66,14 @@
     .msg.ok { background: var(--ok-bg); color: var(--ok); }
     .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
     .msg[hidden] { display: none; }
-    .guide { max-width: 900px; padding: 40px 16px 8px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
     .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
     .guide h3 { font-size: 18px; margin: 24px 0 6px; }
     .guide p, .guide li { color: var(--muted); }
     .guide ul { padding-left: 22px; }
     .guide strong { color: var(--text); }
-    .tools-end { max-width: 900px; padding: 24px 16px 72px; }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
     .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
@@ -172,7 +173,7 @@
         <div class="panel">
           <h2>7. Prove it with a load test</h2>
           <p class="sub" id="test-sub"></p>
-          <a class="btn" id="to-test" href="/tools/llm-load-test/" data-track="llm-cap-to-test">Build the k6 test with these numbers →</a>
+          <a class="btn" id="to-test" href="/tools/llm-load-test/" data-track="llm-cap-to-test">Build the k6 test with these&nbsp;numbers&nbsp;→</a>
         </div>
       </div>
     </form>

@@ -23,7 +23,7 @@
     :root { --bad: #b42318; --bad-bg: #fde8e6; }
     @media (prefers-color-scheme: dark) { :root { --bad: #ff8a80; --bad-bg: #3a1513; } }
     .report { padding: 40px 16px 24px; }
-    .report > *, .report-end > * { max-width: 900px; }
+    .report > :not(p, ul, ol), .report-end > :not(p, ul, ol) { max-width: 900px; }
     .report h2 { font-size: clamp(22px, 3vw, 28px); margin: 44px 0 10px; line-height: 1.25; scroll-margin-top: 80px; }
     .report h2 .num { color: var(--accent); margin-right: 8px; }
     .report h3 { font-size: 18px; margin: 26px 0 6px; }
