@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Videos — Pawan Sinha</title>
+  <meta name="description" content="Screen-recorded walkthroughs and quick tips from a performance engineer: load testing with k6 and JMeter, AI for testers, and testing interviews.">
+  <!-- Remove this noindex line when the first video is added to videos.json (see OPERATIONS.md, "Videos on the website"). -->
+  <meta name="robots" content="noindex">
+  <meta property="og:title" content="Videos: load testing, AI for testers and interview tips">
+  <meta property="og:description" content="Walkthroughs of real tools and real load tests, plus short tips. YouTube, TikTok and Instagram in one place.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/videos/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/videos/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .vsec { padding-top: 8px; padding-bottom: 40px; }
+    .vsec h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 16px; }
+    .vgrid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+    .vgrid-vert { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+    @media (min-width: 700px) { .vgrid-vert { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px; } }
+    .vgrid-vert .vlink { padding: 14px; } .vgrid-vert .vlink-name { font-size: 18px; }
+    .vgrid-feat { grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); }
+    .vgrid-vert .vframe { max-height: none; }
+    .vfilters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; padding: 0; list-style: none; }
+    .vfilters button { font: inherit; font-size: 14px; font-weight: 600; padding: 7px 15px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+    .vfilters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .vempty { border: 1px dashed var(--border); border-radius: 18px; background: var(--surface); padding: 32px 24px; max-width: 760px; }
+    .vempty h2 { margin: 0 0 8px; font-size: clamp(22px, 3vw, 28px); }
+    .vempty p { color: var(--muted); margin: 0 0 14px; }
+    .vfollow, .vempty .vfollow { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; }
+    .vtopics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); margin: 20px 0 0; padding: 0; list-style: none; }
+    .vtopics li { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+    .vtopics b { display: block; color: var(--text); font-size: 15px; }
+    .vnone { color: var(--muted); }
+    .cta-end { padding-top: 24px; padding-bottom: 72px; }
+    .cta-end > * { max-width: 900px; }
+    .cta-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .cta-panel h2 { margin: 0 0 8px; font-size: 22px; }
+    .cta-panel p { color: var(--muted); margin: 0 0 12px; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .vsec > * { max-width: none; }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/learn/">Learn</a><span aria-hidden="true">/</span><span aria-current="page">Videos</span></nav>
+        <p class="eyebrow">Videos</p>
+        <h1>Load testing, AI for testers and interview tips, <span class="hl">on screen</span></h1>
+        <p class="lead">Real tools and real load tests, recorded as I use them. Long walkthroughs on YouTube, quick tips on Shorts, TikTok and Instagram.</p>
+        <p class="vfollow" id="v-follow-top"></p>
+      </div>
+    </section>
+
+    <section class="wrap vsec" id="v-empty" hidden>
+      <div class="vempty">
+        <h2>Videos coming soon</h2>
+        <p>I'm recording the first walkthroughs now. Follow along to catch them when they go up.</p>
+        <ul class="vtopics">
+          <li><b>Performance testing</b>k6, JMeter, Black Friday load tests</li>
+          <li><b>AI for testing</b>Testing AI features, and using AI to test</li>
+          <li><b>AI tips</b>Prompts and workflows that save real time</li>
+          <li><b>Career &amp; interviews</b>Questions testers get asked, and how to answer</li>
+        </ul>
+        <p class="vfollow" id="v-follow-empty"></p>
+        <p style="margin-top:18px">Until then: play <a href="/play/">the performance testing games</a>, try <a href="/tools/">the free tools</a> or read <a href="/blog/">the blog</a>.</p>
+      </div>
+    </section>
+
+    <div id="v-list" hidden>
+      <section class="wrap vsec" id="v-featured" hidden>
+        <h2>Featured</h2>
+        <div class="vgrid vgrid-feat"></div>
+      </section>
+      <section class="wrap vsec" style="padding-bottom:0">
+        <ul class="vfilters" id="v-filters" aria-label="Filter videos by topic"></ul>
+      </section>
+      <section class="wrap vsec" id="v-long" hidden>
+        <h2>Walkthroughs</h2>
+        <div class="vgrid"></div>
+      </section>
+      <section class="wrap vsec" id="v-short" hidden>
+        <h2>Shorts, Reels and TikToks</h2>
+        <div class="vgrid vgrid-vert"></div>
+      </section>
+      <section class="wrap vsec"><p class="vnone" id="v-none" hidden>No videos on this topic yet.</p></section>
+    </div>
+
+    <section class="wrap cta-end">
+      <div class="panel cta-panel">
+        <h2>Need this done on your system?</h2>
+        <p>The videos show the method. If you'd rather have it done for your shop, API or AI feature, I run fixed-scope load tests with a clear go/no-go report.</p>
+        <p class="cta-row">
+          <a class="btn" href="/#contact" data-track="videos-cta-contact">Book a free call</a>
+          <a class="btn btn-ghost" href="/site-check/" data-track="videos-cta-sitecheck">Free site check</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/videos/videos-lib.js"></script>
+  <script>
+    (() => {
+      const V = window.Videos;
+      V.injectCss();
+      const get = (u) => fetch(u, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      Promise.all([get('/videos/videos.json'), get('/videos/social.json')]).then(([data, social]) => {
+        const follow = V.socialLinks(social || {});
+        ['v-follow-top', 'v-follow-empty'].forEach((id, i) => {
+          const box = document.getElementById(id);
+          follow.forEach((l, j) => {
+            const a = document.createElement('a');
+            a.className = 'btn' + (i === 0 || j > 0 ? ' btn-ghost' : '');
+            a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+            a.textContent = 'Follow on ' + l.label;
+            a.dataset.track = 'videos-follow-' + l.key;
+            box.appendChild(a);
+          });
+          if (!follow.length) box.remove();
+        });
+
+        const videos = V.clean(data);
+        if (!videos.length) {
+          const top = document.getElementById('v-follow-top'); if (top) top.remove();
+          document.getElementById('v-empty').hidden = false; return;
+        }
+        document.getElementById('v-list').hidden = false;
+
+        const feat = videos.filter((v) => v.featured).slice(0, 2);
+        if (feat.length) {
+          const s = document.getElementById('v-featured'); s.hidden = false;
+          feat.forEach((v) => s.querySelector('.vgrid').appendChild(V.card(v)));
+        }
+        const longs = videos.filter((v) => v.platform === 'youtube');
+        const shorts = videos.filter((v) => v.platform !== 'youtube');
+        const fill = (id, list) => {
+          const s = document.getElementById(id);
+          list.forEach((v) => s.querySelector('.vgrid').appendChild(V.card(v)));
+        };
+        fill('v-long', longs); fill('v-short', shorts);
+
+        const topics = Object.keys(V.TOPICS).filter((t) => videos.some((v) => v.topic === t));
+        const ul = document.getElementById('v-filters');
+        const apply = (t) => {
+          ul.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
+          let shown = 0;
+          ['v-long', 'v-short'].forEach((id) => {
+            const s = document.getElementById(id);
+            let n = 0;
+            s.querySelectorAll('.vcard').forEach((c) => { const on = t === 'all' || c.dataset.topic === t; c.hidden = !on; if (on) n++; });
+            s.hidden = n === 0; shown += n;
+          });
+          document.getElementById('v-none').hidden = shown > 0;
+        };
+        if (topics.length > 1) {
+          [['all', 'All'], ...topics.map((t) => [t, V.TOPICS[t]])].forEach(([t, label]) => {
+            const li = document.createElement('li');
+            const b = document.createElement('button');
+            b.type = 'button'; b.dataset.t = t; b.textContent = label;
+            b.addEventListener('click', () => apply(t));
+            li.appendChild(b); ul.appendChild(li);
+          });
+        } else ul.remove();
+        apply('all');
+      });
+    })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

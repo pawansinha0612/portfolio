@@ -1,0 +1,15 @@
+name: Videos check
+# Runs when docs/videos/*.json changes (e.g. edited on github.com) and fails with a clear message if an entry is wrong.
+on:
+  push:
+    paths: ['docs/videos/**', 'videos/**']
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node videos/test-videos.js
