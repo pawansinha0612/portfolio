@@ -1,0 +1,20 @@
+{
+  "name": "to-k6",
+  "version": "1.0.0",
+  "description": "Convert JMeter (.jmx), Postman collections, OpenAPI/Swagger specs and curl commands into k6 load test scripts. Runs offline; nothing is uploaded.",
+  "bin": { "to-k6": "bin/to-k6.js" },
+  "files": ["bin/", "lib/", "README.md", "LICENSE"],
+  "scripts": {
+    "sync": "node scripts/sync.js",
+    "prepack": "node scripts/sync.js",
+    "test": "node scripts/sync.js && node test/test.js"
+  },
+  "dependencies": { "js-yaml": "^4.1.0" },
+  "engines": { "node": ">=18" },
+  "keywords": ["k6", "jmeter", "jmx", "postman", "openapi", "swagger", "curl", "load-testing", "performance-testing", "converter", "migration"],
+  "author": "Pawan Sinha (https://pawansinha.com.au/)",
+  "homepage": "https://pawansinha.com.au/tools/",
+  "repository": { "type": "git", "url": "git+https://github.com/pawansinha0612/portfolio.git", "directory": "packages/to-k6" },
+  "bugs": { "url": "https://github.com/pawansinha0612/portfolio/issues" },
+  "license": "MIT"
+}

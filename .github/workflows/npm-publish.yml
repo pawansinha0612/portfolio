@@ -1,0 +1,85 @@
+# The to-k6 command-line tool (packages/to-k6): tests it whenever it or a website converter changes, and publishes
+# it to npm when you run this workflow by hand. The CLI copies the converters from docs/tools/*/convert.js at publish
+# time, so fixing a converter on the site and running this workflow ships the same fix to npm.
+# Needs the repo secret NPM_TOKEN (npmjs.com → Access Tokens → Granular, read and write for to-k6).
+name: to-k6 npm package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/to-k6/**'
+      - 'docs/tools/*/convert.js'
+      - '.github/workflows/npm-publish.yml'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump before publishing (none = publish the version in package.json as it is)'
+        type: choice
+        options: [patch, minor, major, none]
+        default: patch
+
+permissions:
+  contents: write     # commit the version bump back
+  id-token: write     # npm provenance (shows "Built and signed on GitHub Actions" on npmjs.com)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/to-k6
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: grafana/setup-k6-action@v1
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+
+  publish:
+    needs: test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/to-k6
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install --no-audit --no-fund
+      - name: Bump the version
+        if: inputs.bump != 'none'
+        run: |
+          # Start from whichever is higher: package.json or what's already on npm.
+          current=$(node -p "require('./package.json').version")
+          published=$(npm view to-k6 version 2>/dev/null || echo 0.0.0)
+          base=$(printf '%s\n%s\n' "$current" "$published" | sort -V | tail -1)
+          npm version "$base" --no-git-tag-version --allow-same-version >/dev/null
+          if [ "$published" != "0.0.0" ] || [ "$base" != "$current" ]; then
+            npm version ${{ inputs.bump }} --no-git-tag-version >/dev/null
+          fi
+          echo "Publishing $(node -p "require('./package.json').version") (npm had $published)"
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then echo "::error::Add the NPM_TOKEN secret first (see the comment at the top of this file)."; exit 1; fi
+          v=$(node -p "require('./package.json').version")
+          if npm view "to-k6@$v" version >/dev/null 2>&1; then echo "::error::to-k6@$v is already on npm. Run again with bump = patch."; exit 1; fi
+          npm publish --provenance --access public
+          echo "### Published [to-k6@$v](https://www.npmjs.com/package/to-k6)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Save the new version in the repo
+        if: inputs.bump != 'none'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json
+          git diff --cached --quiet && exit 0
+          git commit -m "to-k6: v$(node -p "require('./package.json').version") published to npm"
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          echo "::warning::Published, but couldn't push the version bump. Bump package.json by hand before the next publish."

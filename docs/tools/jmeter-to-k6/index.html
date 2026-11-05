@@ -79,6 +79,10 @@
     .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
       font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
     .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .cli-ci { margin: 0 0 24px; }
+    .cli-ci h2 { font-size: 1.15rem; margin: 0 0 8px; }
+    .cli-ci p { margin: 0 0 8px; }
+    .cli-ci pre.code { margin: 0 0 10px; }
     .drop { border: 2px dashed var(--border); border-radius: 12px; padding: 14px; text-align: center; color: var(--muted); font-size: 14px; margin: 0 0 10px; }
     .drop.over { border-color: var(--accent); color: var(--accent); background: var(--alt); }
     .drop label { color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: underline; }
@@ -204,6 +208,12 @@
     </section>
 
     <section class="wrap tools-end">
+      <div class="cli-ci">
+        <h2>Use it from the command line and in CI</h2>
+        <p id="cli-npm" hidden>Converting a folder of plans? The same converter runs offline in your terminal: <a href="https://www.npmjs.com/package/to-k6" target="_blank" rel="noopener" data-track="jmeter-to-k6-npm">to-k6 on npm</a>.</p>
+        <pre class="code" id="cli-npm-code" hidden><code>npx to-k6 plan.jmx &gt; script.js</code></pre>
+        <p>Then keep the new k6 test honest: the free <a href="https://github.com/pawansinha0612/k6-performance-budget" target="_blank" rel="noopener" data-track="jmeter-to-k6-action">k6 performance budget GitHub Action</a> fails a pull request when p95 or the error rate goes over budget, or gets slower than main.</p>
+      </div>
       <div class="related">
         <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
         <a href="/compare/k6-vs-jmeter/">k6 vs JMeter →</a>
@@ -635,6 +645,9 @@
 </jmeterTestPlan>
 </script>
   <script src="/tools/jmeter-to-k6/convert.js"></script>
+  <script>
+    fetch('https://registry.npmjs.org/to-k6').then(r => { if (r.ok) ['cli-npm', 'cli-npm-code'].forEach(id => { document.getElementById(id).hidden = false; }); }).catch(() => {});
+  </script>
   <script>
   (() => {
     const $ = (id) => document.getElementById(id);
