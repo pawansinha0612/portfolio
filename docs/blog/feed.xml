@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>The week-2 decisions that sink your week-38 load test</title>
+      <link>https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/</link>
+      <guid>https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/</guid>
+      <pubDate>Thu, 05 Nov 2026 08:00:00 +1100</pubDate>
+      <description>The cheapest performance work happens before anything is built. Measurable NFRs from business numbers, latency budgets per hop, a capacity model, an architecture risk review and a test strategy that grows with the system.</description>
+    </item>
+    <item>
       <title>One GC pause, everyone&#x27;s p99</title>
       <link>https://pawansinha.com.au/blog/load-balancer-algorithms-under-real-load/</link>
       <guid>https://pawansinha.com.au/blog/load-balancer-algorithms-under-real-load/</guid>

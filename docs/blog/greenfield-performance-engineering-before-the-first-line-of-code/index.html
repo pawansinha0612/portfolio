@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The week-2 decisions that sink your week-38 load test — Pawan Sinha</title>
+  <meta name="description" content="The cheapest performance work happens before code exists: NFRs from business numbers, latency budgets per hop, a capacity model and a test strategy.">
+  <meta property="og:title" content="The week-2 decisions that sink your week-38 load test — Pawan Sinha">
+  <meta property="og:description" content="The cheapest performance work happens before code exists: NFRs from business numbers, latency budgets per hop, a capacity model and a test strategy.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>The week-2 decisions that sink your week-38 load test</h1>
+        <div class="post-meta"><span>5 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Architecture</span><span class="tag">Capacity Planning</span></div></div>
+      </header>
+      <div class="article">
+<p>Week 38 of a 40-week project. The first full-scale load test starts, and at 30% of target traffic the database starts refusing connections. The fix is an architecture change. There are two weeks left.</p>
+<p>The decision that caused it was made in week 2, when nobody had numbers.</p>
+<p>Performance engineering usually arrives late, against an architecture that can no longer change. A greenfield project is the rare chance to do the opposite. The work below costs days at the start and saves months at the end.</p>
+<h2>1. NFRs you can test, derived from business numbers</h2>
+<p>"The system must be fast and scalable" is not a requirement. A testable non-functional requirement (NFR) names the operation, the load, the percentile, the error budget and the headroom:</p>
+<blockquote>
+<p>Checkout: p99 under 400 ms and error rate under 0.1% at 3,000 API requests per second, sustained for 1 hour, with 2× headroom available through scaling.</p>
+</blockquote>
+<p>Derive the load from business numbers rather than guessing. A worked example:</p>
+<ul>
+<li>Forecast: 2,000,000 orders per day, 30% of them in the busiest hour.</li>
+<li>Peak-hour average: 2,000,000 × 0.30 / 3,600 ≈ 167 orders/s.</li>
+<li>Burst factor: traffic within the peak hour is not flat. Assume the busiest minute runs at 3× the hour's average: 167 × 3 ≈ 500 orders/s.</li>
+<li>Fan-out: each order makes about 6 API calls, so the API tier must handle 500 × 6 = <strong>3,000 req/s</strong>.</li>
+</ul>
+<p>Write the assumptions down next to the numbers. When the forecast changes, you can recompute in minutes, and when someone challenges the target you can show where it came from.</p>
+<h2>2. A latency budget per hop</h2>
+<p>Split the end-to-end target across the request path so each team owns a number:</p>
+<table>
+<thead>
+<tr>
+<th>Hop</th>
+<th>Budget (p99)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Edge / CDN and TLS</td>
+<td>30 ms</td>
+</tr>
+<tr>
+<td>Load balancer and API gateway</td>
+<td>20 ms</td>
+</tr>
+<tr>
+<td>Order service compute</td>
+<td>80 ms</td>
+</tr>
+<tr>
+<td>Cache lookups</td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>120 ms</td>
+</tr>
+<tr>
+<td>Payment provider call</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>Headroom</td>
+<td>40 ms</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>400 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p>One honest caveat: percentiles do not add. The p99 of a sum is not the sum of p99s, because hops are rarely slow on the same request. Treating the sum as the budget is conservative, which is fine for planning. Validate the real end-to-end distribution with tracing once the system exists.</p>
+<p>The budget immediately exposes design risk. If the design needs three sequential calls to a downstream service with a 100 ms p99, it does not fit, and you know that before writing code.</p>
+<h2>3. A capacity model, even a rough one</h2>
+<p>A spreadsheet is enough. Continuing the example, assume each API request costs 15 ms of CPU (to be replaced with a measured number from step 5):</p>
+<ul>
+<li>CPU needed: 3,000 req/s × 0.015 s = 45 cores busy.</li>
+<li>At a 60% utilisation target to leave room for bursts: 45 / 0.6 = 75 cores.</li>
+<li>With 2-core pods: about 38 pods at peak.</li>
+</ul>
+<p>Now follow the consequences. If each pod has a database connection pool of 10, that is 38 × 10 = 380 connections. PostgreSQL's default <code>max_connections</code> is 100, and large connection counts hurt PostgreSQL performance well before any limit. So the model has just produced an architecture decision: a connection pooler (such as PgBouncer or a managed proxy), smaller per-pod pools, or a different access pattern. Far better to have that conversation now.</p>
+<p>Here is the same model as an interactive calculator. Put in your own forecast and see where it breaks:</p>
+<div class="widget" data-widget="capacity"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>4. An architecture risk review</h2>
+<p>Review the design specifically for performance risk. The patterns that cause most production performance problems are visible on a whiteboard:</p>
+<ul>
+<li><strong>Synchronous fan-out chains</strong>: every sequential remote call adds its latency and its failure probability to the critical path.</li>
+<li><strong>Chatty interfaces</strong>: N+1 calls across a network, such as fetching 50 line items one request at a time.</li>
+<li><strong>Shared hot resources</strong>: one database, one queue partition, one cache shard that everything touches.</li>
+<li><strong>Partition keys and hot keys</strong>: a Kafka topic keyed by merchant, or a DynamoDB table keyed by date, where one key gets most of the traffic.</li>
+<li><strong>Cold-cache dependence</strong>: if the cache is empty after a deploy or failover, can the database survive the miss rate?</li>
+<li><strong>Third-party limits</strong>: rate limits and latency of external providers, usually the least controllable part of the budget.</li>
+<li><strong>Timeouts and retries</strong>: timeouts should shrink down the call chain, and retries need a budget, or a slow dependency turns into a retry storm.</li>
+</ul>
+<p>Record each risk with how and when it will be tested.</p>
+<h2>5. A walking skeleton, measured</h2>
+<p>Build the thinnest end-to-end slice through the riskiest path, deployed on production-like infrastructure, and load test it early. The point is not to prove the target. It is to <strong>replace the guesses in the capacity model with measured service demand</strong>: CPU milliseconds per request, database time per request, payload sizes. Those numbers change sizing more than anything else.</p>
+<h2>6. Observability built in, not bolted on</h2>
+<p>From the first service:</p>
+<ul>
+<li><strong>OpenTelemetry</strong> tracing with context propagated across every hop.</li>
+<li><strong>RED metrics</strong> (rate, errors, duration) per endpoint, with latency recorded as <strong>histograms</strong>, not averages, so percentiles can be aggregated correctly.</li>
+<li><strong>SLOs</strong> written from the NFRs, so production has the same targets as the tests.</li>
+<li>Saturation metrics for every pool and queue: threads, connections, consumer lag.</li>
+</ul>
+<p>Retrofitting this later is always harder, and without it every later performance test is guesswork.</p>
+<h2>7. A test strategy that grows with the system</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What runs</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Early build</td>
+<td>Walking-skeleton load test, microbenchmarks for hot code paths</td>
+<td>Measure service demand, validate the model</td>
+</tr>
+<tr>
+<td>Every merge</td>
+<td>Short fixed-rate smoke test in CI with thresholds on p95/p99 and error rate</td>
+<td>Catch regressions within hours of the change</td>
+</tr>
+<tr>
+<td>Nightly</td>
+<td>Full-scale integrated test at target load</td>
+<td>Track trends, find interaction effects</td>
+</tr>
+<tr>
+<td>Pre-release</td>
+<td>Peak, stress-to-failure, soak, failover and scale-out tests</td>
+<td>Prove the NFRs and find the breaking point</td>
+</tr>
+<tr>
+<td>Production</td>
+<td>SLO monitoring, synthetic checks, capacity reviews</td>
+<td>Feed real numbers back into the model</td>
+</tr>
+</tbody>
+</table>
+<h2>The decisions to be in the room for</h2>
+<p>Some decisions are cheap now and very expensive later: the data model and partition keys, synchronous versus asynchronous boundaries, tenancy model, the number of services on the critical path, and protocol choices. A performance engineer's highest-leverage work on a greenfield project is making sure those decisions are made with numbers in hand.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "The week-2 decisions that sink your week-38 load test", "description": "The cheapest performance work happens before code exists: NFRs from business numbers, latency budgets per hop, a capacity model and a test strategy.", "datePublished": "2026-11-05", "url": "https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
