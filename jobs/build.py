@@ -580,6 +580,14 @@ TEMPLATE = r"""<!doctype html>
       </div>
       <div class="offer">
         <div>
+          <p class="eyebrow">Roles that aren't on job boards</p>
+          <h3>Join my testers' talent pool</h3>
+          <p>I recruit QA, automation and performance testers for companies I work with. Join once and I'll email you when a role fits. Nothing is shared without asking you first.</p>
+        </div>
+        <a class="btn btn-ghost" href="/talent-pool/" data-track="jobs-talent-pool">Join the talent pool</a>
+      </div>
+      <div class="offer">
+        <div>
           <p class="eyebrow">Hiring a performance engineer?</p>
           <h3>Skip the job ad</h3>
           <p>12+ years of performance testing and QA automation in banking, payments and gaming. Available for contract and permanent roles in Melbourne or remote.</p>

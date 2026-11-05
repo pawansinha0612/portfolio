@@ -15,6 +15,8 @@
   <url><loc>https://pawansinha.com.au/shop/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/peak-readiness/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/hire/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/hire-a-tester/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/talent-pool/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/tools/curl-to-k6/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/tools/k6-results/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/learn/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>

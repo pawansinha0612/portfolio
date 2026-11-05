@@ -123,6 +123,7 @@
         ['My app is slow / load testing', () => hiring('Performance & load testing')],
         ['Ongoing QA support', () => hiring('Ongoing QA partner')],
         ['Free QA health check', () => hiring('Free QA health check')],
+        ['Hire a tester for my team', hireTester],
         ['Book a free 30-min call', book],
         ['Interview prep', toPrep],
         ['Just browsing', browsing],
@@ -133,9 +134,23 @@
     options([
       ['Preparing for an interview', interview],
       ['Hiring a performance or QA engineer', () => hiring('')],
+      ['Looking for a testing job', jobSeeker],
       ['Learning performance testing', learning],
       ['Just browsing', browsing],
     ]);
+  }
+
+  // Recruitment: send companies to the brief form and testers to the talent pool (both have their own forms).
+  function hireTester() {
+    answers.reason = 'Hiring a tester';
+    finish('Great. Pawan recruits QA, automation, API, mobile and performance testers and screens every candidate himself. ' +
+      '<a href="/hire-a-tester/#brief">Send a 2-minute hiring brief</a>' +
+      (BOOKING ? ` or <a href="${BOOKING}" target="_blank" rel="noopener">book a 20-minute intake call</a>.` : '.'));
+  }
+  function jobSeeker() {
+    answers.reason = 'Job seeker';
+    finish('Good luck with the search! <a href="/talent-pool/">Join the talent pool</a> to hear about testing roles Pawan is recruiting for, ' +
+      'browse the <a href="/jobs/">testing jobs board</a>, or warm up with <a href="/interview-prep/practice/">AI interview practice</a>.');
   }
 
   function book() {

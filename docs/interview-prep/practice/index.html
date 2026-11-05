@@ -62,6 +62,7 @@
     .cols ul { margin: 0; padding-left: 18px; font-size: 15px; }
     .better { margin: 14px 0 0; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; padding: 10px 14px; }
     .better::before { content: "A stronger answer"; display: block; font-size: 12px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .pool-nudge { margin: 14px 0 0; font-size: 15px; color: var(--muted); }
     details.model { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; }
     details.model summary { cursor: pointer; padding: 10px 14px; font-weight: 600; }
     details.model .body { padding: 0 14px 12px; color: var(--muted); }
@@ -325,6 +326,13 @@
       });
       fb.appendChild(cols);
       if (f.better) fb.appendChild(el('p', 'better', f.better));
+      if (f.score >= 7) {
+        const nudge = el('p', 'pool-nudge');
+        nudge.append(el('strong', null, 'Strong answer. '), 'Looking for a role? ');
+        const a = el('a', null, 'Join the talent pool'); a.href = '/talent-pool/'; a.dataset.track = 'practice-talent';
+        nudge.append(a, ' and tick the box to add your practice scores.');
+        fb.appendChild(nudge);
+      }
       fb.hidden = false;
       fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }

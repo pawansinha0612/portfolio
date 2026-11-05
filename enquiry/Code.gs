@@ -38,6 +38,9 @@
  *   PAGESPEED_API_KEY) and returns plain-English findings; form=sitecheck-email emails the report and you the lead ("Site checks" tab).
  * Leads tab (outreach): rows you add get an opt-out link (GET ?optout=TOKEN); the daily plan lists follow-ups and check-ins.
  * Weekly stats (Mondays 8am): visits from GoatCounter (GOATCOUNTER_TOKEN), leads, outreach and Gumroad sales (GUMROAD_TOKEN).
+ * Tester recruitment: form=hirebrief (docs/hire-a-tester/) saves a company's hiring brief to "Hiring briefs" and emails you;
+ *   form=talentjoin (docs/talent-pool/) adds a tester to "Talent pool" with a delete link (GET ?talentdelete=TOKEN) that
+ *   wipes their details. Both pages show their form only when ?view=features lists 'hiring'.
  * GET ?view=features lists what this deployed version supports, so new forms only appear once it is deployed.
  * The signup form stays hidden on the site until GET ?view=subscribe answers, so it only appears once this
  * version is deployed.
@@ -86,6 +89,8 @@ function setup() {
   dailyPlanSheet();
   siteCheckSheet();
   leadsSheet();
+  hiringSheet();
+  talentSheet();
   installWeeklyDigest();
   installCourseLessons();
   installJobAlerts();
@@ -139,6 +144,7 @@ function doGet(e) {
   if (q.view === 'features') return json({ ok: true, features: features() });
   if (q.unsubscribe) return unsubscribePage(q.unsubscribe);
   if (q.optout) return optOutPage(q.optout);
+  if (q.talentdelete) return talentDeletePage(q.talentdelete);
   if (q.view === 'testimonials') {
     const sh = SpreadsheetApp.getActive().getSheetByName(TESTIMONIAL_SHEET);
     const rows = sh ? sh.getDataRange().getValues().slice(1) : [];
@@ -171,6 +177,8 @@ function doPost(e) {
   if (p.form === 'jobs') return saveJobAlert(p);
   if (p.form === 'sitecheck') return siteCheck(p);
   if (p.form === 'sitecheck-email') return siteCheckEmail(p);
+  if (p.form === 'hirebrief') return saveHiringBrief(p);
+  if (p.form === 'talentjoin') return saveTalent(p);
   return p.form === 'testimonial' ? saveTestimonial(p) : saveEnquiry(p);
 }
 
@@ -588,7 +596,7 @@ function json(obj) {
 // What this deployed version can do. Pages check GET ?view=features and only show a form that is listed,
 // so nothing appears on the site before this code is deployed (and practice stays hidden without an AI key).
 function features() {
-  const list = ['subscribe', 'quiz', 'course', 'jobs'];
+  const list = ['subscribe', 'quiz', 'course', 'jobs', 'hiring'];
   if (aiKey()) list.push('practice');
   if (pagespeedKey()) list.push('sitecheck');
   return list;
@@ -1331,7 +1339,7 @@ const PLAN_SEED = [
 const PLAN_COUNTS = [
   ['Enquiries', 'enquiries'], ['Quiz', 'quiz leads'], ['Course', 'course sign-ups'], ['Subscribers', 'digest subscribers'],
   ['Job alerts', 'job alert sign-ups'], ['Chat', 'chats'], ['Testimonials', 'testimonials'], ['Practice', 'practice answers'],
-  ['Site checks', 'site checks'],
+  ['Site checks', 'site checks'], ['Hiring briefs', 'hiring briefs'], ['Talent pool', 'talent pool sign-ups'],
 ];
 
 function dailyPlanSheet() {
@@ -2188,4 +2196,209 @@ function sendWeeklyStats() {
   });
   MailApp.sendEmail({ to: OWNER_EMAIL, name: 'Weekly stats', subject: '📊 Week of ' + s.range + (s.visits !== null ? ': ' + s.visits + ' visitors' : ''),
     body: 'Weekly stats, ' + s.range + '\n\n' + lines.join('\n\n'), htmlBody: html });
+}
+
+// =====================================================================================================
+// Tester recruitment (added 2026-11-05): companies send a hiring brief, testers join the talent pool.
+// =====================================================================================================
+
+const HIRING_SHEET = 'Hiring briefs';
+const HIRING_FIELDS = ['company', 'name', 'email', 'phone', 'role', 'level', 'location', 'mode', 'type', 'musthaves', 'salary', 'start', 'notes'];
+const HIRING_HEADERS = ['received', 'company', 'name', 'email', 'phone', 'role', 'level', 'location', 'work mode', 'perm or contract',
+  'must-haves', 'salary range', 'start by', 'notes', 'page', 'status'];
+const HIRING_STATUS = ['New', 'Call booked', 'Searching', 'Shortlist sent', 'Interviewing', 'Offer', 'Placed', 'Invoiced', 'Paid', 'Lost', 'Spam'];
+
+const TALENT_SHEET = 'Talent pool';
+const TALENT_FIELDS = ['name', 'email', 'roles', 'years', 'location', 'rights', 'mode', 'salary', 'linkedin', 'skills', 'notice', 'about'];
+const TALENT_HEADERS = ['joined', 'name', 'email', 'roles', 'years', 'location', 'work rights', 'work mode', 'salary expectation', 'linkedin',
+  'skills', 'notice period', 'about', 'share practice', 'practice', 'page', 'status', 'token', 'updated', 'deleted'];
+const TALENT_STATUS = ['Active', 'Contacted', 'Shortlisted', 'Interviewing', 'Placed', 'Not looking', 'Deleted'];
+const TALENT_ROLES = ['Manual / functional testing', 'Test automation (Playwright, Selenium, Cypress)', 'API testing', 'Mobile testing',
+  'Performance testing (k6, JMeter, LoadRunner)', 'QA lead / test manager'];
+const HIRING_DAILY_CAP = 40;   // each form, for the whole site: protects the daily email quota
+
+function hiringSheet() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(HIRING_SHEET);
+  if (sh) return sh;
+  const created = sheetWithHeaders(HIRING_SHEET, HIRING_HEADERS);
+  dropdown(created, HIRING_HEADERS.indexOf('status') + 1, HIRING_STATUS);
+  return created;
+}
+
+function talentSheet() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(TALENT_SHEET);
+  if (sh) return sh;
+  const created = sheetWithHeaders(TALENT_SHEET, TALENT_HEADERS);
+  dropdown(created, TALENT_HEADERS.indexOf('status') + 1, TALENT_STATUS);
+  return created;
+}
+
+// True when today's site-wide count for this form is used up; otherwise counts this submission.
+function overDailyCap(kind) {
+  const props = PropertiesService.getScriptProperties();
+  const key = kind + '-count-' + melbDay();
+  const n = Number(props.getProperty(key) || 0);
+  if (n >= HIRING_DAILY_CAP) return true;
+  try {
+    Object.keys(props.getProperties()).filter(k => k.indexOf(kind + '-count-') === 0 && k !== key).forEach(k => props.deleteProperty(k));
+    props.setProperty(key, String(n + 1));
+  } catch (err) {}
+  return false;
+}
+
+function saveHiringBrief(p) {
+  const d = clean(p, HIRING_FIELDS, { musthaves: 2000, notes: 2000 });
+  d.email = d.email.toLowerCase();
+  if (!d.name || !d.company || !d.role || !EMAIL_RE.test(d.email)) {
+    return json({ ok: false, error: 'Please add your name, company, a valid email and the role you are hiring for.' });
+  }
+  if (isRepeat('hirebrief', d.email)) return json({ ok: true });
+  if (overDailyCap('hirebrief')) return json({ ok: false, error: 'The form is busy today. Please email hello@pawansinha.com.au instead.' });
+
+  hiringSheet();
+  appendRow(HIRING_SHEET, [new Date(), ...HIRING_FIELDS.map(f => safe(d[f])), safe(String(p.page || '').slice(0, 300)), 'New']);
+
+  const label = { company: 'Company', name: 'Name', email: 'Email', phone: 'Phone', role: 'Role', level: 'Level', location: 'Location',
+    mode: 'Work mode', type: 'Perm/contract', salary: 'Salary range', start: 'Start by' };
+  const lines = Object.keys(label).map(k => (label[k] + ':              ').slice(0, 15) + (d[k] || '-'));
+  MailApp.sendEmail({
+    to: OWNER_EMAIL,
+    replyTo: d.email,
+    subject: '🧑‍💻 Hiring brief: ' + d.role + ' · ' + d.company,
+    body: lines.join('\n') + '\n\nMust-haves:\n' + (d.musthaves || '-') + '\n\nNotes:\n' + (d.notes || '-') +
+      '\n\nNext: reply within one business day and book the intake call (RECRUITMENT.md in portfolio-private, step 2).' +
+      ' Send your terms of business before you send any CVs.\n\n— Sent from ' + (p.page || SITE_URL + '/hire-a-tester/'),
+  });
+  MailApp.sendEmail({
+    to: d.email,
+    name: MY_NAME,
+    replyTo: OWNER_EMAIL,
+    subject: 'Your hiring brief: ' + d.role,
+    body: 'Hi ' + firstName(d.name) + ',\n\n' +
+      'Thanks for sending the brief for your ' + d.role + ' role. I\'ll reply within one business day to set up a short call about the team, ' +
+      'the must-haves and how you interview.\n\n' +
+      'If you\'d rather pick a time now: ' + BOOKING_URL + '\n\n' +
+      'Nothing is charged unless you hire someone I introduce, and I\'ll send my terms before any CVs.\n\n' + signature(),
+  });
+  return json({ ok: true });
+}
+
+function cleanLinkedin(v) {
+  v = String(v || '').trim();
+  if (!v) return '';
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  return /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\/[^\s<>"]+$/i.test(v.replace(/^http:/i, 'https:')) ? v.replace(/^http:/i, 'https:').slice(0, 200) : null;
+}
+
+// What the AI practice tab knows about this browser: answers, average and best score. Only used with the tester's consent.
+function practiceSummary(visitor) {
+  visitor = String(visitor || '').replace(/[^\w-]/g, '').slice(0, 64);
+  const sh = visitor && SpreadsheetApp.getActive().getSheetByName(PRACTICE_SHEET);
+  if (!sh) return '';
+  const rows = sh.getDataRange().getValues().slice(1).filter(r => String(r[PRACTICE_HEADERS.indexOf('visitor')]) === visitor);
+  if (!rows.length) return 'no practice answers found';
+  const scores = rows.map(r => Number(r[PRACTICE_HEADERS.indexOf('score')])).filter(n => !isNaN(n));
+  const levels = [...new Set(rows.map(r => String(r[PRACTICE_HEADERS.indexOf('level')])))].join(', ');
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10 : '-';
+  return rows.length + ' answers, average ' + avg + '/10, best ' + (scores.length ? Math.max.apply(null, scores) : '-') + '/10 (' + levels + ')';
+}
+
+function saveTalent(p) {
+  const d = clean(p, TALENT_FIELDS, { skills: 500, about: 1000, roles: 400 });
+  d.email = d.email.toLowerCase();
+  d.roles = String(p.roles || '').split('|').map(r => r.trim()).filter(r => TALENT_ROLES.indexOf(r) >= 0).join(', ');
+  if (!d.name || !EMAIL_RE.test(d.email)) return json({ ok: false, error: 'Please add your name and a valid email.' });
+  if (!d.roles) return json({ ok: false, error: 'Please tick at least one kind of role.' });
+  if (p.consent !== 'yes') return json({ ok: false, error: 'Please tick the box so I can store your details and contact you about roles.' });
+  const linkedin = cleanLinkedin(d.linkedin);
+  if (linkedin === null) return json({ ok: false, error: 'That LinkedIn link should look like linkedin.com/in/your-name (or leave it empty).' });
+  d.linkedin = linkedin;
+  d.rights = ['Yes', 'No'].indexOf(d.rights) >= 0 ? d.rights : '';
+  if (isRepeat('talentjoin', d.email)) return json({ ok: true });
+  if (overDailyCap('talentjoin')) return json({ ok: false, error: 'The form is busy today. Please try again tomorrow.' });
+
+  const share = p.share === 'yes';
+  const practice = share ? practiceSummary(p.visitor) : '';
+  const sh = talentSheet();
+  const col = h => TALENT_HEADERS.indexOf(h);
+  const values = d2 => [d2.joined, ...TALENT_FIELDS.map(f => safe(d[f])), share ? 'Yes' : 'No', safe(practice),
+    safe(String(p.page || '').slice(0, 300)), 'Active', d2.token, d2.updated, ''];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  let token, again = false;
+  try {
+    const rows = sh.getDataRange().getValues();
+    const i = rows.findIndex((r, n) => n > 0 && String(r[col('email')]).toLowerCase() === d.email);
+    if (i > 0) {
+      again = true;
+      token = String(rows[i][col('token')] || Utilities.getUuid().replace(/-/g, ''));
+      const joined = rows[i][col('joined')] || new Date();
+      sh.getRange(i + 1, 1, 1, TALENT_HEADERS.length).setValues([values({ joined: joined, token: token, updated: new Date() })]);
+    } else {
+      token = Utilities.getUuid().replace(/-/g, '');
+      sh.appendRow(values({ joined: new Date(), token: token, updated: '' }));
+    }
+  } finally {
+    lock.releaseLock();
+  }
+
+  const del = WEB_APP_URL + '?talentdelete=' + encodeURIComponent(token);
+  const label = { name: 'Name', email: 'Email', roles: 'Roles', years: 'Years', location: 'Location', rights: 'Work rights (AU)',
+    mode: 'Work mode', salary: 'Salary', linkedin: 'LinkedIn', skills: 'Skills', notice: 'Notice' };
+  MailApp.sendEmail({
+    to: OWNER_EMAIL,
+    replyTo: d.email,
+    subject: (again ? '🔁 Talent pool update: ' : '🙋 Talent pool: ') + d.name + ' · ' + d.roles.split(',')[0],
+    body: Object.keys(label).map(k => (label[k] + ':                 ').slice(0, 18) + (d[k] || '-')).join('\n') +
+      '\nPractice scores:  ' + (share ? practice || '-' : 'not shared') + '\n\nAbout:\n' + (d.about || '-') +
+      '\n\nNever send their details to a company without asking them first (RECRUITMENT.md, "Candidate data").',
+  });
+  MailApp.sendEmail({
+    to: d.email,
+    name: MY_NAME,
+    replyTo: OWNER_EMAIL,
+    subject: again ? 'Your talent pool details are updated' : "You're in my testers' talent pool",
+    body: 'Hi ' + firstName(d.name) + ',\n\n' +
+      (again ? 'Your details are updated.' : 'Thanks for joining. You\'re in my talent pool for ' + d.roles + ' roles.') + '\n\n' +
+      'How it works:\n' +
+      '- When a company I work with has a role that fits, I\'ll email you about it first.\n' +
+      '- I never send your details or CV to a company without asking you.\n' +
+      '- If you say yes, I\'ll ask for your CV by email and set up a short technical chat.\n\n' +
+      'To change your details, fill in the form again with the same email: ' + SITE_URL + '/talent-pool/\n' +
+      'To delete your details completely, open this link: ' + del + '\n\n' +
+      'While you wait, the free AI interview practice is a good warm-up: ' + SITE_URL + '/interview-prep/practice/\n\n' + signature(),
+  });
+  return json({ ok: true });
+}
+
+// GET ?talentdelete=TOKEN: wipes the tester's details from the Talent pool tab (keeps an empty row marked Deleted).
+function talentDeletePage(token) {
+  token = String(token || '').replace(/[^\w]/g, '');
+  const sh = SpreadsheetApp.getActive().getSheetByName(TALENT_SHEET);
+  let done = false;
+  if (sh && token) {
+    const col = h => TALENT_HEADERS.indexOf(h);
+    const rows = sh.getDataRange().getValues();
+    const i = rows.findIndex((r, n) => n > 0 && String(r[col('token')]) === token);
+    if (i > 0) {
+      const blank = TALENT_HEADERS.map(() => '');
+      blank[col('joined')] = rows[i][col('joined')];
+      blank[col('status')] = 'Deleted';
+      blank[col('deleted')] = new Date();
+      sh.getRange(i + 1, 1, 1, TALENT_HEADERS.length).setValues([blank]);
+      done = true;
+      try {
+        MailApp.sendEmail({ to: OWNER_EMAIL, subject: 'Talent pool: someone deleted their details',
+          body: 'A tester used their delete link. Their row in the Talent pool tab is now empty (status Deleted). ' +
+            'If you saved their CV or details anywhere else (email, notes), delete those too.' });
+      } catch (err) {}
+    }
+  }
+  const msg = done ? "Your details are deleted from my talent pool. I won't contact you about roles. You can join again any time."
+    : "That link wasn't recognised. Your details may already be deleted. If not, email hello@pawansinha.com.au and I'll delete them by hand.";
+  return HtmlService.createHtmlOutput(
+    '<div style="font:17px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:' + EMAIL.text + ';max-width:560px;margin:60px auto;padding:0 16px">' +
+    '<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:' + EMAIL.accent + '">Pawan Sinha</p>' +
+    '<h2 style="margin:0 0 12px">' + (done ? 'Details deleted' : 'Link not recognised') + '</h2><p>' + msg + '</p></div>')
+    .setTitle('Talent pool');
 }
