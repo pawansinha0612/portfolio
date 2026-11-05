@@ -22,7 +22,8 @@
   <style>
     :root { --bad: #b42318; --bad-bg: #fde8e6; }
     @media (prefers-color-scheme: dark) { :root { --bad: #ff8a80; --bad-bg: #3a1513; } }
-    .report { max-width: 900px; padding: 40px 16px 24px; }
+    .report { padding: 40px 16px 24px; }
+    .report > *, .report-end > * { max-width: 900px; }
     .report h2 { font-size: clamp(22px, 3vw, 28px); margin: 44px 0 10px; line-height: 1.25; scroll-margin-top: 80px; }
     .report h2 .num { color: var(--accent); margin-right: 8px; }
     .report h3 { font-size: 18px; margin: 26px 0 6px; }
@@ -91,7 +92,7 @@
     pre.k6 { font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt); border: 1px solid var(--border);
       border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0 0; tab-size: 2; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
-    .report-end { max-width: 900px; padding: 24px 16px 72px; }
+    .report-end { padding: 24px 16px 72px; }
     @media (max-width: 600px) {
       .finding dl { grid-template-columns: 1fr; gap: 2px; }
       .finding dd { margin-bottom: 8px; }
