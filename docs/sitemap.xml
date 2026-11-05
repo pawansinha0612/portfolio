@@ -40,6 +40,9 @@
   <url><loc>https://pawansinha.com.au/compare/k6-vs-gatling/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/compare/k6-vs-locust/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/compare/jmeter-vs-loadrunner/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/play/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/play/hold-the-line/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/play/spot-the-bottleneck/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/apdex/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/apm/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>

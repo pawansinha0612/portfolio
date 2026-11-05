@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance Testing Games — Pawan Sinha</title>
+  <meta name="description" content="Free browser games about performance engineering. Keep a shop alive through Black Friday traffic in Hold the Line, or read load test charts against the clock in Spot the Bottleneck.">
+  <meta property="og:title" content="Performance testing games: learn capacity and bottlenecks by playing">
+  <meta property="og:description" content="Hold the Line (survive Black Friday traffic) and Spot the Bottleneck (read a load test in 20 seconds). Free, in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/play/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/play/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/play/play.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap game-hero">
+      <p class="eyebrow"><a href="/learn/">Learn</a> · Games</p>
+      <h1>Performance testing games</h1>
+      <p class="lead">Learn how systems behave under load by playing. Free, no sign-up, and everything runs in your browser. Each takes about five minutes.</p>
+    </section>
+
+    <section class="wrap" style="padding-bottom:16px">
+      <div class="games-grid">
+        <a class="card project-card" href="/play/hold-the-line/" data-track="play-hold"><div class="icon">🛒</div><h3>Hold the Line</h3><p>Five waves of traffic, from a quiet Tuesday to the Black Friday peak. Add servers, caching, a CDN, replicas, a checkout queue and a rate limiter. Keep p95 under 800 ms and errors under 1% without blowing the budget.</p><p class="best" data-best="hold-best"></p><span class="project-link">Play →</span></a>
+        <a class="card project-card" href="/play/spot-the-bottleneck/" data-track="play-spot"><div class="icon">🔍</div><h3>Spot the Bottleneck</h3><p>Ten load tests, ten problems, 20 seconds each. Read the charts and pick the cause: CPU, connection pools, thread pools, GC, locks, cache stampedes, retry storms and more.</p><p class="best" data-best="spot-best"></p><span class="project-link">Play →</span></a>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="panel cta-panel">
+        <h2>Want to go deeper?</h2>
+        <p>The <a href="/tools/">free calculators</a> do the maths for real systems, the <a href="/glossary/">glossary</a> explains every term in the games, and the <a href="/course/k6/">k6 email course</a> gets you running your own load tests.</p>
+        <p class="cta-row">
+          <a class="btn" href="/site-check/" data-track="play-cta-sitecheck">Free site check</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="play-cta-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/play/share.js"></script>
+  <script>
+    document.querySelectorAll('[data-best]').forEach(el => {
+      const b = window.Play.store.get(el.dataset.best);
+      if (b && b.score) el.textContent = 'Your best: ' + Math.round(b.score).toLocaleString('en-AU');
+    });
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

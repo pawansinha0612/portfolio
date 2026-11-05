@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hold the Line: a Black Friday traffic game — Pawan Sinha</title>
+  <meta name="description" content="A free browser game about surviving Black Friday traffic. Add servers, caching, a CDN, read replicas, a checkout queue and a rate limiter, and keep p95 latency and errors inside your SLO without blowing the budget.">
+  <meta property="og:title" content="Hold the Line: can your shop survive Black Friday?">
+  <meta property="og:description" content="Five waves of traffic, from a quiet Tuesday to the Black Friday peak. Keep p95 under 800 ms and errors under 1% without blowing the budget. Free, in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/play/hold-the-line/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/play/hold-the-line/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/play/play.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Hold the Line","url":"https://pawansinha.com.au/play/hold-the-line/","description":"A browser game about keeping an online shop inside its SLO through Black Friday traffic.","genre":["Strategy","Educational"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap game-hero">
+      <p class="eyebrow"><a href="/play/">Games</a> · Capacity planning</p>
+      <h1>Hold the Line</h1>
+      <p class="lead">Your shop has five waves of traffic coming, from a quiet Tuesday to the Black Friday peak. Build the setup that keeps <strong>p95 under 800 ms</strong> and <strong>errors under 1%</strong>, without blowing the budget.</p>
+    </section>
+
+    <section class="wrap game" id="game" aria-label="Hold the Line game">
+      <div class="hud">
+        <div class="hud-wave"><span id="wave-label">Wave 1 of 5</span><b id="wave-name">Normal Tuesday</b>
+          <div class="bar" aria-hidden="true"><i id="wave-bar"></i></div></div>
+        <div class="hud-right">
+          <span class="lives" id="lives" aria-label="Lives">❤️❤️❤️</span>
+          <span class="score">Score <b id="score">0</b></span>
+          <button class="gbtn" type="button" id="pause" aria-keyshortcuts="P" disabled>Pause</button>
+          <button class="gbtn" type="button" id="speed" aria-pressed="false">Speed ×1</button>
+        </div>
+      </div>
+
+      <div class="meters" aria-live="off">
+        <div class="meter" id="m-rps"><span>Traffic</span><b>0</b><small>req/s (bots incl.)</small></div>
+        <div class="meter" id="m-p95"><span>p95 latency</span><b>0 ms</b><small>SLO 800 ms</small></div>
+        <div class="meter" id="m-err"><span>Errors</span><b>0%</b><small>SLO 1%</small></div>
+        <div class="meter" id="m-cost"><span>Cost</span><b>$0/h</b><small id="m-budget">budget $6/h</small></div>
+        <div class="meter" id="m-orders"><span>Orders</span><b>0</b><small id="m-queue">this wave</small></div>
+      </div>
+      <p class="breach" id="breach" role="status" aria-live="polite"></p>
+
+      <div class="stage">
+        <svg id="arch" viewBox="0 0 720 300" role="img" aria-label="Architecture: users, rate limiter, CDN, app servers, cache, checkout queue and database">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+          <g id="links"></g>
+          <g id="dots"></g>
+          <g id="nodes"></g>
+        </svg>
+        <svg id="spark" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" x2="300" class="slo-line" id="slo-line"/>
+          <polyline id="spark-rps" class="spark-rps" points=""/>
+          <polyline id="spark-p95" class="spark-p95" points=""/>
+        </svg>
+        <p class="legend"><span class="sw sw-rps"></span>traffic <span class="sw sw-p95"></span>p95 <span class="sw sw-slo"></span>SLO</p>
+      </div>
+
+      <div class="shop" id="shop" aria-label="Upgrades"></div>
+      <p class="hint">During a wave, new servers take <b id="warm-s">25</b> s to warm up, the way real instances do. Between waves, changes are instant. Keys: <kbd>P</kbd> pause, <kbd>+</kbd>/<kbd>−</kbd> servers, <kbd>Enter</kbd> start the next wave.</p>
+
+      <div class="overlay" id="overlay" role="dialog" aria-modal="false" aria-labelledby="ov-title">
+        <div class="ov-card">
+          <p class="eyebrow" id="ov-eyebrow">Get ready</p>
+          <h2 id="ov-title">Wave 1: Normal Tuesday</h2>
+          <div id="ov-body"></div>
+          <div class="ov-actions" id="ov-actions"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide">
+      <h2>What the game is modelling</h2>
+      <p>It's a toy, but every effect in it is a real one you'll meet in a load test:</p>
+      <ul>
+        <li><strong>Queueing:</strong> latency grows like 1 / (1 − utilisation). At 50% busy it barely moves; at 90% it's ten times the idle time. That's why you need <a href="/glossary/headroom/">headroom</a>.</li>
+        <li><strong>Caching and the CDN</strong> take load off the database and the app tier. Checkouts can't be cached, so they always reach the database.</li>
+        <li><strong>Connections:</strong> connections in use = queries per second × query time (<a href="/glossary/littles-law/">Little's law</a>). Add app servers without a pooler and you can run the database out of <a href="/glossary/connection-pool/">connections</a>.</li>
+        <li><strong>Autoscaling lag:</strong> new servers take time to start. If your traffic jumps in seconds, <a href="/glossary/autoscaling/">autoscaling</a> alone is too late. Scale before the sale.</li>
+        <li><strong>Queues and rate limits:</strong> a checkout queue turns a database overload into a wait instead of an error, and a <a href="/glossary/rate-limiting/">rate limiter</a> keeps bots from using the capacity your customers need.</li>
+      </ul>
+      <p>Your real system has its own numbers. The only way to know them is to measure: <a href="/peak-readiness/">a peak-readiness load test</a> finds where it breaks before your customers do.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="panel cta-panel">
+        <h2>Real Black Friday coming?</h2>
+        <p>Find out how your actual site holds up. Run the free speed check, or book a 30-minute call and I'll look at your setup with you.</p>
+        <p class="cta-row">
+          <a class="btn" href="/site-check/" data-track="hold-cta-sitecheck">Free site check</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="hold-cta-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+      <p class="more-games">More games: <a href="/play/spot-the-bottleneck/">Spot the Bottleneck</a> · <a href="/play/">all games</a></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/play/hold-the-line/sim.js"></script>
+  <script src="/play/share.js"></script>
+  <script src="/play/hold-the-line/game.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

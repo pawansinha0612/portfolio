@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spot the Bottleneck: a load test puzzle game — Pawan Sinha</title>
+  <meta name="description" content="A free 10-round puzzle game for testers and engineers. Read the charts from a load test and pick the bottleneck in 20 seconds: CPU, connection pools, thread pools, GC, locks, cache stampedes, retry storms and more.">
+  <meta property="og:title" content="Spot the Bottleneck: can you read a load test in 20 seconds?">
+  <meta property="og:description" content="10 rounds, 20 real-world bottlenecks, 20 seconds each. Read the charts, pick the cause, learn why. Free, in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/play/spot-the-bottleneck/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/play/spot-the-bottleneck/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/play/play.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Spot the Bottleneck","url":"https://pawansinha.com.au/play/spot-the-bottleneck/","description":"A puzzle game: read load test charts and identify the performance bottleneck.","genre":["Puzzle","Educational"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap game-hero">
+      <p class="eyebrow"><a href="/play/">Games</a> · Bottleneck analysis</p>
+      <h1>Spot the Bottleneck</h1>
+      <p class="lead">Ten load tests, ten problems. Read the charts and pick what's holding the system back. You have 20 seconds a round, and faster answers score more.</p>
+    </section>
+
+    <section class="wrap game" id="game" aria-label="Spot the Bottleneck game">
+      <div id="start">
+        <h2 style="margin:0 0 8px">How it works</h2>
+        <p class="story">Each round shows 3 or 4 charts from a load test. One thing is the bottleneck; the other charts are there to mislead you, like in real life. Pick from 4 answers (or press <kbd>1</kbd>–<kbd>4</kbd>), then read why.</p>
+        <p class="best" id="best"></p>
+        <button class="gbtn primary" type="button" id="go" data-track="spot-start">Start 10 rounds</button>
+      </div>
+
+      <div id="play" hidden>
+        <div class="round-head">
+          <span class="meta">Round <b id="r-num">1</b> of 10</span>
+          <span class="meta">Score <b id="r-score">0</b> · Streak <b id="r-streak">0</b></span>
+          <span class="meta"><b id="r-time">20</b> s</span>
+        </div>
+        <div class="timer" id="timer" aria-hidden="true"><i id="timer-bar"></i></div>
+        <p class="story" id="story"></p>
+        <div class="charts" id="charts"></div>
+        <h2 class="sr-only" id="q">What's the bottleneck?</h2>
+        <div class="opts" id="opts" role="group" aria-labelledby="q"></div>
+        <div class="explain" id="explain" hidden aria-live="polite">
+          <p class="verdict" id="verdict"></p>
+          <p id="why"></p>
+          <p><a id="why-link" href="/glossary/">Read more in the glossary →</a></p>
+          <button class="gbtn primary" type="button" id="next">Next round</button>
+        </div>
+      </div>
+
+      <div id="end" hidden>
+        <p class="eyebrow">Result</p>
+        <h2 id="end-title" style="margin:0 0 8px"></h2>
+        <div class="ov-stats">
+          <div><span>Score</span><b id="e-score">0</b></div>
+          <div><span>Correct</span><b id="e-correct">0/10</b></div>
+          <div><span>Best streak</span><b id="e-streak">0</b></div>
+          <div><span>Your best</span><b id="e-best">0</b></div>
+        </div>
+        <p class="story" id="e-msg"></p>
+        <div class="share-row" id="share-row"></div>
+        <p class="ov-actions"><button class="gbtn primary" type="button" id="again" data-track="spot-again">Play again (new charts)</button></p>
+      </div>
+    </section>
+
+    <section class="wrap guide">
+      <h2>How to read a load test like this</h2>
+      <ul>
+        <li><strong>Find the first thing that flattens.</strong> Throughput stops rising when something is full. Look for the resource that hit its limit at the same moment.</li>
+        <li><strong>Busy versus waiting.</strong> High CPU means work is queueing for compute. Low CPU with high latency means requests are waiting on something: a pool, a lock, the disk or another service.</li>
+        <li><strong>Averages hide hot spots.</strong> Check per instance, per shard and per core before you call it healthy.</li>
+        <li><strong>Steady load, changing behaviour</strong> points to time: leaks, growing tables, expiring caches.</li>
+      </ul>
+      <p>That's the <a href="/glossary/use-method/">USE method</a> in practice. The long version: <a href="/blog/bottleneck-analysis-is-a-method-not-a-guess/">bottleneck analysis is a method, not a guess</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="panel cta-panel">
+        <h2>Real Black Friday coming?</h2>
+        <p>Finding the bottleneck in a game is the fun part. Finding it in your system before your customers do is the job. Run the free site check, or book a peak-readiness load test.</p>
+        <p class="cta-row">
+          <a class="btn" href="/site-check/" data-track="spot-cta-sitecheck">Free site check</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="spot-cta-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+      <p class="more-games">More games: <a href="/play/hold-the-line/">Hold the Line</a> · <a href="/play/">all games</a></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/play/spot-the-bottleneck/scenarios.js"></script>
+  <script src="/play/share.js"></script>
+  <script src="/play/spot-the-bottleneck/game.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
