@@ -58,7 +58,7 @@ TERMS = [
          mistakes=['Planning to run CPUs at 90% at peak.',
                    'Thinking response time grows in a straight line with load.'],
          related=['saturation', 'headroom', 'littles-law', 'bottleneck'],
-         links=[('/tools/#bottleneck', 'Bottleneck tier calculator')]),
+         links=[('/explain/queueing/', 'The queueing hockey stick (interactive)'), ('/tools/#bottleneck', 'Bottleneck tier calculator')]),
 
     dict(slug='saturation', name='Saturation', cat='systems',
          definition='Saturation is the point where a resource has more work than it can handle, so extra work has to wait in a queue, which shows up as rising response times while throughput stops increasing.',
@@ -67,7 +67,8 @@ TERMS = [
          measure='Look for queues, not just utilisation: run queue length for CPU, disk queue depth, connections waiting for a pool, threads waiting for a lock, and messages waiting in a broker. The USE method lists the places to check.',
          mistakes=['Watching only CPU percentages.',
                    'Reading 100% utilisation as the problem when the queue behind it is the real measure.'],
-         related=['bottleneck', 'utilisation-law', 'use-method', 'back-pressure']),
+         related=['bottleneck', 'utilisation-law', 'use-method', 'back-pressure'],
+         links=[('/explain/queueing/', 'The queueing hockey stick (interactive)')]),
 
     dict(slug='bottleneck', name='Bottleneck', cat='systems',
          definition='A bottleneck is the single resource or component that limits a system\'s throughput, so improving anything else makes little difference until it is fixed.',

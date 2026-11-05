@@ -43,6 +43,11 @@
   <url><loc>https://pawansinha.com.au/play/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/play/hold-the-line/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/play/spot-the-bottleneck/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/explain/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/explain/percentiles/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/explain/queueing/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/explain/load-profiles/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://pawansinha.com.au/explain/ai-prompts-for-testers/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/apdex/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://pawansinha.com.au/glossary/apm/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>

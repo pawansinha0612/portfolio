@@ -1,0 +1,59 @@
+<!--{"title": "The hockey stick: why latency explodes at 80% busy", "og_title": "The hockey stick: an interactive guide to queueing and Little's law", "description": "Drag the traffic slider and watch response time explode as servers get busy. A live M/M/c queueing model with an animated queue and Little's law, for load testers and capacity planners.", "scripts": ["/explain/js/svg.js", "/explain/js/queue.js", "/explain/js/queueing-page.js"]}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/explain/">Explainers</a> · Queueing</p>
+      <h1>The hockey stick: why latency explodes at 80% busy</h1>
+      <p class="lead">Your servers do the same work per request at 50% and at 95% busy. So why is the site twice as slow? Requests wait in a queue, and the queue grows much faster than the traffic. Drag the slider and see.</p>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <div class="ex-sliders">
+          <label>Traffic <output id="rate-o"></output><input id="rate" type="range" min="0" max="40" step="0.1" value="28" aria-label="Traffic in requests per second"></label>
+          <label>Servers (or threads) <output id="srv-o"></output><input id="srv" type="range" min="1" max="32" step="1" value="4" aria-label="Number of servers"></label>
+          <label>Work per request <output id="svc-o"></output><input id="svc" type="range" min="20" max="500" step="10" value="100" aria-label="Service time in milliseconds"></label>
+        </div>
+        <div class="ex-controls" role="group" aria-label="Jump to utilisation">
+          <span class="lbl">Jump to</span>
+          <button class="xbtn" type="button" data-rho="0.5">50% busy</button>
+          <button class="xbtn" type="button" data-rho="0.8">80%</button>
+          <button class="xbtn" type="button" data-rho="0.9">90%</button>
+          <button class="xbtn" type="button" data-rho="0.97">97%</button>
+          <button class="xbtn" type="button" data-rho="1.02">Over capacity</button>
+        </div>
+        <svg id="curve" class="ex-chart" viewBox="0 0 900 340" role="img" aria-label="Response time against utilisation"></svg>
+        <div class="ex-stats" id="stats" aria-live="polite"></div>
+        <p class="ex-callout" id="note" aria-live="polite"></p>
+        <svg id="queue" class="ex-chart ex-anim" viewBox="0 0 900 150" style="margin-top:14px" role="img" aria-label="Animated queue of requests waiting for servers"></svg>
+      </div>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <h2>Little's law: how many requests are in flight?</h2>
+        <p class="hint">Requests in the system = arrival rate × time each one spends inside. It holds for any stable system, whatever the traffic pattern.</p>
+        <p style="font-size:clamp(20px,3vw,28px);font-weight:700;margin:6px 0;font-variant-numeric:tabular-nums">L = <span id="ll-lam"></span> req/s × <span id="ll-w"></span> s = <span id="ll-l" style="color:var(--accent)"></span></p>
+        <p class="ex-callout" id="ll-note" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>What this means for your system</h2>
+      <ul>
+        <li><strong>Don't plan to run hot.</strong> Above about 70–80% utilisation, a small rise in traffic gives a large rise in response time. Leave headroom for peaks; see <a href="/glossary/headroom/">headroom</a>.</li>
+        <li><strong>More servers share the load better.</strong> At the same utilisation, 16 servers queue far less than 1 server. That's why a single slow worker or a tiny connection pool hurts so much.</li>
+        <li><strong>Cutting work per request moves the whole curve.</strong> A query that's 30% faster lets you take more traffic at the same latency.</li>
+        <li><strong>Use Little's law to size pools.</strong> 200 req/s at 250 ms means about 50 requests in flight: your thread pool, connection pool and k6 VUs need at least that. See <a href="/glossary/littles-law/">Little's law</a> and <a href="/blog/thread-pool-sizing-from-first-principles/">thread pool sizing from first principles</a>.</li>
+      </ul>
+      <p>The model here is the textbook M/M/c queue: random arrivals, random service times, <em>c</em> identical servers. Real systems are messier, with slow dependencies, retries and garbage collection pauses. But the shape of the curve is the same, and that's why load tests that stop at "expected traffic" miss the cliff.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Where is your hockey stick?</h2>
+        <p>Plug your own numbers into the <a href="/tools/capacity-calculator/">capacity calculator</a>, or let me find the knee in your system with a stress test before your customers do.</p>
+        <p class="cta-row">
+          <a class="btn" href="/#contact" data-track="explain-q-contact">Book a free call</a>
+          <a class="btn btn-ghost" href="/explain/load-profiles/" data-track="explain-q-next">Next: load test profiles</a>
+        </p>
+      </div>
+    </section>

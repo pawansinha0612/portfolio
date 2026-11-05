@@ -17,7 +17,7 @@ TERMS = [
                    'Reporting the average response time, which hides the slow requests users complain about.',
                    'Running against an environment that is a fraction of production size and assuming results scale linearly.'],
          related=['stress-testing', 'workload-model', 'percentiles', 'thresholds', 'capacity-testing'],
-         links=[('/peak-readiness/', 'Peak-readiness load test'), ('/course/k6/', 'Free k6 email course')]),
+         links=[('/explain/load-profiles/', 'Test shapes with k6 export (interactive)'), ('/peak-readiness/', 'Peak-readiness load test'), ('/course/k6/', 'Free k6 email course')]),
 
     dict(slug='stress-testing', name='Stress testing', cat='testing',
          definition='Stress testing pushes a system beyond its expected peak to find where it breaks, how it fails and whether it recovers once the load drops.',
@@ -27,7 +27,8 @@ TERMS = [
          mistakes=['Stopping the test at the first error instead of watching how the system degrades.',
                    'Forgetting the recovery phase, which is often where the real problem shows up.',
                    'Stress testing a shared environment without warning the other teams on it.'],
-         related=['breakpoint-testing', 'load-testing', 'spike-testing', 'saturation', 'headroom']),
+         related=['breakpoint-testing', 'load-testing', 'spike-testing', 'saturation', 'headroom'],
+         links=[('/explain/load-profiles/', 'Test shapes with k6 export (interactive)')]),
 
     dict(slug='soak-testing', name='Soak testing', cat='testing', aka=['endurance testing'],
          definition='Soak testing runs a realistic load for many hours to find problems that only appear over time, such as memory leaks, connection leaks, growing queues and full disks.',
@@ -37,7 +38,8 @@ TERMS = [
          mistakes=['Running a soak at stress levels, so you cannot tell a leak from plain overload.',
                    'Only looking at the summary at the end instead of the trend lines.',
                    'Letting test data pile up so the database grows in a way production never would.'],
-         related=['memory-leak', 'load-testing', 'garbage-collection-pause', 'steady-state']),
+         related=['memory-leak', 'load-testing', 'garbage-collection-pause', 'steady-state'],
+         links=[('/explain/load-profiles/', 'Test shapes with k6 export (interactive)')]),
 
     dict(slug='spike-testing', name='Spike testing', cat='testing',
          definition='Spike testing hits a system with a sudden, sharp jump in traffic to see whether it survives the burst and how quickly it scales and recovers.',
@@ -54,7 +56,8 @@ TERMS = [
 }""",
          mistakes=['Ramping up over ten minutes and calling it a spike.',
                    'Using a closed model with a fixed number of virtual users, which slows the spike down as the system slows down.'],
-         related=['autoscaling', 'thundering-herd', 'stress-testing', 'arrival-rate']),
+         related=['autoscaling', 'thundering-herd', 'stress-testing', 'arrival-rate'],
+         links=[('/explain/load-profiles/', 'Test shapes with k6 export (interactive)')]),
 
     dict(slug='volume-testing', name='Volume testing', cat='testing',
          definition='Volume testing checks how a system performs when it holds or processes a large amount of data, such as a full-size database, a big batch file or a long order history.',
@@ -75,7 +78,8 @@ TERMS = [
 },""",
          mistakes=['Ramping so fast that the system never settles at each step.',
                    'Reporting the breaking point without saying which resource caused it, so nobody knows what to fix.'],
-         related=['stress-testing', 'capacity-testing', 'headroom', 'bottleneck']),
+         related=['stress-testing', 'capacity-testing', 'headroom', 'bottleneck'],
+         links=[('/explain/load-profiles/', 'Test shapes with k6 export (interactive)')]),
 
     dict(slug='scalability-testing', name='Scalability testing', cat='testing',
          definition='Scalability testing measures how throughput and response time change as you add resources such as pods, servers or database replicas, to show whether the system actually scales.',

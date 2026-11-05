@@ -37,7 +37,7 @@ TERMS = [
          mistakes=['Averaging p95 values across servers.',
                    'Reporting p99 from a small sample, such as 200 requests, where it rests on 2 data points.'],
          related=['tail-latency', 'fan-out-amplification', 'thresholds', 'slo', 'coordinated-omission'],
-         links=[('/tools/k6-results/', 'k6 results explainer')]),
+         links=[('/explain/percentiles/', 'Why averages lie (interactive)'), ('/tools/k6-results/', 'k6 results explainer')]),
 
     dict(slug='tail-latency', name='Tail latency', cat='metrics',
          definition='Tail latency is the response time of the slowest requests, usually measured at p99, p99.9 or the maximum, which is often far slower than the median.',
@@ -46,7 +46,8 @@ TERMS = [
          measure='Record high-resolution histograms, look at p99 and p99.9 as well as p95, and line up spikes with garbage collection logs, queue depth and retries. Make sure the load tool is not hiding the tail through coordinated omission.',
          mistakes=['Dismissing p99 as outliers.',
                    'Measuring with a closed model that slows down during stalls and under-reports the tail.'],
-         related=['percentiles', 'fan-out-amplification', 'coordinated-omission', 'garbage-collection-pause']),
+         related=['percentiles', 'fan-out-amplification', 'coordinated-omission', 'garbage-collection-pause'],
+         links=[('/explain/percentiles/', 'Why averages lie (interactive)')]),
 
     dict(slug='fan-out-amplification', name='Fan-out amplification', cat='metrics', aka=['long tail', 'tail at scale'],
          definition='Fan-out amplification is the effect where a request that calls many backend services in parallel is only as fast as the slowest of them, so rare slow responses become common for the overall request.',
@@ -122,7 +123,7 @@ TERMS = [
          mistakes=['Applying it during ramp-up, when the system is not stable.',
                    'Using p95 response time in place of the average.'],
          related=['virtual-user', 'thread-pool', 'connection-pool', 'throughput', 'utilisation-law'],
-         links=[('/tools/#virtual-users', "Little's Law virtual users calculator"), ('/tools/capacity-calculator/', 'Capacity calculator')]),
+         links=[('/explain/queueing/', "Little's law, live (interactive)"), ('/tools/#virtual-users', "Little's Law virtual users calculator"), ('/tools/capacity-calculator/', 'Capacity calculator')]),
 
     dict(slug='coordinated-omission', name='Coordinated omission', cat='metrics',
          definition='Coordinated omission is a measurement error where a load tool waits for slow responses before sending the next request, so it sends fewer requests during a stall and under-reports how slow the system really was.',
@@ -132,7 +133,7 @@ TERMS = [
          mistakes=['Trusting p99 from a closed-model test of a public-facing system.',
                    'Giving the test too few virtual users, so an arrival-rate test can\'t keep to its schedule either.'],
          related=['open-vs-closed-workload-model', 'tail-latency', 'percentiles', 'arrival-rate'],
-         links=[('/tools/#coordinated-omission', 'Coordinated omission simulator'), ('/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/', 'Deep dive: coordinated omission')]),
+         links=[('/explain/percentiles/', 'Coordinated omission demo'), ('/tools/#coordinated-omission', 'Coordinated omission simulator'), ('/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/', 'Deep dive: coordinated omission')]),
 
     dict(slug='ttfb', name='TTFB (time to first byte)', cat='metrics', aka=['time to first byte'],
          definition='TTFB is the time from a browser or client starting a request until the first byte of the response arrives, covering redirects, DNS, connection set-up, TLS and the server\'s time to start replying.',

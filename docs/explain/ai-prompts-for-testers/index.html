@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI prompts for testers: a copy-paste library — Pawan Sinha</title>
+  <meta name="description" content="Practical prompts for software testers using AI assistants: test cases from acceptance criteria, k6 and Playwright scripts, test plan reviews, k6 result analysis, flaky tests and bug reports. Each one says what good output looks like and which AI mistakes to check for.">
+  <meta property="og:title" content="AI prompts for testers: test cases, k6 and Playwright scripts, flaky tests, bug reports">
+  <meta property="og:description" content="Practical prompts for software testers using AI assistants: test cases from acceptance criteria, k6 and Playwright scripts, test plan reviews, k6 result analysis, flaky tests and bug reports. Each one says what good output looks like and which AI mistakes to check for.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/explain/ai-prompts-for-testers/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/explain/ai-prompts-for-testers/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+</head>
+<body data-present>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/explain/">Explainers</a> · AI for testers</p>
+      <h1>AI prompts for testers</h1>
+      <p class="lead">Copy-paste prompts that get useful work out of any AI chat assistant, plus what good output looks like and the mistakes to check for. AI is a fast junior tester: brilliant at first drafts, confidently wrong at the edges. You stay the reviewer.</p>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <h2>Before you paste anything</h2>
+        <ul class="ex-list">
+          <li><strong>Check your company's AI policy.</strong> Don't paste customer data, secrets, tokens or internal code into a tool your company hasn't approved.</li>
+          <li><strong>Give it context, not just a task.</strong> The product, the users, the tech stack and what "done" means. Every prompt below has <code>[square brackets]</code> for that.</li>
+          <li><strong>Run everything it writes.</strong> Generated scripts often look right and fail on the first run. That's normal; paste the error back and ask it to fix it.</li>
+        </ul>
+        <div class="ex-controls ex-filter" role="group" aria-label="Filter prompts">
+          <span class="lbl">Show</span>
+          <button class="xbtn" type="button" data-filter="all" aria-pressed="true">All</button>
+          <button class="xbtn" type="button" data-filter="design">Test design</button>
+          <button class="xbtn" type="button" data-filter="code">Scripts</button>
+          <button class="xbtn" type="button" data-filter="perf">Performance</button>
+          <button class="xbtn" type="button" data-filter="debug">Debugging</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap ex-stage ex-stack" id="prompts">
+      <article class="ex-panel prompt" data-cat="design">
+        <h2>1. Test cases from acceptance criteria</h2>
+        <p class="hint">Use when a story is ready for testing and you want a first set of cases fast.</p>
+        <pre class="ex-code">You are a senior QA engineer. Write test cases for this user story.
+
+Product: [what it is and who uses it]
+Story: [paste the story]
+Acceptance criteria:
+[paste the criteria]
+Out of scope: [anything you know isn't tested here]
+
+For each test case give: ID, title, type (positive / negative / boundary / edge),
+preconditions, steps, expected result, and which acceptance criterion it covers.
+Cover every criterion at least once. Then list:
+- questions or gaps you found in the criteria (don't guess the answers)
+- risky areas that need exploratory testing rather than scripted cases.
+Use a table.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> every criterion is traced to cases; boundaries (empty, max length, zero, negative) appear; it asks questions instead of inventing business rules.</p>
+          <p class="ex-callout warn"><b>Check for:</b> invented rules stated as fact ("passwords must be 12 characters"), duplicate cases with different wording, and no negative cases for permissions and errors.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="design">
+        <h2>2. Review my test plan</h2>
+        <p class="hint">Use when you have a plan or checklist and want a second pair of eyes before the review meeting.</p>
+        <pre class="ex-code">Act as a critical test lead reviewing this test plan for [feature / release].
+Context: [users, platforms, integrations, deadline, known risks]
+
+[paste the plan]
+
+Tell me:
+1. The 5 biggest risks this plan does not cover, ranked, with why each matters.
+2. Anything tested twice or tested at the wrong level (UI vs API vs unit).
+3. Missing non-functional checks: performance, security, accessibility, data migration.
+4. Which tests to cut first if we lose two days.
+Be specific to this plan. No generic testing advice.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> risks tied to your context (that payment provider, that migration), and a clear cut list you could defend.</p>
+          <p class="ex-callout warn"><b>Check for:</b> textbook lists ("consider usability testing") that would fit any plan. If you get those, add more context and ask again.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="code perf">
+        <h2>3. Write a k6 load test script</h2>
+        <p class="hint">Use when you know the user journey and the traffic target. Converting an existing JMeter, Postman or OpenAPI file? The <a href="/tools/">free converters</a> are more reliable for that.</p>
+        <pre class="ex-code">Write a k6 (v1.x) load test in JavaScript.
+
+Journey: [e.g. open home, search "boots", open a product, add to cart]
+Endpoints: [method + path + example body for each step]
+Auth: [e.g. POST /login returns a token in JSON field "token"]
+Test data: [e.g. users from users.csv with columns email,password]
+Target: [e.g. ramp to 200 VUs over 5 min, hold 15 min] or [N requests per second]
+Budgets: p95 under [ms], errors under [%]
+
+Requirements:
+- base URL and secrets from __ENV, never hard-coded
+- group() per step and a check() on every response
+- correlate the token and any IDs from earlier responses
+- realistic think time with sleep()
+- thresholds for the budgets
+Explain any assumption you made in a comment.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> runs with <code>k6 run</code> after small fixes, uses SharedArray for CSV data, and the thresholds match your budgets.</p>
+          <p class="ex-callout warn"><b>Check for:</b> imports of modules that don't exist, Node.js APIs (fs, require) that k6 doesn't support, old option names, and a test that hammers one URL with no think time.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="code">
+        <h2>4. Write a Playwright test</h2>
+        <p class="hint">Use for a first draft of a UI test. Paste real HTML so it can choose good locators.</p>
+        <pre class="ex-code">Write a Playwright test in TypeScript for this flow: [describe the steps].
+App URL: [url or "baseURL from config"]
+Here is the relevant HTML (or accessibility snapshot) of each page:
+[paste]
+
+Rules:
+- prefer getByRole / getByLabel / getByTestId; no XPath, no CSS chains
+- no fixed waits (waitForTimeout); rely on auto-waiting and web-first assertions
+- one test per behaviour, with a clear name
+- put repeated steps in a page object only if used more than twice
+After the code, list anything in the HTML that makes the test brittle,
+and what test IDs or labels the developers could add.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> role-based locators, <code>expect(...).toBeVisible()</code>-style assertions, and a useful list of testability fixes for developers.</p>
+          <p class="ex-callout warn"><b>Check for:</b> locators for elements that aren't in your HTML (it guessed), sleeps hidden in helper functions, and assertions that only check the page loaded.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="perf debug">
+        <h2>5. Analyse k6 results</h2>
+        <p class="hint">Use after a run. The end-of-test summary plus your infrastructure graphs give it far more to work with than the summary alone.</p>
+        <pre class="ex-code">You are a performance engineer. Analyse this load test.
+
+System: [architecture in 3-5 lines: app servers, DB, cache, queues]
+Test: [profile: e.g. ramp to 300 VUs in 10 min, hold 20 min]
+Budgets: [p95 / error targets]
+k6 summary:
+[paste the end-of-test summary or summary JSON]
+What we saw on servers during the test:
+[CPU, memory, DB connections, GC, errors in logs, with times]
+
+Tell me:
+1. Did we meet the budgets? Quote the numbers.
+2. When did behaviour change (time or load level), and what changed?
+3. The most likely bottleneck, the evidence for it, and the evidence against.
+4. The next experiment that would confirm it.
+Say clearly when the data isn't enough to be sure.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> numbers quoted back correctly, a hypothesis tied to evidence, and a cheap next test to confirm it.</p>
+          <p class="ex-callout warn"><b>Check for:</b> averages treated as the headline, misread percentiles, and a confident root cause with no server-side evidence. AI can't see what you didn't paste.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="debug">
+        <h2>6. Explain a flaky test</h2>
+        <p class="hint">Use when a test passes locally and fails in CI, or fails one run in ten.</p>
+        <pre class="ex-code">This automated test is flaky. Help me find out why.
+
+Framework: [Playwright / Cypress / Selenium / pytest / ...]
+Fails: [how often, where (CI / local), since when]
+Test code:
+[paste]
+Error and stack trace from a failing run:
+[paste]
+What changed recently: [deps, infra, test data, parallelism]
+
+List the likely causes ranked by probability, each with:
+how to confirm it, and the fix. Consider timing and waits, shared test data,
+test order, parallel runs, environment differences, and real product bugs.
+Don't suggest retries as the fix.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> a ranked list with a concrete way to confirm each cause, and it considers that the product might really be broken.</p>
+          <p class="ex-callout warn"><b>Check for:</b> "add a wait" or "increase the timeout" as the answer. That hides the problem; it doesn't fix it.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="debug">
+        <h2>7. Turn my notes into a bug report</h2>
+        <p class="hint">Use when you found something during exploratory testing and want a clean ticket in a minute.</p>
+        <pre class="ex-code">Turn these rough notes into a bug report a developer can act on.
+
+Notes: [paste what you saw, in any order]
+Environment: [app version, browser/device, OS, test env, account type]
+
+Format: title (what's wrong + where, under 80 characters), steps to reproduce
+(numbered, from a clean start), expected, actual, frequency, impact on users,
+attachments to add, and a suggested severity with one-line reasoning.
+Don't add steps or details that aren't in my notes. Mark anything missing as [NEEDED].</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> a specific title, steps someone else can follow, and [NEEDED] where your notes had gaps.</p>
+          <p class="ex-callout warn"><b>Check for:</b> invented steps or error messages that make the report look complete but can't be reproduced.</p>
+        </div>
+      </article>
+
+      <article class="ex-panel prompt" data-cat="perf design">
+        <h2>8. Build a workload model</h2>
+        <p class="hint">Use before writing any load test, to turn business numbers into a test target.</p>
+        <pre class="ex-code">Help me build a workload model for a load test.
+
+Business numbers: [e.g. 40,000 orders on Black Friday, 3% conversion, peak hour = 18% of the day]
+Analytics: [page views per session, top pages and their share of traffic]
+Response times today: [rough p95 per key page]
+
+Work out, showing the maths step by step:
+1. Peak sessions per hour and peak requests per second, per page
+2. Target load with a safety margin, and why that margin
+3. The mix of user journeys as percentages
+4. VUs needed using Little's law, and think time per step
+Flag any number you had to assume.</pre>
+        <div class="ex-controls ex-copy"><button class="xbtn primary" type="button" data-copy>Copy prompt</button></div>
+        <div class="ex-grid2 ex-verdicts">
+          <p class="ex-callout ok"><b>Good output:</b> maths you can follow and check line by line, with assumptions flagged.</p>
+          <p class="ex-callout warn"><b>Check for:</b> arithmetic slips (redo the key numbers with a calculator) and a peak that's simply "daily total ÷ 24". Real traffic has peaks.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>Why these prompts work</h2>
+      <ul>
+        <li><strong>A role and real context.</strong> "Senior QA engineer" plus your product and stack gets answers about your system, not testing in general.</li>
+        <li><strong>An exact output format.</strong> Tables and numbered sections are quicker to review and paste into Jira or a test tool.</li>
+        <li><strong>Permission to say "I don't know".</strong> Asking for gaps, assumptions and [NEEDED] markers makes invented details easier to spot.</li>
+        <li><strong>You check everything.</strong> Run the scripts, recalculate the numbers, read every test case. AI drafts; you sign off.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want your team using AI well in testing?</h2>
+        <p>Practise interview answers with the <a href="/interview-prep/practice/">AI interview practice</a>, or talk to me about load testing your own AI features.</p>
+        <p class="cta-row">
+          <a class="btn" href="/services/llm-load-testing/" data-track="explain-ai-llm">AI / LLM load testing</a>
+          <a class="btn btn-ghost" href="/interview-prep/" data-track="explain-ai-prep">Interview prep</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/explain/js/svg.js"></script>
+  <script src="/explain/js/prompts-page.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

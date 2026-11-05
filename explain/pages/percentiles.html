@@ -1,0 +1,73 @@
+<!--{"title": "Why averages lie: percentiles explained", "og_title": "Why averages lie: an interactive guide to p50, p95 and p99", "description": "Play with real-looking latency data and watch the average hide the slow requests your users feel. Presets for slow dependencies, GC pauses and cache misses, plus a coordinated omission demo.", "scripts": ["/explain/js/svg.js", "/explain/js/stats.js", "/explain/js/percentiles-page.js"]}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/explain/">Explainers</a> · Percentiles</p>
+      <h1>Why averages lie</h1>
+      <p class="lead">An average response time of 150 ms can hide thousands of users waiting two seconds. Pick a scenario, or click on the chart to add slow requests, and watch what the average does and what p99 does.</p>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <div class="ex-controls" role="group" aria-label="Scenario">
+          <span class="lbl">Scenario</span>
+          <button class="xbtn" type="button" data-preset="healthy">Healthy</button>
+          <button class="xbtn" type="button" data-preset="longtail">Long tail</button>
+          <button class="xbtn" type="button" data-preset="slowdep">One slow dependency</button>
+          <button class="xbtn" type="button" data-preset="gc">GC pauses</button>
+          <button class="xbtn" type="button" data-preset="cachemiss">Cache misses</button>
+        </div>
+        <svg id="hist" class="ex-chart" viewBox="0 0 900 340" role="img" aria-label="Histogram of response times with average and percentile markers"></svg>
+        <div class="ex-stats" id="stats" aria-live="polite"></div>
+        <p class="ex-callout" id="callout" aria-live="polite"></p>
+        <div class="ex-controls" style="margin:14px 0 0">
+          <button class="xbtn" type="button" id="add-slow">Add 20 slow requests</button>
+          <button class="xbtn" type="button" id="reset">Reset</button>
+          <span class="hint" style="margin:0">Tip: click or drag on the chart to drop slow requests anywhere.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>What the numbers mean</h2>
+      <ul>
+        <li><strong>p50 (median):</strong> half of requests were faster than this. It's what a typical request feels like.</li>
+        <li><strong>p95:</strong> 1 in 20 requests was slower. A user who loads 20 things on one visit will usually hit at least one of them.</li>
+        <li><strong>p99:</strong> 1 in 100 was slower. On a busy shop that's thousands of slow checkouts a day.</li>
+        <li><strong>Average (mean):</strong> the total divided by the count. A few very slow requests barely move it, and a bimodal shape (fast cache hits, slow misses) gives an average that <em>no request actually had</em>.</li>
+      </ul>
+      <h2>Three rules for reporting latency</h2>
+      <ol>
+        <li><strong>Report p95 and p99 next to the median</strong>, with the request count. A p99 from 200 requests is two requests' worth of evidence.</li>
+        <li><strong>Never average percentiles.</strong> The average of five servers' p95s is not the p95 of the whole system. Combine the raw data or histograms, then compute.</li>
+        <li><strong>Set targets on percentiles, not averages</strong>: "p95 under 800 ms and errors under 1%" is a test that can actually fail. See <a href="/glossary/percentiles/">percentiles</a> and <a href="/glossary/tail-latency/">tail latency</a> in the glossary.</li>
+      </ol>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <h2>Bonus: when your load tool hides the tail</h2>
+        <p class="hint">A test plans one request every 50 ms. Halfway through, the server freezes for 3 seconds. Compare what a closed-loop tool records with what users actually experienced.</p>
+        <div class="ex-controls" role="group" aria-label="View">
+          <button class="xbtn" type="button" data-co="measured">What the tool recorded</button>
+          <button class="xbtn" type="button" data-co="corrected">What users experienced</button>
+        </div>
+        <svg id="co" class="ex-chart" viewBox="0 0 900 340" role="img" aria-label="Latency over time during a 3 second freeze"></svg>
+        <div class="ex-stats" id="co-stats" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+        <p class="ex-callout" id="co-note" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>Coordinated omission, in one paragraph</h2>
+      <p>A tool that waits for each response before sending the next request slows down exactly when the system does. It "coordinates" with the problem and leaves out the requests that would have been slow. Open-model tests avoid this: k6's <code>constant-arrival-rate</code> and <code>ramping-arrival-rate</code> executors start requests on schedule whatever the server is doing. The full story is in <a href="/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/">why your load tool under-reports tail latency</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want to know your real p99?</h2>
+        <p>Set budgets for your own system with the <a href="/tools/slo-calculator/">SLO calculator</a>, or have me run a proper load test and report the tail honestly.</p>
+        <p class="cta-row">
+          <a class="btn" href="/peak-readiness/" data-track="explain-pct-peak">Peak-readiness load test</a>
+          <a class="btn btn-ghost" href="/explain/" data-track="explain-pct-more">More explainers</a>
+        </p>
+      </div>
+    </section>

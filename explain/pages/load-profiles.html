@@ -1,0 +1,75 @@
+<!--{"title": "Load, stress, spike, soak and breakpoint tests explained", "og_title": "Load vs stress vs spike vs soak vs breakpoint: draw the test, get the k6 script", "description": "See the shape of each kind of performance test, what it finds and when to run it. Drag the points to design your own profile and copy the matching k6 options and script.", "scripts": ["/explain/js/svg.js", "/explain/js/profiles.js", "/explain/js/profiles-page.js"]}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/explain/">Explainers</a> · Test types</p>
+      <h1>Load, stress, spike, soak or breakpoint?</h1>
+      <p class="lead">They're all "load tests", but each shape answers a different question. Pick one, drag the points to fit your system, and copy a k6 script that runs exactly that shape.</p>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <div class="ex-controls" role="group" aria-label="Test type">
+          <span class="lbl">Test type</span>
+          <button class="xbtn" type="button" data-profile="load">Load</button>
+          <button class="xbtn" type="button" data-profile="stress">Stress</button>
+          <button class="xbtn" type="button" data-profile="spike">Spike</button>
+          <button class="xbtn" type="button" data-profile="soak">Soak</button>
+          <button class="xbtn" type="button" data-profile="breakpoint">Breakpoint</button>
+        </div>
+        <div class="ex-grid2">
+          <div>
+            <svg id="shape" class="ex-chart" viewBox="0 0 620 360" role="img" aria-label="Load profile: drag the points to edit"></svg>
+            <p class="hint" style="margin:8px 0 0">Drag a point to change it. Click the line to add a point, double-click a point to remove it. Keyboard: Tab to a point, then the arrow keys.</p>
+            <div class="ex-controls" style="margin:10px 0 0"><button class="xbtn" type="button" id="reset">Reset shape</button></div>
+          </div>
+          <div>
+            <h2 id="p-name"></h2>
+            <div class="ex-stats" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0 12px">
+              <div class="ex-stat"><span>Peak</span><b id="p-peak"></b></div>
+              <div class="ex-stat"><span>Duration</span><b id="p-dur"></b></div>
+            </div>
+            <p style="margin:0 0 8px"><strong>What it finds:</strong> <span id="p-finds" class="muted"></span></p>
+            <p style="margin:0 0 8px"><strong>What to watch:</strong> <span id="p-watch" class="muted"></span></p>
+            <p style="margin:0"><strong>When to run it:</strong> <span id="p-when" class="muted"></span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap ex-stage">
+      <div class="ex-panel">
+        <h2>Your k6 script</h2>
+        <p class="hint">Pass/fail budgets become k6 thresholds. The breakpoint test stops itself as soon as one is broken.</p>
+        <div class="ex-sliders" style="grid-template-columns:repeat(auto-fit,minmax(180px,240px))">
+          <label for="b-p95">p95 budget (ms)<input id="b-p95" type="number" min="1" step="50" value="800"></label>
+          <label for="b-err">Max errors (%)<input id="b-err" type="number" min="0" max="100" step="0.5" value="1"></label>
+        </div>
+        <pre class="ex-code" id="code" tabindex="0" aria-label="Generated k6 script"></pre>
+        <div class="ex-controls ex-copy">
+          <button class="xbtn primary" type="button" id="copy">Copy script</button>
+          <button class="xbtn" type="button" id="download">Download .js</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>VUs or requests per second?</h2>
+      <p>Load, stress and soak tests here use <strong>virtual users</strong> (<code>ramping-vus</code>): each one loops through the journey with think time, like a person. Spike and breakpoint tests use <strong>arrival rate</strong> (<code>ramping-arrival-rate</code>): k6 starts requests on schedule whether or not the server keeps up, which is how real traffic behaves when it surges. If the system slows down, a VU test quietly sends less traffic; an arrival-rate test doesn't. More in the glossary: <a href="/glossary/open-vs-closed-workload-model/">open vs closed workload models</a> and <a href="/glossary/arrival-rate/">arrival rate</a>.</p>
+      <h2>Common mistakes</h2>
+      <ul>
+        <li><strong>No ramp-up.</strong> Jumping straight to full load tests your cold caches and connection setup, not your steady state. See <a href="/glossary/ramp-up/">ramp-up</a>.</li>
+        <li><strong>Steady state too short.</strong> Five minutes at peak won't show a slow leak. That's what the <a href="/glossary/soak-testing/">soak test</a> is for.</li>
+        <li><strong>Breakpoint tests on production.</strong> The point is to break something. Use a test environment that's sized like production.</li>
+        <li><strong>Too few VUs for the arrival rate.</strong> k6 warns about "insufficient VUs". By <a href="/explain/queueing/">Little's law</a>, VUs needed ≈ requests per second × response time in seconds.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure which tests you need?</h2>
+        <p>Most teams need a load test and a spike test before a big event, and a soak test once. I can design the profiles from your real traffic and run them for you.</p>
+        <p class="cta-row">
+          <a class="btn" href="/peak-readiness/" data-track="explain-prof-peak">Peak-readiness load test</a>
+          <a class="btn btn-ghost" href="/course/k6/" data-track="explain-prof-course">Free k6 email course</a>
+        </p>
+      </div>
+    </section>

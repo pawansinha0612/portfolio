@@ -1,0 +1,95 @@
+/* Shared styles for /explain/ pages. Uses the site tokens from styles.css.
+   Every section is a .wrap so all blocks share the header's left edge; text keeps a ~90-character reading column. */
+.ex-hero { padding: 56px 16px 8px; }
+.ex-hero > * { max-width: 860px; }
+.ex-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 14px; text-wrap: balance; }
+.ex-hero .eyebrow a { color: inherit; text-decoration: none; }
+.ex-hero .lead { max-width: 720px; }
+
+.ex-stage { padding-top: 24px; padding-bottom: 8px; }
+.ex-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); padding: 16px; }
+@media (min-width: 900px) { .ex-panel { padding: 22px; } }
+.ex-panel h2 { margin: 0 0 4px; font-size: 20px; }
+.ex-panel .hint { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+
+.ex-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; }
+.ex-controls .lbl { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+.xbtn { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 7px 12px; min-height: 36px; white-space: nowrap; }
+.xbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.xbtn[aria-pressed="true"], .xbtn[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.xbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.xbtn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+.ex-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 20px; margin: 0 0 14px; }
+.ex-sliders label { display: block; font-size: 14px; font-weight: 600; }
+.ex-sliders label output { float: right; font-variant-numeric: tabular-nums; color: var(--accent); }
+.ex-sliders input[type=range] { width: 100%; accent-color: var(--accent); }
+.ex-sliders input[type=number] { display: block; width: 100%; margin-top: 4px; font: inherit; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface); color: var(--text); }
+
+.ex-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
+.ex-stat { background: var(--alt); border-radius: 12px; padding: 8px 10px; min-width: 0; border: 1px solid transparent; }
+.ex-stat span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+.ex-stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ex-stat.key { border-color: var(--accent); }
+@media (max-width: 700px) { .ex-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ex-stat b { font-size: 17px; } }
+
+.ex-chart { display: block; width: 100%; height: auto; background: var(--alt); border-radius: 14px; touch-action: none; user-select: none; }
+.ex-chart text { font: 500 12px Inter, system-ui, sans-serif; fill: var(--muted); }
+@media (max-width: 600px) { .ex-chart text { font-size: 15px; } }
+.ex-chart .axis { stroke: var(--border); stroke-width: 1.5; }
+.ex-chart .grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+.ex-chart .hbar { fill: color-mix(in srgb, var(--accent) 55%, transparent); }
+.ex-chart .hbar.tail { fill: #e0675f; }
+.ex-chart .mark line { stroke-width: 2; }
+.ex-chart .mark text { font-weight: 700; }
+.ex-chart .line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; }
+.ex-chart .line.alt { stroke: #e0675f; stroke-dasharray: 6 5; stroke-width: 2.5; }
+.ex-chart .area { fill: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ex-chart .dot { fill: var(--surface); stroke: var(--accent); stroke-width: 3; cursor: grab; }
+.ex-chart .dot:hover, .ex-chart .dot.drag { fill: var(--accent); }
+.ex-chart .now { stroke: #e0675f; stroke-width: 2; }
+.ex-chart .zone { fill: color-mix(in srgb, #e0675f 10%, transparent); }
+
+.ex-callout { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--alt); font-size: 15px; color: var(--text); }
+.ex-callout.warn { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.ex-callout.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+
+.ex-prose { padding-top: 32px; padding-bottom: 8px; }
+.ex-prose > * { max-width: 720px; }
+.ex-prose h2 { font-size: clamp(22px, 3vw, 28px); margin: 28px 0 10px; line-height: 1.25; text-wrap: balance; }
+.ex-prose h2:first-child { margin-top: 0; }
+.ex-prose p, .ex-prose li { color: var(--muted); }
+.ex-prose strong { color: var(--text); }
+.ex-prose ul, .ex-prose ol { padding-left: 22px; }
+.ex-prose code, .ex-code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; }
+.ex-code { display: block; white-space: pre; overflow: auto; max-height: 420px; background: var(--dash-bg); color: var(--dash-text); padding: 14px 16px;
+  border-radius: 12px; margin: 0; tab-size: 2; }
+.ex-copy { margin-top: 8px; }
+
+.ex-grid2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .ex-grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+.cta-end { padding-top: 24px; padding-bottom: 72px; }
+.cta-end > * { max-width: 860px; }
+.cta-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+.cta-panel h2 { margin: 0 0 8px; font-size: 22px; }
+.cta-panel p { color: var(--muted); margin: 0 0 12px; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+
+.ex-stack { display: flex; flex-direction: column; gap: 18px; }
+.ex-stack > [hidden] { display: none; }
+.ex-list { margin: 6px 0 0; padding-left: 22px; color: var(--muted); }
+.ex-list strong { color: var(--text); }
+.ex-filter { margin: 16px 0 0; }
+.ex-verdicts { margin-top: 12px; }
+.ex-verdicts .ex-callout { margin: 0; }
+.prompt .ex-code { white-space: pre-wrap; }
+.ex-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; padding-top: 24px; padding-bottom: 16px; }
+
+/* Presenter mode: wider panels, bigger numbers */
+html.present .ex-hero .lead { font-size: 20px; }
+html.present .ex-stat b { font-size: 24px; }
+
+@media (prefers-reduced-motion: reduce) { .ex-anim { display: none; } }
