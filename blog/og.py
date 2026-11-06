@@ -77,7 +77,7 @@ def make(post):
     img.paste(gradient((48, 48)), (PAD, 72), _rounded_mask((48, 48), 12))
     draw.text((PAD + 64, 96), 'Pawan Sinha', font=font('Inter-SemiBold.ttf', 30), fill=WHITE, anchor='lm')
     minutes = max(1, round(post.get('words', 1000) / 220))
-    label = f'Performance engineering · {minutes} min read'
+    label = post.get('label') or f'Performance engineering · {minutes} min read'
     lf = font('Inter-SemiBold.ttf', 22)
     lw = draw.textlength(label, font=lf) + 36
     pill(draw, (W - PAD - lw, 73), label, lf, TEAL, fill=(24, 62, 70))

@@ -1,0 +1,59 @@
+# Tool spotlight: shares the next free-tool post from promo/tool-posts.md on your LinkedIn profile.
+# Script: promo/share.py. Edit the posts (order, wording, skip: yes) in promo/tool-posts.md on github.com.
+# Uses the same LinkedIn token as the blog; when it expires, the blog workflow opens the renewal issue.
+name: Tool spotlight
+
+on:
+  schedule:
+    # Tue and Thu 01:23 UTC = 12:23pm Melbourne in summer (11:23am in winter). Away from the 8am blog post.
+    - cron: '23 1 * * 2,4'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only show the next post (posts nothing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tool-spotlight
+  cancel-in-progress: false
+
+jobs:
+  share:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install markdown pillow
+
+      - name: Share the next tool post
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_AUTHOR: ${{ vars.LINKEDIN_AUTHOR }}
+          LINKEDIN_TOKEN_EXPIRES: ${{ vars.LINKEDIN_TOKEN_EXPIRES }}
+          LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python promo/share.py --dry-run
+          else
+            python promo/share.py
+          fi
+
+      - name: Record what was shared
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promo/posted.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m 'Tool spotlight: record LinkedIn share'
+            for i in 1 2 3; do git pull --rebase -q && git push && break; [ "$i" = 3 ] && exit 1; sleep 10; done
+          fi

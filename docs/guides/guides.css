@@ -35,3 +35,5 @@
 .ex-prose > p, .ex-prose > ul, .ex-prose > ol, .ex-prose > h2, .ex-prose > h3, .ex-prose > .g-note, .ex-prose > .g-warn, .ex-prose > .g-toc { max-width: 660px; }
 /* The Copy button sits in its own strip above the code, never over it. */
 .g-codewrap > pre.ex-code { padding-top: 40px; }
+.g-discuss .giscus { max-width: 760px; margin-top: 12px; }
+@media print { .g-discuss { display: none !important; } }
