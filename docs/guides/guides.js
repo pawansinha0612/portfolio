@@ -26,7 +26,7 @@
 // Questions under each guide (giscus = GitHub Discussions, category "Q&A" in pawansinha0612/portfolio).
 // Only on guide articles (pages with TechArticle JSON-LD). Switch: GISCUS_ON. Needs the giscus GitHub app installed on the repo.
 (function () {
-  var GISCUS_ON = false;
+  var GISCUS_ON = true;
   if (!GISCUS_ON) return;
   var ld = document.querySelector('script[type="application/ld+json"]');
   if (!ld || ld.textContent.indexOf('TechArticle') < 0) return;
