@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatling injection profiles: open vs closed models — Pawan Sinha</title>
+  <meta name="description" content="Every Gatling injection step for open and closed workload models, how to choose between them, capacity searches with incrementUsersPerSec, and throttling.">
+  <meta property="og:title" content="Gatling injection profiles explained: open vs closed, with examples">
+  <meta property="og:description" content="Every Gatling injection step for open and closed workload models, how to choose between them, capacity searches with incrementUsersPerSec, and throttling.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/gatling/injection-profiles/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/gatling/injection-profiles/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Gatling injection profiles: open vs closed models", "description": "Every Gatling injection step for open and closed workload models, how to choose between them, capacity searches with incrementUsersPerSec, and throttling.", "url": "https://pawansinha.com.au/guides/gatling/injection-profiles/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/gatling/">Gatling</a> · Injection profiles</p>
+      <h1>Gatling injection profiles: open or closed, then the shape</h1>
+      <p class="lead">You set <code>atOnceUsers(1000)</code> to simulate "1,000 users". The test fires
+        1,000 journeys in the same millisecond, the server queues them all, and the report shows a
+        spike nobody will ever see in production. The injection profile is your workload model, so it
+        has to match how real traffic arrives.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#models">Open vs closed in Gatling</a></li>
+          <li><a href="#open">Open injection steps</a></li>
+          <li><a href="#closed">Closed injection steps</a></li>
+          <li><a href="#example">Both in one simulation</a></li>
+          <li><a href="#capacity">Finding capacity with incrementUsersPerSec</a></li>
+          <li><a href="#throttle">Throttling and pacing</a></li>
+        </ol>
+      </div>
+
+      <h2 id="models">Open vs closed in Gatling</h2>
+      <p>Gatling makes you choose explicitly: <code>injectOpen(...)</code> or
+        <code>injectClosed(...)</code>. You can't mix open and closed steps for one scenario.</p>
+      <ul>
+        <li><strong>Open</strong>: you control the arrival rate of new users. Each user runs the
+          scenario and leaves. If the system slows down, users pile up inside it, as on a real public
+          website. Use it when you have a throughput target.</li>
+        <li><strong>Closed</strong>: you control how many users are active at once. A new user starts
+          only when one finishes. Use it when the real population is fixed: a call centre, a pool of
+          workers, a ticket queue that admits N people at a time.</li>
+      </ul>
+      <p>A closed model under-reports latency when the system struggles, because it sends less work
+        exactly then. That's <a href="/glossary/coordinated-omission/">coordinated omission</a>. The
+        background is in the <a href="/glossary/open-vs-closed-workload-model/">open vs closed
+        workload model</a> glossary entry and the <a href="/explain/load-profiles/">load profiles
+        explainer</a>.</p>
+
+      <h2 id="open">Open injection steps</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Step</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>nothingFor(d)</code></td><td>Wait</td></tr>
+          <tr><td><code>atOnceUsers(n)</code></td><td>n users at the same moment. Fine for a smoke test, unrealistic for load.</td></tr>
+          <tr><td><code>rampUsers(n).during(d)</code></td><td>n users spread evenly over d</td></tr>
+          <tr><td><code>constantUsersPerSec(r).during(d)</code></td><td>r new users every second. The core of a load test.</td></tr>
+          <tr><td><code>constantUsersPerSec(r).during(d).randomized()</code></td><td>Same average rate, random gaps between arrivals</td></tr>
+          <tr><td><code>rampUsersPerSec(r1).to(r2).during(d)</code></td><td>Arrival rate changes linearly from r1 to r2</td></tr>
+          <tr><td><code>stressPeakUsers(n).during(d)</code></td><td>n users following a smooth S-curve, for a spike</td></tr>
+          <tr><td><code>incrementUsersPerSec(r).times(k)...</code></td><td>A staircase of rates, for capacity tests</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="closed">Closed injection steps</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Step</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>constantConcurrentUsers(n).during(d)</code></td><td>Keep n users active</td></tr>
+          <tr><td><code>rampConcurrentUsers(n1).to(n2).during(d)</code></td><td>Change the active count linearly</td></tr>
+          <tr><td><code>incrementConcurrentUsers(n).times(k)...</code></td><td>A staircase of concurrency levels</td></tr>
+        </tbody>
+      </table></div>
+      <p>In a closed model, a user who finishes is replaced by a new one to keep the count steady.
+        Every replacement starts a fresh session: a new login, new connections, empty caches. If real
+        users stay logged in and keep working, loop the journey inside <code>during(...)</code> or
+        <code>forever()</code> instead.</p>
+
+      <h2 id="example">Both in one simulation</h2>
+      <p>Different scenarios can use different models in the same <code>setUp</code>. Here, public
+        visitors arrive at a rate while a fixed team of agents works in a loop:</p>
+      <pre class="ex-code"><code>package example;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+import io.gatling.javaapi.core.*;
+import io.gatling.javaapi.http.*;
+
+public class InjectionSimulation extends Simulation {
+
+  HttpProtocolBuilder httpProtocol = http.baseUrl(System.getProperty("baseUrl", "http://localhost:8080"));
+
+  // Open model: one visit per virtual user, then the user leaves
+  ScenarioBuilder visitors = scenario("Visitors")
+      .exec(http("Home").get("/products"))
+      .pause(2)
+      .exec(http("Item").get("/products/3"));
+
+  // Closed model: a fixed pool of users looping, like a call centre or a batch of workers
+  ScenarioBuilder agents = scenario("Agents")
+      .during(java.time.Duration.ofMinutes(10)).on(
+          exec(http("Agent lookup").get("/products"))
+              .pause(5));
+
+  {
+    setUp(
+        visitors.injectOpen(
+            nothingFor(5),                                  // wait 5 s
+            atOnceUsers(10),                                // 10 users at once
+            rampUsers(100).during(60),                      // 100 users spread over 60 s
+            constantUsersPerSec(20).during(120),            // 20 new users every second for 2 min
+            constantUsersPerSec(20).during(120).randomized(), // same rate, random gaps (Poisson-like)
+            rampUsersPerSec(20).to(60).during(180),         // arrival rate climbs 20 -&gt; 60 users/s
+            stressPeakUsers(500).during(20),                // 500 users on a smooth peak over 20 s
+            incrementUsersPerSec(10)                        // capacity search: +10 users/s per step
+                .times(5)
+                .eachLevelLasting(60)
+                .separatedByRampsLasting(10)
+                .startingFrom(10)),
+        agents.injectClosed(
+            constantConcurrentUsers(50).during(300),        // keep 50 users active for 5 min
+            rampConcurrentUsers(50).to(150).during(300)))   // then grow the pool to 150
+        .protocols(httpProtocol)
+        .maxDuration(java.time.Duration.ofMinutes(30));     // hard stop
+  }
+}</code></pre>
+      <p>The steps in one <code>injectOpen</code> run one after another, so this example is a tour of
+        every step, not a sensible test. A real load test is usually just two steps: a ramp, then a
+        steady rate for long enough to measure.</p>
+      <pre class="ex-code"><code>setUp(
+    scn.injectOpen(
+        rampUsersPerSec(0).to(50).during(Duration.ofMinutes(5)),   // ramp to peak arrival rate
+        constantUsersPerSec(50).during(Duration.ofMinutes(20))))   // hold peak, and measure this part
+    .protocols(httpProtocol);</code></pre>
+      <p>Sizing it: if 50 users arrive per second and each journey takes about 30 s including think
+        time, roughly 50 × 30 = 1,500 users are active at once
+        (<a href="/glossary/littles-law/">Little's Law</a>). The
+        <a href="/tools/capacity-calculator/">capacity calculator</a> does this for you. If you only
+        know "1,500 concurrent users" from analytics, divide by the journey length to get the rate.</p>
+
+      <h2 id="capacity">Finding capacity with incrementUsersPerSec</h2>
+      <pre class="ex-code"><code>scn.injectOpen(
+    incrementUsersPerSec(10)          // add 10 users/s per level
+        .times(8)                     // 8 levels: 10, 20 ... 80 users/s
+        .eachLevelLasting(Duration.ofMinutes(3))
+        .separatedByRampsLasting(Duration.ofSeconds(30))
+        .startingFrom(10))</code></pre>
+      <p>Each level holds long enough for latency to settle. In the report, find the last level where
+        p95 stayed flat and errors stayed near zero. That's your sustainable throughput. The level where
+        p95 starts climbing within the level is where queues begin to grow. This is a
+        <a href="/glossary/breakpoint-testing/">breakpoint test</a>: run it against an environment you
+        can afford to break.</p>
+
+      <h2 id="throttle">Throttling and pacing</h2>
+      <ul>
+        <li><strong><code>throttle(reachRps(100).in(10), holdFor(Duration.ofMinutes(5)))</code></strong>
+          caps requests per second across the simulation. It only limits, so you still need enough
+          users injected to reach the cap. Most teams are better served by an open injection profile
+          than by throttling a closed one.</li>
+        <li><strong><code>pace(Duration.ofSeconds(10))</code></strong> inside a loop makes each
+          iteration take at least 10 s, including the request time. That's
+          <a href="/glossary/pacing/">pacing</a>: it keeps a closed-model user's rate steady.</li>
+        <li><strong><code>maxDuration(...)</code></strong> on <code>setUp</code> is a hard stop, a
+          useful guard for CI.</li>
+      </ul>
+      <p>Next: <a href="/guides/gatling/feeders-and-correlation/">feeders and correlation</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure what load to model?</h2>
+        <p>I turn production analytics into injection profiles that match how your traffic actually
+          arrives.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-gat-inj-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-gat-inj-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+# Go-live Performance Sign-off: [Release name]
+
+| System | Release | Planned go-live | Decision meeting |
+|---|---|---|---|
+| [Name] | [v2.4] | [DD/MM/YYYY] | [DD/MM/YYYY] |
+
+> Tick each check only when there is evidence: a report, a dashboard link or a test result. Anything unticked must appear under "Conditions" or the answer is NO-GO.
+
+## Performance
+
+- [ ] All response-time and error-rate targets met at peak load, with the report linked. Evidence: [link]
+- [ ] Soak test run for long enough to show no leaks or slow degradation. Evidence: [link]
+- [ ] Breaking point known, and it sits above expected peak with agreed headroom. Evidence: [link]
+- [ ] Results from a production-like environment, or the gaps written down and accepted. Evidence: [link]
+
+## Capacity
+
+- [ ] Autoscaling tested: it scales out fast enough for the expected ramp and scales back in. Evidence: [link]
+- [ ] Connection pools, thread pools and database connection limits sized for peak. Evidence: [link]
+- [ ] Third-party rate limits and quotas known and above peak demand. Evidence: [link]
+
+## Resilience
+
+- [ ] A slow or failing dependency tested: timeouts, retries and circuit breakers behave. Evidence: [link]
+- [ ] Rollback tested, and the time it takes is known. Evidence: [link]
+
+## Observability
+
+- [ ] Dashboards show latency percentiles, throughput, errors and saturation for every key journey. Evidence: [link]
+- [ ] Alerts set on SLOs (not only CPU), routed to an on-call person. Evidence: [link]
+
+## Operations and release
+
+- [ ] Runbook covers the known failure modes found in testing. Evidence: [link]
+- [ ] Release window avoids peak trading, with a named person watching the first peak. Evidence: [link]
+- [ ] Feature flags or a kill switch ready for new heavy features. Evidence: [link]
+
+## Decision
+
+**[GO / GO WITH CONDITIONS / NO-GO]**
+
+**Conditions and open risks:**
+
+| Condition or risk | Owner | Due | Accepted by |
+|---|---|---|---|
+| [] | [] | [] | [] |
+
+**Approvers:**
+
+| Role | Name | Decision | Date |
+|---|---|---|---|
+| Business owner | [] | [] | [] |
+| Engineering lead | [] | [] | [] |
+| Operations or SRE lead | [] | [] | [] |
+| Performance lead | [] | [] | [] |
+
+---
+Free template from https://pawansinha.com.au/guides/templates/ . The full editable pack (36-check Excel go-live checklist with an automatic READY / NOT READY summary, risk register with sign-off, plan, report and workload calculator) is at https://pawansinha.com.au/templates/

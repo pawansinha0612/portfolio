@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter in CI: GitHub Actions and GitLab CI — Pawan Sinha</title>
+  <meta name="description" content="Run JMeter headless in GitHub Actions and GitLab CI, publish the HTML report, and fail the build on p95 and error-rate thresholds with a small JTL check.">
+  <meta property="og:title" content="JMeter in CI pipelines: GitHub Actions, GitLab CI and failing the build on thresholds">
+  <meta property="og:description" content="Run JMeter headless in GitHub Actions and GitLab CI, publish the HTML report, and fail the build on p95 and error-rate thresholds with a small JTL check.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/ci-pipelines/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/ci-pipelines/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "JMeter in CI: GitHub Actions and GitLab CI", "description": "Run JMeter headless in GitHub Actions and GitLab CI, publish the HTML report, and fail the build on p95 and error-rate thresholds with a small JTL check.", "url": "https://pawansinha.com.au/guides/jmeter/ci-pipelines/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · CI pipelines</p>
+      <h1>JMeter in CI: make the pipeline go red</h1>
+      <p class="lead">You wire JMeter into the pipeline and it has been green for a month. Then you open a report and find 40% errors in last Tuesday's run. The job was green because JMeter exits with code 0 even when every sample fails. A CI load test needs an explicit pass/fail step, or it is just a slow way to produce artefacts nobody reads.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#what">What to run in CI</a></li>
+          <li><a href="#exit">Why the job stays green</a></li>
+          <li><a href="#check">A threshold check that fails the build</a></li>
+          <li><a href="#github">GitHub Actions</a></li>
+          <li><a href="#gitlab">GitLab CI</a></li>
+          <li><a href="#stats">Alternative: gate on statistics.json</a></li>
+          <li><a href="#tips">Making CI results trustworthy</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="what">1. What to run in CI</h2>
+      <ul>
+        <li><strong>On every merge:</strong> a short <a href="/glossary/smoke-testing/">smoke</a> or baseline test, 5–10 minutes at modest load against a stable environment. It catches the obvious regressions: a new N+1 query, a missing index, a broken endpoint.</li>
+        <li><strong>Nightly or weekly:</strong> the full load test at target rate, for 30–60 minutes.</li>
+        <li><strong>Not in CI:</strong> stress, spike and soak tests that need someone watching dashboards.</li>
+      </ul>
+      <p>Hosted runners are shared, small machines. They are fine for tens of requests per second. For more, use a self-hosted runner sized for the job, or have the pipeline trigger dedicated load generators. Compare a run only with earlier runs on the same kind of runner against the same environment. The <a href="/glossary/baseline/">baseline</a> entry explains why.</p>
+
+      <h2 id="exit">2. Why the job stays green</h2>
+      <p>In CLI mode JMeter's exit code reports whether the <em>run</em> worked (the plan loaded, the test started and ended), not whether the <em>samples</em> passed. A test with 100% failed requests still exits 0. Assertions mark samples as failed in the results file, and nothing more. You need a step afterwards that reads the results and exits non-zero when targets are missed.</p>
+
+      <h2 id="check">3. A threshold check that fails the build</h2>
+      <p>Save this as <code>perf/check_jtl.py</code>. It uses only the Python standard library, reads the default CSV JTL, computes p95 per label and the overall error rate, prints a table, and exits 1 on any breach.</p>
+      <pre class="ex-code"><code>#!/usr/bin/env python3
+"""Fail a CI job when a JMeter CSV results file (JTL) breaks its thresholds.
+
+Usage: python3 check_jtl.py results.jtl --p95 800 --error-rate 1.0 [--ignore "^setUp"]
+Exit code 0 = pass, 1 = a threshold failed, 2 = no samples found.
+"""
+import argparse
+import csv
+import math
+import re
+import sys
+from collections import defaultdict
+
+
+def percentile(sorted_ms, p):
+    """Nearest-rank percentile: the value at or below which p% of samples fall."""
+    rank = max(1, math.ceil(p / 100 * len(sorted_ms)))
+    return sorted_ms[rank - 1]
+
+
+ap = argparse.ArgumentParser()
+ap.add_argument("jtl")
+ap.add_argument("--p95", type=float, default=800, help="max p95 per label, in ms")
+ap.add_argument("--error-rate", type=float, default=1.0, help="max overall error rate, in %%")
+ap.add_argument("--ignore", default="", help="regex of labels to leave out")
+args = ap.parse_args()
+
+skip = re.compile(args.ignore) if args.ignore else None
+times = defaultdict(list)
+errors = total = 0
+with open(args.jtl, newline="", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        if skip and skip.search(row["label"]):
+            continue
+        times[row["label"]].append(int(row["elapsed"]))
+        total += 1
+        if row["success"] != "true":
+            errors += 1
+
+if total == 0:
+    print("No samples found - did the test run at all?")
+    sys.exit(2)
+
+failed = False
+print(f"{'label':40} {'count':&gt;7} {'p95 ms':&gt;8}")
+for label, ms in sorted(times.items()):
+    ms.sort()
+    p95 = percentile(ms, 95)
+    flag = "  &lt;-- over budget" if p95 &gt; args.p95 else ""
+    failed |= bool(flag)
+    print(f"{label[:40]:40} {len(ms):7d} {p95:8d}{flag}")
+
+rate = 100 * errors / total
+print(f"\nerrors: {errors}/{total} = {rate:.2f}% (limit {args.error_rate}%)")
+if rate &gt; args.error_rate:
+    failed = True
+print("FAIL" if failed else "PASS")
+sys.exit(1 if failed else 0)</code></pre>
+      <pre class="ex-code"><code>$ python3 perf/check_jtl.py results.jtl --p95 800 --error-rate 1 --ignore "^00 "
+label                                      count   p95 ms
+01 Home                                     4210      212
+02 Search                                   4188      655
+03 Product                                  4175      931  &lt;-- over budget
+
+errors: 12/12573 = 0.10% (limit 1.0%)
+FAIL</code></pre>
+      <p>The percentile uses the nearest-rank method, so it is a value that actually occurred. The HTML dashboard may differ slightly because it uses a different percentile calculation. Both are fine for a gate as long as you compare like with like. If you use Transaction Controllers with "Generate parent sample", their parent samples are in the JTL too, and you may want to exclude either the parents or the children with <code>--ignore</code>. To see the full distribution of a JTL interactively, open it in the <a href="/tools/jtl-analyser/">JTL analyser</a>.</p>
+
+      <h2 id="github">4. GitHub Actions</h2>
+      <p>Runs on demand with a chosen user count and on a weekday schedule. The JMeter download is cached, the secret comes from repository secrets, and the report is uploaded even when the threshold step fails.</p>
+      <pre class="ex-code"><code># .github/workflows/load-test.yml
+name: load-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: Concurrent users
+        default: "20"
+  schedule:
+    - cron: "0 15 * * 1-5"   # 15:00 UTC on weekdays
+
+jobs:
+  jmeter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      JMETER_VERSION: "5.6.3"
+      USERS: ${{ inputs.users || '20' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache JMeter
+        id: cache-jmeter
+        uses: actions/cache@v4
+        with:
+          path: apache-jmeter-${{ env.JMETER_VERSION }}
+          key: jmeter-${{ env.JMETER_VERSION }}
+
+      - name: Download JMeter
+        if: steps.cache-jmeter.outputs.cache-hit != 'true'
+        run: |
+          curl -sSfL "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" | tar xz
+
+      - name: Run test
+        env:
+          CLIENT_SECRET: ${{ secrets.PERF_CLIENT_SECRET }}
+        run: |
+          apache-jmeter-${JMETER_VERSION}/bin/jmeter -n -t perf/plan.jmx \
+            -q perf/env/staging.properties \
+            -Jusers="$USERS" -JclientSecret="$CLIENT_SECRET" \
+            -l results.jtl -j jmeter.log -e -o report
+
+      - name: Check thresholds
+        run: python3 perf/check_jtl.py results.jtl --p95 800 --error-rate 1
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-report
+          path: |
+            report/
+            results.jtl
+            jmeter.log</code></pre>
+      <p>Notes:</p>
+      <ul>
+        <li><code>if: always()</code> on the upload step matters. Without it the report disappears exactly when you need it, on a failed run.</li>
+        <li>If the plan uses plugins, install them in the cached folder: download the Plugins Manager jar into <code>lib/ext</code>, then run <code>bin/PluginsManagerCMD.sh install jpgc-casutg</code> (with your plugin ids). Better still, commit a list of plugin ids and install from it, so CI matches your workstation.</li>
+        <li>Pin the JMeter version. Results from different JMeter versions are not always comparable.</li>
+      </ul>
+
+      <h2 id="gitlab">5. GitLab CI</h2>
+      <p>The <code>eclipse-temurin</code> images are Ubuntu-based, so <code>apt-get</code> can add <code>curl</code> and <code>python3</code>. Add <code>PERF_CLIENT_SECRET</code> as a masked CI/CD variable.</p>
+      <pre class="ex-code"><code># .gitlab-ci.yml
+stages:
+  - perf
+
+load-test:
+  stage: perf
+  image: eclipse-temurin:17-jre
+  timeout: 45m
+  variables:
+    JMETER_VERSION: "5.6.3"
+    USERS: "20"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  cache:
+    key: jmeter-$JMETER_VERSION
+    paths:
+      - apache-jmeter-$JMETER_VERSION/
+  before_script:
+    - apt-get update -qq &amp;&amp; apt-get install -y -qq curl python3 &gt; /dev/null
+    - |
+      if [ ! -d "apache-jmeter-$JMETER_VERSION" ]; then
+        curl -sSfL "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-$JMETER_VERSION.tgz" | tar xz
+      fi
+  script:
+    - &gt;
+      apache-jmeter-$JMETER_VERSION/bin/jmeter -n -t perf/plan.jmx
+      -q perf/env/staging.properties
+      -Jusers="$USERS" -JclientSecret="$PERF_CLIENT_SECRET"
+      -l results.jtl -j jmeter.log -e -o report
+    - python3 perf/check_jtl.py results.jtl --p95 800 --error-rate 1
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - report/
+      - results.jtl
+      - jmeter.log</code></pre>
+      <p>The folded block (<code>&gt;</code>) joins the JMeter command into a single line, so no backslashes are needed. <code>artifacts: when: always</code> keeps the report on failed jobs. Trigger it from <strong>Build → Pipeline schedules</strong>, or run it by hand from the pipeline page.</p>
+
+      <h2 id="stats">6. Alternative: gate on statistics.json</h2>
+      <p>When you generate the HTML report with <code>-e -o report</code>, JMeter also writes <code>report/statistics.json</code>: one object per label plus <code>Total</code>, with fields such as <code>sampleCount</code>, <code>errorPct</code>, <code>meanResTime</code>, <code>medianResTime</code>, <code>pct1ResTime</code>, <code>pct2ResTime</code>, <code>pct3ResTime</code> and <code>throughput</code>. The three percentiles default to p90, p95 and p99 (properties <code>aggregate_rpt_pct1</code> to <code>pct3</code>). A one-line gate with <code>jq</code>, which is preinstalled on GitHub's Ubuntu runners:</p>
+      <pre class="ex-code"><code>jq -e '.Total.errorPct &lt; 1 and .Total.pct2ResTime &lt; 800' report/statistics.json</code></pre>
+      <p><code>jq -e</code> exits 1 when the expression is false. This gates on the overall numbers only. Use the Python check for per-label budgets.</p>
+      <p>The dashboard also shows an <a href="/glossary/apdex/">APDEX</a> score, with thresholds set by <code>jmeter.reportgenerator.<wbr>apdex_satisfied_threshold</code> (default 500 ms) and <code>apdex_tolerated_threshold</code> (default 1500 ms). APDEX is not in <code>statistics.json</code>, though, and a single index hides which transaction regressed. For gating, percentiles and error rate per label are clearer.</p>
+
+      <h2 id="tips">7. Making CI results trustworthy</h2>
+      <ul>
+        <li><strong>Fail on "no samples".</strong> A typo in the host gives a run with zero or all-failed samples. The script exits 2 on an empty JTL.</li>
+        <li><strong>Leave headroom in thresholds.</strong> Shared environments are noisy. A gate that fails one run in five gets switched off. Start with the baseline plus 20–30% and tighten it as the environment stabilises.</li>
+        <li><strong>Keep history.</strong> Upload <code>statistics.json</code> somewhere durable (an artefact store, a metrics database through the Backend Listener) and chart it per build. Trends catch slow creep that no single threshold will.</li>
+        <li><strong>Pin the environment.</strong> Record the app version, environment and data volume with each run. A faster result on an empty database is not an improvement.</li>
+      </ul>
+      <p>The tool-neutral background is in <a href="/glossary/thresholds/">thresholds</a> and <a href="/glossary/shift-left-performance-testing/">shift-left performance testing</a>. <strong>Next:</strong> <a href="/guides/jmeter/results-and-reports/">results and reports</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance gates that teams trust?</h2>
+        <p>Book a free 30-minute call and we'll design CI load tests with thresholds that catch regressions without crying wolf. See <a href="/services/performance-testing/">performance testing</a> and <a href="/services/ci-cd-quality-gates/">CI/CD quality gates</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-ci-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-ci-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!--{"title": "JMeter think time, pacing and throughput timers", "og_title": "JMeter think time and pacing: timers, throughput control and the open vs closed model", "description": "Constant, Uniform and Gaussian timers, iteration pacing, Constant vs Precise Throughput Timer, and an honest look at open and closed models in JMeter.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Think time and pacing</p>
+      <h1>JMeter think time and pacing: 50 users is not a load level</h1>
+      <p class="lead">Your test has 50 threads and no timers. Each thread fires the next request the instant the last one returns, so 50 "users" generate 2,000 requests per second. That can be more traffic than your real peak of 20,000 users ever produces. Or you add think time and the rate collapses the moment the server slows down. Timers decide what load you are really applying.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#scope">How timers work (and why they stack)</a></li>
+          <li><a href="#timers">Constant, Uniform and Gaussian timers</a></li>
+          <li><a href="#pacing">Pacing a whole iteration</a></li>
+          <li><a href="#throughput">Constant vs Precise Throughput Timer</a></li>
+          <li><a href="#model">Open vs closed model, honestly</a></li>
+          <li><a href="#maths">Sizing threads with Little's Law</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="scope">1. How timers work (and why they stack)</h2>
+      <ul>
+        <li>A timer runs <strong>before</strong> each sampler in its scope. Its delay is not included in the sample's response time.</li>
+        <li>A timer at Thread Group level applies to <strong>every</strong> sampler in the group. Ten samplers means ten pauses per iteration.</li>
+        <li>Several timers in the same scope <strong>add up</strong>. A Constant Timer of 1 s plus a Uniform Random Timer of 0–2 s gives 1–3 s before each sampler.</li>
+        <li>To pause before one sampler only, make the timer its child. To pause <em>after</em> a step, add a <strong>Flow Control Action</strong> sampler (Logical action: Pause, Duration 0) and put the timer under it. Flow Control Action does not write a sample to the results.</li>
+      </ul>
+      <p>Model <a href="/glossary/think-time/">think time</a> where a real user pauses: after a page loads and before the next click. API calls a browser fires together with no pause between them should have no timer between them.</p>
+      <div class="g-note">
+        <p>Inside a Transaction Controller, the tick box "Include duration of timer and pre-post processors in generated sample" decides whether think time inflates the transaction's time. Leave it unticked unless you really want to measure user journey time including pauses.</p>
+      </div>
+
+      <h2 id="timers">2. Constant, Uniform and Gaussian timers</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Timer</th><th>Fields</th><th>Delay</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Constant Timer</td><td>Thread Delay (ms)</td><td>Exactly the value</td><td><code>3000</code> → 3 s every time</td></tr>
+          <tr><td>Uniform Random Timer</td><td>Random Delay Maximum, Constant Delay Offset (ms)</td><td>offset + uniform random from 0 up to the maximum</td><td>offset <code>2000</code>, max <code>3000</code> → 2 to 5 s, all equally likely</td></tr>
+          <tr><td>Gaussian Random Timer</td><td>Deviation, Constant Delay Offset (ms)</td><td>offset + normal(0, 1) × deviation</td><td>offset <code>3000</code>, deviation <code>500</code> → about 68% within 2.5–3.5 s</td></tr>
+          <tr><td>Poisson Random Timer</td><td>Lambda, Constant Delay Offset (ms)</td><td>offset + Poisson-distributed value with mean lambda</td><td>Rarely needed. For Poisson arrivals use the Precise Throughput Timer</td></tr>
+        </tbody>
+      </table></div>
+      <p>Avoid constant think time under load. Identical pauses keep threads in lockstep, so requests arrive in synchronised waves rather than the smooth, random stream real users produce. A Uniform or Gaussian timer around the same mean breaks the pattern. For Gaussian timers, keep the offset at least three times the deviation so delays stay clearly positive.</p>
+      <p>Make think time adjustable so smoke tests run fast: <code>${__P(thinkMs,3000)}</code> in the offset field, then <code>-JthinkMs=0</code> for a quick functional pass.</p>
+
+      <h2 id="pacing">3. Pacing a whole iteration</h2>
+      <p><a href="/glossary/pacing/">Pacing</a> fixes how often an iteration starts, whatever its response times. For example, "each user places one order every 30 seconds". If the iteration took 12 seconds, wait 18. JMeter has no pacing field, but two elements and a Groovy expression give you one:</p>
+      <pre class="ex-code"><code>Thread Group
+├── Flow Control Action "Iteration start"    Pause, Duration 0
+│   └── JSR223 PreProcessor (groovy)
+│         vars.put('iterStart', String.valueOf(System.currentTimeMillis()))
+├── ... the business steps, with their own think times ...
+└── Flow Control Action "Pacing"             Logical action: Pause
+      Duration (milliseconds):
+      ${__groovy(long left = ${__P(pacingMs,30000)} - (System.currentTimeMillis() - vars.get('iterStart').toLong()); left &gt; 0 ? left : 0,)}</code></pre>
+      <p>The expression avoids commas on purpose, because a bare comma would end the function argument. If the iteration overruns the pacing interval, the pause is zero and the next iteration starts at once. The achieved rate then falls below plan, which is exactly what you want to notice.</p>
+
+      <h2 id="throughput">4. Constant vs Precise Throughput Timer</h2>
+      <p>Both timers hold a target rate by adjusting delays. Neither creates threads. If there are not enough threads to reach the target, or the server slows down, you get less than you asked for.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th></th><th>Constant Throughput Timer</th><th>Precise Throughput Timer</th></tr></thead>
+        <tbody>
+          <tr><td>Target unit</td><td>Samples per <strong>minute</strong></td><td>Samples per "throughput period" (seconds), e.g. 60 per 3600</td></tr>
+          <tr><td>Spacing</td><td>Converges on the rate, tends to even intervals</td><td>Random (Poisson) arrivals on a pre-computed schedule</td></tr>
+          <tr><td>Scope options</td><td>This thread only, all active threads, all active threads in current thread group, plus "(shared)" variants</td><td>All threads in the group and all affected samplers</td></tr>
+          <tr><td>Ramp-up</td><td>Use the Thread Group ramp-up</td><td>Docs recommend ramp-up 0. The random schedule avoids the start-up spike</td></tr>
+          <tr><td>Repeatable runs</td><td>Not applicable</td><td>Set a non-zero Random seed to replay the same schedule</td></tr>
+          <tr><td>Best for</td><td>"Hold 1,200 requests per minute" in a simple way</td><td>Realistic random arrivals at a business rate</td></tr>
+        </tbody>
+      </table></div>
+      <p>Where you put them matters. A throughput timer counts every sampler in its scope, so one at Thread Group level with five samplers per iteration controls requests, not iterations. To control iterations, put it under the first sampler of the iteration (or under a Flow Control Action at the top).</p>
+      <pre class="ex-code"><code>Precise Throughput Timer for "300 orders per hour" during a 1-hour test:
+  Target throughput (in samples per 'throughput period'):  300
+  Throughput period (seconds):                             3600
+  Test duration (seconds):                                 3600
+  Number of threads in the batch:                          1
+  Delay between threads in the batch (ms):                 0
+  Random seed:                                             0  (or a fixed value for repeatable runs)</code></pre>
+      <p>The JMeter-Plugins <strong>Throughput Shaping Timer</strong> (a community plugin) goes further: it takes a schedule of requests per second over time and, paired with the Concurrency Thread Group, can adjust thread counts through its <code>__tstFeedback</code> function. See <a href="/guides/jmeter/thread-groups-and-load-shapes/">thread groups and load shapes</a>.</p>
+
+      <h2 id="model">5. Open vs closed model, honestly</h2>
+      <p>A standard Thread Group is a <strong>closed</strong> workload model: a fixed number of threads, each sending its next request only after the previous one finishes. When the server slows down, every thread waits longer, so the arrival rate drops. The test eases off exactly when the system struggles. Throughput timers do not change this. They only add delay, so they can cap the rate but cannot keep it up once response times exceed the gaps.</p>
+      <p>The side effect is <a href="/glossary/coordinated-omission/">coordinated omission</a>: the requests that would have arrived during a stall are never sent, so they are never measured, and the percentiles look better than what users experienced. The <a href="/explain/percentiles/">percentiles explainer</a> shows the effect interactively.</p>
+      <p>Real public traffic is mostly <strong>open</strong>: new users arrive whether or not your server is coping. JMeter's options for that:</p>
+      <ul>
+        <li><strong>Open Model Thread Group</strong> (core, added in JMeter 5.5, still marked experimental). You give it a schedule such as <code>rate(0) random_arrivals(5 min) rate(50/sec) random_arrivals(30 min) pause(2 min)</code> and it starts a new thread for each arrival.</li>
+        <li><strong>Arrivals Thread Group</strong> (Custom Thread Groups plugin). Target arrival rate per minute or second, with a Concurrency Limit as a safety valve.</li>
+      </ul>
+      <p>Neither is magic. An open model with a slow server keeps adding threads, and the load generator needs the memory and CPU for them. Set a concurrency cap and watch the generator.</p>
+      <p>Which to use? A closed model is right when the user population really is fixed: 200 call-centre agents, a batch of 40 workers. An open model is right for anything internet-facing where arrivals are independent of your response time. The glossary entry on <a href="/glossary/open-vs-closed-workload-model/">open vs closed workload models</a> and the <a href="/explain/load-profiles/">load profiles explainer</a> go deeper.</p>
+
+      <h2 id="maths">6. Sizing threads with Little's Law</h2>
+      <p>For a closed model, <a href="/glossary/littles-law/">Little's Law</a> tells you how many threads you need: <strong>threads = throughput × (response time + think time)</strong>.</p>
+      <pre class="ex-code"><code>Target:          20 iterations per second
+Iteration time:  6 steps × 0.4 s response = 2.4 s
+Think time:      6 pauses × 3 s           = 18 s
+Threads needed:  20 × (2.4 + 18) = 408 threads
+
+If responses slow to 1.5 s each: 20 × (9 + 18) = 540 threads needed.
+With only 408 threads the rate falls to 408 / 27 ≈ 15 per second.</code></pre>
+      <p>Provision headroom of 20–30% more threads than the calculation says, and let a throughput timer or pacing cap the rate. Then the plan still reaches its target when response times rise. The <a href="/explain/queueing/">queueing explainer</a> shows why response times climb so sharply near saturation.</p>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/thread-groups-and-load-shapes/">thread groups and load shapes</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure what load your test is really applying?</h2>
+        <p>Book a free 30-minute call and we'll turn your production numbers into a workload model with the right threads, think time and pacing. See also <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-think-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-think-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

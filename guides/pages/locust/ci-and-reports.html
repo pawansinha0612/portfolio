@@ -1,0 +1,159 @@
+<!--{"title": "Locust in CI: CSV, HTML reports and exit codes", "og_title": "Locust in CI: headless runs, reports and a pass/fail budget", "description": "Run Locust headless in CI, save CSV and HTML reports, and set the exit code from p95 and failure-ratio budgets with an event listener, with a GitHub Actions workflow.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/locust/">Locust</a> · CI and reports</p>
+      <h1>Locust in CI: reports and a budget that fails the build</h1>
+      <p class="lead">Locust in CI either fails on every single error, including the one timeout in
+        50,000 requests, or never fails at all. Neither is useful. What you want is a budget: p95
+        under a limit and failures under a rate, the same way you'd write an SLO.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#default">What Locust does by default</a></li>
+          <li><a href="#budget">A pass/fail budget with an event listener</a></li>
+          <li><a href="#reports">CSV, HTML and JSON reports</a></li>
+          <li><a href="#gha">GitHub Actions</a></li>
+          <li><a href="#trust">Making CI results trustworthy</a></li>
+        </ol>
+      </div>
+
+      <h2 id="default">What Locust does by default</h2>
+      <p>A headless run exits with code <code>1</code> if any request failed, and <code>0</code>
+        otherwise. You can change the code used with <code>--exit-code-on-error</code>. That's
+        all-or-nothing: one timeout in a long run fails the build, and a very slow but error-free run
+        passes. Locust has no built-in latency budget.</p>
+
+      <h2 id="budget">A pass/fail budget with an event listener</h2>
+      <p>Locust fires a <code>quitting</code> event just before it exits. A listener can read the
+        final statistics and set <code>environment.process_exit_code</code>, which replaces the
+        default:</p>
+      <pre class="ex-code"><code>import logging
+
+from locust import HttpUser, task, constant, events
+
+
+class ApiUser(HttpUser):
+    wait_time = constant(1)
+
+    @task
+    def browse(self):
+        self.client.get("/products")
+
+
+@events.quitting.add_listener
+def enforce_budget(environment, **kwargs):
+    """Set the process exit code from the results, so CI fails on a breach."""
+    stats = environment.stats.total
+    p95 = stats.get_response_time_percentile(0.95)
+    if stats.num_requests == 0:
+        logging.error("No requests were made")
+        environment.process_exit_code = 1
+    elif stats.fail_ratio &gt; 0.01:
+        logging.error(f"Failed: {stats.fail_ratio:.2%} of requests failed (budget 1%)")
+        environment.process_exit_code = 1
+    elif p95 &gt; 500:
+        logging.error(f"Failed: p95 {p95:.0f} ms (budget 500 ms)")
+        environment.process_exit_code = 1
+    else:
+        environment.process_exit_code = 0</code></pre>
+      <ul>
+        <li><code>environment.stats.total</code> is the aggregate of all requests.
+          <code>environment.stats.get(name, method)</code> gives one request, for per-endpoint
+          budgets.</li>
+        <li><code>fail_ratio</code> is a fraction: 0.01 is 1%.</li>
+        <li>Setting the exit code to <code>0</code> when within budget is deliberate: it overrides the
+          default "any failure means 1", so a single timeout inside a 1% budget doesn't fail the
+          build.</li>
+        <li>The "no requests" branch catches a broken test (wrong host, every user crashed in
+          <code>on_start</code>) that would otherwise pass with perfect numbers.</li>
+        <li>In a distributed run, put the listener in the locustfile used by the master. The master
+          has the aggregated statistics from all workers.</li>
+      </ul>
+      <p>Set the numbers from your <a href="/glossary/slo/">SLO</a> or with the
+        <a href="/tools/slo-calculator/">SLO calculator</a>, not from a single lucky run.</p>
+
+      <h2 id="reports">CSV, HTML and JSON reports</h2>
+      <pre class="ex-code"><code>locust -f locustfile.py --headless -u 50 -r 5 -t 15m \
+  --csv results/run --csv-full-history \
+  --html results/report.html \
+  --json-file results/stats</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>File</th><th>Contains</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_stats.csv</code></td><td>Final numbers per request: counts, failures, median, average, percentiles, req/s</td></tr>
+          <tr><td><code>run_stats_history.csv</code></td><td>The aggregate over time, a row every few seconds. Add <code>--csv-full-history</code> for every request name.</td></tr>
+          <tr><td><code>run_failures.csv</code></td><td>Each distinct failure and how often it happened</td></tr>
+          <tr><td><code>run_exceptions.csv</code></td><td>Python exceptions in your locustfile</td></tr>
+          <tr><td><code>report.html</code></td><td>Self-contained report with charts, the one to attach to a ticket</td></tr>
+          <tr><td><code>--json</code> / <code>--json-file</code></td><td>Final stats as JSON, for your own tooling</td></tr>
+        </tbody>
+      </table></div>
+      <p>Folders in the <code>--csv</code> prefix are created for you. The stats history is what you
+        chart to see whether latency climbed during the steady state. Always read
+        <code>run_exceptions.csv</code>: a non-empty file means part of your test didn't run.</p>
+
+      <h2 id="gha">GitHub Actions</h2>
+      <pre class="ex-code"><code># .github/workflows/locust.yml
+name: Locust load test
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  locust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r perf/requirements.txt     # pins locust==&lt;version&gt;
+
+      - name: Run Locust
+        working-directory: perf
+        env:
+          LOCUST_HOST: ${{ vars.STAGING_URL }}
+        run: &gt;
+          locust -f ci_exit.py --headless
+          -u 20 -r 5 -t 2m
+          --csv results/run --html results/report.html --only-summary
+
+      - uses: actions/upload-artifact@v4
+        if: always()                                  # keep the report when the budget fails
+        with:
+          name: locust-report
+          path: perf/results/</code></pre>
+      <p>Locust reads <code>LOCUST_HOST</code> (and any other option as <code>LOCUST_</code> plus
+        the name) from the environment, which keeps URLs out of the workflow file. The upload step
+        runs with <code>if: always()</code> so you get the report from a failed run.</p>
+
+      <h2 id="trust">Making CI results trustworthy</h2>
+      <ul>
+        <li><strong>Small load on pull requests, real load on a schedule.</strong> 20 users for two
+          minutes catches broken endpoints and big regressions. Capacity questions need a full run
+          against a production-like environment.</li>
+        <li><strong>Watch the runner's CPU.</strong> Hosted runners are small. If Locust prints a
+          CPU warning, the latency numbers include Locust's own delay. Use <code>FastHttpUser</code>,
+          fewer users, or a bigger runner.</li>
+        <li><strong>Budget from data.</strong> Run the test several times, take the worst p95 and add
+          headroom. A budget inside the run-to-run noise fails randomly, and gets disabled.</li>
+        <li><strong>Keep reports.</strong> Name artifacts by commit and keep a few weeks of them, so
+          you can find when a regression started.</li>
+      </ul>
+      <p>Back to the <a href="/guides/locust/">Locust guides</a>, or compare with
+        <a href="/guides/k6/ci-pipelines/">k6 in CI</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance checks in your pipeline?</h2>
+        <p>I set up Locust or k6 quality gates with budgets that catch real regressions and don't
+          cry wolf.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-ci-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-ci-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

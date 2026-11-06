@@ -1,0 +1,198 @@
+<!--{"title": "Start here: a performance testing learning path", "og_title": "Learn performance testing: a free path from beginner to senior", "description": "A free, step-by-step route through performance testing: concepts, your first k6 or JMeter test, realistic workloads, analysis, production readiness and career.", "scripts": ["/guides/js/start.js"], "article": true}-->
+    <style>
+      .lp-progress { margin-top: 20px; max-width: 720px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
+      .lp-progress p { margin: 0; color: var(--muted); }
+      .lp-progress .lp-count { color: var(--text); font-weight: 700; }
+      .lp-bar { height: 10px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); overflow: hidden; margin: 10px 0; }
+      .lp-bar span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .25s; }
+      .lp-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+      .lp-stages { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+      .lp-stages a { display: inline-block; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+        font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+      .lp-stages a:hover { border-color: var(--accent); color: var(--accent); }
+      .lp-stages a.done { border-color: var(--ok); color: var(--ok); }
+      .lp-stage h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+      .lp-stage h2 .lp-stage-count { font-size: 14px; font-weight: 600; color: var(--muted); }
+      .lp-stage h2 .lp-stage-count.done { color: var(--ok); }
+      .lp-stage > p, .lp-list { max-width: 680px; }
+      .lp-list { list-style: none; padding-left: 0 !important; margin: 12px 0 0; }
+      .lp-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+      .lp-item:last-child { border-bottom: 1px solid var(--border); }
+      .lp-item input { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--ok); cursor: pointer; }
+      .lp-item a { font-weight: 600; }
+      .lp-item p { margin: 2px 0 0; font-size: 15px; }
+      .lp-item.is-done a { color: var(--muted); }
+      .lp-kind { display: inline-block; margin-left: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+      .lp-next { font-weight: 600; }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Start here</p>
+      <h1>Learn performance testing, step by step</h1>
+      <p class="lead">A route from "what is p95?" to running go-live load tests and getting hired for it. Six stages, each built on free explainers, guides and tools on this site. Tick things off as you go.</p>
+      <div class="lp-progress" id="lp-progress">
+        <div class="lp-row">
+          <p><span class="lp-count" id="lp-count">Tick items as you finish them.</span></p>
+          <button class="xbtn" type="button" id="lp-reset" hidden>Reset progress</button>
+        </div>
+        <div class="lp-bar" role="progressbar" aria-label="Learning path progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="lp-bar"></span></div>
+        <p id="lp-next" class="lp-next" aria-live="polite"></p>
+        <p id="lp-saved">Your progress is saved in this browser only. Nothing is sent anywhere.</p>
+        <ul class="lp-stages" id="lp-stages">
+          <li><a href="#stage-1" data-stage="1">1 · Basics</a></li>
+          <li><a href="#stage-2" data-stage="2">2 · First test</a></li>
+          <li><a href="#stage-3" data-stage="3">3 · Realistic tests</a></li>
+          <li><a href="#stage-4" data-stage="4">4 · Analysis</a></li>
+          <li><a href="#stage-5" data-stage="5">5 · Production readiness</a></li>
+          <li><a href="#stage-6" data-stage="6">6 · Career</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-1" data-stage="1">
+      <h2>1. The basics <span class="lp-stage-count"></span></h2>
+      <p>The ideas every performance conversation uses. Skip this stage only if you can explain why an average response time hides problems and why latency jumps when a server gets busy.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="b-types" aria-label="Done: types of performance test">
+          <div><a href="/glossary/load-testing/">Load, stress and soak testing</a><span class="lp-kind">Glossary</span>
+          <p>The test types and the question each one answers. Then read <a href="/glossary/stress-testing/">stress testing</a> and <a href="/glossary/soak-testing/">soak testing</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="b-percentiles" aria-label="Done: Why averages lie">
+          <div><a href="/explain/percentiles/">Why averages lie</a><span class="lp-kind">Explainer</span>
+          <p>Percentiles (p50, p95, p99) and why targets are written with them. Play with the chart until the tail makes sense.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="b-queueing" aria-label="Done: The hockey stick">
+          <div><a href="/explain/queueing/">The hockey stick: why latency explodes at 80% busy</a><span class="lp-kind">Explainer</span>
+          <p>Queueing in one picture. This is why "it was fine at 70%" is not a capacity plan.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="b-littles" aria-label="Done: Little's Law and throughput">
+          <div><a href="/glossary/littles-law/">Little's Law</a><span class="lp-kind">Glossary</span>
+          <p>Users = throughput × time in the system. Read it with <a href="/glossary/throughput/">throughput</a>, <a href="/glossary/virtual-user/">virtual user</a> and <a href="/glossary/think-time/">think time</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="b-profiles" aria-label="Done: Load profiles explained">
+          <div><a href="/explain/load-profiles/">Load, stress, spike, soak and breakpoint tests explained</a><span class="lp-kind">Explainer</span>
+          <p>Draw the shape of each test and export it as a k6 script.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="b-open-closed" aria-label="Done: open and closed workload models">
+          <div><a href="/glossary/open-vs-closed-workload-model/">Open vs closed workload models</a><span class="lp-kind">Glossary</span>
+          <p>Fixed users or a fixed arrival rate. Getting this wrong hides slowdowns, see <a href="/glossary/coordinated-omission/">coordinated omission</a>.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-2" data-stage="2">
+      <h2>2. Your first test <span class="lp-stage-count"></span></h2>
+      <p>Pick one tool and get a small test running against a safe target. Don't learn two tools at once.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="f-pick" aria-label="Done: pick a tool">
+          <div><a href="/compare/tool-picker/">Pick a tool</a><span class="lp-kind">Tool picker</span>
+          <p>Six questions about your team and system, one recommendation. Or read the <a href="/compare/">tool comparisons</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="f-k6" aria-label="Done: Getting started with k6">
+          <div><a href="/guides/k6/getting-started/">Getting started with k6</a><span class="lp-kind">Guide</span>
+          <p>Install k6, write a script and read the summary. Or take the free <a href="/course/k6/">k6 email course</a>, one lesson a day.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="f-jmeter" aria-label="Done: Getting started with JMeter">
+          <div><a href="/guides/jmeter/getting-started/">Getting started with JMeter</a><span class="lp-kind">Guide</span>
+          <p>Your first test plan, run without the GUI the way it should be. Optional if you chose k6.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="f-checks" aria-label="Done: thresholds and checks">
+          <div><a href="/guides/k6/thresholds-and-checks/">Thresholds and checks</a><span class="lp-kind">Guide</span>
+          <p>Make the test able to fail: pass/fail on p95 and error rate. See also <a href="/glossary/thresholds/">thresholds</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="f-smoke" aria-label="Done: smoke test">
+          <div><a href="/glossary/smoke-testing/">Run a smoke test first</a><span class="lp-kind">Glossary</span>
+          <p>One to five users, a few minutes. It proves the script and environment work before you spend an hour on a real test.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-3" data-stage="3">
+      <h2>3. Realistic tests <span class="lp-stage-count"></span></h2>
+      <p>A test that replays one recorded session with one user's data proves very little. This stage makes your tests behave like real traffic.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="r-correlation" aria-label="Done: correlation">
+          <div><a href="/guides/jmeter/correlation/">Correlation: handling dynamic values</a><span class="lp-kind">Guide</span>
+          <p>Capture session IDs, CSRF tokens and IDs from responses instead of replaying stale ones. Short version: <a href="/glossary/correlation/">correlation</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="r-auth" aria-label="Done: auth tokens">
+          <div><a href="/guides/jmeter/auth-tokens/">Login and auth tokens</a><span class="lp-kind">Guide</span>
+          <p>OAuth and JWT tokens, refresh, and why every virtual user should not share one login.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="r-data" aria-label="Done: parameterisation">
+          <div><a href="/guides/jmeter/parameterisation/">Parameterisation: test data per user</a><span class="lp-kind">Guide</span>
+          <p>CSV data, unique users and avoiding cache-friendly repeats. In k6: <a href="/guides/k6/data-and-parameterisation/">data and parameterisation</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="r-scenarios" aria-label="Done: scenarios and executors">
+          <div><a href="/guides/k6/scenarios-and-executors/">Scenarios and executors</a><span class="lp-kind">Guide</span>
+          <p>Run several journeys at once, each at its own rate, with an open model.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="r-workload" aria-label="Done: workload model">
+          <div><a href="/tools/workload-model/">Build a workload model</a><span class="lp-kind">Tool</span>
+          <p>Turn your busiest production hour into rates, virtual users and pacing. Write it up with the free <a href="/guides/templates/workload-model-sheet/">workload model sheet</a>.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-4" data-stage="4">
+      <h2>4. Analysis <span class="lp-stage-count"></span></h2>
+      <p>Running the test is the easy half. This stage is about reading results and finding out why the system is slow, with evidence.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="a-results" aria-label="Done: read your results">
+          <div><a href="/tools/jtl-analyser/">Read your results properly</a><span class="lp-kind">Tool</span>
+          <p>Percentiles, errors and throughput over time from a JMeter JTL file. For k6, use the <a href="/tools/k6-results/">k6 results viewer</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="a-compare" aria-label="Done: compare runs">
+          <div><a href="/tools/compare-runs/">Compare two runs</a><span class="lp-kind">Tool</span>
+          <p>Before and after a change. Is the difference real, or noise?</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="a-bottlenecks" aria-label="Done: finding bottlenecks">
+          <div><a href="/guides/bottlenecks/">Finding bottlenecks</a><span class="lp-kind">Guide</span>
+          <p>A method, not guesswork: start at saturation and follow the queue. Then the deep dives on <a href="/guides/bottlenecks/linux-server/">Linux servers</a>, the <a href="/guides/bottlenecks/jvm/">JVM</a> and <a href="/guides/bottlenecks/database/">databases</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="a-threads" aria-label="Done: thread dumps">
+          <div><a href="/tools/thread-dump/">Read a thread dump</a><span class="lp-kind">Tool</span>
+          <p>Find blocked threads, lock contention and exhausted pools in a Java thread dump.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="a-gc" aria-label="Done: GC logs">
+          <div><a href="/tools/gc-log/">Read a GC log</a><span class="lp-kind">Tool</span>
+          <p>Pause times and heap trends, so you can tell a memory leak from an undersized heap.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="a-report" aria-label="Done: write a results report">
+          <div><a href="/guides/templates/results-report/">Write a results report</a><span class="lp-kind">Template</span>
+          <p>Verdict first, numbers against targets, findings with evidence.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-5" data-stage="5">
+      <h2>5. Production readiness <span class="lp-stage-count"></span></h2>
+      <p>Senior work: connecting load tests to monitoring, capacity and the go-live decision.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="p-monitoring" aria-label="Done: monitoring">
+          <div><a href="/guides/monitoring/">Monitoring during load tests</a><span class="lp-kind">Guide</span>
+          <p>What to watch on every tier, and a hands-on <a href="/guides/monitoring/grafana-stack/">Grafana stack</a> you can run locally.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="p-ci" aria-label="Done: performance tests in CI">
+          <div><a href="/guides/k6/ci-pipelines/">Performance tests in CI</a><span class="lp-kind">Guide</span>
+          <p>Small, fast checks on every merge that catch regressions before they reach a big test.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="p-slo" aria-label="Done: SLOs and error budgets">
+          <div><a href="/tools/slo-calculator/">Set SLOs and error budgets</a><span class="lp-kind">Tool</span>
+          <p>Turn "it should be fast" into targets you can test and alert on.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="p-capacity" aria-label="Done: capacity planning">
+          <div><a href="/tools/capacity-calculator/">Plan capacity for a peak</a><span class="lp-kind">Tool</span>
+          <p>How much headroom you have, and when you run out.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="p-docs" aria-label="Done: plan and sign-off templates">
+          <div><a href="/guides/templates/">Plan, report and sign off</a><span class="lp-kind">Templates</span>
+          <p>Free one-page test strategy, test plan and <a href="/guides/templates/go-live-signoff/">go-live checklist</a>.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="p-peak" aria-label="Done: peak readiness">
+          <div><a href="/peak-readiness/">See a full peak-readiness test</a><span class="lp-kind">Example</span>
+          <p>How the whole thing fits together, with a <a href="/peak-readiness/sample-report/">sample report</a> and a <a href="/peak-readiness/quiz/">quiz</a> to check your own system.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose lp-stage" id="stage-6" data-stage="6">
+      <h2>6. Career <span class="lp-stage-count"></span></h2>
+      <p>Turn what you've learned into a role, or a better one.</p>
+      <ul class="lp-list">
+        <li class="lp-item"><input type="checkbox" data-id="c-interview" aria-label="Done: interview prep">
+          <div><a href="/interview-prep/">Prepare for interviews</a><span class="lp-kind">Interview prep</span>
+          <p>Over 240 testing interview questions with model answers, basic to advanced, including a large performance section.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="c-ai" aria-label="Done: AI prompts for testers">
+          <div><a href="/explain/ai-prompts-for-testers/">Use AI well at work</a><span class="lp-kind">Explainer</span>
+          <p>Prompts for test cases, k6 scripts and bug reports, and where AI output needs checking.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="c-jobs" aria-label="Done: browse jobs">
+          <div><a href="/jobs/">Browse testing jobs</a><span class="lp-kind">Jobs</span>
+          <p>Performance testing and QA automation roles in Australia and remote, updated every morning.</p></div></li>
+        <li class="lp-item"><input type="checkbox" data-id="c-talent" aria-label="Done: join the talent pool">
+          <div><a href="/talent-pool/">Join the talent pool</a><span class="lp-kind">Talent pool</span>
+          <p>Hear about permanent testing roles first. Free, and nothing is shared without asking you.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Learning on a real project?</h2>
+        <p>If you have a load test due and not much time to learn, I can run it with your team, or review your plan and scripts so you get it right first time.</p>
+        <p class="cta-row">
+          <a class="btn" href="/peak-readiness/" data-track="start-peak">Peak-readiness load test</a>
+          <a class="btn btn-ghost" href="/#contact" data-track="start-contact">Book a free call</a>
+        </p>
+      </div>
+    </section>

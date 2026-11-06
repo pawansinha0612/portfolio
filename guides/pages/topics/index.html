@@ -1,0 +1,31 @@
+<!--{"title": "Specialist performance testing topics", "og_title": "Specialist performance testing: frontend, databases, Kafka, mobile, chaos and cloud", "description": "Guides to the performance tests that don't fit a standard HTTP load test: frontend, databases, Kafka, mobile, chaos and resilience, microservices and cloud.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Specialist topics</p>
+      <h1>Specialist performance testing topics</h1>
+      <p class="lead">A standard load test sends HTTP requests and measures responses. Plenty of real performance risk sits elsewhere: in the browser, in a database that only slows down at production data volumes, in a Kafka consumer that falls behind, in a phone on a train, in a dependency that fails halfway through peak. Each guide below covers what to measure, which tools fit and the mistakes that make results misleading.</p>
+    </section>
+
+    <section class="wrap g-cards" aria-label="Specialist topic guides">
+      <a class="g-card" href="/guides/topics/frontend/"><span class="g-tag">Browser</span><h3>Frontend performance</h3><p>Core Web Vitals, lab vs field data, Lighthouse, WebPageTest and k6 browser tests.</p></a>
+      <a class="g-card" href="/guides/topics/database-load-testing/"><span class="g-tag">Data</span><h3>Database load testing</h3><p>Data volumes, realistic data, and pgbench, sysbench and HammerDB.</p></a>
+      <a class="g-card" href="/guides/topics/messaging-kafka/"><span class="g-tag">Messaging</span><h3>Kafka and messaging</h3><p>Producer and consumer throughput, lag, partitions, and the perf-test scripts and xk6-kafka.</p></a>
+      <a class="g-card" href="/guides/topics/mobile/"><span class="g-tag">Mobile</span><h3>Mobile app performance</h3><p>Startup time, frame rate, profilers, network conditioning and mobile traffic patterns on the backend.</p></a>
+      <a class="g-card" href="/guides/topics/chaos-and-resilience/"><span class="g-tag">Resilience</span><h3>Chaos and resilience testing</h3><p>Fault injection with Toxiproxy, AWS FIS, Chaos Mesh and LitmusChaos, combined with load.</p></a>
+      <a class="g-card" href="/guides/topics/microservices-and-cloud/"><span class="g-tag">Cloud</span><h3>Microservices and cloud</h3><p>Autoscaling tests, cold starts, rate limits and cost per transaction.</p></a>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>How these fit with a normal load test</h2>
+      <p>Most of these topics add a dimension to a load test rather than replacing it. A chaos experiment is more useful while realistic load runs. A database test is only as good as its data. A frontend measurement needs the backend under load to be honest about peak-time experience. Start from the <a href="/glossary/workload-model/">workload model</a> and the risks that worry you most, then pick the guides that cover them. The <a href="/guides/bottlenecks/">bottleneck playbook</a> and <a href="/guides/monitoring/">monitoring guide</a> apply to all of them.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Got a performance risk that doesn't fit the usual test?</h2>
+        <p>Book a free 30-minute call. We'll work out what to test, with which tool, and what a pass looks like.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-topics-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-topics-service">Performance testing service</a>
+        </p>
+      </div>
+    </section>

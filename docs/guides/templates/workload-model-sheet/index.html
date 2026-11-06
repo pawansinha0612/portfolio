@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free workload model sheet for load tests — Pawan Sinha</title>
+  <meta name="description" content="A free workload model sheet: turn peak-hour production volumes into iterations per second, virtual users (Little&#x27;s Law) and pacing, with a worked example.">
+  <meta property="og:title" content="Free workload model sheet for load tests">
+  <meta property="og:description" content="A free workload model sheet: turn peak-hour production volumes into iterations per second, virtual users (Little&#x27;s Law) and pacing, with a worked example.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/templates/workload-model-sheet/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/templates/workload-model-sheet/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Free workload model sheet for load tests", "description": "A free workload model sheet: turn peak-hour production volumes into iterations per second, virtual users (Little's Law) and pacing, with a worked example.", "url": "https://pawansinha.com.au/guides/templates/workload-model-sheet/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+      .t-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+      .t-doc .t-title { font-size: clamp(22px, 3vw, 28px); }
+      .t-doc h3 { margin-top: 26px; }
+      .t-fill { background: var(--alt); border: 1px dashed var(--border); border-radius: 6px; padding: 0 5px; color: var(--text); }
+      .t-checks { list-style: none; padding-left: 0; }
+      .t-checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin: 8px 0; }
+      .t-box { width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--muted); border-radius: 4px; }
+      @media print {
+        .t-actions, .t-howto { display: none !important; }
+        .t-doc > * { max-width: none; }
+        .t-doc .g-tablewrap { overflow: visible; }
+        .t-doc .g-table { font-size: 12px; }
+      }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/templates/">Free templates</a> · Workload model sheet</p>
+      <h1>Workload model sheet</h1>
+      <p class="lead">Turn your busiest real hour into the numbers a load test needs: iterations per second, virtual users and pacing for each journey. Formulas and a worked example included.</p>
+      <p class="t-actions">
+        <a class="btn" href="/guides/templates/files/workload-model-sheet.md.txt" download="workload-model-sheet.md" data-track="tpl-free-workload-model-sheet-md">Download as Markdown</a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()" data-track="tpl-free-workload-model-sheet-print">Print or save as PDF</button>
+      </p>
+    </section>
+
+    <section class="wrap ex-prose t-howto">
+      <h2>How to use it</h2>
+      <ul>
+        <li><strong>Use the busiest real hour,</strong> not a daily total divided by 24. Traffic is never flat.</li>
+        <li><strong>Prefer an arrival-rate (open) model</strong> for public traffic. You set iterations per second and the tool adds users. <a href="/explain/load-profiles/">Load profiles explained</a> shows why it matters.</li>
+        <li><strong>Check your sums online:</strong> the <a href="/tools/workload-model/">workload model tool</a> does the same calculation in the browser.</li>
+        <li>New to the maths? <a href="/glossary/littles-law/">Little's Law</a> and <a href="/glossary/pacing/">pacing</a> in the glossary explain the two formulas that matter.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose t-doc" aria-label="Template">
+      <h2 class="t-title">Workload Model: <span class="t-fill">System name</span></h2>
+      <table class="g-table">
+      <thead><tr><th>Data source</th><th>Peak hour used</th><th>Uplift factor</th><th>Author</th><th>Date</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Analytics, access logs, APM</span></td><td><span class="t-fill">For example: Mon 2 Dec, 12:00-13:00</span></td><td><span class="t-fill">1.5</span></td><td><span class="t-fill">Name</span></td><td><span class="t-fill">DD/MM/YYYY</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>Use the busiest real hour you can find, not a daily average divided by 24. The uplift factor covers growth plus a safety margin. Write down where it comes from.</p></div>
+      <h3>1. Volumes and targets</h3>
+      <table class="g-table">
+      <thead><tr><th>Journey</th><th>Peak hour (production)</th><th>Uplift</th><th>Target per hour</th><th>Iterations per second</th><th>Iteration time (s)</th><th>Minimum VUs</th><th>VUs with spare</th><th>Pacing (s)</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Login</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Search</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Checkout</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><strong>Total</strong></td><td><span class="t-fill">&nbsp;</span></td><td></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td></td></tr>
+      </tbody></table>
+      <h3>2. Formulas</h3>
+      <ul>
+      <li><strong>Target per hour</strong> = peak hour (production) × uplift</li>
+      <li><strong>Iterations per second</strong> = target per hour ÷ 3,600</li>
+      <li><strong>Iteration time</strong> = the sum of response times and think times for one pass through the journey script</li>
+      <li><strong>Minimum VUs</strong> (Little's Law) = iterations per second × iteration time</li>
+      <li><strong>VUs with spare</strong> = minimum VUs × 1.25, rounded up, so slower responses under load don't cut throughput</li>
+      <li><strong>Pacing</strong> = VUs with spare ÷ iterations per second. Each virtual user starts a new iteration this often.</li>
+      </ul>
+      <div class="g-note"><p>With an open-model tool setting (k6 constant-arrival-rate, Gatling injectOpen, JMeter's Open Model Thread Group) you set iterations per second directly and the tool adds users as needed. Use the minimum VUs figure to size the pool of pre-allocated users.</p></div>
+      <h3>3. Worked example</h3>
+      <table class="g-table">
+      <thead><tr><th>Journey</th><th>Peak hour</th><th>Uplift</th><th>Target per hour</th><th>Iterations per second</th><th>Iteration time (s)</th><th>Minimum VUs</th><th>VUs with spare</th><th>Pacing (s)</th></tr></thead>
+      <tbody>
+      <tr><td>Login</td><td>12,000</td><td>1.5</td><td>18,000</td><td>5.0</td><td>8</td><td>40</td><td>50</td><td>10.0</td></tr>
+      <tr><td>Search</td><td>30,000</td><td>1.5</td><td>45,000</td><td>12.5</td><td>12</td><td>150</td><td>188</td><td>15.0</td></tr>
+      <tr><td>Checkout</td><td>2,400</td><td>1.5</td><td>3,600</td><td>1.0</td><td>40</td><td>40</td><td>50</td><td>50.0</td></tr>
+      <tr><td><strong>Total</strong></td><td>44,400</td><td></td><td>66,600</td><td>18.5</td><td></td><td>230</td><td>288</td><td></td></tr>
+      </tbody></table>
+      <h3>4. Assumptions</h3>
+      <ul>
+      <li><span class="t-fill">Journey mix taken from the same peak hour as the volumes.</span></li>
+      <li><span class="t-fill">Think times taken from real session data, or a stated estimate.</span></li>
+      <li><span class="t-fill">Background traffic (batch jobs, integrations, bots) included or excluded, and why.</span></li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want the full editable version?</h2>
+        <p>This free page is the short version. The <a href="/templates/">Performance Test Templates Pack</a> (A$15) has Word and Excel files with guidance in every section: a 13-section test plan, a verdict-first report with sign-off, a 36-check go-live checklist that scores itself, a risk register and a workload calculator.</p>
+        <p class="cta-row">
+          <a class="btn" href="/templates/" data-track="tpl-free-workload-model-sheet-pack">See the full pack</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="tpl-free-workload-model-sheet-peak">Or have me run the test</a>
+        </p>
+        <p>More free templates: <a href="/guides/templates/test-strategy/">Test strategy</a> · <a href="/guides/templates/test-plan/">Test plan</a> · <a href="/guides/templates/results-report/">Results report</a> · <a href="/guides/templates/go-live-signoff/">Go-live sign-off</a>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

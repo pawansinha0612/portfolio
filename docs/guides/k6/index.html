@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 guides: practical recipes for load testing with k6 — Pawan Sinha</title>
+  <meta name="description" content="Practical k6 guides with scripts that run: executors and the open model, thresholds, test data, auth and correlation, gRPC and browser tests, CI and dashboards.">
+  <meta property="og:title" content="k6 how-to guides: scenarios, thresholds, data, auth, CI and more">
+  <meta property="og:description" content="Practical k6 guides with scripts that run: executors and the open model, thresholds, test data, auth and correlation, gRPC and browser tests, CI and dashboards.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 guides: practical recipes for load testing with k6", "description": "Practical k6 guides with scripts that run: executors and the open model, thresholds, test data, auth and correlation, gRPC and browser tests, CI and dashboards.", "url": "https://pawansinha.com.au/guides/k6/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · k6</p>
+      <h1>k6 guides</h1>
+      <p class="lead">Practical recipes for load testing with Grafana k6, written for k6 v1.x and v2.x.
+        Every script on these pages has been loaded with <code>k6 inspect</code>, and the main
+        ones run against a test API, so you can copy them and adapt the URLs.</p>
+    </section>
+
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/k6/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>Install k6, write a first test with checks and thresholds, and read the summary.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/scenarios-and-executors/">
+        <span class="g-tag">Load model</span>
+        <h3>Scenarios and executors</h3>
+        <p>Every executor, open vs closed models, and how to size preAllocatedVUs.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/thresholds-and-checks/">
+        <span class="g-tag">Pass / fail</span>
+        <h3>Thresholds and checks</h3>
+        <p>Per-endpoint budgets, abortOnFail, and the exit codes CI sees.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/data-and-parameterisation/">
+        <span class="g-tag">Data</span>
+        <h3>Test data and parameterisation</h3>
+        <p>SharedArray, CSV files and unique data per VU and per iteration.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/auth-and-correlation/">
+        <span class="g-tag">Sessions</span>
+        <h3>Auth and correlation</h3>
+        <p>Tokens in setup(), per-VU logins, and values from JSON, HTML and cookies.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/grpc-websockets-browser/">
+        <span class="g-tag">Protocols</span>
+        <h3>gRPC, WebSockets and browser</h3>
+        <p>Current module names, working scripts and a hybrid browser-plus-API test.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/ci-pipelines/">
+        <span class="g-tag">CI/CD</span>
+        <h3>k6 in CI pipelines</h3>
+        <p>GitHub Actions, GitLab CI, HTML reports, JUnit and PR budget checks.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/outputs-and-dashboards/">
+        <span class="g-tag">Results</span>
+        <h3>Outputs and dashboards</h3>
+        <p>Web dashboard, handleSummary, JSON/CSV, Prometheus and InfluxDB.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/typescript-and-structure/">
+        <span class="g-tag">Scale up</span>
+        <h3>TypeScript and project structure</h3>
+        <p>Native TypeScript, type-checking in CI and a layout a team can maintain.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/common-mistakes/">
+        <span class="g-tag">Avoid</span>
+        <h3>Common mistakes</h3>
+        <p>Twelve mistakes that make a load test pass when it shouldn't.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/cheat-sheet/">
+        <span class="g-tag">Printable</span>
+        <h3>k6 cheat sheet</h3>
+        <p>CLI flags, options, executors, metrics and threshold syntax on one page.</p>
+      </a>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>More k6 resources on this site</h2>
+      <ul>
+        <li><strong>Convert existing tests:</strong> <a href="/tools/jmeter-to-k6/">JMeter to k6</a>,
+          <a href="/tools/postman-to-k6/">Postman to k6</a>, <a href="/tools/openapi-to-k6/">OpenAPI
+          to k6</a> and <a href="/tools/curl-to-k6/">curl to k6</a>.</li>
+        <li><strong>Make sense of results:</strong> the <a href="/tools/k6-results/">k6 results
+          analyser</a>.</li>
+        <li><strong>Learn step by step:</strong> the free <a href="/course/k6/">k6 email course</a>.</li>
+        <li><strong>Choosing a tool?</strong> <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a>,
+          <a href="/compare/k6-vs-gatling/">k6 vs Gatling</a> and
+          <a href="/compare/k6-vs-locust/">k6 vs Locust</a>. Or see the
+          <a href="/guides/gatling/">Gatling</a> and <a href="/guides/locust/">Locust</a> guides.</li>
+        <li><strong>The concepts behind it:</strong> <a href="/explain/queueing/">queueing</a>,
+          <a href="/explain/load-profiles/">load profiles</a> and
+          <a href="/explain/percentiles/">percentiles</a> explainers.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Rather have it done for you?</h2>
+        <p>I plan, script and run k6 load tests, and report what will break first and how to fix it.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-hub-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-hub-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!--{"title": "Locust guides: load testing in Python", "og_title": "Locust how-to guides: locustfiles, load shapes, distributed runs and CI", "description": "Practical Locust guides with code that runs: first locustfile, custom load shapes, distributed master and workers, logins and correlation, and CI with a pass/fail budget.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Locust</p>
+      <h1>Locust guides</h1>
+      <p class="lead">Practical recipes for load testing in Python with Locust. Every locustfile on
+        these pages was run headless against a test API with Locust 2.47, so you can copy them and
+        change the host.</p>
+    </section>
+
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/locust/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>A first locustfile, tasks, wait_time, the web UI and headless runs.</p>
+      </a>
+      <a class="g-card" href="/guides/locust/load-shapes/">
+        <span class="g-tag">Load model</span>
+        <h3>Load shapes</h3>
+        <p>Steps, spikes and recovery checks with LoadTestShape.</p>
+      </a>
+      <a class="g-card" href="/guides/locust/distributed/">
+        <span class="g-tag">Scale</span>
+        <h3>Distributed Locust</h3>
+        <p>--processes, master and workers, Docker Compose and data per worker.</p>
+      </a>
+      <a class="g-card" href="/guides/locust/data-and-auth/">
+        <span class="g-tag">Sessions</span>
+        <h3>Data and auth</h3>
+        <p>on_start logins, catch_response, ordered journeys and correlation.</p>
+      </a>
+      <a class="g-card" href="/guides/locust/ci-and-reports/">
+        <span class="g-tag">CI/CD</span>
+        <h3>CI and reports</h3>
+        <p>CSV and HTML reports, and an exit code from p95 and failure budgets.</p>
+      </a>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>When Locust is a good fit</h2>
+      <ul>
+        <li>Your team writes Python, and the test needs your own Python code: signing, fixtures,
+          data generators, a client library.</li>
+        <li>You want a live web UI to change load during exploratory runs.</li>
+        <li>You need a protocol that isn't HTTP: any Python client library can be wrapped as a
+          Locust user.</li>
+      </ul>
+      <p>The trade-off: one Locust process uses one CPU core, so high load needs
+        <a href="/guides/locust/distributed/">several processes</a>, and Locust's users loop, which
+        makes it a closed model unless you pace them. Weighing it up? Read
+        <a href="/compare/k6-vs-locust/">k6 vs Locust</a>, or see the <a href="/guides/k6/">k6</a>
+        and <a href="/guides/gatling/">Gatling</a> guides. The theory is in the
+        <a href="/explain/load-profiles/">load profiles</a> and <a href="/explain/queueing/">queueing</a>
+        explainers.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need Locust expertise on your project?</h2>
+        <p>I build and run Locust and k6 load tests, and turn the results into clear fixes.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-hub-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-hub-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

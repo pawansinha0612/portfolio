@@ -1,0 +1,96 @@
+<!--{"title": "k6 guides: practical recipes for load testing with k6", "og_title": "k6 how-to guides: scenarios, thresholds, data, auth, CI and more", "description": "Practical k6 guides with scripts that run: executors and the open model, thresholds, test data, auth and correlation, gRPC and browser tests, CI and dashboards.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · k6</p>
+      <h1>k6 guides</h1>
+      <p class="lead">Practical recipes for load testing with Grafana k6, written for k6 v1.x and v2.x.
+        Every script on these pages has been loaded with <code>k6 inspect</code>, and the main
+        ones run against a test API, so you can copy them and adapt the URLs.</p>
+    </section>
+
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/k6/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>Install k6, write a first test with checks and thresholds, and read the summary.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/scenarios-and-executors/">
+        <span class="g-tag">Load model</span>
+        <h3>Scenarios and executors</h3>
+        <p>Every executor, open vs closed models, and how to size preAllocatedVUs.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/thresholds-and-checks/">
+        <span class="g-tag">Pass / fail</span>
+        <h3>Thresholds and checks</h3>
+        <p>Per-endpoint budgets, abortOnFail, and the exit codes CI sees.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/data-and-parameterisation/">
+        <span class="g-tag">Data</span>
+        <h3>Test data and parameterisation</h3>
+        <p>SharedArray, CSV files and unique data per VU and per iteration.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/auth-and-correlation/">
+        <span class="g-tag">Sessions</span>
+        <h3>Auth and correlation</h3>
+        <p>Tokens in setup(), per-VU logins, and values from JSON, HTML and cookies.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/grpc-websockets-browser/">
+        <span class="g-tag">Protocols</span>
+        <h3>gRPC, WebSockets and browser</h3>
+        <p>Current module names, working scripts and a hybrid browser-plus-API test.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/ci-pipelines/">
+        <span class="g-tag">CI/CD</span>
+        <h3>k6 in CI pipelines</h3>
+        <p>GitHub Actions, GitLab CI, HTML reports, JUnit and PR budget checks.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/outputs-and-dashboards/">
+        <span class="g-tag">Results</span>
+        <h3>Outputs and dashboards</h3>
+        <p>Web dashboard, handleSummary, JSON/CSV, Prometheus and InfluxDB.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/typescript-and-structure/">
+        <span class="g-tag">Scale up</span>
+        <h3>TypeScript and project structure</h3>
+        <p>Native TypeScript, type-checking in CI and a layout a team can maintain.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/common-mistakes/">
+        <span class="g-tag">Avoid</span>
+        <h3>Common mistakes</h3>
+        <p>Twelve mistakes that make a load test pass when it shouldn't.</p>
+      </a>
+      <a class="g-card" href="/guides/k6/cheat-sheet/">
+        <span class="g-tag">Printable</span>
+        <h3>k6 cheat sheet</h3>
+        <p>CLI flags, options, executors, metrics and threshold syntax on one page.</p>
+      </a>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>More k6 resources on this site</h2>
+      <ul>
+        <li><strong>Convert existing tests:</strong> <a href="/tools/jmeter-to-k6/">JMeter to k6</a>,
+          <a href="/tools/postman-to-k6/">Postman to k6</a>, <a href="/tools/openapi-to-k6/">OpenAPI
+          to k6</a> and <a href="/tools/curl-to-k6/">curl to k6</a>.</li>
+        <li><strong>Make sense of results:</strong> the <a href="/tools/k6-results/">k6 results
+          analyser</a>.</li>
+        <li><strong>Learn step by step:</strong> the free <a href="/course/k6/">k6 email course</a>.</li>
+        <li><strong>Choosing a tool?</strong> <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a>,
+          <a href="/compare/k6-vs-gatling/">k6 vs Gatling</a> and
+          <a href="/compare/k6-vs-locust/">k6 vs Locust</a>. Or see the
+          <a href="/guides/gatling/">Gatling</a> and <a href="/guides/locust/">Locust</a> guides.</li>
+        <li><strong>The concepts behind it:</strong> <a href="/explain/queueing/">queueing</a>,
+          <a href="/explain/load-profiles/">load profiles</a> and
+          <a href="/explain/percentiles/">percentiles</a> explainers.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Rather have it done for you?</h2>
+        <p>I plan, script and run k6 load tests, and report what will break first and how to fix it.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-hub-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-hub-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

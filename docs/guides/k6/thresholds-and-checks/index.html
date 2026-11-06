@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 thresholds and checks: make the test fail — Pawan Sinha</title>
+  <meta name="description" content="How k6 checks and thresholds differ, per-endpoint and per-scenario budgets with tags, abortOnFail, custom metrics, and the exit codes your CI pipeline sees.">
+  <meta property="og:title" content="k6 thresholds and checks: budgets, abortOnFail and CI exit codes">
+  <meta property="og:description" content="How k6 checks and thresholds differ, per-endpoint and per-scenario budgets with tags, abortOnFail, custom metrics, and the exit codes your CI pipeline sees.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/thresholds-and-checks/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/thresholds-and-checks/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 thresholds and checks: make the test fail", "description": "How k6 checks and thresholds differ, per-endpoint and per-scenario budgets with tags, abortOnFail, custom metrics, and the exit codes your CI pipeline sees.", "url": "https://pawansinha.com.au/guides/k6/thresholds-and-checks/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Thresholds and checks</p>
+      <h1>k6 thresholds and checks: a test that can fail</h1>
+      <p class="lead">Your pipeline has run the load test on every merge for six months and never failed
+        once. That's not a fast system. That's a test with no budgets, or with a typo in one. Here's
+        how to make k6 fail for the right reasons.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#difference">Checks verify, thresholds decide</a></li>
+          <li><a href="#syntax">Threshold syntax per metric type</a></li>
+          <li><a href="#tagged">Per-endpoint and per-scenario budgets</a></li>
+          <li><a href="#example">A complete example</a></li>
+          <li><a href="#abort">Stopping early with abortOnFail</a></li>
+          <li><a href="#exit">Exit codes in CI</a></li>
+          <li><a href="#traps">Traps</a></li>
+        </ol>
+      </div>
+
+      <h2 id="difference">Checks verify, thresholds decide</h2>
+      <p>A <strong>check</strong> is an assertion on one response: status is 200, body has an id. A
+        failed check does not stop the iteration and does not fail the test. It adds a 0 to the
+        <code>checks</code> rate metric. It's closer to a counter than an assertion. See
+        <a href="/glossary/checks-and-assertions/">checks and assertions</a>.</p>
+      <p>A <strong>threshold</strong> is a pass/fail rule on a whole metric across the test: p95 of
+        <code>http_req_duration</code> under 500 ms, <code>checks</code> rate over 99%. If any
+        threshold fails, k6 exits with a non-zero code. See <a href="/glossary/thresholds/">thresholds</a>.</p>
+      <p>You need both. Checks catch "fast but wrong" responses. A threshold on <code>checks</code>
+        turns them into a pass/fail. A test with checks but no threshold on them prints red crosses
+        and still exits 0.</p>
+      <pre class="ex-code"><code>import { check } from 'k6';
+
+// check() returns true only if every condition passed, so you can branch on it
+const ok = check(res, {
+  'status 200': (r) =&gt; r.status === 200,
+  'body has id': (r) =&gt; r.json('id') !== undefined,
+  'under 1 s': (r) =&gt; r.timings.duration &lt; 1000,
+});
+if (!ok) {
+  console.warn(`bad response ${res.status} for ${res.url}`);
+}</code></pre>
+
+      <h2 id="syntax">Threshold syntax per metric type</h2>
+      <p>Each threshold is an expression <code>aggregation operator value</code>. Which aggregations
+        you can use depends on the metric type:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Metric type</th><th>Built-in examples</th><th>Aggregations</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Trend</td><td><code>http_req_duration</code>, <code>iteration_duration</code>, <code>group_duration</code></td><td><code>avg</code> <code>min</code> <code>max</code> <code>med</code> <code>p(N)</code></td><td><code>'p(95)&lt;500'</code></td></tr>
+          <tr><td>Rate</td><td><code>http_req_failed</code>, <code>checks</code></td><td><code>rate</code></td><td><code>'rate&lt;0.01'</code></td></tr>
+          <tr><td>Counter</td><td><code>http_reqs</code>, <code>iterations</code>, <code>dropped_iterations</code></td><td><code>count</code> <code>rate</code></td><td><code>'count&lt;10'</code></td></tr>
+          <tr><td>Gauge</td><td><code>vus</code></td><td><code>value</code></td><td><code>'value&lt;500'</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Several expressions on one metric are all required: <code>['p(95)&lt;500', 'p(99)&lt;1500']</code>.
+        Budgets on the median alone are close to useless, because the median hides exactly the
+        slow requests users complain about. Use p95 and p99, with an error-rate budget beside them.
+        To pick the numbers, start from your <a href="/glossary/slo/">SLO</a> or the
+        <a href="/tools/slo-calculator/">SLO calculator</a>.</p>
+
+      <h2 id="tagged">Per-endpoint and per-scenario budgets</h2>
+      <p>One p95 across all endpoints mixes a 20 ms health check with a 900 ms search. Put the tag
+        filter in braces after the metric name to create a sub-metric with its own threshold:</p>
+      <ul>
+        <li><code>'http_req_duration{name:GET /products}'</code>: one endpoint, using the
+          <code>name</code> tag you set on the request.</li>
+        <li><code>'http_req_duration{scenario:buy}'</code>: one scenario.</li>
+        <li><code>'http_req_duration{status:200}'</code>: successful responses only, so fast errors
+          don't drag p95 down.</li>
+        <li><code>'checks{check:order created}'</code>: one named check.</li>
+        <li><code>'group_duration{group:::checkout}'</code>: one group. The group tag value starts
+          with <code>::</code>, so the filter has three colons.</li>
+        <li><code>'http_req_duration{name:GET /products,method:GET}'</code>: several tags at once.</li>
+      </ul>
+
+      <h2 id="example">A complete example</h2>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, group, sleep } from 'k6';
+import { Trend } from 'k6/metrics';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const checkoutTime = new Trend('checkout_duration', true); // true = values are times
+
+export const options = {
+  vus: 10,
+  duration: '5m',
+  thresholds: {
+    // Whole-test budgets
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(95)&lt;500', 'p(99)&lt;1500'],
+
+    // Per-endpoint budgets via the name tag (set below)
+    'http_req_duration{name:GET /products}': ['p(95)&lt;300'],
+    'http_req_duration{name:GET /products/:id}': ['p(95)&lt;200'],
+
+    // Every check must pass at least 99% of the time
+    checks: ['rate&gt;0.99'],
+    'checks{check:order created}': ['rate&gt;0.995'],
+
+    // Group duration (system metric, tagged by group path)
+    'group_duration{group:::browse}': ['p(95)&lt;2000'],
+
+    // Custom metric
+    checkout_duration: ['p(95)&lt;1200'],
+
+    // Stop early if things are clearly broken. Wait 30 s so a cold start doesn't trip it.
+    'http_req_failed{scenario:default}': [{ threshold: 'rate&lt;0.10', abortOnFail: true, delayAbortEval: '30s' }],
+  },
+};
+
+export default function () {
+  group('browse', () =&gt; {
+    const list = http.get(`${BASE_URL}/products`, { tags: { name: 'GET /products' } });
+    check(list, { 'list 200': (r) =&gt; r.status === 200 });
+    const id = list.json('items.0.id');
+    const item = http.get(`${BASE_URL}/products/${id}`, { tags: { name: 'GET /products/:id' } });
+    check(item, { 'item 200': (r) =&gt; r.status === 200 });
+  });
+
+  group('checkout', () =&gt; {
+    const start = Date.now();
+    const login = http.post(`${BASE_URL}/login`, JSON.stringify({ username: 'u1', password: 'p' }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const order = http.post(`${BASE_URL}/orders`, '{}', {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${login.json('access_token')}` },
+    });
+    check(order, { 'order created': (r) =&gt; r.status === 201 });
+    checkoutTime.add(Date.now() - start);
+  });
+
+  sleep(1);
+}</code></pre>
+      <p>The <code>Trend</code> custom metric measures the whole checkout, login and order together,
+        which no single request metric shows. Passing <code>true</code> as the second argument tells
+        k6 the values are times, so it formats them as ms in the summary.</p>
+
+      <h2 id="abort">Stopping early with abortOnFail</h2>
+      <p>A 60-minute soak test that is 90% errors after five minutes is wasting an hour. Use the
+        object form of a threshold to stop the test as soon as it fails:</p>
+      <pre class="ex-code"><code>thresholds: {
+  http_req_failed: [
+    'rate&lt;0.01',                                                         // the real budget
+    { threshold: 'rate&lt;0.10', abortOnFail: true, delayAbortEval: '1m' }, // the emergency brake
+  ],
+},</code></pre>
+      <p>Thresholds are evaluated during the run, about every two seconds. <code>delayAbortEval</code>
+        waits before the first evaluation, so a handful of failures during warm-up can't abort the
+        test. Without it, one early error out of five requests is a 20% failure rate and the test
+        stops. I set the abort threshold looser than the budget: abort when the run is clearly
+        useless, and let the real budget decide pass or fail at the end.</p>
+
+      <h2 id="exit">Exit codes in CI</h2>
+      <p>CI tools only see the exit code. These are the ones you'll meet (checked on k6 v1.x):</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>Test finished and every threshold passed. Also: no thresholds at all, failed checks without a threshold, or errors thrown inside the default function.</td></tr>
+          <tr><td><code>99</code></td><td>One or more thresholds failed, including an <code>abortOnFail</code> stop.</td></tr>
+          <tr><td><code>104</code></td><td>Invalid config, for example a threshold on a metric that doesn't exist.</td></tr>
+          <tr><td><code>107</code></td><td>Script error: a syntax error, an exception in init code, or <code>fail()</code> in <code>setup()</code>.</td></tr>
+          <tr><td><code>108</code></td><td>The script called <code>exec.test.abort()</code>.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Any non-zero code fails a CI step by default, which is what you want. If you need the
+        report even when the test fails, make the report step run on failure too
+        (<code>if: always()</code> in GitHub Actions). Pipelines are covered in
+        <a href="/guides/k6/ci-pipelines/">k6 in CI</a>.</p>
+      <div class="g-warn"><p>An exception thrown in the default function is logged and that
+        iteration is abandoned, but the test carries on and can still exit 0. If a broken journey
+        must fail the test, guard it with checks and a <code>checks</code> threshold.</p></div>
+
+      <h2 id="traps">Traps</h2>
+      <ul>
+        <li><strong>A threshold on a sub-metric with no data passes.</strong> If you write
+          <code>{name:GET /product}</code> but the tag is <code>GET /products</code>, the sub-metric
+          gets no samples and the threshold silently passes. After any change, look for the
+          threshold's value in the summary. If it shows nothing, the filter matched nothing.</li>
+        <li><strong><code>--no-thresholds</code></strong> turns them all off. Fine locally, a disaster
+          if it ends up in a pipeline file.</li>
+        <li><strong>Failed requests are fast.</strong> A p95 budget passes happily when half the
+          requests are 503s returned in 2 ms. Always pair a latency budget with
+          <code>http_req_failed</code> and a <code>checks</code> rate.</li>
+        <li><strong>Expected 4xx count as failures.</strong> If a 404 or 409 is correct for a call,
+          use <code>http.setResponseCallback(http.expectedStatuses(200, 404))</code> or the
+          per-request <code>responseCallback</code> param, so it doesn't count in
+          <code>http_req_failed</code>.</li>
+      </ul>
+      <p>Already have results? The <a href="/tools/k6-results/">k6 results analyser</a> reads a k6
+        summary and flags the usual problems. More mistakes in
+        <a href="/guides/k6/common-mistakes/">common k6 mistakes</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance budgets in your pipeline?</h2>
+        <p>I set up k6 quality gates that fail builds for real regressions, with budgets taken from
+          your SLOs rather than guesses.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-thr-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-thr-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!--{"title": "Free performance test strategy template", "description": "A free one-page performance test strategy template: scope, business risks, NFRs, test types, workload approach, environments, tools, data and sign-off.", "article": true}-->
+    <style>
+      .t-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+      .t-doc .t-title { font-size: clamp(22px, 3vw, 28px); }
+      .t-doc h3 { margin-top: 26px; }
+      .t-fill { background: var(--alt); border: 1px dashed var(--border); border-radius: 6px; padding: 0 5px; color: var(--text); }
+      .t-checks { list-style: none; padding-left: 0; }
+      .t-checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin: 8px 0; }
+      .t-box { width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--muted); border-radius: 4px; }
+      @media print {
+        .t-actions, .t-howto { display: none !important; }
+        .t-doc > * { max-width: none; }
+        .t-doc .g-tablewrap { overflow: visible; }
+        .t-doc .g-table { font-size: 12px; }
+      }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/templates/">Free templates</a> · Test strategy</p>
+      <h1>Performance test strategy template</h1>
+      <p class="lead">How your organisation tests performance, on two pages: what is in scope, which risks testing covers, the targets, which tests run when, and who signs off. Write it once per product or programme.</p>
+      <p class="t-actions">
+        <a class="btn" href="/guides/templates/files/test-strategy.md.txt" download="performance-test-strategy.md" data-track="tpl-free-test-strategy-md">Download as Markdown</a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()" data-track="tpl-free-test-strategy-print">Print or save as PDF</button>
+      </p>
+    </section>
+
+    <section class="wrap ex-prose t-howto">
+      <h2>How to use it</h2>
+      <ul>
+        <li><strong>Write it once, update it rarely.</strong> The strategy sets the rules. Each release gets its own short <a href="/guides/templates/test-plan/">test plan</a> that follows them.</li>
+        <li><strong>Start with the risks, not the tools.</strong> Every test type in section 4 should trace back to a business risk in section 2.</li>
+        <li><strong>Get the NFRs agreed in writing.</strong> A target nobody owns gets argued about after the test. The <a href="/tools/slo-calculator/">SLO calculator</a> helps turn targets into error budgets.</li>
+        <li><strong>Replace every grey box</strong>, then delete the guidance notes before you share it.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose t-doc" aria-label="Template">
+      <h2 class="t-title">Performance Test Strategy: <span class="t-fill">System or programme name</span></h2>
+      <table class="g-table">
+      <thead><tr><th>Owner</th><th>Version</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Name, role</span></td><td><span class="t-fill">0.1</span></td><td><span class="t-fill">DD/MM/YYYY</span></td><td><span class="t-fill">Draft / Reviewed / Approved</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>A strategy says how performance is tested across a programme or product. It changes rarely. Each release then gets its own short test plan that follows it. Keep this to two or three pages.</p></div>
+      <h3>1. Purpose and scope</h3>
+      <ul>
+      <li><strong>Why we test performance:</strong> <span class="t-fill">For example: the platform must handle the end-of-month peak without slowing down checkout.</span></li>
+      <li><strong>In scope:</strong> <span class="t-fill">Systems, services, APIs and user journeys covered.</span></li>
+      <li><strong>Out of scope:</strong> <span class="t-fill">For example: third-party payment gateway internals, batch reporting.</span></li>
+      </ul>
+      <h3>2. Business risks this strategy covers</h3>
+      <table class="g-table">
+      <thead><tr><th>Risk</th><th>Why it matters</th><th>How testing covers it</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Checkout slows down at peak</span></td><td><span class="t-fill">Lost sales, complaints</span></td><td><span class="t-fill">Peak load test before every major release</span></td></tr>
+      <tr><td><span class="t-fill">Memory leak under long use</span></td><td><span class="t-fill">Outage after days of uptime</span></td><td><span class="t-fill">Soak test each quarter</span></td></tr>
+      <tr><td><span class="t-fill">Unknown breaking point</span></td><td><span class="t-fill">No warning before capacity runs out</span></td><td><span class="t-fill">Breakpoint test after big infrastructure changes</span></td></tr>
+      </tbody></table>
+      <h3>3. Performance requirements (NFRs)</h3>
+      <div class="g-note"><p>Write every target as a percentile at a stated load, with an error budget. "Fast" or "an average of 1 second" cannot fail a test.</p></div>
+      <table class="g-table">
+      <thead><tr><th>Journey or API</th><th>Peak load</th><th>p95 target</th><th>p99 target</th><th>Max error rate</th><th>Source of the number</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Login</span></td><td><span class="t-fill">5 per second</span></td><td><span class="t-fill">800 ms</span></td><td><span class="t-fill">1.5 s</span></td><td><span class="t-fill">0.5%</span></td><td><span class="t-fill">Product owner, SLA, last year's peak</span></td></tr>
+      <tr><td><span class="t-fill">Search</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <h3>4. Test types and when they run</h3>
+      <table class="g-table">
+      <thead><tr><th>Test type</th><th>Question it answers</th><th>When it runs</th><th>Environment</th></tr></thead>
+      <tbody>
+      <tr><td>Smoke (1-5 users)</td><td>Does the script and environment work?</td><td>Every build or before every test</td><td><span class="t-fill">Test / CI</span></td></tr>
+      <tr><td>Load (expected peak)</td><td>Do we meet the NFRs at peak?</td><td>Before each major release</td><td><span class="t-fill">Perf environment</span></td></tr>
+      <tr><td>Stress or breakpoint</td><td>Where does it break, and how?</td><td><span class="t-fill">Quarterly, after infra changes</span></td><td><span class="t-fill">Perf environment</span></td></tr>
+      <tr><td>Soak (4-24 hours)</td><td>Does anything leak or degrade over time?</td><td><span class="t-fill">Quarterly</span></td><td><span class="t-fill">Perf environment</span></td></tr>
+      <tr><td>Spike</td><td>Does it survive and recover from a sudden jump?</td><td><span class="t-fill">Before campaigns or launches</span></td><td><span class="t-fill">Perf environment</span></td></tr>
+      <tr><td>CI performance check</td><td>Did this change make a key API slower?</td><td><span class="t-fill">Every merge to main</span></td><td><span class="t-fill">CI</span></td></tr>
+      </tbody></table>
+      <h3>5. Workload model approach</h3>
+      <ul>
+      <li><strong>Source of volumes:</strong> <span class="t-fill">Production analytics, access logs, APM data for the busiest hour of the last 12 months.</span></li>
+      <li><strong>Growth and headroom:</strong> <span class="t-fill">For example: peak × 1.5 to cover a year of growth and a safety margin.</span></li>
+      <li><strong>Load model:</strong> <span class="t-fill">Open (arrival rate) for public traffic, closed (fixed users) for internal staff systems.</span></li>
+      <li><strong>Journey mix:</strong> <span class="t-fill">Taken from the same peak hour, as a percentage per journey.</span></li>
+      </ul>
+      <h3>6. Environments</h3>
+      <ul>
+      <li><strong>Performance environment:</strong> <span class="t-fill">Name, size compared with production, for example 50% of production nodes.</span></li>
+      <li><strong>Known differences from production:</strong> <span class="t-fill">Smaller database, shared load balancer, stubbed third parties.</span></li>
+      <li><strong>How results are applied to production:</strong> <span class="t-fill">For example: tests run at 50% of peak on 50% of the nodes. No straight-line scaling is assumed for shared parts such as the database.</span></li>
+      </ul>
+      <h3>7. Tools</h3>
+      <table class="g-table">
+      <thead><tr><th>Purpose</th><th>Tool</th></tr></thead>
+      <tbody>
+      <tr><td>Load generation</td><td><span class="t-fill">k6 / JMeter / Gatling / LoadRunner / ...</span></td></tr>
+      <tr><td>Monitoring and APM</td><td><span class="t-fill">Grafana, Prometheus, Dynatrace, Datadog, ...</span></td></tr>
+      <tr><td>Results storage and dashboards</td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>CI pipeline</td><td><span class="t-fill">GitHub Actions, GitLab CI, Jenkins, ...</span></td></tr>
+      </tbody></table>
+      <h3>8. Test data</h3>
+      <ul>
+      <li><strong>Volumes:</strong> <span class="t-fill">Database sized to production volumes, or the gap noted.</span></li>
+      <li><strong>Privacy:</strong> <span class="t-fill">No real customer data. Synthetic or masked data only.</span></li>
+      <li><strong>Refresh:</strong> <span class="t-fill">How data is reset between runs.</span></li>
+      </ul>
+      <h3>9. Monitoring and analysis</h3>
+      <ul>
+      <li><strong>Client side:</strong> response-time percentiles, throughput and errors per journey.</li>
+      <li><strong>Server side:</strong> CPU, memory, garbage collection, thread and connection pools, database waits, queue depths.</li>
+      <li><strong>Who analyses results:</strong> <span class="t-fill">Names or roles.</span></li>
+      </ul>
+      <h3>10. Entry and exit criteria</h3>
+      <ul>
+      <li><strong>Entry:</strong> <span class="t-fill">Stable build deployed, smoke test passes, monitoring in place, test data loaded.</span></li>
+      <li><strong>Exit:</strong> <span class="t-fill">All NFRs met at peak, or each miss accepted in writing with a fix date.</span></li>
+      </ul>
+      <h3>11. Roles</h3>
+      <table class="g-table">
+      <thead><tr><th>Role</th><th>Name</th><th>Responsible for</th></tr></thead>
+      <tbody>
+      <tr><td>Performance lead</td><td><span class="t-fill">&nbsp;</span></td><td>Strategy, test design, analysis, report</td></tr>
+      <tr><td>Environment owner</td><td><span class="t-fill">&nbsp;</span></td><td>Environment, deployments, monitoring access</td></tr>
+      <tr><td>Development lead</td><td><span class="t-fill">&nbsp;</span></td><td>Fixing and retesting defects</td></tr>
+      <tr><td>Business owner</td><td><span class="t-fill">&nbsp;</span></td><td>Agreeing NFRs and accepting risks</td></tr>
+      </tbody></table>
+      <h3>12. Reporting and sign-off</h3>
+      <ul>
+      <li><strong>Reports:</strong> <span class="t-fill">One results report per test cycle, verdict first.</span></li>
+      <li><strong>Go-live decision:</strong> <span class="t-fill">Who signs the go/no-go, and which checklist they use.</span></li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want the full editable version?</h2>
+        <p>This free page is the short version. The <a href="/templates/">Performance Test Templates Pack</a> (A$15) has Word and Excel files with guidance in every section: a 13-section test plan, a verdict-first report with sign-off, a 36-check go-live checklist that scores itself, a risk register and a workload calculator.</p>
+        <p class="cta-row">
+          <a class="btn" href="/templates/" data-track="tpl-free-test-strategy-pack">See the full pack</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="tpl-free-test-strategy-peak">Or have me run the test</a>
+        </p>
+        <p>More free templates: <a href="/guides/templates/test-plan/">Test plan</a> · <a href="/guides/templates/workload-model-sheet/">Workload model sheet</a> · <a href="/guides/templates/results-report/">Results report</a> · <a href="/guides/templates/go-live-signoff/">Go-live sign-off</a>.</p>
+      </div>
+    </section>

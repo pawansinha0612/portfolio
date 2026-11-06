@@ -1,0 +1,79 @@
+# Performance Test Plan: [Release or change name]
+
+| System | Release or build | Author | Date | Approved by |
+|---|---|---|---|---|
+| [Name] | [v2.4 / build 1234] | [Name] | [DD/MM/YYYY] | [Name, role] |
+
+> One plan per release or test cycle. If a section doesn't apply, write "Not applicable" and why, so reviewers can see it was considered.
+
+## 1. Objective and scope
+
+- **Objective:** [For example: confirm the new search service meets its NFRs at 1.5 × last year's peak.]
+- **In scope:** [Journeys and APIs tested.]
+- **Out of scope:** [What is not tested, and why.]
+- **What changed since the last test:** [Code, infrastructure, configuration, data volumes.]
+
+## 2. Requirements (NFRs)
+
+| Journey or API | Target load | p95 | p99 | Max error rate |
+|---|---|---|---|---|
+| [Login] | [5 per second] | [800 ms] | [1.5 s] | [0.5%] |
+| [Search] | [] | [] | [] | [] |
+| [Checkout] | [] | [] | [] | [] |
+
+## 3. Workload model
+
+| Journey | Share of traffic | Iterations per second at target | Load model |
+|---|---|---|---|
+| [Search] | [60%] | [12.5] | [Open: arrival rate] |
+| [] | [] | [] | [] |
+
+> Full workings (peak-hour volumes, growth, virtual users and pacing) go in the workload model sheet. Attach it.
+
+## 4. Tests to run
+
+| # | Test | Load profile | Duration | Passes when |
+|---|---|---|---|---|
+| 1 | Smoke | [2 users] | [5 min] | Scripts run with no errors |
+| 2 | Load | [Ramp 10 min to 100% of target, hold] | [60 min] | All NFRs met during the hold |
+| 3 | Stress | [Step up 25% every 10 min] | [Until failure] | Breaking point found and recorded |
+| 4 | Soak | [80% of target] | [8 hours] | No upward trend in response time, memory or errors |
+
+## 5. Environment
+
+- **Environment:** [Name and size compared with production.]
+- **Gaps from production and their effect:** [For example: one database replica instead of three, so read capacity is lower.]
+- **Load generators:** [Where they run, and that their CPU will be watched.]
+
+## 6. Test data
+
+- [Accounts, products and other data needed, how many, and how they're created.]
+- [How data is reset between runs.]
+
+## 7. Monitoring
+
+- [Dashboards and APM views used, with links.]
+- [Server metrics captured: CPU, memory, GC, pools, database, queues.]
+
+## 8. Entry and exit criteria
+
+- **Entry:** [Build deployed and stable, smoke test passed, monitoring working, data loaded.]
+- **Exit:** [All planned tests run, results analysed, report issued.]
+
+## 9. Risks and assumptions
+
+| Risk or assumption | Impact | Mitigation |
+|---|---|---|
+| [Environment shared with another team] | [Noisy results] | [Book a quiet window] |
+| [] | [] | [] |
+
+## 10. Schedule and contacts
+
+| Activity | Date | Owner |
+|---|---|---|
+| Scripts ready | [] | [] |
+| Test window | [] | [] |
+| Report issued | [] | [] |
+
+---
+Free template from https://pawansinha.com.au/guides/templates/ . The full editable pack (13-section Word test plan with guidance, report, go-live checklist, risk register and workload calculator) is at https://pawansinha.com.au/templates/

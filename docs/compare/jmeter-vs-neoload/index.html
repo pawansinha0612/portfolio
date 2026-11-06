@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter vs NeoLoad: Which Load Testing Tool Should You Use? — Pawan Sinha</title>
+  <meta name="description" content="JMeter vs NeoLoad (Tricentis) compared: cost and licensing, protocols, recording and correlation, analysis, CI/CD, scale and support.">
+  <meta property="og:title" content="JMeter vs NeoLoad: Which Load Testing Tool Should You Use? — Pawan Sinha">
+  <meta property="og:description" content="An honest comparison of free JMeter and commercial NeoLoad from Tricentis.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/compare/jmeter-vs-neoload/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/compare/jmeter-vs-neoload/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "JMeter vs NeoLoad: Which Load Testing Tool Should You Use?", "description": "JMeter vs NeoLoad (Tricentis) compared: cost and licensing, protocols, recording and correlation, analysis, CI/CD, scale and support.", "url": "https://pawansinha.com.au/compare/jmeter-vs-neoload/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://pawansinha.com.au/"}, {"@type": "ListItem", "position": 2, "name": "Learn", "item": "https://pawansinha.com.au/learn/"}, {"@type": "ListItem", "position": 3, "name": "Tool comparisons", "item": "https://pawansinha.com.au/compare/"}, {"@type": "ListItem", "position": 4, "name": "JMeter vs NeoLoad", "item": "https://pawansinha.com.au/compare/jmeter-vs-neoload/"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is NeoLoad free?", "acceptedAnswer": {"@type": "Answer", "text": "NeoLoad is commercial. Tricentis has offered trials and limited free editions over the years, so check its site for what is available now."}}, {"@type": "Question", "name": "Who owns NeoLoad?", "acceptedAnswer": {"@type": "Answer", "text": "Tricentis. It bought Neotys, the company that built NeoLoad, in 2021."}}, {"@type": "Question", "name": "Can JMeter replace NeoLoad?", "acceptedAnswer": {"@type": "Answer", "text": "For websites and HTTP APIs, usually yes, at the cost of more manual correlation. For SAP GUI, Citrix or Oracle Forms, usually not."}}, {"@type": "Question", "name": "Is NeoLoad only for web applications?", "acceptedAnswer": {"@type": "Answer", "text": "No. Besides websites and APIs it covers packaged-application protocols such as SAP GUI, Citrix and Oracle Forms, which is a common reason teams pay for it."}}]}</script>
+
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
+    .project-hero > :not(p, ul, ol) { max-width: 868px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .checked { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+    .cmp { max-width: 1000px; padding: 36px 16px 8px; }
+    .cmp h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 10px; line-height: 1.25; }
+    .cmp h3 { font-size: 18px; margin: 22px 0 6px; }
+    .cmp p, .cmp li { color: var(--muted); }
+    .cmp strong { color: var(--text); }
+    .cmp ul, .cmp ol { padding-left: 22px; }
+    .cmp > p, .cmp > ul, .cmp > ol { max-width: 680px; } /* keep running text to ~90 characters a line */
+    .cmp code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--text); }
+    .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px; }
+    .verdict > div { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+    .verdict h3 { margin: 0 0 8px; font-size: 18px; color: var(--text); }
+    .verdict ul { margin: 0; padding-left: 20px; }
+    .verdict li { margin: 4px 0; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-top: 12px; }
+    .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    table.vs { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+    table.vs th, table.vs td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    table.vs thead th { background: var(--alt); color: var(--text); font-size: 14px; }
+    table.vs tbody th { color: var(--text); font-weight: 700; width: 18%; }
+    table.vs td { color: var(--muted); }
+    table.vs tr:last-child th, table.vs tr:last-child td { border-bottom: 0; }
+    .scroll-hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    @media (min-width: 700px) { .scroll-hint { display: none; } }
+    .code-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 12px; }
+    .code-pair > div { min-width: 0; }
+    .code-pair h3 { margin: 0 0 8px; }
+    .code-pair p.note { font-size: 14px; margin: 8px 0 0; }
+    pre.code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; overflow: auto; max-height: 560px; white-space: pre; tab-size: 2; }
+    .faq h3 { color: var(--text); }
+    .pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+    .pick a.card { text-decoration: none; color: inherit; display: block; }
+    .pick .vs-name { font-size: 20px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+    .pick .project-link { display: inline-block; margin-top: 12px; font-weight: 600; color: var(--accent); }
+    .checklist li { margin: 6px 0; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
+    @media (max-width: 600px) { .project-hero { padding-top: 40px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/learn/">Learn</a><span aria-hidden="true">/</span><a href="/compare/">Tool comparisons</a><span aria-hidden="true">/</span><span aria-current="page">JMeter vs NeoLoad</span></nav>
+      <p class="eyebrow">Tool comparison · Load testing</p>
+      <h1>JMeter vs NeoLoad</h1>
+      <p class="lead">NeoLoad is a commercial load testing tool, owned by Tricentis since it bought Neotys in 2021. JMeter is the free, open-source standard. Both are GUI-first. The choice comes down to protocols, how much time correlation costs you, and budget.</p>
+      <p class="checked">Facts checked November 2026. Written by Pawan Sinha, who has used JMeter, LoadRunner, k6 and Gatling on banking, payments and lottery projects.</p>
+    </section>
+
+    <section class="wrap cmp" id="verdict">
+      <p class="eyebrow">The short answer</p>
+      <h2>Which one should you pick?</h2>
+      <div class="verdict">
+        <div>
+          <h3>Pick JMeter if…</h3>
+          <ul>
+          <li>You mainly test websites and HTTP APIs.</li>
+          <li>There is no licence budget, or you want to run tests freely in CI without counting virtual users.</li>
+          <li>Your team is comfortable supporting an open-source tool and its plugins themselves.</li>
+          <li>You need JDBC, LDAP, mail or raw TCP tests.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Pick NeoLoad if…</h3>
+          <ul>
+          <li>You must test SAP GUI, Citrix or Oracle Forms.</li>
+          <li>Recording and correlating complex web apps takes too long by hand, and automatic correlation would pay for itself.</li>
+          <li>You want shared dashboards, run comparisons and APM integrations in one product.</li>
+          <li>You want a vendor to call when something breaks, or you already use other Tricentis tools.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap cmp" id="table">
+      <p class="eyebrow">Side by side</p>
+      <h2>JMeter vs NeoLoad at a glance</h2>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="JMeter vs NeoLoad comparison table">
+        <table class="vs">
+          <thead><tr><th scope="col">&nbsp;</th><th scope="col">JMeter</th><th scope="col">NeoLoad</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Cost and licence</th><td>Free and open source (Apache 2.0).</td><td>Commercial (Tricentis). Licensed by virtual users and features. Check Tricentis for current editions and trials.</td></tr>
+            <tr><th scope="row">How you write tests</th><td>Built in a GUI and saved as XML (.jmx). Custom logic in Groovy.</td><td>Recorded and built in a GUI. Custom logic in JavaScript actions. Tests can also be written as YAML (&quot;as code&quot;).</td></tr>
+            <tr><th scope="row">Correlation (dynamic values)</th><td>Manual: you add extractors (regex, JSON, boundary) yourself.</td><td>Automatic correlation from frameworks and recorded responses, plus manual extractors.</td></tr>
+            <tr><th scope="row">Protocols</th><td>HTTP(S), JDBC, JMS, LDAP, FTP, mail, TCP and Java, plus plugins.</td><td>Web and APIs (including HTTP/2 and WebSocket), plus SAP GUI, Citrix and Oracle Forms, among others.</td></tr>
+            <tr><th scope="row">Results and analysis</th><td>An HTML dashboard report, listeners, and a Backend Listener to InfluxDB or Graphite.</td><td>NeoLoad Web: live dashboards, trends and run comparisons, shared across the team, with APM integrations such as Dynatrace.</td></tr>
+            <tr><th scope="row">Running at scale</th><td>Built-in remote mode, or a hosted service such as BlazeMeter.</td><td>Controller and load generators, on your own machines, in containers or in the cloud.</td></tr>
+            <tr><th scope="row">CI/CD fit</th><td>Good. Non-GUI mode runs anywhere Java runs; pass/fail on response-time goals needs extra work.</td><td>Good. A CLI and CI plugins run tests and fail builds on SLA thresholds; licences and load generators need planning.</td></tr>
+            <tr><th scope="row">Learning curve</th><td>Moderate. Lots of free tutorials and people who know it.</td><td>Moderate. Vendor training is available; fewer free tutorials.</td></tr>
+            <tr><th scope="row">Support</th><td>Community: forums, mailing lists and plugins.</td><td>Vendor support from Tricentis.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="scroll-hint">Swipe the table sideways to see both tools.</p>
+    </section>
+
+    <section class="wrap cmp" id="code">
+      <p class="eyebrow">Same test, two tools</p>
+      <h2>A 50-user load test in each</h2>
+      <p>The same simple test in both: load the home page, check for a 200 response, ramp up to 50 users over a minute, then hold for three minutes with one second of think time.</p>
+      <div class="code-pair">
+        <div>
+          <h3>JMeter (.jmx)</h3>
+          <pre class="code" tabindex="0"><code>&lt;!-- Trimmed: the parts of a .jmx file that matter --&gt;
+&lt;ThreadGroup testclass=&quot;ThreadGroup&quot; testname=&quot;Users&quot;&gt;
+  &lt;intProp name=&quot;ThreadGroup.num_threads&quot;&gt;50&lt;/intProp&gt;
+  &lt;intProp name=&quot;ThreadGroup.ramp_time&quot;&gt;60&lt;/intProp&gt;
+  &lt;boolProp name=&quot;ThreadGroup.scheduler&quot;&gt;true&lt;/boolProp&gt;
+  &lt;stringProp name=&quot;ThreadGroup.duration&quot;&gt;240&lt;/stringProp&gt;
+&lt;/ThreadGroup&gt;
+&lt;hashTree&gt;
+  &lt;HTTPSamplerProxy testclass=&quot;HTTPSamplerProxy&quot; testname=&quot;Home page&quot;&gt;
+    &lt;stringProp name=&quot;HTTPSampler.protocol&quot;&gt;https&lt;/stringProp&gt;
+    &lt;stringProp name=&quot;HTTPSampler.domain&quot;&gt;test.example.com&lt;/stringProp&gt;
+    &lt;stringProp name=&quot;HTTPSampler.path&quot;&gt;/&lt;/stringProp&gt;
+    &lt;stringProp name=&quot;HTTPSampler.method&quot;&gt;GET&lt;/stringProp&gt;
+  &lt;/HTTPSamplerProxy&gt;
+  &lt;hashTree&gt;
+    &lt;ResponseAssertion testclass=&quot;ResponseAssertion&quot; testname=&quot;Status is 200&quot;&gt;
+      &lt;collectionProp name=&quot;Asserion.test_strings&quot;&gt;
+        &lt;stringProp name=&quot;49586&quot;&gt;200&lt;/stringProp&gt;
+      &lt;/collectionProp&gt;
+      &lt;stringProp name=&quot;Assertion.test_field&quot;&gt;Assertion.response_code&lt;/stringProp&gt;
+      &lt;intProp name=&quot;Assertion.test_type&quot;&gt;8&lt;/intProp&gt;
+    &lt;/ResponseAssertion&gt;
+  &lt;/hashTree&gt;
+  &lt;ConstantTimer testclass=&quot;ConstantTimer&quot; testname=&quot;Think time&quot;&gt;
+    &lt;stringProp name=&quot;ConstantTimer.delay&quot;&gt;1000&lt;/stringProp&gt;
+  &lt;/ConstantTimer&gt;
+&lt;/hashTree&gt;</code></pre>
+          <p class="note">You normally build this in the GUI: a <strong>Thread Group</strong> (50 threads, 60 s ramp-up, 240 s duration), an <strong>HTTP Request</strong> sampler, a <strong>Response Assertion</strong> on the response code and a <strong>Constant Timer</strong>. Run it without the GUI: <code>jmeter -n -t plan.jmx -l results.jtl -e -o report/</code>. (Yes, <code>Asserion</code> is spelt that way in JMeter itself.)</p>
+        </div>
+        <div>
+          <h3>NeoLoad as code (YAML, sketch)</h3>
+          <pre class="code" tabindex="0"><code># NeoLoad &quot;as code&quot; (YAML). A sketch: check the field
+# names against the as-code docs for your NeoLoad version.
+name: home-page
+servers:
+- name: site
+  host: test.example.com
+  scheme: https
+user_paths:
+- name: visitor
+  actions:
+    steps:
+    - transaction:
+        name: Home page
+        steps:
+        - request:
+            server: site
+            url: /
+    - delay: 1s          # think time
+populations:
+- name: visitors
+  user_paths:
+  - name: visitor
+scenarios:
+- name: load-50
+  populations:
+  - name: visitors
+    rampup_load:
+      min_users: 5
+      max_users: 50
+      increment_users: 5
+      increment_every: 6s
+      duration: 4m</code></pre>
+          <p class="note">Most NeoLoad tests are recorded and built in the NeoLoad GUI, with automatic correlation. The YAML "as code" format suits CI and can be combined with a GUI project. Response checks and SLA profiles (pass/fail thresholds) are added in the GUI or the same file. You run it from NeoLoad Web or the NeoLoad CLI.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap cmp" id="switch">
+      <p class="eyebrow">Switching</p>
+      <h2>Moving between JMeter and NeoLoad</h2>
+      <ol>
+          <li><strong>List what you have</strong>: scripts, protocols, how often each runs and who owns it. SAP GUI, Citrix and Oracle Forms tests are the hard ones to move to JMeter.</li>
+          <li>There is no reliable automatic converter either way. Re-record each journey and rebuild the correlation. A browser HAR file is a good shared starting point.</li>
+          <li>Keep the same transaction names, so new results can be compared with your old baselines.</li>
+          <li>Run the old and new tests once at the same load and investigate any gap before you switch.</li>
+          <li>Moving off a commercial tool for HTTP work anyway? Look at k6 too, and the <a href="/tools/jmeter-to-k6/">JMeter → k6 converter</a>.</li>
+      </ol>
+    </section>
+
+    <section class="wrap cmp faq" id="faq">
+      <p class="eyebrow">FAQ</p>
+      <h2>Common questions</h2>
+      <h3>Is NeoLoad free?</h3>
+      <p>NeoLoad is commercial. Tricentis has offered trials and limited free editions over the years, so check its site for what is available now.</p>
+      <h3>Who owns NeoLoad?</h3>
+      <p>Tricentis. It bought Neotys, the company that built NeoLoad, in 2021.</p>
+      <h3>Can JMeter replace NeoLoad?</h3>
+      <p>For websites and HTTP APIs, usually yes, at the cost of more manual correlation. For SAP GUI, Citrix or Oracle Forms, usually not.</p>
+      <h3>Is NeoLoad only for web applications?</h3>
+      <p>No. Besides websites and APIs it covers packaged-application protocols such as SAP GUI, Citrix and Oracle Forms, which is a common reason teams pay for it.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/compare/k6-vs-jmeter/">k6 vs JMeter →</a>
+        <a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner →</a>
+        <a href="/compare/jmeter-vs-gatling/">JMeter vs Gatling →</a>
+        <a href="/compare/tool-picker/">Tool picker →</a>
+        <a href="/compare/">All comparisons →</a>
+        <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
+        <a href="/guides/start/">Learning path →</a>
+        <a href="/tools/">Free tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Choosing or switching tools?</p>
+          <h3>Get a second opinion before you commit</h3>
+          <p>In a free 30-minute call I'll look at what you test, who writes the tests and where they run, and tell you which tool fits. If you're moving off an old tool, I can plan the migration and port your most important journeys first.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="compare-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="compare-services">Performance testing services</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

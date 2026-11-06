@@ -1,0 +1,59 @@
+# Performance Test Results: [Release or change name]
+
+| System | Build tested | Test dates | Author |
+|---|---|---|---|
+| [Name] | [v2.4 / build 1234] | [DD/MM/YYYY] | [Name] |
+
+## 1. Verdict
+
+**[PASS / PASS WITH RISKS / FAIL]**
+
+> Write the verdict first, in three sentences or fewer, for someone who reads nothing else. For example: "The release meets all response-time targets at 1.5 × last year's peak. Checkout errors reached 0.8% at peak, above the 0.5% target, because of payment gateway timeouts. Recommend go-live once the timeout fix is retested."
+
+[Your summary]
+
+## 2. Key numbers
+
+| Journey | p95 target | p95 measured | p99 measured | Error rate | Throughput | Result |
+|---|---|---|---|---|---|---|
+| [Login] | [800 ms] | [] | [] | [] | [per second] | [Pass / Fail] |
+| [Search] | [] | [] | [] | [] | [] | [] |
+| [Checkout] | [] | [] | [] | [] | [] | [] |
+
+> Report percentiles from the steady part of the test, not the ramp-up. Never average percentiles from different runs or servers.
+
+## 3. What was tested
+
+| Test | Date | Load | Duration | Notes |
+|---|---|---|---|---|
+| [Load] | [] | [100% of target] | [60 min] | [] |
+| [Stress] | [] | [Up to 250%] | [] | [Broke at 210%: database connections ran out] |
+
+## 4. Resource use at peak
+
+| Component | CPU | Memory | Other (pools, GC, queues, DB waits) | Headroom |
+|---|---|---|---|---|
+| [API tier] | [] | [] | [] | [] |
+| [Database] | [] | [] | [] | [] |
+
+## 5. Findings
+
+| # | Finding | Evidence | Impact | Recommendation | Owner |
+|---|---|---|---|---|---|
+| 1 | [Checkout p99 rises after 40 minutes] | [Graph link, query, trace ID] | [Slow checkouts at peak] | [Increase pool size, retest] | [] |
+| 2 | [] | [] | [] | [] | [] |
+
+## 6. Open risks
+
+- [Anything not tested, environment gaps, findings not yet fixed.]
+
+## 7. Recommendation and next steps
+
+- [Go or no-go recommendation, conditions, and retests needed.]
+
+## Appendix
+
+- [Links to dashboards, raw results, scripts and the test plan.]
+
+---
+Free template from https://pawansinha.com.au/guides/templates/ . The full editable pack (Word report with capacity statement, defects and sign-off, plus plan, go-live checklist, risk register and workload calculator) is at https://pawansinha.com.au/templates/

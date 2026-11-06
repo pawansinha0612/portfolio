@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 gRPC, WebSockets and browser tests — Pawan Sinha</title>
+  <meta name="description" content="Load test gRPC services, WebSocket connections and real browser journeys with k6: current module names, working scripts and what each costs on the load generator.">
+  <meta property="og:title" content="k6 beyond HTTP: gRPC, WebSockets and real-browser tests">
+  <meta property="og:description" content="Load test gRPC services, WebSocket connections and real browser journeys with k6: current module names, working scripts and what each costs on the load generator.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/grpc-websockets-browser/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/grpc-websockets-browser/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 gRPC, WebSockets and browser tests", "description": "Load test gRPC services, WebSocket connections and real browser journeys with k6: current module names, working scripts and what each costs on the load generator.", "url": "https://pawansinha.com.au/guides/k6/grpc-websockets-browser/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · gRPC, WebSockets, browser</p>
+      <h1>k6 beyond HTTP: gRPC, WebSockets and real browsers</h1>
+      <p class="lead">Your REST endpoints pass the load test. Then the trading screen falls over,
+        because 20,000 open WebSocket connections were never part of the test. Here's how to cover
+        the protocols that don't fit a request-response loop.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#modules">Which module, which version</a></li>
+          <li><a href="#grpc">gRPC</a></li>
+          <li><a href="#ws">WebSockets</a></li>
+          <li><a href="#browser">Browser tests</a></li>
+          <li><a href="#hybrid">Hybrid: protocol load plus a few browsers</a></li>
+        </ol>
+      </div>
+
+      <h2 id="modules">Which module, which version</h2>
+      <p>These modules moved around before k6 1.0, and old blog posts still show the old paths.
+        Current names:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Protocol</th><th>Import</th><th>Status and history</th></tr></thead>
+        <tbody>
+          <tr><td>gRPC</td><td><code>k6/net/grpc</code></td><td>Stable. Unary and streaming calls. The old <code>k6/experimental/grpc</code> was folded into it and now errors.</td></tr>
+          <tr><td>WebSockets</td><td><code>k6/websockets</code></td><td>Current. Browser-style API with an event loop and timers. Earlier releases (k6 v1.0 included) had it as <code>k6/experimental/websockets</code>.</td></tr>
+          <tr><td>WebSockets (legacy)</td><td><code>k6/ws</code></td><td>The original blocking API. Still works, but new scripts should use <code>k6/websockets</code>.</td></tr>
+          <tr><td>Browser</td><td><code>k6/browser</code></td><td>Stable and async (Playwright-like). <code>k6/experimental/browser</code> now errors and tells you to switch.</td></tr>
+        </tbody>
+      </table></div>
+      <p>If an import fails, run <code>k6 version</code> first. A path error almost always means a
+        version mismatch, not a typo.</p>
+
+      <h2 id="grpc">gRPC</h2>
+      <p>Load the <code>.proto</code> files in init code, connect once per VU, then
+        <code>invoke</code>. The response has a <code>status</code> you compare with the
+        <code>grpc.Status*</code> constants and a <code>message</code> object.</p>
+      <pre class="ex-code"><code>syntax = "proto3";
+package hello;
+service HelloService {
+  rpc SayHello (HelloRequest) returns (HelloReply);
+}
+message HelloRequest { string name = 1; }
+message HelloReply { string message = 1; }</code></pre>
+      <pre class="ex-code"><code>import grpc from 'k6/net/grpc';
+import { check, sleep } from 'k6';
+
+const client = new grpc.Client();
+// Load the .proto in the init context (or use client.connect(addr, { reflect: true }))
+client.load(['./proto'], 'hello.proto');
+
+export const options = { vus: 10, duration: '1m' };
+
+export default function () {
+  // Connect once per VU, not once per iteration
+  if (__ITER === 0) {
+    client.connect(__ENV.GRPC_ADDR || 'localhost:50051', { plaintext: true, timeout: '5s' });
+  }
+
+  const res = client.invoke('hello.HelloService/SayHello', { name: 'k6' }, {
+    metadata: { 'x-request-id': `k6-${__VU}-${__ITER}` },
+    timeout: '2s',
+  });
+
+  check(res, {
+    'status OK': (r) =&gt; r &amp;&amp; r.status === grpc.StatusOK,
+    'has message': (r) =&gt; r &amp;&amp; r.message &amp;&amp; r.message.message !== '',
+  });
+  sleep(1);
+}</code></pre>
+      <ul>
+        <li><strong>Connect once per VU.</strong> Connecting every iteration measures TLS and HTTP/2
+          setup, not your service. Real gRPC clients keep long-lived channels.</li>
+        <li><strong>No proto files?</strong> If the server has reflection enabled,
+          <code>client.connect(addr, { reflect: true })</code> loads the definitions from it.</li>
+        <li><strong>Streaming</strong> (client, server or bidirectional) uses
+          <code>new grpc.Stream(client, 'pkg.Service/Method')</code> with <code>on('data')</code>,
+          <code>write()</code> and <code>end()</code>.</li>
+        <li><strong>Metrics:</strong> unary calls go into <code>grpc_req_duration</code>, so set
+          thresholds on that, not on <code>http_req_duration</code>.</li>
+        <li><strong>Load balancing:</strong> one HTTP/2 connection carries every call from a VU. Behind
+          an L4 load balancer that pins a connection to one pod, a few VUs can load one pod and leave
+          the rest idle. That's a real production behaviour worth knowing about, but it can also make
+          your test unrepresentative.</li>
+      </ul>
+
+      <h2 id="ws">WebSockets</h2>
+      <p>A WebSocket test is about concurrent connections and message flow, not requests per second.
+        Each VU opens a socket, keeps it open, and sends and receives messages. The iteration ends when
+        the socket closes.</p>
+      <pre class="ex-code"><code>import { WebSocket } from 'k6/websockets';
+import { check } from 'k6';
+import { Counter } from 'k6/metrics';
+
+const received = new Counter('ws_app_messages');
+const WS_URL = __ENV.WS_URL || 'ws://localhost:8080/ws';
+
+export const options = {
+  vus: 50,
+  duration: '5m',
+  thresholds: { ws_connecting: ['p(95)&lt;500'] },
+};
+
+export default function () {
+  const ws = new WebSocket(WS_URL);
+
+  ws.onopen = () =&gt; {
+    ws.send(JSON.stringify({ type: 'subscribe', channel: 'prices' }));
+    // Send a ping-style message every 10 s while the socket is open
+    const timer = setInterval(() =&gt; ws.send(JSON.stringify({ type: 'ping' })), 10000);
+    // Keep each connection for 60 s, then close: the iteration ends when the socket closes
+    setTimeout(() =&gt; { clearInterval(timer); ws.close(); }, 60000);
+  };
+
+  ws.onmessage = (e) =&gt; {
+    received.add(1);
+    const msg = JSON.parse(e.data);
+    check(msg, { 'message has type': (m) =&gt; m.type !== undefined });
+  };
+
+  ws.onerror = (e) =&gt; console.error(`ws error: ${e.error}`);
+}</code></pre>
+      <p>On k6 v1.0 and earlier, change the import to <code>k6/experimental/websockets</code>. The
+        rest of the script is the same.</p>
+      <ul>
+        <li><code>ws_connecting</code> (handshake time), <code>ws_sessions</code>,
+          <code>ws_msgs_sent</code>, <code>ws_msgs_received</code> and
+          <code>ws_session_duration</code> are built in.</li>
+        <li>Application latency (time from a server event to the client receiving it) is not built
+          in. Put a timestamp in the message and record the difference in a custom
+          <code>Trend</code>.</li>
+        <li>The number to target is usually peak concurrent connections. 5,000 VUs holding sockets
+          for an hour is 5,000 connections. Ramp them up slowly: real users don't connect in the same
+          second, unless you're testing reconnect storms after a deploy, which is a good test in its
+          own right.</li>
+      </ul>
+
+      <h2 id="browser">Browser tests</h2>
+      <p>The browser module drives a real Chromium. It measures what users see: page load, Core Web
+        Vitals and how long the UI takes to respond. It does not generate meaningful backend load:
+        one browser costs roughly as much as hundreds of protocol-level VUs.</p>
+      <pre class="ex-code"><code>import { browser } from 'k6/browser';
+import { check } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  scenarios: {
+    ui: {
+      executor: 'shared-iterations',
+      vus: 2,
+      iterations: 10,
+      options: { browser: { type: 'chromium' } }, // required for browser scenarios
+    },
+  },
+  thresholds: {
+    browser_web_vital_lcp: ['p(75)&lt;2500'],
+    browser_web_vital_inp: ['p(75)&lt;200'],
+  },
+};
+
+export default async function () {
+  const page = await browser.newPage();
+  try {
+    await page.goto(`${BASE_URL}/login`);
+    await page.locator('input[name="username"]').fill('user001');
+    await page.locator('input[name="password"]').fill('Passw0rd!');
+    await Promise.all([
+      page.waitForNavigation(),
+      page.locator('button[type="submit"]').click(),
+    ]);
+    const heading = await page.locator('h1').textContent();
+    check(heading, { 'logged in': (h) =&gt; h.includes('Welcome') });
+  } finally {
+    await page.close();
+  }
+}</code></pre>
+      <ul>
+        <li>The scenario needs <code>options: { browser: { type: 'chromium' } }</code>. Without it,
+          <code>browser.newPage()</code> fails.</li>
+        <li>The API is async: <code>await</code> every page and locator call, and make the default
+          function <code>async</code>.</li>
+        <li>k6 needs Chrome or Chromium installed on the machine. In Docker, use the
+          <code>grafana/k6:latest-with-browser</code> image. To point k6 at a specific binary, set
+          <code>K6_BROWSER_EXECUTABLE_PATH</code>. To watch it run, set
+          <code>K6_BROWSER_HEADLESS=false</code>.</li>
+        <li>Web vitals arrive as <code>browser_web_vital_lcp</code>, <code>_inp</code>,
+          <code>_cls</code>, <code>_fcp</code> and <code>_ttfb</code>. Google rates these at p75, so
+          set the thresholds at p75. See <a href="/glossary/lcp/">LCP</a>,
+          <a href="/glossary/inp/">INP</a> and <a href="/glossary/cls/">CLS</a>. The old FID metric
+          was removed in k6 v2.0.</li>
+        <li>Always close the page in <code>finally</code>, or failed iterations leak browser
+          contexts and memory.</li>
+      </ul>
+
+      <h2 id="hybrid">Hybrid: protocol load plus a few browsers</h2>
+      <p>The useful pattern is both at once. Generate the load with cheap protocol-level VUs and run
+        one or two browsers beside them, to see what a real user experiences while the backend is
+        busy:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { browser } from 'k6/browser';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// Most of the load at protocol level (cheap), plus a few real browsers measuring what users see.
+export const options = {
+  scenarios: {
+    api: {
+      executor: 'constant-arrival-rate', exec: 'api',
+      rate: 50, timeUnit: '1s', duration: '10m', preAllocatedVUs: 50, maxVUs: 200,
+    },
+    ui: {
+      executor: 'constant-vus', exec: 'ui', vus: 2, duration: '10m',
+      options: { browser: { type: 'chromium' } },
+    },
+  },
+};
+
+export function api() {
+  http.get(`${BASE_URL}/products`);
+}
+
+export async function ui() {
+  const page = await browser.newPage();
+  try {
+    await page.goto(`${BASE_URL}/`);
+  } finally {
+    await page.close();
+  }
+}</code></pre>
+      <p>This answers the question stakeholders actually ask: "what does the page feel like at peak
+        load?" The API numbers say the backend held. The browser numbers say whether the front end,
+        third-party scripts and CDN held too.</p>
+      <p>Next: <a href="/guides/k6/ci-pipelines/">running k6 in CI</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Real-time or gRPC system to load test?</h2>
+        <p>I test WebSocket, gRPC and browser journeys at production scale, and find the limits before
+          your users do.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-proto-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-proto-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

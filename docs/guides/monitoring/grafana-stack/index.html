@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grafana stack for load tests: k6, JMeter, Prometheus, InfluxDB — Pawan Sinha</title>
+  <meta name="description" content="Free, runnable Docker Compose kit: k6 to Prometheus remote write, JMeter to InfluxDB, node-exporter and Grafana with provisioned dashboards.">
+  <meta property="og:title" content="A free Docker Compose Grafana stack for watching k6 and JMeter load tests">
+  <meta property="og:description" content="Free, runnable Docker Compose kit: k6 to Prometheus remote write, JMeter to InfluxDB, node-exporter and Grafana with provisioned dashboards.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/monitoring/grafana-stack/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/monitoring/grafana-stack/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Grafana stack for load tests: k6, JMeter, Prometheus, InfluxDB", "description": "Free, runnable Docker Compose kit: k6 to Prometheus remote write, JMeter to InfluxDB, node-exporter and Grafana with provisioned dashboards.", "url": "https://pawansinha.com.au/guides/monitoring/grafana-stack/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/monitoring/">Monitoring</a> · Grafana stack</p>
+      <h1>A Grafana stack for watching load tests</h1>
+      <p class="lead">The k6 summary at the end of a run gives you one p95 for the whole test. The spike at minute 9, the slow climb in error rate and the moment the server's CPU hit 100% are all averaged away. This kit gives you live, per-interval graphs for k6 and JMeter next to the server metrics, in one <code>docker compose up</code>.</p>
+      <p class="cta-row"><a class="btn" href="/guides/monitoring/kit.zip" download data-track="guide-grafana-kit-zip">Download the kit (.zip)</a></p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#whats-in">What's in the kit</a></li>
+          <li><a href="#start">Start the stack</a></li>
+          <li><a href="#k6">k6 to Prometheus</a></li>
+          <li><a href="#jmeter">JMeter to InfluxDB</a></li>
+          <li><a href="#node">node-exporter on the system under test</a></li>
+          <li><a href="#dashboards">The dashboards and the queries behind them</a></li>
+          <li><a href="#compose">The compose file</a></li>
+          <li><a href="#troubleshooting">Troubleshooting</a></li>
+          <li><a href="#production">Beyond a laptop</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="whats-in">What's in the kit</h2>
+      <pre class="ex-code"><code>loadtest-monitoring-kit/
+  docker-compose.yml                         Prometheus, InfluxDB 1.8, Grafana, node-exporter, k6
+  prometheus/prometheus.yml                  scrape config; k6 pushes via remote write
+  grafana/provisioning/datasources/*.yml     Prometheus + InfluxDB datasources with fixed uids
+  grafana/provisioning/dashboards/*.yml      loads every dashboard in grafana/dashboards/
+  grafana/dashboards/k6-prometheus.json      k6 + node-exporter dashboard
+  grafana/dashboards/jmeter-influxdb.json    JMeter dashboard
+  k6/smoke.js                                sample k6 test (open model, ramping arrival rate)
+  jmeter/sample-test.jmx                     sample JMeter plan with the Backend Listener set up
+  jmeter/user.properties                     Backend Listener settings the dashboard expects
+  README.md</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Service</th><th>Image</th><th>Port</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>Prometheus</td><td><code>prom/prometheus:v3.15.1</code></td><td>9090</td><td>Receives k6 metrics by remote write, scrapes node-exporter</td></tr>
+          <tr><td>InfluxDB</td><td><code>influxdb:1.8</code></td><td>8086</td><td>Receives JMeter Backend Listener writes (database <code>jmeter</code>)</td></tr>
+          <tr><td>Grafana</td><td><code>grafana/grafana:13.2.5</code></td><td>3000</td><td>Dashboards, provisioned on start</td></tr>
+          <tr><td>node-exporter</td><td><code>prom/node-exporter:v1.12.1</code></td><td>9100</td><td>Host metrics, profile <code>linux-host</code></td></tr>
+          <tr><td>k6</td><td><code>grafana/k6:1.8.2</code></td><td>none</td><td>Optional: run the sample test inside the stack, profile <code>k6</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Image tags are pinned so the kit behaves the same next year. Bump them deliberately.</p>
+
+      <h2 id="start">Start the stack</h2>
+      <p>You need Docker with the Compose plugin (Docker Desktop on Mac and Windows includes it).</p>
+      <pre class="ex-code"><code>unzip kit.zip &amp;&amp; cd loadtest-monitoring-kit
+docker compose up -d
+docker compose ps</code></pre>
+      <p>Open <code>http://localhost:3000</code>, log in with <code>admin</code> / <code>admin</code> and set a new password. The "k6 load test + system under test" dashboard is the home page, and both dashboards are in the "Load testing" folder. Prometheus is on <code>http://localhost:9090</code> if you want to try queries directly.</p>
+
+      <h2 id="k6">k6 to Prometheus</h2>
+      <p>k6 ships a Prometheus remote write output. k6 pushes metrics to Prometheus every 5 seconds, so there is nothing for Prometheus to scrape and no port to open on the load generator. Prometheus only accepts pushes when started with <code>--web.enable-remote-write-receiver</code>, which the compose file does.</p>
+      <pre class="ex-code"><code>K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
+K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true \
+k6 run -o experimental-prometheus-rw --tag testid=$(date +%Y%m%d-%H%M) k6/smoke.js</code></pre>
+      <p>Or run the sample from inside the stack against your own target:</p>
+      <pre class="ex-code"><code>TARGET_URL=https://test-env.example.com docker compose --profile k6 run --rm k6</code></pre>
+      <h3>Why native histograms matter</h3>
+      <p>By default, k6 converts each trend metric (like <code>http_req_duration</code>) into gauges such as <code>k6_http_req_duration_p99</code>. Those values are computed over <em>everything since the test started</em>, not over the last interval. At minute 25 of a 30-minute test, a 2-minute slowdown barely moves them. And because they are percentiles, you can't combine them across tags or load generators.</p>
+      <p>With native histograms switched on (<code>K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM</code> set to <code>true</code>), each trend becomes a Prometheus native histogram, <code>k6_http_req_duration_seconds</code>. Grafana can then compute real windowed percentiles that merge correctly across request names and generators:</p>
+      <pre class="ex-code"><code>histogram_quantile(0.95, sum by (name) (rate(k6_http_req_duration_seconds{testid=~"$testid"}[$__rate_interval])))</code></pre>
+      <p>The pinned Prometheus (v3.15) ingests native histograms over remote write without extra flags. On Prometheus 2.x and early 3.x releases, also start it with <code>--enable-feature=native-histograms</code>. The dashboard in the kit expects native histograms. If you can't use them, set <code>K6_PROMETHEUS_RW_TREND_STATS=p(95),p(99),max</code> and query the gauges instead, knowing they are cumulative.</p>
+      <h3>Tag every run</h3>
+      <p><code>--tag testid=...</code> adds a <code>testid</code> label to every series. The dashboard's Test ID dropdown filters on it, so you can look at one run or overlay two. Give requests a stable <code>name</code> tag (<code>http.get(url, { tags: { name: 'product' } })</code>) for URLs with IDs in them, or each unique URL becomes its own time series.</p>
+
+      <h2 id="jmeter">JMeter to InfluxDB</h2>
+      <p>JMeter's built-in Backend Listener has an InfluxDB client that writes the InfluxDB 1.x line protocol every 5 seconds. That is why the kit uses InfluxDB 1.8: it accepts those writes with no tokens or extra setup. The sample plan is already configured:</p>
+      <pre class="ex-code"><code>jmeter -n -t jmeter/sample-test.jmx -q jmeter/user.properties -Jhost=test-env.example.com</code></pre>
+      <p>To add it to your own plan: Add &gt; Listener &gt; Backend Listener, choose this implementation, and set the parameters below:</p>
+      <pre class="ex-code"><code>org.apache.jmeter.visualizers.backend.influxdb.InfluxdbBackendListenerClient</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td><code>influxdbUrl</code></td><td><code>http://localhost:8086/write?db=jmeter</code></td></tr>
+          <tr><td><code>application</code></td><td>A name for the system under test (a dashboard dropdown)</td></tr>
+          <tr><td><code>measurement</code></td><td><code>jmeter</code></td></tr>
+          <tr><td><code>percentiles</code></td><td><code>50;95;99</code> (stored as fields <code>pct50.0</code>, <code>pct95.0</code>, <code>pct99.0</code>)</td></tr>
+          <tr><td><code>summaryOnly</code></td><td><code>false</code>, to get per-transaction series</td></tr>
+        </tbody>
+      </table></div>
+      <h3>The percentile window catch</h3>
+      <p>By default, the percentiles the Backend Listener sends are computed over a sliding window of the last 100 samples (<code>backend_metrics_window</code>), not over the 5-second interval. At 500 requests per second, that window is a fifth of a second of data. The kit's <code>user.properties</code> sets <code>backend_metrics_window_mode=timed</code>, which makes the percentiles for successful and failed samples cover each send interval. The "all samples" percentiles stay on the 100-sample window even in timed mode, so the dashboard plots p95 from the successful (<code>statut=ok</code>) rows. The tag really is spelled <code>statut</code> (French for status).</p>
+      <p>Each point the listener writes holds the counts for one interval, so throughput is <code>sum("count") / 5</code> grouped by 5 seconds. Active threads come from rows with <code>transaction = 'internal'</code>.</p>
+
+      <h2 id="node">node-exporter on the system under test</h2>
+      <p>Load test results without server metrics only tell you that something got slow. node-exporter exposes CPU, memory, disk, network and TCP statistics from a Linux host on port 9100. It belongs on the servers you are testing, not on your laptop.</p>
+      <ul>
+        <li><strong>On a Linux test server with Docker:</strong> copy the kit there and run <code>docker compose --profile linux-host up -d node-exporter</code>. It uses host networking and reads the host's <code>/proc</code> and <code>/sys</code>.</li>
+        <li><strong>Without Docker:</strong> download the binary from the <a href="https://github.com/prometheus/node_exporter/releases" rel="noopener">node_exporter releases</a> and run it as a service.</li>
+        <li><strong>Point Prometheus at it:</strong> edit the <code>node</code> job in <code>prometheus/prometheus.yml</code> with each server's address, then <code>docker compose restart prometheus</code>.</li>
+      </ul>
+      <pre class="ex-code"><code>  - job_name: node
+    static_configs:
+      - targets: ["app-1.test.internal:9100", "app-2.test.internal:9100", "db-1.test.internal:9100"]
+        labels:
+          role: sut</code></pre>
+      <p>On Docker Desktop for Mac or Windows, the <code>linux-host</code> profile shows Docker's own Linux VM. That is fine for checking the dashboard works and useless for real analysis. For Kubernetes, the kube-prometheus-stack Helm chart installs node-exporter as a DaemonSet along with cAdvisor-based container metrics (which you need for <a href="/guides/bottlenecks/linux-server/#containers">CPU throttling</a>).</p>
+
+      <h2 id="dashboards">The dashboards and the queries behind them</h2>
+      <h3>k6 load test + system under test</h3>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Panel</th><th>Query (simplified)</th><th>Read it as</th></tr></thead>
+        <tbody>
+          <tr><td>Load: VUs and request rate</td><td><code>sum(k6_vus)</code>, <code>sum(rate(k6_http_reqs_total[$__rate_interval]))</code></td><td>Throughput flattening while VUs climb is the knee</td></tr>
+          <tr><td>Response time percentiles</td><td><code>histogram_quantile(0.95, sum(rate(k6_http_req_duration_seconds[...])))</code></td><td>Windowed p50, p95, p99 for all requests</td></tr>
+          <tr><td>p95 by request name</td><td>same, <code>sum by (name)</code></td><td>Which transaction degrades first</td></tr>
+          <tr><td>Error rate</td><td><code>k6_http_reqs_total{expected_response="false"}</code> ÷ all</td><td>Status <code>0</code> means no response: timeout or connection error</td></tr>
+          <tr><td>Where the time goes</td><td>p95 of <code>k6_http_req_blocked/connecting/tls_handshaking/waiting/receiving_seconds</code></td><td>Server time vs connection setup vs network</td></tr>
+          <tr><td>CPU busy, iowait, steal</td><td><code>node_cpu_seconds_total</code> by mode</td><td>Steal above a few percent: noisy neighbour</td></tr>
+          <tr><td>Load per core</td><td><code>node_load1</code> ÷ CPU count</td><td>Above 1: work queueing</td></tr>
+          <tr><td>Memory available, disk busy, network</td><td><code>node_memory_MemAvailable_bytes</code>, <code>node_disk_io_time_seconds_total</code>, <code>node_network_*_bytes_total</code></td><td>USE checks per resource</td></tr>
+          <tr><td>TCP retransmits and listen overflows</td><td><code>node_netstat_Tcp_RetransSegs</code>, <code>node_netstat_TcpExt_ListenOverflows</code></td><td>Overflows above zero: the app isn't accepting connections fast enough</td></tr>
+        </tbody>
+      </table></div>
+      <p>The Prometheus datasource is provisioned with a 5-second <code>timeInterval</code>, which keeps <code>$__rate_interval</code> short enough to show spikes but long enough to always contain two k6 pushes.</p>
+      <h3>JMeter load test (InfluxDB)</h3>
+      <p>Active threads, throughput, error rate and total requests at the top, then p95 and throughput per transaction, failures per transaction and errors by response code. Pick the application in the dropdown. Every panel is plain InfluxQL, so you can copy queries into your own dashboards.</p>
+
+      <h2 id="compose">The compose file</h2>
+      <pre class="ex-code"><code># Load test monitoring stack: k6 -&gt; Prometheus, JMeter -&gt; InfluxDB 1.8, node-exporter, Grafana.
+# Guide: https://pawansinha.com.au/guides/monitoring/grafana-stack/
+#
+#   docker compose up -d                        # Prometheus, InfluxDB, Grafana
+#   docker compose --profile linux-host up -d   # also node-exporter (Linux hosts only, see README)
+#   docker compose --profile k6 run --rm k6     # run the sample k6 test inside the stack
+#   docker compose down -v                      # stop and delete the data
+#
+# Grafana: http://localhost:3000 (admin / admin, change it on first login)
+
+name: loadtest-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      # Accept k6's remote write pushes on /api/v1/write
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      # lets Prometheus reach node-exporter on the Docker host (needed on Linux)
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  influxdb:
+    # InfluxDB 1.x: JMeter's built-in Backend Listener writes the 1.x line protocol to /write?db=jmeter
+    image: influxdb:1.8
+    environment:
+      - INFLUXDB_DB=jmeter
+      - INFLUXDB_HTTP_AUTH_ENABLED=false
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.5
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/k6-prometheus.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - influxdb
+    restart: unless-stopped
+
+  node-exporter:
+    # Host metrics (CPU, memory, disk, network). Run it on the machine you are testing.
+    # On Docker Desktop (Mac/Windows) it only sees Docker's Linux VM, so it sits behind a profile.
+    image: prom/node-exporter:v1.12.1
+    profiles: ["linux-host"]
+    command:
+      - --path.rootfs=/host
+    pid: host
+    network_mode: host
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  k6:
+    # Optional: run the sample test from inside the stack.
+    image: grafana/k6:1.8.2
+    profiles: ["k6"]
+    environment:
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+      - TARGET_URL=${TARGET_URL:-https://quickpizza.grafana.com}
+    volumes:
+      - ./k6:/scripts:ro
+    command: run -o experimental-prometheus-rw --tag testid=compose-run /scripts/smoke.js
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus-data:
+  influxdb-data:
+  grafana-data:</code></pre>
+      <p>Grafana is provisioned from files: the datasources get fixed uids (<code>prometheus</code> and <code>influxdb-jmeter</code>), which the dashboard JSON refers to, so the dashboards work on first start without any clicking.</p>
+      <pre class="ex-code"><code>apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      # Matches the scrape interval and k6's 5 s push interval, so $__rate_interval stays sensible.
+      timeInterval: 5s
+
+  - name: InfluxDB-JMeter
+    uid: influxdb-jmeter
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      dbName: jmeter
+      httpMode: GET
+      timeInterval: 5s</code></pre>
+
+      <h2 id="troubleshooting">Troubleshooting</h2>
+      <ul>
+        <li><strong>k6 logs "remote write endpoint ... 404" or "connection refused":</strong> check the URL ends with <code>/api/v1/write</code>, Prometheus is up (<code>docker compose ps</code>), and from inside the compose network the host is <code>prometheus</code>, not <code>localhost</code>.</li>
+        <li><strong>Panels say "No data" for k6:</strong> the time picker may not cover the run, or the Test ID dropdown needs a refresh after the first run. In Prometheus, run <code>{__name__=~"k6_.*"}</code> to confirm data arrived. If you see <code>k6_http_req_duration_p99</code> but no <code>k6_http_req_duration_seconds</code>, native histograms were not enabled for that run.</li>
+        <li><strong>JMeter panels empty:</strong> check <code>jmeter.log</code> for Backend Listener errors, and query InfluxDB directly: <code>curl -G 'http://localhost:8086/query?db=jmeter' --data-urlencode 'q=SHOW TAG VALUES FROM "jmeter" WITH KEY = "application"'</code>.</li>
+        <li><strong>node-exporter target is down:</strong> open <code>http://localhost:9090/targets</code>. On Linux, the compose file maps <code>host.docker.internal</code> to the host gateway. Firewalls on the test servers must allow port 9100 from the Prometheus host.</li>
+        <li><strong>Grafana says the dashboard was changed:</strong> provisioned dashboards can be edited (<code>allowUiUpdates: true</code>), but changes are overwritten from the JSON files on restart. Export your changes back into <code>grafana/dashboards/</code> to keep them.</li>
+      </ul>
+
+      <h2 id="production">Beyond a laptop</h2>
+      <ul>
+        <li><strong>Run the stack and the load generator on separate machines from the system under test.</strong> They compete for CPU and memory, and that shows up in your results.</li>
+        <li><strong>Several k6 instances</strong> can push to the same Prometheus. Add <code>K6_PROMETHEUS_RW_LABELS=generator=gen-1</code> so their series don't collide, and let <code>sum()</code> combine them. Native histograms make the combined percentiles correct.</li>
+        <li><strong>Already have Prometheus or Grafana Cloud?</strong> Point <code>K6_PROMETHEUS_RW_SERVER_URL</code> at its remote write endpoint (with <code>K6_PROMETHEUS_RW_USERNAME</code> and <code>K6_PROMETHEUS_RW_PASSWORD</code> or a bearer token) and import the dashboard JSON.</li>
+        <li><strong>Prefer InfluxDB for k6 too?</strong> k6 can write to InfluxDB 1.x with <code>-o influxdb=http://localhost:8086/k6</code>. InfluxDB 2.x needs the xk6-output-influxdb extension. The kit's dashboards are built for the Prometheus path.</li>
+        <li><strong>Change the default password</strong> and don't expose port 3000 to the internet.</li>
+      </ul>
+      <p>Once the graphs are up, the <a href="/guides/bottlenecks/">bottleneck playbook</a> tells you what to do with them, and <a href="/guides/monitoring/">what to monitor</a> lists everything worth watching beyond these dashboards. If k6 is new to you, the <a href="/course/k6/">free k6 email course</a> and the <a href="/compare/k6-vs-jmeter/">k6 vs JMeter comparison</a> are good next stops.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want this wired into your own environment?</h2>
+        <p>I set up load test monitoring on real environments (Kubernetes, cloud, existing APM) and run the tests. Book a free 30-minute call.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-grafana-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/guides/monitoring/kit.zip" download data-track="guide-grafana-kit-zip-end">Download the kit</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

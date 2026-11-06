@@ -23,6 +23,7 @@
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "k6 vs Locust: Which Load Testing Tool Should You Use?", "description": "k6 vs Locust compared: JavaScript vs Python, licence, load models, protocols, CI/CD, the web UI and scaling, with the same test written in both.", "url": "https://pawansinha.com.au/compare/k6-vs-locust/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://pawansinha.com.au/"}, {"@type": "ListItem", "position": 2, "name": "Learn", "item": "https://pawansinha.com.au/learn/"}, {"@type": "ListItem", "position": 3, "name": "Tool comparisons", "item": "https://pawansinha.com.au/compare/"}, {"@type": "ListItem", "position": 4, "name": "k6 vs Locust", "item": "https://pawansinha.com.au/compare/k6-vs-locust/"}]}</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is Locust free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, Locust is open source under the MIT licence."}}, {"@type": "Question", "name": "Is Locust good for high load?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, if you run enough worker processes. Each process uses one CPU core, so a big test needs several workers, often across machines. Watch the workers' CPU."}}, {"@type": "Question", "name": "Can I change the load during a Locust test?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The web UI lets you change the number of users while the test runs. That's handy for exploring, but write the final test as code so it's repeatable."}}, {"@type": "Question", "name": "Which is easier, k6 or Locust?", "acceptedAnswer": {"@type": "Answer", "text": "Whichever matches your team's language. Python teams usually find Locust easier; JavaScript teams usually find k6 easier."}}]}</script>
+
   <style>
     .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
     .project-hero > :not(p, ul, ol) { max-width: 868px; }
@@ -34,6 +35,7 @@
     .cmp p, .cmp li { color: var(--muted); }
     .cmp strong { color: var(--text); }
     .cmp ul, .cmp ol { padding-left: 22px; }
+    .cmp > p, .cmp > ul, .cmp > ol { max-width: 680px; } /* keep running text to ~90 characters a line */
     .cmp code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--text); }
     .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px; }
     .verdict > div { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
@@ -223,10 +225,12 @@ class Visitor(HttpUser):
       <div class="related">
         <a href="/compare/k6-vs-jmeter/">k6 vs JMeter →</a>
         <a href="/compare/k6-vs-gatling/">k6 vs Gatling →</a>
-        <a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner →</a>
+        <a href="/compare/k6-vs-artillery/">k6 vs Artillery →</a>
+        <a href="/compare/locust-vs-artillery/">Locust vs Artillery →</a>
+        <a href="/compare/tool-picker/">Tool picker →</a>
         <a href="/compare/">All comparisons →</a>
         <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
-        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/guides/start/">Learning path →</a>
         <a href="/tools/">Free tools →</a>
       </div>
       <div class="offer">
@@ -262,6 +266,7 @@ class Visitor(HttpUser):
       <div>
         <h2>Free resources</h2>
         <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
         <a href="/tools/">Calculators</a>
         <a href="/interview-prep/practice/">Interview practice</a>
         <a href="/course/k6/">k6 email course</a>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free performance test results report template — Pawan Sinha</title>
+  <meta name="description" content="A free verdict-first performance test report template: PASS, PASS WITH RISKS or FAIL, key numbers against targets, resource use, findings and next steps.">
+  <meta property="og:title" content="Free performance test results report template">
+  <meta property="og:description" content="A free verdict-first performance test report template: PASS, PASS WITH RISKS or FAIL, key numbers against targets, resource use, findings and next steps.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/templates/results-report/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/templates/results-report/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Free performance test results report template", "description": "A free verdict-first performance test report template: PASS, PASS WITH RISKS or FAIL, key numbers against targets, resource use, findings and next steps.", "url": "https://pawansinha.com.au/guides/templates/results-report/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+      .t-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+      .t-doc .t-title { font-size: clamp(22px, 3vw, 28px); }
+      .t-doc h3 { margin-top: 26px; }
+      .t-fill { background: var(--alt); border: 1px dashed var(--border); border-radius: 6px; padding: 0 5px; color: var(--text); }
+      .t-checks { list-style: none; padding-left: 0; }
+      .t-checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin: 8px 0; }
+      .t-box { width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--muted); border-radius: 4px; }
+      @media print {
+        .t-actions, .t-howto { display: none !important; }
+        .t-doc > * { max-width: none; }
+        .t-doc .g-tablewrap { overflow: visible; }
+        .t-doc .g-table { font-size: 12px; }
+      }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/templates/">Free templates</a> · Results report</p>
+      <h1>Performance test results report template</h1>
+      <p class="lead">A results report that leads with the verdict, so a manager can stop after the first paragraph and an engineer can keep reading for the evidence.</p>
+      <p class="t-actions">
+        <a class="btn" href="/guides/templates/files/results-report.md.txt" download="performance-test-results-report.md" data-track="tpl-free-results-report-md">Download as Markdown</a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()" data-track="tpl-free-results-report-print">Print or save as PDF</button>
+      </p>
+    </section>
+
+    <section class="wrap ex-prose t-howto">
+      <h2>How to use it</h2>
+      <ul>
+        <li><strong>Verdict first.</strong> PASS, PASS WITH RISKS or FAIL, then three sentences. Most readers stop there.</li>
+        <li><strong>Percentiles from the steady state.</strong> Leave the ramp-up out of the numbers, and don't average percentiles across runs or servers. <a href="/explain/percentiles/">Why averages lie</a> shows what goes wrong.</li>
+        <li><strong>Every finding needs evidence.</strong> A graph link, a query or a trace ID. "The database looked slow" is an opinion.</li>
+        <li><strong>Analyse before you write.</strong> The <a href="/tools/jtl-analyser/">JTL analyser</a> and <a href="/tools/k6-results/">k6 results viewer</a> turn raw results into the key-numbers table.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose t-doc" aria-label="Template">
+      <h2 class="t-title">Performance Test Results: <span class="t-fill">Release or change name</span></h2>
+      <table class="g-table">
+      <thead><tr><th>System</th><th>Build tested</th><th>Test dates</th><th>Author</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Name</span></td><td><span class="t-fill">v2.4 / build 1234</span></td><td><span class="t-fill">DD/MM/YYYY</span></td><td><span class="t-fill">Name</span></td></tr>
+      </tbody></table>
+      <h3>1. Verdict</h3>
+      <p><strong><span class="t-fill">PASS / PASS WITH RISKS / FAIL</span></strong></p>
+      <div class="g-note"><p>Write the verdict first, in three sentences or fewer, for someone who reads nothing else. For example: "The release meets all response-time targets at 1.5 × last year's peak. Checkout errors reached 0.8% at peak, above the 0.5% target, because of payment gateway timeouts. Recommend go-live once the timeout fix is retested."</p></div>
+      <p><span class="t-fill">Your summary</span></p>
+      <h3>2. Key numbers</h3>
+      <table class="g-table">
+      <thead><tr><th>Journey</th><th>p95 target</th><th>p95 measured</th><th>p99 measured</th><th>Error rate</th><th>Throughput</th><th>Result</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Login</span></td><td><span class="t-fill">800 ms</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">per second</span></td><td><span class="t-fill">Pass / Fail</span></td></tr>
+      <tr><td><span class="t-fill">Search</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Checkout</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>Report percentiles from the steady part of the test, not the ramp-up. Never average percentiles from different runs or servers.</p></div>
+      <h3>3. What was tested</h3>
+      <table class="g-table">
+      <thead><tr><th>Test</th><th>Date</th><th>Load</th><th>Duration</th><th>Notes</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Load</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">100% of target</span></td><td><span class="t-fill">60 min</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Stress</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">Up to 250%</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">Broke at 210%: database connections ran out</span></td></tr>
+      </tbody></table>
+      <h3>4. Resource use at peak</h3>
+      <table class="g-table">
+      <thead><tr><th>Component</th><th>CPU</th><th>Memory</th><th>Other (pools, GC, queues, DB waits)</th><th>Headroom</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">API tier</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Database</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <h3>5. Findings</h3>
+      <table class="g-table">
+      <thead><tr><th>#</th><th>Finding</th><th>Evidence</th><th>Impact</th><th>Recommendation</th><th>Owner</th></tr></thead>
+      <tbody>
+      <tr><td>1</td><td><span class="t-fill">Checkout p99 rises after 40 minutes</span></td><td><span class="t-fill">Graph link, query, trace ID</span></td><td><span class="t-fill">Slow checkouts at peak</span></td><td><span class="t-fill">Increase pool size, retest</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>2</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <h3>6. Open risks</h3>
+      <ul>
+      <li><span class="t-fill">Anything not tested, environment gaps, findings not yet fixed.</span></li>
+      </ul>
+      <h3>7. Recommendation and next steps</h3>
+      <ul>
+      <li><span class="t-fill">Go or no-go recommendation, conditions, and retests needed.</span></li>
+      </ul>
+      <h3>Appendix</h3>
+      <ul>
+      <li><span class="t-fill">Links to dashboards, raw results, scripts and the test plan.</span></li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want the full editable version?</h2>
+        <p>This free page is the short version. The <a href="/templates/">Performance Test Templates Pack</a> (A$15) has Word and Excel files with guidance in every section: a 13-section test plan, a verdict-first report with sign-off, a 36-check go-live checklist that scores itself, a risk register and a workload calculator.</p>
+        <p class="cta-row">
+          <a class="btn" href="/templates/" data-track="tpl-free-results-report-pack">See the full pack</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="tpl-free-results-report-peak">Or have me run the test</a>
+        </p>
+        <p>More free templates: <a href="/guides/templates/test-strategy/">Test strategy</a> · <a href="/guides/templates/test-plan/">Test plan</a> · <a href="/guides/templates/workload-model-sheet/">Workload model sheet</a> · <a href="/guides/templates/go-live-signoff/">Go-live sign-off</a>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

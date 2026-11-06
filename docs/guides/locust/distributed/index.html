@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distributed Locust: master, workers and --processes — Pawan Sinha</title>
+  <meta name="description" content="Scale Locust beyond one CPU core: --processes on one machine, master and workers across machines, Docker Compose, splitting test data per worker and the usual pitfalls.">
+  <meta property="og:title" content="Distributed Locust: scale past one CPU core with master and workers">
+  <meta property="og:description" content="Scale Locust beyond one CPU core: --processes on one machine, master and workers across machines, Docker Compose, splitting test data per worker and the usual pitfalls.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/locust/distributed/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/locust/distributed/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Distributed Locust: master, workers and --processes", "description": "Scale Locust beyond one CPU core: --processes on one machine, master and workers across machines, Docker Compose, splitting test data per worker and the usual pitfalls.", "url": "https://pawansinha.com.au/guides/locust/distributed/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/locust/">Locust</a> · Distributed</p>
+      <h1>Distributed Locust: when one core isn't enough</h1>
+      <p class="lead">You ask for 2,000 users. Locust prints a CPU warning, the request rate flattens
+        at 600 a second, and response times climb. The server is fine. The load generator is
+        maxed out on one core, and the test is now measuring Locust.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#why">Why Locust needs to be distributed</a></li>
+          <li><a href="#processes">One machine, many cores: --processes</a></li>
+          <li><a href="#master">Several machines: master and workers</a></li>
+          <li><a href="#docker">Docker Compose</a></li>
+          <li><a href="#data">Splitting test data between workers</a></li>
+          <li><a href="#pitfalls">Pitfalls</a></li>
+        </ol>
+      </div>
+
+      <h2 id="why">Why Locust needs to be distributed</h2>
+      <p>A Locust process runs your users as gevent greenlets in one Python process, so it uses one
+        CPU core. How many requests a second one core can drive depends on your task code, the
+        response sizes and the client (<code>FastHttpUser</code> is much cheaper than
+        <code>HttpUser</code>). Measure it: run one process, raise the users until its CPU nears
+        100%, and note the request rate. That's your per-process budget, and you need enough
+        processes to stay well below it.</p>
+      <p>Locust logs a warning when a process goes over 90% CPU. Treat that warning as "this run's
+        response times are not trustworthy".</p>
+
+      <h2 id="processes">One machine, many cores: --processes</h2>
+      <pre class="ex-code"><code># One master plus 4 worker processes on this machine
+locust -f locustfile.py --processes 4 -H https://staging.example.com
+
+# One worker per CPU core
+locust -f locustfile.py --processes -1 --headless -u 2000 -r 50 -t 20m</code></pre>
+      <p>This forks worker processes and wires them to a local master for you. It's the easiest way
+        to use a big machine, though Locust still labels the flag experimental. It isn't available on
+        Windows. Use WSL or the master/worker setup
+        there.</p>
+
+      <h2 id="master">Several machines: master and workers</h2>
+      <pre class="ex-code"><code># On the master machine (web UI on :8089, workers connect on :5557)
+locust -f locustfile.py --master -H https://staging.example.com
+
+# On each worker machine (same locustfile, same Locust version)
+locust -f locustfile.py --worker --master-host 10.0.0.10
+
+# Headless: wait until 4 workers have connected, then start
+locust -f locustfile.py --master --headless --expect-workers 4 \
+  -u 4000 -r 100 -t 30m -H https://staging.example.com --csv results/run --html results/report.html</code></pre>
+      <ul>
+        <li>The master runs no users. It hands out users, collects statistics from the workers and
+          serves the UI and reports.</li>
+        <li>Workers need network access to the master on port 5557 (change it with
+          <code>--master-bind-port</code> and <code>--master-port</code>).</li>
+        <li>Each worker needs the locustfile and any data files. Locust doesn't copy them for you,
+          so bake them into an image or a shared volume.</li>
+        <li>Users are spread evenly across workers, and a custom
+          <a href="/guides/locust/load-shapes/">load shape</a> runs on the master unchanged.</li>
+      </ul>
+
+      <h2 id="docker">Docker Compose</h2>
+      <pre class="ex-code"><code># docker-compose.yml: one master, N workers. Start with: docker compose up --scale worker=4
+services:
+  master:
+    image: locustio/locust:2.47.0          # pin the same version everywhere
+    ports:
+      - "8089:8089"                        # web UI
+    volumes:
+      - ./:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --master -H https://staging.example.com
+
+  worker:
+    image: locustio/locust:2.47.0
+    volumes:
+      - ./:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --worker --master-host master</code></pre>
+      <p>The same pattern carries over to Kubernetes: a master Deployment with a Service on 5557 and
+        8089, and a worker Deployment you scale. Put the workers on nodes with spare CPU, not next to
+        the system under test, or the two compete for the same cores.</p>
+
+      <h2 id="data">Splitting test data between workers</h2>
+      <p>Every worker loads its own copy of the locustfile and the data. If each one cycles through
+        the same <code>users.csv</code> from the top, worker 1's first user and worker 2's first user
+        log in as the same account. Give each worker its own slice, using the index the master
+        assigns:</p>
+      <pre class="ex-code"><code>import csv
+import itertools
+import os
+
+from locust import HttpUser, task, between, events
+
+WORKER_COUNT = int(os.environ.get("WORKER_COUNT", "1"))  # set to the number of workers you start
+with open(os.path.join(os.path.dirname(__file__), "users.csv"), newline="") as f:
+    ALL_USERS = list(csv.DictReader(f))
+
+my_users = None  # this worker's slice, set once the worker knows its index
+
+
+@events.test_start.add_listener
+def pick_slice(environment, **kwargs):
+    global my_users
+    index = getattr(environment.runner, "worker_index", 0)  # 0 when not distributed
+    if index &lt; 0:  # the master (or not yet connected): nothing to do
+        return
+    # Worker 0 gets rows 0, N, 2N..., worker 1 gets rows 1, N+1... No overlap between workers.
+    my_users = itertools.cycle(ALL_USERS[index::WORKER_COUNT])
+
+
+class AccountUser(HttpUser):
+    wait_time = between(1, 2)
+
+    def on_start(self):
+        self.creds = next(my_users)
+        self.client.post("/login", json=self.creds)
+
+    @task
+    def me(self):
+        self.client.get("/me")</code></pre>
+      <pre class="ex-code"><code>WORKER_COUNT=4 locust -f distributed_data.py --worker --master-host 10.0.0.10</code></pre>
+      <p>The worker index is assigned when a worker connects, which is why the slice is picked in
+        the <code>test_start</code> event rather than at import time.</p>
+
+      <h2 id="pitfalls">Pitfalls</h2>
+      <ul>
+        <li><strong>Version mismatch.</strong> Master and workers must run the same Locust version.
+          Pin it in requirements or the image tag.</li>
+        <li><strong>Fewer users than workers.</strong> 3 users on 10 workers leaves 7 idle. Not an
+          error, but it surprises people during smoke runs.</li>
+        <li><strong>Unequal machines.</strong> Users are spread evenly, not by capacity. One small
+          worker becomes the bottleneck. Use identical worker machines.</li>
+        <li><strong>The network between workers and target.</strong> Workers in another region add
+          latency to every request. Keep them where real clients would be, or at least report where
+          they ran.</li>
+      </ul>
+      <p>Next: <a href="/guides/locust/data-and-auth/">data and auth</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need to generate serious load?</h2>
+        <p>I set up distributed Locust and k6 load generation on your cloud, and make sure the
+          generator is never the bottleneck.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-dist-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-dist-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

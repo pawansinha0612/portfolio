@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter distributed testing: remote servers and -R — Pawan Sinha</title>
+  <meta name="description" content="Run JMeter across several load generators: jmeter-server, the RMI SSL keystore, -R and -G flags, firewall ports, CSV data per node, and when cloud is simpler.">
+  <meta property="og:title" content="JMeter distributed testing: remote servers, RMI over SSL, -R, data per node, or cloud">
+  <meta property="og:description" content="Run JMeter across several load generators: jmeter-server, the RMI SSL keystore, -R and -G flags, firewall ports, CSV data per node, and when cloud is simpler.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/distributed-testing/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/distributed-testing/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "JMeter distributed testing: remote servers and -R", "description": "Run JMeter across several load generators: jmeter-server, the RMI SSL keystore, -R and -G flags, firewall ports, CSV data per node, and when cloud is simpler.", "url": "https://pawansinha.com.au/guides/jmeter/distributed-testing/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Distributed testing</p>
+      <h1>JMeter distributed testing without the RMI pain</h1>
+      <p class="lead">One load generator tops out at 85% CPU and your response times start rising, but the application's dashboards look calm. The bottleneck is your test rig. Distributed mode spreads the plan across several machines, and comes with its own traps: RMI ports, keystores, and every node logging in as the same user.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#when">Do you actually need it?</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#setup">Setting up the nodes</a></li>
+          <li><a href="#ssl">The RMI SSL keystore</a></li>
+          <li><a href="#run">Running with -R</a></li>
+          <li><a href="#data">Test data per node</a></li>
+          <li><a href="#firewall">Ports, firewalls and NAT</a></li>
+          <li><a href="#alt">Independent runs or cloud instead</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="when">1. Do you actually need it?</h2>
+      <p>First make one generator efficient: CLI mode, no View Results Tree, light assertions, enough heap (see <a href="/guides/jmeter/common-mistakes/">common mistakes</a>). A tuned generator with 4–8 vCPUs often drives a few thousand HTTP requests per second, though the real number depends heavily on response sizes, TLS and scripting. Measure it: increase load until the generator's CPU passes about 70%, and that is its budget.</p>
+      <p>Distribute when one machine cannot reach the target within that budget, when the network link saturates, or when you need traffic from several regions.</p>
+
+      <h2 id="how">2. How it works</h2>
+      <pre class="ex-code"><code>                 ┌──────────────► jmeter-server  (node A) ──┐
+ controller ─────┼──────────────► jmeter-server  (node B) ──┼──► system under test
+ (jmeter -n -R)  └──────────────► jmeter-server  (node C) ──┘
+       ▲                                 │
+       └──────── samples streamed back ──┘</code></pre>
+      <ul>
+        <li>The controller sends the <code>.jmx</code> to each server. <strong>Each server runs the full plan.</strong> 300 threads × 3 servers = 900 threads.</li>
+        <li>Data files (CSV, bodies, certificates) are <strong>not</strong> sent. Each server reads its own local copy.</li>
+        <li>Results come back to the controller over RMI. The default sender mode is <code>StrippedBatch</code>: response data of successful samples is dropped and samples are sent in batches. The controller writes the JTL.</li>
+        <li>All nodes need the same JMeter version, the same plugins and ideally the same Java version.</li>
+      </ul>
+
+      <h2 id="setup">3. Setting up the nodes</h2>
+      <p>On each load generator (server):</p>
+      <pre class="ex-code"><code># same JMeter build and plugins as the controller
+export HEAP="-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
+export RMI_HOST_DEF=-Djava.rmi.server.hostname=10.0.1.21   # this node's reachable IP
+bin/jmeter-server -Jserver.rmi.localport=50000</code></pre>
+      <p><code>jmeter-server</code> starts its own RMI registry on port 1099 and then waits for tests. <code>java.rmi.server.hostname</code> tells RMI which address to advertise. Set it whenever the machine has more than one interface or sits behind NAT, or connections fail in confusing ways. The <code>bin/jmeter-server</code> script reads it from <code>RMI_HOST_DEF</code>.</p>
+
+      <h2 id="ssl">4. The RMI SSL keystore</h2>
+      <p>Since JMeter 4.0, RMI traffic uses SSL by default, so every node and the controller need the same keystore. Create it once:</p>
+      <pre class="ex-code"><code>cd apache-jmeter-5.6.3/bin
+./create-rmi-keystore.sh
+# answer "rmi" for "What is your first and last name?"
+# (it must match server.rmi.ssl.keystore.alias, default "rmi")
+# → writes rmi_keystore.jks</code></pre>
+      <p>Copy <code>rmi_keystore.jks</code> into <code>bin/</code> on the controller and every server, or point <code>server.rmi.ssl.keystore.file</code> at it. The certificate the script creates is <strong>valid for seven days</strong>. If distributed runs suddenly fail after a week, regenerate it, or generate your own with <code>keytool</code> and a longer validity.</p>
+      <p>On an isolated, trusted test network you can switch SSL off instead. Set it on every node, controller included:</p>
+      <pre class="ex-code"><code># user.properties on every machine
+server.rmi.ssl.disable=true</code></pre>
+
+      <h2 id="run">5. Running with -R</h2>
+      <pre class="ex-code"><code>jmeter -n -t plan.jmx \
+  -R 10.0.1.21,10.0.1.22,10.0.1.23 \
+  -Gusers=300 -Grampup=600 -Gduration=3600 -Ghost=staging.example.com \
+  -l results.jtl -e -o report/ -X</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>-R host1,host2</code></td><td>Start these remote servers (overrides <code>remote_hosts</code>)</td></tr>
+          <tr><td><code>-r</code></td><td>Start all servers listed in the <code>remote_hosts</code> property</td></tr>
+          <tr><td><code>-Gname=value</code></td><td>Set a property on all servers. Use this, not <code>-J</code>, for anything <code>__P</code> reads in the plan</td></tr>
+          <tr><td><code>-X</code></td><td>Exit the remote servers when the test ends</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-warn">
+        <p><code>-Jusers=300</code> sets the property only on the controller, so the servers fall back to the plan's default and you get a different load than you planned. In distributed runs, every load setting goes through <code>-G</code>. Remember the per-node multiplication: <code>-Gusers=300</code> on 3 nodes is 900 users. Divide your targets, including any throughput timer rate, by the number of nodes.</p>
+      </div>
+      <p>The "Active Threads Over Time" graph in the HTML report shows threads per server, not the total. That is a known limitation.</p>
+
+      <h2 id="data">6. Test data per node</h2>
+      <p>Each server reads <code>data/users.csv</code> relative to its own working directory. If the files are identical, all three nodes log in as the same users in the same order. Split the file instead:</p>
+      <pre class="ex-code"><code># split users.csv round-robin into 3 files, each with the header line
+awk -v n=3 'NR==1 {for (i=0; i&lt;n; i++) print &gt; ("users_" i ".csv"); next}
+            {print &gt; ("users_" (NR-2)%n ".csv")}' users.csv
+# → users_0.csv, users_1.csv, users_2.csv
+# copy users_0.csv to node A as data/users.csv, users_1.csv to node B, and so on</code></pre>
+      <p>Alternatively, keep a different filename per node and set it with a node-local property: <code>user.properties</code> on node A holds <code>datafile=users_0.csv</code>, and the CSV Data Set Config Filename is <code>data/${__P(datafile,users.csv)}</code>. For generated values, add the host to keep them unique: <code>order-${__machineName}-<wbr>${__threadNum}-<wbr>${__time()}</code>.</p>
+      
+      <h2 id="firewall">7. Ports, firewalls and NAT</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Direction</th><th>Port</th><th>Property</th></tr></thead>
+        <tbody>
+          <tr><td>Controller → server (registry)</td><td>1099</td><td><code>server_port</code></td></tr>
+          <tr><td>Controller → server (engine)</td><td>Random unless set</td><td><code>server.rmi.localport</code></td></tr>
+          <tr><td>Server → controller (results)</td><td>Random unless set, up to 3 ports from the base</td><td><code>client.rmi.localport</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Results flow back on a <em>new</em> connection from the server to the controller, so the controller must be reachable from every server. Fix the ports (for example <code>server.rmi.localport=50000</code> and <code>client.rmi.localport=60000</code>), open them in security groups, and set <code>java.rmi.server.hostname</code> on the controller too. This return connection is why distributed JMeter rarely works across NAT or between a laptop on VPN and cloud servers.</p>
+
+      <h2 id="alt">8. Independent runs or cloud instead</h2>
+      <p>The controller is a single point of failure and a bottleneck: all samples funnel through it. A simpler pattern many teams prefer:</p>
+      <ol>
+        <li>Start the same plan in CLI mode on each generator at the same time (Ansible, SSH loop, or a CI matrix job), each with its own <code>-J</code> settings and data slice.</li>
+        <li>Collect each node's JTL and concatenate them, keeping one header line.</li>
+        <li>Build one report: <code>jmeter -g all.jtl -o report/</code>.</li>
+      </ol>
+      <pre class="ex-code"><code>head -1 node-a.jtl &gt; all.jtl
+for f in node-*.jtl; do tail -n +2 "$f" &gt;&gt; all.jtl; done
+jmeter -g all.jtl -o report/</code></pre>
+      <p>Keep the generators' clocks in sync with NTP, because timestamps from different machines end up on one timeline.</p>
+      <p>If you would rather not run infrastructure at all, managed services run your <code>.jmx</code> across many engines. Azure Load Testing and BlazeMeter both accept JMeter scripts, and there are others. You trade money and some flexibility for not dealing with RMI, keystores and scaling. Kubernetes-based setups are a middle path when the team already runs a cluster. If you are rethinking the tool as well, <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a> covers how the two scale differently.</p>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/ci-pipelines/">JMeter in CI pipelines</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need more load than one machine can give?</h2>
+        <p>Book a free 30-minute call and we'll size the load generators and pick distributed, independent or cloud runs for your target. See also <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-dist-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-dist-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

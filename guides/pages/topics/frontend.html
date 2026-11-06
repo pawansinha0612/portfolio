@@ -1,0 +1,142 @@
+<!--{"title": "Frontend performance testing: Core Web Vitals and beyond", "og_title": "Frontend performance testing: Core Web Vitals, lab vs field, Lighthouse, WebPageTest, k6 browser", "description": "Measure frontend performance properly: LCP, INP and CLS, lab vs field data, Lighthouse, WebPageTest, and k6 browser tests that run alongside backend load.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Frontend</p>
+      <h1>Frontend performance testing</h1>
+      <p class="lead">The API answers in 120 ms at peak load and the load test passes. Meanwhile a real shopper on a mid-range Android phone waits 4.8 seconds for the product image and taps "Add to cart" twice because nothing happened the first time. Backend load tests measure the server. Users experience the page, and most of a page's load time is spent in the browser.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#cwv">Core Web Vitals: LCP, INP, CLS</a></li>
+          <li><a href="#lab-field">Lab data vs field data</a></li>
+          <li><a href="#lighthouse">Lighthouse</a></li>
+          <li><a href="#wpt">WebPageTest</a></li>
+          <li><a href="#k6-browser">k6 browser: frontend under backend load</a></li>
+          <li><a href="#budgets">Budgets and CI</a></li>
+          <li><a href="#fixes">What usually moves the numbers</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="cwv">Core Web Vitals: LCP, INP, CLS</h2>
+      <p>Google's <a href="/glossary/core-web-vitals/">Core Web Vitals</a> are three user-centred metrics. They are assessed at the 75th percentile of page loads, separately for mobile and desktop.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Metric</th><th>Measures</th><th>Good</th><th>Poor</th></tr></thead>
+        <tbody>
+          <tr><td><a href="/glossary/lcp/">LCP</a>: Largest Contentful Paint</td><td>When the largest image or text block in the viewport rendered. Loading.</td><td>≤ 2.5 s</td><td>&gt; 4 s</td></tr>
+          <tr><td><a href="/glossary/inp/">INP</a>: Interaction to Next Paint</td><td>Delay from a click, tap or key press to the next frame, across the visit (roughly the worst interaction). Responsiveness.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
+          <tr><td><a href="/glossary/cls/">CLS</a>: Cumulative Layout Shift</td><td>How much visible content jumps around unexpectedly. Visual stability.</td><td>≤ 0.1</td><td>&gt; 0.25</td></tr>
+        </tbody>
+      </table></div>
+      <p>INP replaced First Input Delay as a Core Web Vital in March 2024. Supporting metrics help diagnose: <a href="/glossary/ttfb/">TTFB</a> (server and network, the part a backend load test does affect), First Contentful Paint, and Total Blocking Time in the lab.</p>
+      <p>LCP breaks into four parts worth measuring separately: TTFB, resource load delay (time before the LCP image starts downloading), resource load duration and element render delay. A slow LCP with a fast TTFB is a frontend problem, often a late-discovered or oversized hero image.</p>
+
+      <h2 id="lab-field">Lab data vs field data</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th></th><th>Lab (synthetic)</th><th>Field (real users)</th></tr></thead>
+        <tbody>
+          <tr><td>Source</td><td>A scripted browser on a defined device and network: Lighthouse, WebPageTest, k6 browser</td><td>Real visits: Chrome UX Report (CrUX), your own <a href="/glossary/real-user-monitoring/">RUM</a></td></tr>
+          <tr><td>Good for</td><td>Debugging, comparing builds, CI gates, testing before release</td><td>The truth about what users get, across devices and networks</td></tr>
+          <tr><td>Weak at</td><td>Represents one device and network. Can't measure real INP (no real interactions).</td><td>Lagging (CrUX is a rolling 28-day window), noisy, only for pages with enough traffic</td></tr>
+        </tbody>
+      </table></div>
+      <p>Use lab tests to find and fix, field data to confirm. When they disagree, the field is right and the lab profile is wrong: usually your users have slower phones or networks than the lab assumes. PageSpeed Insights shows both for a URL, field data at the top when CrUX has enough samples. For your own field data, the <code>web-vitals</code> JavaScript library reports LCP, INP and CLS from real sessions to any endpoint you choose.</p>
+      <pre class="ex-code"><code>import { onLCP, onINP, onCLS } from 'web-vitals';
+
+function send(metric) {
+  navigator.sendBeacon('/rum', JSON.stringify({ name: metric.name, value: metric.value, id: metric.id }));
+}
+onLCP(send);
+onINP(send);
+onCLS(send);</code></pre>
+
+      <h2 id="lighthouse">Lighthouse</h2>
+      <p>Lighthouse runs in Chrome DevTools, on the command line, and inside PageSpeed Insights. By default the mobile run emulates a mid-range phone on a slow 4G connection using simulated throttling: it loads the page on your real connection and then models how long it would have taken.</p>
+      <pre class="ex-code"><code>npx lighthouse https://www.example.com/ \
+  --only-categories=performance \
+  --output=json --output=html --output-path=./lh/home \
+  --chrome-flags="--headless=new"</code></pre>
+      <ul>
+        <li><strong>Run it several times.</strong> Scores vary between runs from CPU load, network and server variance. Take the median of 3 to 5 runs before comparing builds.</li>
+        <li><strong>Read the metrics, not the score.</strong> The 0 to 100 score is a weighted blend of lab metrics, and the weights change between Lighthouse versions. LCP, TBT and CLS values plus the diagnostics (render-blocking resources, unused JavaScript, image sizes) are what you act on.</li>
+        <li><strong>TBT is the lab stand-in for INP.</strong> Total Blocking Time sums main-thread work over 50 ms per task during load. High TBT means long JavaScript tasks that will also delay interactions.</li>
+        <li><strong>Test from a quiet machine.</strong> A busy CI runner inflates CPU-bound metrics. Keep the runner type fixed.</li>
+      </ul>
+      <p>The free <a href="/site-check/">site check</a> runs a quick version of these checks on any URL.</p>
+
+      <h2 id="wpt">WebPageTest</h2>
+      <p>WebPageTest (now run by Catchpoint, with a free tier that needs an account) loads pages in real browsers from many locations and network profiles. Its strengths are the views Lighthouse doesn't give you: the full request waterfall with connection reuse visible, a filmstrip and video of the page rendering, repeat-view (cached) runs, and side-by-side comparison of two tests.</p>
+      <ul>
+        <li>Run from a location near your users with a realistic connection profile (for example 4G) and a real mobile device or emulation.</li>
+        <li>Use at least 3 runs and look at the median run.</li>
+        <li>Read the waterfall for the LCP resource: when was it discovered, did it wait for other resources, and was its connection already open?</li>
+        <li>Scripted tests can log in or step through a journey before measuring a page.</li>
+      </ul>
+
+      <h2 id="k6-browser">k6 browser: frontend under backend load</h2>
+      <p>The most useful frontend test for a performance engineer is often a hybrid: many protocol-level virtual users generate backend load, while a few real browsers measure what a user experiences during that load. k6 does both in one script with the <code>k6/browser</code> module (bundled with k6. Older releases used <code>k6/experimental/browser</code> with a different, synchronous API).</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { browser } from 'k6/browser';
+import { check } from 'k6';
+
+export const options = {
+  scenarios: {
+    load: {                      // backend load at a fixed arrival rate
+      executor: 'constant-arrival-rate',
+      rate: 100, timeUnit: '1s', duration: '5m',
+      preAllocatedVUs: 50, maxVUs: 200,
+      exec: 'api',
+    },
+    ui: {                        // two real browsers measuring the page during that load
+      executor: 'constant-vus',
+      vus: 2, duration: '5m',
+      exec: 'page',
+      options: { browser: { type: 'chromium' } },
+    },
+  },
+  thresholds: {
+    'http_req_duration{scenario:load}': ['p(95)&lt;500'],
+    browser_web_vital_lcp: ['p(75)&lt;2500'],
+    browser_web_vital_cls: ['p(75)&lt;0.1'],
+  },
+};
+
+export function api() {
+  http.get('https://www.example.com/api/products?page=1', { tags: { name: 'products' } });
+}
+
+export async function page() {
+  const p = await browser.newPage();
+  try {
+    await p.goto('https://www.example.com/products');
+    await p.locator('h1').waitFor();
+    check(await p.locator('h1').textContent(), { 'heading shown': (t) =&gt; t.length &gt; 0 });
+  } finally {
+    await p.close();
+  }
+}</code></pre>
+      <p>k6 reports <code>browser_web_vital_lcp</code>, <code>browser_web_vital_cls</code>, <code>browser_web_vital_inp</code>, <code>browser_web_vital_fcp</code> and <code>browser_web_vital_ttfb</code>. Browsers are heavy: each browser VU needs far more CPU and memory than a protocol VU, so keep their count small and watch the load generator. INP is only reported when the script interacts with the page (clicks, typing). Comparing LCP from the browser scenario with and without the backend load tells you how much of the user's wait the backend is responsible for at peak.</p>
+
+      <h2 id="budgets">Budgets and CI</h2>
+      <p>A <a href="/glossary/performance-budget/">performance budget</a> turns the numbers into a gate: LCP under 2.5 s in the lab profile, no more than 300 KB of JavaScript, TBT under 200 ms. Lighthouse CI (<code>npx @lhci/cli autorun</code>) runs Lighthouse several times per build and asserts on budgets. k6 thresholds do the same for browser metrics. Gate on stable lab metrics in CI, then track field data on a dashboard to make sure the lab profile still matches reality. See <a href="/glossary/synthetic-monitoring/">synthetic monitoring</a> for running the same checks against production on a schedule.</p>
+
+      <h2 id="fixes">What usually moves the numbers</h2>
+      <ul>
+        <li><strong>LCP:</strong> make the LCP image discoverable in the HTML (not injected by JavaScript), give it <code>fetchpriority="high"</code>, don't lazy-load it, serve it at the right size in a modern format, and cut TTFB with caching and a CDN.</li>
+        <li><strong>INP:</strong> break up long JavaScript tasks, defer non-critical third-party scripts, and keep event handlers small, moving heavy work after the next paint.</li>
+        <li><strong>CLS:</strong> set width and height (or <code>aspect-ratio</code>) on images and embeds, reserve space for ads and banners, and avoid inserting content above what the user is reading.</li>
+      </ul>
+      <p>Network-level causes (handshakes, CDN misses, DNS) are covered in <a href="/guides/bottlenecks/network-and-cdn/">network and CDN bottlenecks</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Fast API, slow page?</h2>
+        <p>Run the free <a href="/site-check/">site check</a> for a first look, or book a free 30-minute call to plan a frontend test that runs under real backend load.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-frontend-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/site-check/" data-track="guide-frontend-sitecheck">Free site check</a>
+        </p>
+      </div>
+    </section>

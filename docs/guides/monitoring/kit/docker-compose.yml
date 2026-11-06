@@ -1,0 +1,92 @@
+# Load test monitoring stack: k6 -> Prometheus, JMeter -> InfluxDB 1.8, node-exporter, Grafana.
+# Guide: https://pawansinha.com.au/guides/monitoring/grafana-stack/
+#
+#   docker compose up -d                        # Prometheus, InfluxDB, Grafana
+#   docker compose --profile linux-host up -d   # also node-exporter (Linux hosts only, see README)
+#   docker compose --profile k6 run --rm k6     # run the sample k6 test inside the stack
+#   docker compose down -v                      # stop and delete the data
+#
+# Grafana: http://localhost:3000 (admin / admin, change it on first login)
+
+name: loadtest-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      # Accept k6's remote write pushes on /api/v1/write
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      # lets Prometheus reach node-exporter on the Docker host (needed on Linux)
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  influxdb:
+    # InfluxDB 1.x: JMeter's built-in Backend Listener writes the 1.x line protocol to /write?db=jmeter
+    image: influxdb:1.8
+    environment:
+      - INFLUXDB_DB=jmeter
+      - INFLUXDB_HTTP_AUTH_ENABLED=false
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.5
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/k6-prometheus.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - influxdb
+    restart: unless-stopped
+
+  node-exporter:
+    # Host metrics (CPU, memory, disk, network). Run it on the machine you are testing.
+    # On Docker Desktop (Mac/Windows) it only sees Docker's Linux VM, so it sits behind a profile.
+    image: prom/node-exporter:v1.12.1
+    profiles: ["linux-host"]
+    command:
+      - --path.rootfs=/host
+    pid: host
+    network_mode: host
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  k6:
+    # Optional: run the sample test from inside the stack.
+    image: grafana/k6:1.8.2
+    profiles: ["k6"]
+    environment:
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+      - TARGET_URL=${TARGET_URL:-https://quickpizza.grafana.com}
+    volumes:
+      - ./k6:/scripts:ro
+    command: run -o experimental-prometheus-rw --tag testid=compose-run /scripts/smoke.js
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus-data:
+  influxdb-data:
+  grafana-data:

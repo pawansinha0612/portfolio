@@ -1,0 +1,721 @@
+{
+  "title": "JMeter load test (InfluxDB)",
+  "uid": "jmeter-load-test",
+  "description": "JMeter Backend Listener (InfluxdbBackendListenerClient) results. From pawansinha.com.au/guides/monitoring/grafana-stack/",
+  "tags": [
+    "jmeter",
+    "load-testing"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "graphTooltip": 1,
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "name": "application",
+        "label": "Application",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-jmeter"
+        },
+        "query": "SHOW TAG VALUES FROM \"jmeter\" WITH KEY = \"application\"",
+        "definition": "SHOW TAG VALUES FROM \"jmeter\" WITH KEY = \"application\"",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1
+      },
+      {
+        "name": "transaction",
+        "label": "Transaction",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-jmeter"
+        },
+        "query": "SHOW TAG VALUES FROM \"jmeter\" WITH KEY = \"transaction\" WHERE \"application\" =~ /^$application$/ AND \"transaction\" != 'internal' AND \"transaction\" != 'all'",
+        "definition": "SHOW TAG VALUES FROM \"jmeter\" WITH KEY = \"transaction\"",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "JMeter: whole test",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Active threads",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT last(\"meanAT\") FROM \"jmeter\" WHERE \"transaction\" = 'internal' AND \"application\" =~ /^$application$/ AND $timeFilter",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "threads",
+          "refId": "A"
+        }
+      ],
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Throughput (last 1m)",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") / 60 FROM \"jmeter\" WHERE \"transaction\" = 'all' AND \"application\" =~ /^$application$/ AND time > now() - 1m",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "req/s",
+          "refId": "A"
+        }
+      ],
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (whole range)",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"countError\") / sum(\"count\") FROM \"jmeter\" WHERE \"transaction\" = 'all' AND \"application\" =~ /^$application$/ AND $timeFilter",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "errors",
+          "refId": "A"
+        }
+      ],
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total requests",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") FROM \"jmeter\" WHERE \"transaction\" = 'all' AND \"application\" =~ /^$application$/ AND $timeFilter",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "requests",
+          "refId": "A"
+        }
+      ],
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Threads and throughput",
+      "description": "Throughput assumes the default 5 s send interval (backend_influxdb.send_interval).",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "req/s"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "reqps"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT mean(\"meanAT\") FROM \"jmeter\" WHERE \"transaction\" = 'internal' AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "threads",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") / 5 FROM \"jmeter\" WHERE \"transaction\" = 'all' AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time(5s) fill(0)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "req/s",
+          "refId": "B"
+        }
+      ],
+      "id": 6,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors per second",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"countError\") / 5 FROM \"jmeter\" WHERE \"transaction\" = 'all' AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time(5s) fill(0)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "errors/s",
+          "refId": "A"
+        }
+      ],
+      "id": 7,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      }
+    },
+    {
+      "type": "row",
+      "title": "JMeter: per transaction",
+      "id": 8,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 by transaction (successful samples)",
+      "description": "From statut=ok rows. With backend_metrics_window_mode=timed each point covers one send interval. The statut=all percentiles always use a sliding window of the last backend_metrics_window (100) samples, so they lag.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT max(\"pct95.0\") FROM \"jmeter\" WHERE \"statut\" = 'ok' AND \"transaction\" =~ /^$transaction$/ AND \"transaction\" != 'all' AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time($__interval), \"transaction\" fill(none)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$tag_transaction",
+          "refId": "A"
+        }
+      ],
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Throughput by transaction",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") / 5 FROM \"jmeter\" WHERE \"statut\" = 'all' AND \"transaction\" =~ /^$transaction$/ AND \"transaction\" != 'all' AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time(5s), \"transaction\" fill(0)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$tag_transaction",
+          "refId": "A"
+        }
+      ],
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Failed samples by transaction",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") FROM \"jmeter\" WHERE \"statut\" = 'ko' AND \"transaction\" =~ /^$transaction$/ AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time($__interval), \"transaction\" fill(0)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$tag_transaction",
+          "refId": "A"
+        }
+      ],
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by response code",
+      "description": "",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-jmeter"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-jmeter"
+          },
+          "query": "SELECT sum(\"count\") FROM \"jmeter\" WHERE \"responseCode\" =~ /.+/ AND \"application\" =~ /^$application$/ AND $timeFilter GROUP BY time($__interval), \"responseCode\" fill(0)",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$tag_responseCode",
+          "refId": "A"
+        }
+      ],
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      }
+    }
+  ]
+}

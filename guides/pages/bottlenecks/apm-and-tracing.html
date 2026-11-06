@@ -1,0 +1,90 @@
+<!--{"title": "Reading APM traces to find bottlenecks", "og_title": "How to read a trace waterfall: finding the bottleneck with APM and distributed tracing", "description": "How to read a distributed trace waterfall in a load test: critical path, gaps, fan-out, retries and sampling, in Dynatrace, Datadog, New Relic, Tempo or Jaeger.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/bottlenecks/">Finding bottlenecks</a> · APM and tracing</p>
+      <h1>Reading a trace waterfall</h1>
+      <p class="lead">You open the APM during the test and the service map is all red. Every service looks slow because every service is waiting on something else. Dashboards tell you which transaction is slow. A trace tells you where that one request spent its 4 seconds. This guide is about reading traces well, whichever tool draws them.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#basics">Traces, spans and the waterfall</a></li>
+          <li><a href="#pick">Pick the right traces</a></li>
+          <li><a href="#read">Reading the waterfall: six patterns</a></li>
+          <li><a href="#tools">The same ideas in each tool</a></li>
+          <li><a href="#loadtest">Making load test traffic easy to find</a></li>
+          <li><a href="#limits">What traces won't tell you</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="basics">Traces, spans and the waterfall</h2>
+      <p>A <a href="/glossary/distributed-tracing/">distributed trace</a> follows one request across services. Each unit of work (an HTTP handler, a database call, an outgoing request, a message publish) is a <strong>span</strong> with a start time, a duration, attributes and a parent. The trace ID travels between services in a header, now usually the W3C <code>traceparent</code> header, so spans from different processes join up into one tree.</p>
+      <p>The waterfall view draws that tree on a timeline: each span is a bar, indented under its parent. Two durations matter for each span:</p>
+      <ul>
+        <li><strong>Total (inclusive) time:</strong> from the span's start to its end, including children.</li>
+        <li><strong>Self (exclusive) time:</strong> total time minus time covered by children. High self-time is work (or untraced waiting) in that span's own code.</li>
+      </ul>
+
+      <h2 id="pick">Pick the right traces</h2>
+      <ul>
+        <li><strong>Filter to the slow transaction and the slow time window.</strong> Pick traces from the knee of the test, with duration above your p95 or p99. A trace from the warm-up period describes a different system.</li>
+        <li><strong>Open several slow traces and a few fast ones of the same endpoint.</strong> The bottleneck is the difference between them. If slow and fast traces have the same shape but every span is proportionally longer, look at a shared resource (CPU, GC, the host). If one span grows and the rest don't, look at that span.</li>
+        <li><strong>Check the aggregate view next.</strong> Most APMs can break down a transaction's time by downstream call or span type across many traces. Use it to confirm that what you saw in five traces holds across thousands.</li>
+      </ul>
+
+      <h2 id="read">Reading the waterfall: six patterns</h2>
+      <h3>1. One long span on the critical path</h3>
+      <p>The critical path is the chain of spans that determines the end time. Shortening a span that runs in parallel with a longer one achieves nothing. Follow the longest chain down until you reach a span with high self-time or a leaf (a database or external call). That is where to look.</p>
+      <h3>2. A long database span with a fast query</h3>
+      <p>The span says 1.8 seconds, but the database reports the statement at 6 ms. The time went on getting a connection from the pool, waiting for a lock, or the network. Some agents show connection acquisition as its own span, many don't. Check pool metrics. See the <a href="/guides/bottlenecks/database/#pools">database guide</a>.</p>
+      <h3>3. Gaps between spans</h3>
+      <p>Whitespace in a parent span with no children under it is time nobody measured: queueing in an executor before the work started, a GC pause, CPU throttling, serialising a large payload, a synchronous log write, or a library the agent doesn't instrument. Gaps at the very start of a server span often mean the request waited in a thread pool or accept queue. Correlate the timestamp with GC logs and host metrics.</p>
+      <h3>4. A staircase of identical spans</h3>
+      <p>Dozens of the same query or HTTP call one after another, each short. That is an <a href="/glossary/n-plus-one-query/">N+1</a> or a loop of remote calls that should be batched or run in parallel. The total is what hurts.</p>
+      <h3>5. Wide fan-out</h3>
+      <p>A request that calls 20 services in parallel is as slow as the slowest of the 20. Each one's p99 becomes something most requests experience. That is <a href="/glossary/fan-out-amplification/">fan-out amplification</a> and the core of Dean and Barroso's "The Tail at Scale". Look at the slowest child each time, and at whether it is always the same one.</p>
+      <h3>6. Retries and timeouts</h3>
+      <p>A call span that ends at exactly 1.000 or 5.000 seconds, followed by an identical call, is a timeout and a retry. Under load these multiply traffic on the struggling dependency. See <a href="/glossary/retry-storm/">retry storms</a> and <a href="/glossary/circuit-breaker/">circuit breakers</a>.</p>
+
+      <h2 id="tools">The same ideas in each tool</h2>
+      <p>Commercial APMs and open-source tracing backends use different names for the same things. Features and names change between versions and plans, so check your tool's documentation for specifics.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Tool</th><th>Where traces live</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Dynatrace</td><td>Distributed traces (called PurePaths)</td><td>Agent-based (OneAgent) auto-instrumentation. Also has method-level hotspots and service flow views for aggregates.</td></tr>
+          <tr><td>Datadog APM</td><td>Traces, flame graph and waterfall views</td><td>Language tracers or OpenTelemetry. Retention filters decide which traces are kept beyond the live window.</td></tr>
+          <tr><td>New Relic</td><td>Distributed tracing</td><td>Language agents or OpenTelemetry. Transaction traces and distributed traces are related but separate views.</td></tr>
+          <tr><td>Grafana Tempo</td><td>Trace backend, queried from Grafana with TraceQL</td><td>Open source. Usually fed by OpenTelemetry. TraceQL can search for spans by duration and attributes.</td></tr>
+          <tr><td>Jaeger</td><td>Trace backend with its own UI</td><td>Open source, CNCF graduated. Its UI can compare two traces side by side.</td></tr>
+        </tbody>
+      </table></div>
+      <p>If you are choosing, instrument with <a href="https://opentelemetry.io/" rel="noopener">OpenTelemetry</a> where you can. The same instrumentation can then send data to any of these backends, and you aren't locked into one agent. For a quick query in Tempo, TraceQL like <code>{ resource.service.name = "checkout" &amp;&amp; duration &gt; 2s }</code> finds slow spans directly.</p>
+
+      <h2 id="loadtest">Making load test traffic easy to find</h2>
+      <ul>
+        <li><strong>Tag the traffic.</strong> Send a header from the load script and have the service record it as a span attribute, or set a distinctive user agent. Then you can filter test traffic from real traffic in shared environments.</li>
+        <li><strong>Send your own <code>traceparent</code>.</strong> If the script generates the trace ID, you can log it next to each slow response in the test results and jump straight from a failed request to its trace. For k6, the <code>http-instrumentation-tempo</code> jslib module adds a <code>traceparent</code> header to every request (it replaced the removed <code>k6/experimental/tracing</code> module). JMeter can set the header with a JSR223 pre-processor.</li>
+        <li><strong>Check sampling.</strong> Head-based sampling at 1% means most slow requests have no trace at all. During a load test, raise the sampling rate if the backend can take it, or use tail-based sampling that keeps slow and failed traces. Also check the agent's own limits on spans per minute, which can quietly drop data at high throughput.</li>
+        <li><strong>Watch agent overhead.</strong> Instrumentation costs CPU and memory. Keep the same agent configuration in the test environment as in production, so the overhead is included in your results.</li>
+      </ul>
+
+      <h2 id="limits">What traces won't tell you</h2>
+      <ul>
+        <li><strong>Resource saturation.</strong> A trace shows that a request waited. Host and runtime metrics show why: CPU, GC, pools. Use the <a href="/guides/bottlenecks/#use">USE method</a> alongside.</li>
+        <li><strong>Code-level hotspots inside a span.</strong> For that you need a profiler. Some APMs include a continuous profiler, otherwise use <a href="/guides/bottlenecks/jvm/#async">async-profiler</a> or <a href="/guides/bottlenecks/linux-server/#perf">perf</a>.</li>
+        <li><strong>Requests that never arrived.</strong> Connections refused at the load balancer or dropped from a full accept queue produce no server-side trace. Only the client side (your load tool) sees them.</li>
+      </ul>
+      <p>The <a href="/glossary/apm/">APM</a> and <a href="/glossary/observability/">observability</a> glossary entries cover the wider picture.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Lots of traces, no answer?</h2>
+        <p>Book a free 30-minute call. We'll pick a slow trace from your last test and work out where the time really went.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-apm-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/guides/bottlenecks/" data-track="guide-apm-playbook">Back to the playbook</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,148 @@
+<!--{"title": "k6 outputs and dashboards: from summary to Grafana", "og_title": "k6 results: web dashboard, JSON/CSV, Prometheus and InfluxDB", "description": "Get k6 results out of the terminal: the built-in web dashboard and HTML report, handleSummary, JSON and CSV files, Prometheus remote write and InfluxDB with Grafana.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Outputs and dashboards</p>
+      <h1>k6 outputs and dashboards: see the test while it runs</h1>
+      <p class="lead">The end-of-test summary says p95 was 400 ms. It doesn't say that p95 was 150 ms
+        for 25 minutes and 4 seconds for the last five, when the connection pool ran dry. A summary is
+        one number per metric. To find bottlenecks you need the time series.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#choose">Which output for which job</a></li>
+          <li><a href="#dashboard">The built-in web dashboard and HTML report</a></li>
+          <li><a href="#summary">Custom summaries with handleSummary()</a></li>
+          <li><a href="#files">JSON and CSV files</a></li>
+          <li><a href="#prom">Prometheus remote write and Grafana</a></li>
+          <li><a href="#influx">InfluxDB and others</a></li>
+        </ol>
+      </div>
+
+      <h2 id="choose">Which output for which job</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Need</th><th>Use</th><th>Setup</th></tr></thead>
+        <tbody>
+          <tr><td>Watch a run live, share one HTML report</td><td>Web dashboard</td><td>None, built in</td></tr>
+          <tr><td>Custom report, CI files, JUnit</td><td><code>handleSummary()</code></td><td>A few lines of script</td></tr>
+          <tr><td>Raw data for your own analysis</td><td><code>--out json</code> or <code>--out csv</code></td><td>None, but files get big</td></tr>
+          <tr><td>Load test metrics next to server metrics, trends across runs</td><td>Prometheus remote write or InfluxDB, with Grafana</td><td>A time-series database</td></tr>
+          <tr><td>Traces and metrics in an OpenTelemetry pipeline</td><td>OpenTelemetry output</td><td>An OTLP collector</td></tr>
+        </tbody>
+      </table></div>
+      <p>You can use several at once: repeat <code>--out</code>.</p>
+
+      <h2 id="dashboard">The built-in web dashboard and HTML report</h2>
+      <pre class="ex-code"><code># Live dashboard on http://localhost:5665 while the test runs
+K6_WEB_DASHBOARD=true k6 run script.js
+
+# Also save a self-contained HTML report at the end
+K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=report.html k6 run script.js
+
+# In CI: no server, just the report
+K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_PORT=-1 K6_WEB_DASHBOARD_EXPORT=report.html k6 run script.js</code></pre>
+      <p>Other settings: <code>K6_WEB_DASHBOARD_OPEN=true</code> opens a browser,
+        <code>K6_WEB_DASHBOARD_HOST</code> and <code>K6_WEB_DASHBOARD_PORT</code> change where it
+        listens, and <code>K6_WEB_DASHBOARD_PERIOD</code> (default <code>10s</code>) sets how often it
+        aggregates.</p>
+      <div class="g-warn"><p>The report needs a run longer than three periods. A 20-second debug run
+        with the default 10 s period logs "the test run was short, report generation was skipped" and
+        writes no file. That's the usual reason a CI artifact is missing.</p></div>
+      <p>The report is one HTML file with charts over time. It's the quickest way to show a
+        stakeholder what happened, and it's fine for a single run. For comparing runs, or lining
+        up k6 latency with database CPU, you need a time-series database.</p>
+
+      <h2 id="summary">Custom summaries with handleSummary()</h2>
+      <p>Export a <code>handleSummary(data)</code> function and k6 calls it at the end with every
+        metric's aggregated values. Return an object of file name to content. <code>stdout</code> and
+        <code>stderr</code> are special keys.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.1.0/index.js';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  vus: 5,
+  duration: '1m',
+  thresholds: { http_req_duration: ['p(95)&lt;500'] },
+};
+
+export default function () {
+  http.get(`${BASE_URL}/products`);
+}
+
+// Runs once at the end. Whatever you return replaces the default summary output.
+export function handleSummary(data) {
+  const p95 = data.metrics.http_req_duration.values['p(95)'];
+  const failed = data.metrics.http_req_failed.values.rate;
+  return {
+    stdout: textSummary(data, { indent: ' ', enableColors: true }), // keep the console summary
+    'summary.json': JSON.stringify(data, null, 2),                   // everything, for tooling
+    'budget.md': `| p95 | failed |\n|---|---|\n| ${p95.toFixed(0)} ms | ${(failed * 100).toFixed(2)}% |\n`,
+  };
+}</code></pre>
+      <p>Once you return anything, the default console summary is replaced, which is why the
+        example returns <code>textSummary()</code> for <code>stdout</code>. In k6 v1.0 and later,
+        <code>--summary-mode=full</code> adds per-group and per-scenario detail to the normal
+        console summary, which is often enough on its own.</p>
+      <p>To turn a summary into findings, paste it into the <a href="/tools/k6-results/">k6 results
+        analyser</a>.</p>
+
+      <h2 id="files">JSON and CSV files</h2>
+      <pre class="ex-code"><code>k6 run --out json=results.json script.js
+k6 run --out csv=results.csv script.js
+k6 run --out json=results.json.gz script.js   # gzipped, by file extension</code></pre>
+      <p>These contain every sample: one line per request per metric, with all its tags. That's
+        complete and easy to post-process, and large: a 30-minute test at 1,000 requests a second
+        writes tens of millions of lines. Use them for short runs, or gzip them and post-process with
+        a script, <code>jq</code> or DuckDB. Each JSON line is either a <code>Metric</code>
+        definition or a <code>Point</code> with a value and tags.</p>
+
+      <h2 id="prom">Prometheus remote write and Grafana</h2>
+      <p>If your services are already monitored with Prometheus, push k6 metrics into the same
+        place. Then one Grafana dashboard shows the load, the latency and the server's CPU, memory and
+        pool saturation on the same time axis. That's where bottlenecks become obvious.</p>
+      <pre class="ex-code"><code># Prometheus must accept remote writes: start it with --web.enable-remote-write-receiver
+K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
+K6_PROMETHEUS_RW_TREND_STATS='p(95),p(99),min,max' \
+k6 run --out experimental-prometheus-rw --tag testid=checkout-2026-11-06 script.js</code></pre>
+      <ul>
+        <li>Metrics arrive with a <code>k6_</code> prefix. Grafana publishes ready-made dashboards
+          for this output: "k6 Prometheus" (ID 19665) and a native histogram version (ID 18030).</li>
+        <li>By default only p99 is sent for trends. Set <code>K6_PROMETHEUS_RW_TREND_STATS</code> to
+          the stats you actually report.</li>
+        <li><strong>Percentiles sent as gauges can't be combined.</strong> Each value is the p95 of one
+          short window from one k6 process. Averaging them over time or across load generators does
+          not give the p95 of the test. If you need correct percentiles over any time range, set
+          <code>K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true</code> and run Prometheus with
+          <code>--enable-feature=native-histograms</code>.</li>
+        <li>Add a <code>testid</code> tag on every run so you can filter and compare runs in Grafana.</li>
+        <li>The output name still says <code>experimental</code>, so its options can change between
+          releases.</li>
+      </ul>
+
+      <h2 id="influx">InfluxDB and others</h2>
+      <pre class="ex-code"><code># InfluxDB 1.x: built in
+k6 run --out influxdb=http://localhost:8086/k6 script.js</code></pre>
+      <p>InfluxDB 2.x and later needs the <code>xk6-output-influxdb</code> extension. OpenTelemetry
+        is built in as <code>--out opentelemetry</code> in current k6 (in k6 v1.0 it was still called
+        <code>experimental-opentelemetry</code>), configured with <code>K6_OTEL_*</code> environment
+        variables. Datadog, New Relic, Dynatrace, Elasticsearch, Kafka, StatsD and others work
+        through their own outputs or extensions.</p>
+      <p>Which server-side metrics to put next to the k6 numbers, and how to read them together, is
+        covered in the <a href="/guides/monitoring/">monitoring guide</a>. Next k6 guide:
+        <a href="/guides/k6/typescript-and-structure/">TypeScript and project structure</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Have the numbers but not the answer?</h2>
+        <p>I correlate load test results with APM and infrastructure metrics to find the actual
+          bottleneck, and explain it in plain English.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-out-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-out-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

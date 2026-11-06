@@ -1,0 +1,36 @@
+/* Site search: header button (added by menu.js), the search dialog, and the /search/ page. */
+.ss-btn { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 8px; line-height: 20px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--muted); font: 500 14px Inter, system-ui, sans-serif; cursor: pointer; }
+.ss-btn:hover { color: var(--text); border-color: var(--accent); }
+.ss-btn svg { width: 16px; height: 16px; flex: none; }
+.ss-btn kbd { font: 600 11px Inter, system-ui, sans-serif; border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; color: var(--muted); }
+@media (max-width: 1080px) { .ss-btn kbd { display: none; } }
+@media (max-width: 860px) {
+  .ss-btn { width: 42px; justify-content: center; padding: 11px 0; }
+  .ss-btn .ss-lbl { display: none; }
+  .nav.open nav .ss-btn { display: none; }
+}
+.ss-dialog { width: min(640px, calc(100vw - 24px)); max-height: min(78vh, 680px); margin: 10vh auto auto; padding: 0; border: 1px solid var(--border);
+  border-radius: 16px; background: var(--surface); color: var(--text); box-shadow: 0 24px 64px rgba(16, 24, 40, .28); }
+.ss-dialog::backdrop { background: rgba(10, 14, 22, .45); }
+.ss-box { display: flex; flex-direction: column; max-height: inherit; }
+.ss-bar { display: flex; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+.ss-input { flex: 1; min-width: 0; font: 400 17px Inter, system-ui, sans-serif; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text); }
+.ss-input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.ss-close { font: 600 12px Inter, system-ui, sans-serif; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--alt); color: var(--muted); cursor: pointer; }
+.ss-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+.ss-list:empty { display: none; }
+.ss-hit { display: block; padding: 10px 12px; border-radius: 10px; text-decoration: none; color: inherit; }
+.ss-hit:hover, .ss-hit.active { background: var(--alt); }
+.ss-sec { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.ss-title { display: block; font-weight: 600; color: var(--text); margin: 2px 0; }
+.ss-snip { display: block; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.ss-hit mark { background: transparent; color: var(--text); font-weight: 600; }
+.ss-empty { padding: 14px 12px; color: var(--muted); }
+.ss-foot { margin: 0; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.ss-page .ss-input { width: 100%; max-width: 720px; }
+.ss-page .ss-list { padding: 12px 0 0; max-width: 760px; }
+.ss-page .ss-hit { padding: 12px 0; border-radius: 0; border-bottom: 1px solid var(--border); }
+.ss-page .ss-hit:hover, .ss-page .ss-hit.active { background: transparent; }
+.ss-page .ss-hit:hover .ss-title { color: var(--accent); }

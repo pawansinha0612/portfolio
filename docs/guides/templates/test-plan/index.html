@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free performance test plan template (one page) — Pawan Sinha</title>
+  <meta name="description" content="A free one-page performance test plan template: objective, NFRs, workload, tests to run, environment gaps, data, monitoring, entry and exit criteria, risks.">
+  <meta property="og:title" content="Free performance test plan template (one page)">
+  <meta property="og:description" content="A free one-page performance test plan template: objective, NFRs, workload, tests to run, environment gaps, data, monitoring, entry and exit criteria, risks.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/templates/test-plan/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/templates/test-plan/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Free performance test plan template (one page)", "description": "A free one-page performance test plan template: objective, NFRs, workload, tests to run, environment gaps, data, monitoring, entry and exit criteria, risks.", "url": "https://pawansinha.com.au/guides/templates/test-plan/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+      .t-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+      .t-doc .t-title { font-size: clamp(22px, 3vw, 28px); }
+      .t-doc h3 { margin-top: 26px; }
+      .t-fill { background: var(--alt); border: 1px dashed var(--border); border-radius: 6px; padding: 0 5px; color: var(--text); }
+      .t-checks { list-style: none; padding-left: 0; }
+      .t-checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin: 8px 0; }
+      .t-box { width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--muted); border-radius: 4px; }
+      @media print {
+        .t-actions, .t-howto { display: none !important; }
+        .t-doc > * { max-width: none; }
+        .t-doc .g-tablewrap { overflow: visible; }
+        .t-doc .g-table { font-size: 12px; }
+      }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/templates/">Free templates</a> · Test plan</p>
+      <h1>Performance test plan template</h1>
+      <p class="lead">A plan for one release or test cycle that reviewers can read in five minutes: what you will test, at what load, how you will know it passed, and what could go wrong.</p>
+      <p class="t-actions">
+        <a class="btn" href="/guides/templates/files/test-plan.md.txt" download="performance-test-plan.md" data-track="tpl-free-test-plan-md">Download as Markdown</a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()" data-track="tpl-free-test-plan-print">Print or save as PDF</button>
+      </p>
+    </section>
+
+    <section class="wrap ex-prose t-howto">
+      <h2>How to use it</h2>
+      <ul>
+        <li><strong>One plan per release.</strong> If you have a <a href="/guides/templates/test-strategy/">test strategy</a>, this plan only covers what is specific to this release.</li>
+        <li><strong>Make every test able to fail.</strong> The "Passes when" column in section 4 should be a number someone can check, not "acceptable performance".</li>
+        <li><strong>Write the environment gaps down.</strong> A smaller database or a stubbed dependency changes what your results mean. Reviewers need to see it before the test, not after.</li>
+        <li><strong>Build the workload first.</strong> Section 3 comes from the <a href="/guides/templates/workload-model-sheet/">workload model sheet</a>.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose t-doc" aria-label="Template">
+      <h2 class="t-title">Performance Test Plan: <span class="t-fill">Release or change name</span></h2>
+      <table class="g-table">
+      <thead><tr><th>System</th><th>Release or build</th><th>Author</th><th>Date</th><th>Approved by</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Name</span></td><td><span class="t-fill">v2.4 / build 1234</span></td><td><span class="t-fill">Name</span></td><td><span class="t-fill">DD/MM/YYYY</span></td><td><span class="t-fill">Name, role</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>One plan per release or test cycle. If a section doesn't apply, write "Not applicable" and why, so reviewers can see it was considered.</p></div>
+      <h3>1. Objective and scope</h3>
+      <ul>
+      <li><strong>Objective:</strong> <span class="t-fill">For example: confirm the new search service meets its NFRs at 1.5 × last year's peak.</span></li>
+      <li><strong>In scope:</strong> <span class="t-fill">Journeys and APIs tested.</span></li>
+      <li><strong>Out of scope:</strong> <span class="t-fill">What is not tested, and why.</span></li>
+      <li><strong>What changed since the last test:</strong> <span class="t-fill">Code, infrastructure, configuration, data volumes.</span></li>
+      </ul>
+      <h3>2. Requirements (NFRs)</h3>
+      <table class="g-table">
+      <thead><tr><th>Journey or API</th><th>Target load</th><th>p95</th><th>p99</th><th>Max error rate</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Login</span></td><td><span class="t-fill">5 per second</span></td><td><span class="t-fill">800 ms</span></td><td><span class="t-fill">1.5 s</span></td><td><span class="t-fill">0.5%</span></td></tr>
+      <tr><td><span class="t-fill">Search</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td><span class="t-fill">Checkout</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <h3>3. Workload model</h3>
+      <table class="g-table">
+      <thead><tr><th>Journey</th><th>Share of traffic</th><th>Iterations per second at target</th><th>Load model</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Search</span></td><td><span class="t-fill">60%</span></td><td><span class="t-fill">12.5</span></td><td><span class="t-fill">Open: arrival rate</span></td></tr>
+      <tr><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>Full workings (peak-hour volumes, growth, virtual users and pacing) go in the workload model sheet. Attach it.</p></div>
+      <h3>4. Tests to run</h3>
+      <table class="g-table">
+      <thead><tr><th>#</th><th>Test</th><th>Load profile</th><th>Duration</th><th>Passes when</th></tr></thead>
+      <tbody>
+      <tr><td>1</td><td>Smoke</td><td><span class="t-fill">2 users</span></td><td><span class="t-fill">5 min</span></td><td>Scripts run with no errors</td></tr>
+      <tr><td>2</td><td>Load</td><td><span class="t-fill">Ramp 10 min to 100% of target, hold</span></td><td><span class="t-fill">60 min</span></td><td>All NFRs met during the hold</td></tr>
+      <tr><td>3</td><td>Stress</td><td><span class="t-fill">Step up 25% every 10 min</span></td><td><span class="t-fill">Until failure</span></td><td>Breaking point found and recorded</td></tr>
+      <tr><td>4</td><td>Soak</td><td><span class="t-fill">80% of target</span></td><td><span class="t-fill">8 hours</span></td><td>No upward trend in response time, memory or errors</td></tr>
+      </tbody></table>
+      <h3>5. Environment</h3>
+      <ul>
+      <li><strong>Environment:</strong> <span class="t-fill">Name and size compared with production.</span></li>
+      <li><strong>Gaps from production and their effect:</strong> <span class="t-fill">For example: one database replica instead of three, so read capacity is lower.</span></li>
+      <li><strong>Load generators:</strong> <span class="t-fill">Where they run, and that their CPU will be watched.</span></li>
+      </ul>
+      <h3>6. Test data</h3>
+      <ul>
+      <li><span class="t-fill">Accounts, products and other data needed, how many, and how they're created.</span></li>
+      <li><span class="t-fill">How data is reset between runs.</span></li>
+      </ul>
+      <h3>7. Monitoring</h3>
+      <ul>
+      <li><span class="t-fill">Dashboards and APM views used, with links.</span></li>
+      <li><span class="t-fill">Server metrics captured: CPU, memory, GC, pools, database, queues.</span></li>
+      </ul>
+      <h3>8. Entry and exit criteria</h3>
+      <ul>
+      <li><strong>Entry:</strong> <span class="t-fill">Build deployed and stable, smoke test passed, monitoring working, data loaded.</span></li>
+      <li><strong>Exit:</strong> <span class="t-fill">All planned tests run, results analysed, report issued.</span></li>
+      </ul>
+      <h3>9. Risks and assumptions</h3>
+      <table class="g-table">
+      <thead><tr><th>Risk or assumption</th><th>Impact</th><th>Mitigation</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Environment shared with another team</span></td><td><span class="t-fill">Noisy results</span></td><td><span class="t-fill">Book a quiet window</span></td></tr>
+      <tr><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <h3>10. Schedule and contacts</h3>
+      <table class="g-table">
+      <thead><tr><th>Activity</th><th>Date</th><th>Owner</th></tr></thead>
+      <tbody>
+      <tr><td>Scripts ready</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>Test window</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>Report issued</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want the full editable version?</h2>
+        <p>This free page is the short version. The <a href="/templates/">Performance Test Templates Pack</a> (A$15) has Word and Excel files with guidance in every section: a 13-section test plan, a verdict-first report with sign-off, a 36-check go-live checklist that scores itself, a risk register and a workload calculator.</p>
+        <p class="cta-row">
+          <a class="btn" href="/templates/" data-track="tpl-free-test-plan-pack">See the full pack</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="tpl-free-test-plan-peak">Or have me run the test</a>
+        </p>
+        <p>More free templates: <a href="/guides/templates/test-strategy/">Test strategy</a> · <a href="/guides/templates/workload-model-sheet/">Workload model sheet</a> · <a href="/guides/templates/results-report/">Results report</a> · <a href="/guides/templates/go-live-signoff/">Go-live sign-off</a>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

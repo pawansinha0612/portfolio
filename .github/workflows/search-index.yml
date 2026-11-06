@@ -1,0 +1,62 @@
+# Rebuilds the site search index (docs/search/index.json) with search/build.py.
+# Runs on every push that changes pages, after each "Blog publish" run (so new posts are searchable), and by hand.
+name: Search index
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'search/**', '.github/workflows/search-index.yml', '!docs/search/index.json']
+  workflow_run:
+    workflows: ['Blog publish', 'Jobs page']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: search-index
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build the search index
+        run: python search/build.py
+
+      - name: Commit and publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/search/index.json
+          if git diff --cached --quiet; then
+            echo 'Search index unchanged.'
+            exit 0
+          fi
+          git commit -m 'Search index: update'
+          # Other workflows push to main too, so retry on a race (rebuilding on the newest main each time).
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs origin main && python search/build.py && git add docs/search/index.json \
+               && { git diff --cached --quiet || git commit -m 'Search index: update'; } && git push origin HEAD:main; then
+              pushed=1
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$pushed" ]; then
+            echo '::error::Could not push the search index after 3 tries.'
+            exit 1
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer ${{ github.token }}" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || echo 'Pages build request failed; it will publish on the next build.'

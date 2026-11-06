@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter Results Analyser (JTL) — Pawan Sinha</title>
+  <meta name="description" content="Free JMeter .jtl analyser: exact p50/p90/p95/p99, error rate and throughput per transaction, charts over time and top errors. Runs in your browser; the file is never uploaded.">
+  <meta property="og:title" content="JMeter Results Analyser (JTL) — Pawan Sinha">
+  <meta property="og:description" content="Free tool: drop in a JMeter .jtl file (even 2 million rows) and get exact percentiles, errors, throughput and charts. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/jtl-analyser/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/jtl-analyser/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"JMeter results analyser","url":"https://pawansinha.com.au/tools/jtl-analyser/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · JMeter results</p>
+      <h1>JMeter results analyser</h1>
+      <p class="lead">Drop in a JMeter .jtl file and get the numbers your report needs: percentiles, error rate and throughput per transaction, charts over time, the top errors and a summary you can paste straight into a ticket.</p>
+      <p class="private-note">🔒 Your file is never uploaded. <span>It is read and analysed in your browser, on your machine. Results files often contain internal URLs, hostnames and error messages, so they never leave your computer.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Analyser">
+      <div class="panel">
+        <h2>Choose your results file</h2>
+        <p class="sub">JMeter CSV (.jtl or .csv) or XML results. Large files are fine: a 2-million-row, 250 MB file is read in chunks without freezing the page. <code>.jtl.gz</code> works in current browsers.</p>
+        <label class="drop" id="drop">
+          <input type="file" id="jtl-file" accept=".jtl,.csv,.xml,.gz,.txt,text/csv,text/xml">
+          <strong>Drop a .jtl file here, or click to choose</strong>
+          <small>Nothing is uploaded</small>
+          <span class="fname"></span>
+        </label>
+        <div class="actions">
+          <button class="btn btn-small" type="button" id="sample" data-track="jtl-sample">Load sample file</button>
+          <button class="btn btn-ghost btn-small" type="button" id="sample-dl">Download the sample</button>
+          <label class="field" for="sla">Flag p95 above <input type="number" id="sla" min="0" step="50" value="1000" inputmode="numeric"> ms</label>
+        </div>
+        <div class="ja-progress" id="progress" hidden><div class="track"><span class="fill"></span></div><span class="ptext"></span></div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How to get the file</p>
+      <h2>Getting a results file out of JMeter</h2>
+      <p>Run the test from the command line (non-GUI mode, the only way to run a real load test) and write results with <code>-l</code>:</p>
+      <pre><code>jmeter -n -t plan.jmx -l results.jtl</code></pre>
+      <p>Add <code>-e -o report/</code> to also get JMeter's HTML dashboard. Its <code>report/statistics.json</code> works in the <a href="/tools/compare-runs/">compare runs</a> tool too.</p>
+      <h3>Settings that make the analysis better</h3>
+      <p>JMeter's defaults are fine. If your team changed them, check these in <code>user.properties</code> (or pass them with <code>-J</code>):</p>
+      <pre><code>jmeter.save.saveservice.output_format=csv
+jmeter.save.saveservice.print_field_names=true
+jmeter.save.saveservice.timestamp_format=ms
+jmeter.save.saveservice.thread_counts=true
+jmeter.save.saveservice.bytes=true
+jmeter.save.saveservice.sent_bytes=true
+jmeter.save.saveservice.connect_time=true
+jmeter.save.saveservice.latency=true</code></pre>
+      <ul>
+        <li><strong>Column names matter, column order doesn't.</strong> Only <code>elapsed</code> is required. Without <code>timeStamp</code> you get no throughput or charts; without <code>allThreads</code>, no thread chart.</li>
+        <li><strong>No header row?</strong> The file is read in JMeter's default column order.</li>
+        <li><strong>XML results</strong> (<code>output_format=xml</code>) work. Only top-level samples are counted, so redirects and embedded resources aren't counted twice. CSV is smaller and much faster to write during a test, so prefer it.</li>
+        <li><strong>Transaction Controllers</strong> appear as their own rows (marked TC) and are counted in TOTAL, as in JMeter's own reports.</li>
+      </ul>
+      <h3>Running k6 instead?</h3>
+      <p>Paste k6's end-of-test output into the <a href="/tools/k6-results/">k6 results explainer</a>. To compare two k6 runs, save each with <code>k6 run --summary-export=run.json script.js</code> and use <a href="/tools/compare-runs/">compare runs</a>.</p>
+
+      <p class="eyebrow" style="margin-top:40px">What the numbers mean</p>
+      <h2>Reading the summary</h2>
+      <ul>
+        <li><strong>p50, p90, p95, p99</strong>: the response time that 50%, 90%, 95% or 99% of requests beat. p95 and p99 are what your slowest users feel; the average hides them. See <a href="/glossary/percentiles/">percentiles</a> and the interactive <a href="/explain/percentiles/">percentiles explainer</a>.</li>
+        <li><strong>Throughput</strong>: completed samples per second. See <a href="/glossary/throughput/">throughput</a>. A drop in throughput while threads stay flat usually means the system slowed down, not that the load went down.</li>
+        <li><strong>Error %</strong>: samples JMeter marked as failed, by response code or assertion.</li>
+        <li><strong>How percentiles are calculated here</strong>: exactly, from every sample, using nearest-rank (the same rule as JMeter's Aggregate Report). JMeter's HTML dashboard interpolates between values, so on small samples its numbers can differ by a few milliseconds.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/compare-runs/">Compare two runs →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/explain/percentiles/">How percentiles work →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Not sure what these results mean for your release?</h3>
+          <p>Send me the summary and I'll tell you whether it's ready, what is likely causing the slow transactions, and what to test next. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="jtl-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/jtl-analyser/jtl.js"></script>
+  <script src="/tools/jtl-analyser/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

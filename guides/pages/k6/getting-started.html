@@ -1,0 +1,188 @@
+<!--{"title": "k6 getting started: your first load test that can fail", "og_title": "k6 getting started: a first load test with checks and thresholds", "description": "Install k6, write a first script with checks and thresholds, read the end-of-test summary and avoid the mistakes that make a first test meaningless.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Getting started</p>
+      <h1>k6 getting started: a first test that can actually fail</h1>
+      <p class="lead">You run your first k6 script, it prints a wall of green numbers and exits 0. Nobody
+        knows if that's good. This guide gets you to a script that checks responses, has pass/fail
+        budgets, and tells CI the truth.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#install">Install k6</a></li>
+          <li><a href="#first">The first script</a></li>
+          <li><a href="#lifecycle">The four parts of a k6 script</a></li>
+          <li><a href="#summary">Reading the summary</a></li>
+          <li><a href="#ramp">A realistic ramp</a></li>
+          <li><a href="#next">Where to go next</a></li>
+        </ol>
+      </div>
+
+      <h2 id="install">Install k6</h2>
+      <p>k6 is a single Go binary. Pick one:</p>
+      <pre class="ex-code"><code># macOS
+brew install k6
+
+# Windows
+winget install k6 --source winget
+
+# Debian/Ubuntu: add Grafana's apt repo first (see the k6 install docs), then
+sudo apt-get install k6
+
+# Docker, no install at all
+docker run --rm -i grafana/k6 run - &lt;script.js
+
+k6 version</code></pre>
+      <p>Scripts are JavaScript (or <a href="/guides/k6/typescript-and-structure/">TypeScript</a>),
+        but k6 is not Node.js. There is no <code>npm install</code> at runtime, no <code>fs</code>,
+        no <code>require</code> of npm packages. You get the k6 modules, ES module imports of local
+        files and remote URLs, and a fast Go HTTP client underneath.</p>
+      <div class="g-note"><p>This guide uses k6 v1.x and v2.x syntax. Everything here runs on both
+        unless a note says otherwise. If you're on a 0.x release, upgrade first: the browser, gRPC
+        and summary modules changed a lot before 1.0.</p></div>
+
+      <h2 id="first">The first script</h2>
+      <p>Save this as <code>first-test.js</code>. It sends traffic to <code>BASE_URL</code>, checks
+        each response and sets two budgets.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  vus: 5,
+  duration: '30s',
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],   // under 1% failed requests
+    http_req_duration: ['p(95)&lt;500'], // 95% of requests under 500 ms
+  },
+};
+
+export default function () {
+  const res = http.get(`${BASE_URL}/products`);
+  check(res, {
+    'status is 200': (r) =&gt; r.status === 200,
+    'has items': (r) =&gt; r.json('items.#') &gt; 0,
+  });
+  sleep(1); // think time: a real user pauses between actions
+}</code></pre>
+      <p>Run it against your own API (never someone else's):</p>
+      <pre class="ex-code"><code>k6 run -e BASE_URL=https://staging.example.com first-test.js</code></pre>
+      <p>Three things in this script do the real work:</p>
+      <ul>
+        <li><strong><code>check()</code></strong> verifies the response. A check that fails does not
+          stop the test or fail it. It only records a pass or a fail in the <code>checks</code>
+          metric. Without checks, a fast 500 error page looks like great performance.</li>
+        <li><strong><code>thresholds</code></strong> are the pass/fail budgets. If one is crossed, k6
+          exits with code 99 and CI goes red. This is what turns a script into a test. More in
+          <a href="/guides/k6/thresholds-and-checks/">thresholds and checks</a>.</li>
+        <li><strong><code>sleep(1)</code></strong> is think time. Without it each
+          <a href="/glossary/virtual-user/">virtual user</a> fires requests back to back, so 5 VUs can
+          mean 500 requests a second instead of 5. See <a href="/glossary/think-time/">think time</a>.</li>
+      </ul>
+
+      <h2 id="lifecycle">The four parts of a k6 script</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Part</th><th>Runs</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Init code (top level)</td><td>Once per VU, plus once more to read <code>options</code></td><td>Imports, <code>options</code>, <code>open()</code> files, <code>SharedArray</code>. No HTTP calls allowed here.</td></tr>
+          <tr><td><code>setup()</code></td><td>Once, before the load starts</td><td>Get a token, create test data. Its return value goes to every VU.</td></tr>
+          <tr><td><code>default</code> function (or a scenario's <code>exec</code>)</td><td>Over and over, by every VU</td><td>The user journey. One run is one iteration.</td></tr>
+          <tr><td><code>teardown(data)</code></td><td>Once, after the load ends</td><td>Clean up test data.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Module-level variables are per VU. Each VU is its own JavaScript runtime, so a counter you
+        increment in one VU is invisible to the others. That's a feature: it's how you keep a
+        per-user token (see <a href="/guides/k6/auth-and-correlation/">auth and correlation</a>).</p>
+
+      <h2 id="summary">Reading the summary</h2>
+      <p>At the end k6 prints thresholds first, then the metrics. The lines that matter most:</p>
+      <ul>
+        <li><code>http_req_duration</code>: time from sending the request to receiving the whole
+          response (sending + waiting + receiving). It excludes DNS, connect and TLS time, which
+          are in <code>http_req_connecting</code> and <code>http_req_tls_handshaking</code>.
+          Look at p(95) and p(99), not avg. Here's <a href="/explain/percentiles/">why averages lie</a>.</li>
+        <li><code>http_req_failed</code>: share of requests with a status outside 200-399 (by
+          default) or a network error.</li>
+        <li><code>checks</code>: share of checks that passed.</li>
+        <li><code>iterations</code> and <code>http_reqs</code>: how much work was done, as totals and
+          per second. This is your <a href="/glossary/throughput/">throughput</a>.</li>
+        <li><code>vus</code> and <code>vus_max</code>: how many VUs were running.</li>
+      </ul>
+      <p>The summary is per test, not per endpoint, unless you add tags. For a time series, a per
+        endpoint breakdown or a shareable HTML report, see
+        <a href="/guides/k6/outputs-and-dashboards/">outputs and dashboards</a>. To make sense of a
+        summary you already have, paste it into the <a href="/tools/k6-results/">k6 results
+        analyser</a>.</p>
+
+      <h2 id="ramp">A realistic ramp</h2>
+      <p>A flat 5 VUs is a <a href="/glossary/smoke-testing/">smoke test</a>. A load test ramps up,
+        holds a <a href="/glossary/steady-state/">steady state</a> long enough to measure, and ramps
+        down. The <code>stages</code> shortcut does that:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  stages: [
+    { duration: '2m', target: 50 },  // ramp up to 50 VUs
+    { duration: '10m', target: 50 }, // hold: this is the part you measure
+    { duration: '2m', target: 0 },   // ramp down
+  ],
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(95)&lt;500', 'p(99)&lt;1500'],
+  },
+};
+
+export default function () {
+  const list = http.get(`${BASE_URL}/products`);
+  check(list, { 'list 200': (r) =&gt; r.status === 200 });
+  sleep(Math.random() * 2 + 1); // 1-3 s think time
+
+  const id = list.json('items.0.id');
+  const item = http.get(`${BASE_URL}/products/${id}`, { tags: { name: 'GET /products/:id' } });
+  check(item, { 'item 200': (r) =&gt; r.status === 200 });
+  sleep(Math.random() * 2 + 1);
+}</code></pre>
+      <p>Two details here matter more than they look. The <code>name</code> tag groups every
+        <code>/products/123</code>, <code>/products/456</code> into one row, otherwise your metrics
+        explode into one series per id. And the think time is random, so VUs don't fall into
+        lockstep and hit the server in waves.</p>
+      <div class="g-warn"><p><code>stages</code> controls the number of VUs, not the request rate.
+        If the server slows down, each VU makes fewer requests and the load drops just when it should
+        stay high. For a fixed request rate you need an arrival-rate executor. That's the
+        single most important idea in k6, covered in
+        <a href="/guides/k6/scenarios-and-executors/">scenarios and executors</a>.</p></div>
+      <p>Useful CLI overrides while you develop a script:</p>
+      <pre class="ex-code"><code>k6 run --vus 1 --iterations 1 script.js   # one pass, to debug the journey
+k6 run --http-debug=full --iterations 1 script.js  # print requests and responses
+k6 run -e BASE_URL=http://localhost:8080 script.js</code></pre>
+
+      <h2 id="next">Where to go next</h2>
+      <ul>
+        <li>Already have a JMeter plan, Postman collection, OpenAPI spec or curl command? Convert it
+          with <a href="/tools/jmeter-to-k6/">JMeter to k6</a>,
+          <a href="/tools/postman-to-k6/">Postman to k6</a>,
+          <a href="/tools/openapi-to-k6/">OpenAPI to k6</a> or
+          <a href="/tools/curl-to-k6/">curl to k6</a>.</li>
+        <li>Prefer a guided path? The free <a href="/course/k6/">k6 email course</a> takes you
+          through this in short lessons.</li>
+        <li>Next guide: <a href="/guides/k6/scenarios-and-executors/">scenarios and executors</a>.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need a load test you can trust before launch?</h2>
+        <p>I design and run k6 tests for teams in Australia and remotely: realistic workload models,
+          budgets that match your SLOs, and a clear report of where it breaks.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-start-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-start-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

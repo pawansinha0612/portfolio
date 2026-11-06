@@ -45,6 +45,40 @@
   document.addEventListener('click', (e) => !header.contains(e.target) && set(false));
   matchMedia('(min-width: 861px)').addEventListener('change', () => set(false));
 })();
+// Site search: a Search button in the header (and "/" or Ctrl/Cmd+K) opens /search/search.js's dialog.
+(() => {
+  const nav = document.querySelector('.nav nav');
+  if (!nav || document.body.dataset.search === 'off') return;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = '/search/search.css';
+  document.head.appendChild(css);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ss-btn';
+  btn.setAttribute('aria-label', 'Search the site');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="ss-lbl">Search</span><kbd>/</kbd>';
+  nav.insertBefore(btn, nav.firstChild);
+  let pending = null;
+  const open = () => {
+    if (window.SiteSearch) return window.SiteSearch.open();
+    if (!pending) {
+      pending = document.createElement('script');
+      pending.src = '/search/search.js';
+      pending.onload = () => window.SiteSearch.open();
+      document.head.appendChild(pending);
+    }
+  };
+  btn.addEventListener('click', open);
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    if ((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+      e.preventDefault();
+      open();
+    }
+  });
+})();
 // Video slots (footer channel links, "Watch the video" cards): /videos/site.js reads /videos/videos.json and social.json.
 (() => {
   if (document.body.dataset.videos === 'off') return;

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance testing guides — Pawan Sinha</title>
+  <meta name="description" content="Step-by-step performance testing guides: JMeter, k6, Gatling and Locust how-tos, finding bottlenecks, monitoring, cheat sheets and free templates.">
+  <meta property="og:title" content="Performance testing guides: JMeter, k6, Gatling, Locust, bottlenecks and monitoring">
+  <meta property="og:description" content="Step-by-step performance testing guides: JMeter, k6, Gatling and Locust how-tos, finding bottlenecks, monitoring, cheat sheets and free templates.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/learn/">Learn</a> · Guides</p>
+      <h1>Performance testing guides</h1>
+      <p class="lead">How to script, run, monitor and diagnose a load test, written from 12+ years of doing it for banks, retail and gaming. Every guide is free, practical and kept in one place.</p>
+      <p class="hint">New here? Follow the <a href="/guides/start/">learning path</a> from first test to production sign-off.</p>
+    </section>
+
+    <section class="wrap ex-prose"><h2>Load testing tools, step by step</h2></section>
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/jmeter/"><span class="g-tag">JMeter</span><h3>JMeter how-to library</h3><p>Correlation, CSV data, login tokens, timers, thread groups, distributed runs, CI and reading the HTML report.</p></a>
+      <a class="g-card" href="/guides/k6/"><span class="g-tag">k6</span><h3>k6 recipes</h3><p>Scenarios and executors, thresholds, test data, auth, gRPC and WebSockets, the browser module, CI and dashboards.</p></a>
+      <a class="g-card" href="/guides/gatling/"><span class="g-tag">Gatling</span><h3>Gatling guides</h3><p>The Java DSL, injection profiles, feeders and checks, and running Gatling in a pipeline.</p></a>
+      <a class="g-card" href="/guides/locust/"><span class="g-tag">Locust</span><h3>Locust guides</h3><p>Locustfiles, load shapes, distributed workers, login and test data, CSV and HTML reports in CI.</p></a>
+    </section>
+
+    <section class="wrap ex-prose"><h2>When the test shows a problem</h2></section>
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/bottlenecks/"><span class="g-tag">Diagnosis</span><h3>Finding the bottleneck</h3><p>A repeatable method: confirm the symptom, find the saturation point, check each resource, follow the slow trace.</p></a>
+      <a class="g-card" href="/guides/monitoring/"><span class="g-tag">Monitoring</span><h3>Monitoring a load test</h3><p>A ready-to-run Grafana and Prometheus stack for k6 and JMeter results, plus the server metrics to watch.</p></a>
+      <a class="g-card" href="/guides/topics/"><span class="g-tag">Specialist</span><h3>Specialist topics</h3><p>Front-end speed, databases, Kafka, mobile apps, chaos and resilience, microservices and the cloud.</p></a>
+    </section>
+
+    <section class="wrap ex-prose"><h2>Keep these open</h2></section>
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/cheat-sheets/"><span class="g-tag">Print</span><h3>Cheat sheets</h3><p>One printable page each for k6, JMeter and Linux performance commands.</p></a>
+      <a class="g-card" href="/guides/templates/"><span class="g-tag">Free</span><h3>Free test templates</h3><p>One-page test strategy, test plan, results report, go-live sign-off and workload model sheet.</p></a>
+      <a class="g-card" href="/compare/tool-picker/"><span class="g-tag">Choose</span><h3>Which load testing tool?</h3><p>Answer six questions about your team and system and get a recommendation with reasons.</p></a>
+    </section>
+
+    <section class="wrap ex-prose"><h2>Tools that do the work for you</h2></section>
+    <section class="wrap g-cards">
+      <a class="g-card" href="/tools/workload-model/"><span class="g-tag">Tool</span><h3>Workload model from logs</h3><p>Drop in access logs and get peak load, the request mix and a ready k6 scenario.</p></a>
+      <a class="g-card" href="/tools/jtl-analyser/"><span class="g-tag">Tool</span><h3>JMeter results analyser</h3><p>Percentiles, errors and charts from a .jtl file, in your browser.</p></a>
+      <a class="g-card" href="/tools/compare-runs/"><span class="g-tag">Tool</span><h3>Compare two test runs</h3><p>Did this release get slower? Baseline versus candidate, per transaction.</p></a>
+      <a class="g-card" href="/tools/thread-dump/"><span class="g-tag">Tool</span><h3>Thread dump analyser</h3><p>Stuck threads, lock contention and deadlocks from Java thread dumps.</p></a>
+      <a class="g-card" href="/tools/gc-log/"><span class="g-tag">Tool</span><h3>GC log analyser</h3><p>Pause times, Full GCs and heap trends from JVM garbage collection logs.</p></a>
+      <a class="g-card" href="/tools/"><span class="g-tag">More</span><h3>All free tools</h3><p>Converters to k6, capacity, SLO and LLM calculators, and the site speed check.</p></a>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Can't find what you need?</h2>
+        <p>Search the site with the button at the top, or ask me. If a question comes up often, it becomes a guide.</p>
+        <p class="cta-row"><a class="btn" href="/?need=Performance%20testing#contact">Ask a question</a> <a class="btn btn-ghost" href="/services/performance-testing/">Get help with a load test</a></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

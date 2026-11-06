@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Java Thread Dump Analyser (free, in-browser) — Pawan Sinha</title>
+  <meta name="description" content="Paste or drop jstack / jcmd Thread.print dumps: thread states, identical stacks grouped, lock graph, deadlock detection, pool-exhaustion hints and stuck threads across dumps. Runs in your browser; nothing is uploaded.">
+  <meta property="og:title" content="Java Thread Dump Analyser — Pawan Sinha">
+  <meta property="og:description" content="Free tool: find deadlocks, hot locks, exhausted connection pools and stuck threads in jstack output. Runs entirely in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/thread-dump/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/thread-dump/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Java thread dump analyser","url":"https://pawansinha.com.au/tools/thread-dump/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    /* Every section is a .wrap (shares the header's left edge); children are capped instead of centring narrower boxes. */
+    .dx-hero { padding-top: 56px; padding-bottom: 8px; }
+    .dx-hero > * { max-width: 860px; }
+    .dx-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 14px; }
+    .dx-hero .lead { max-width: 760px; }
+    .private-note { display: block; margin: 18px 0 0; padding: 10px 14px; border-radius: 12px;
+      background: var(--ok-bg); color: var(--ok); font-size: 15px; font-weight: 600; max-width: 680px; }
+    .private-note span { font-weight: 500; color: var(--text); }
+    .dx-tool { padding-top: 24px; padding-bottom: 8px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; max-width: 66ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .drop { position: relative; border-radius: 12px; }
+    .drop.over textarea.code { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--alt)); }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .files { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; }
+    .files li { display: inline-flex; gap: 6px; align-items: center; background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 10px; max-width: 100%; }
+    .files li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .files button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+    .actions button, .actions label { font: inherit; cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .err { margin: 12px 0 0; border-radius: 10px; padding: 10px 14px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; }
+    .err[hidden], #result[hidden] { display: none; }
+    .busy { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+
+    #result { margin-top: 16px; scroll-margin-top: 80px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; align-items: center; font-size: 14px; color: var(--muted); }
+    .verdict { border-radius: 16px; padding: 18px 20px; border: 1px solid var(--border); background: var(--surface); }
+    .verdict.ok { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .verdict.bad { background: color-mix(in srgb, #d6452f 12%, var(--surface)); border-color: color-mix(in srgb, #d6452f 40%, transparent); }
+    .verdict.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+    .verdict h2 { margin: 0 0 6px; font-size: clamp(20px, 3vw, 26px); line-height: 1.25; max-width: 60ch; }
+    .verdict.ok h2 { color: var(--ok); } .verdict.bad h2 { color: var(--bad); } .verdict.warn h2 { color: var(--warn); }
+    .verdict p { margin: 0; color: var(--text); max-width: 80ch; }
+    .verdict .fmt { margin-top: 8px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .dstats { padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; min-width: 0; }
+    .stat b { display: block; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); } .stat.ok b { color: var(--ok); }
+    .block { margin-top: 22px; }
+    .block > h3 { font-size: 18px; margin: 0 0 4px; }
+    .block > .note { margin: 0 0 10px; color: var(--muted); font-size: 14px; max-width: 80ch; }
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; max-width: 80ch; overflow-wrap: anywhere; }
+    .card-x p { margin: 0; color: var(--muted); font-size: 15px; max-width: 84ch; overflow-wrap: anywhere; }
+    .card-x p b { color: var(--text); }
+    .card-x code, .mono { font: 500 12.5px "JetBrains Mono", ui-monospace, monospace; color: var(--text); overflow-wrap: anywhere; }
+    .card-x.ok { border-left-color: var(--ok); } .card-x.warn { border-left-color: var(--warn); } .card-x.bad { border-left-color: var(--bad); } .card-x.info { border-left-color: var(--accent); }
+    .lvl { font-weight: 800; margin-right: 4px; }
+    .card-x.bad .lvl { color: var(--bad); } .card-x.warn .lvl { color: var(--warn); } .card-x.ok .lvl { color: var(--ok); } .card-x.info .lvl { color: var(--accent); }
+    .statebar { display: flex; height: 18px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--surface); max-width: 860px; }
+    .statebar i { display: block; min-width: 3px; }
+    .lgd { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 0; font-size: 13px; color: var(--muted); padding: 0; list-style: none; }
+    .lgd li { display: inline-flex; align-items: center; gap: 6px; }
+    .lgd i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .s-RUNNABLE { background: #2a78d6; } .s-BLOCKED { background: #d6452f; } .s-WAITING { background: #8f96a3; } .s-TIMED_WAITING { background: #eda100; }
+    .s-other { background: #c3c7cf; }
+    .tscroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); max-width: 100%; }
+    table.dt { border-collapse: collapse; width: 100%; font-size: 14px; }
+    table.dt th, table.dt td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.dt th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; background: var(--alt); white-space: nowrap; }
+    table.dt tr:last-child td { border-bottom: 0; }
+    table.dt td.nm { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.dt .mono { font-size: 12px; }
+    .st { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); white-space: nowrap; }
+    .st.BLOCKED, .st.stuck { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+    .st.RUNNABLE { color: #2a78d6; } .st.moving { color: var(--ok); }
+    .groups { display: flex; flex-direction: column; gap: 8px; }
+    details.grp { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+    details.grp summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+    details.grp summary::-webkit-details-marker { display: none; }
+    details.grp summary::before { content: '▸'; color: var(--muted); }
+    details.grp[open] summary::before { content: '▾'; }
+    .grp .cnt { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3ch; }
+    .grp .top { font: 500 12.5px "JetBrains Mono", ui-monospace, monospace; overflow-wrap: anywhere; min-width: 0; flex: 1 1 260px; }
+    .top small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+    .grp .idle { font-size: 12px; color: var(--muted); }
+    .grp .body { padding: 0 14px 12px; }
+    .grp .names { font-size: 13px; color: var(--muted); margin: 0 0 8px; overflow-wrap: anywhere; max-width: 100ch; }
+    pre.stack { margin: 0; font: 500 12px/1.55 "JetBrains Mono", ui-monospace, monospace; background: var(--alt); border-radius: 10px; padding: 10px 12px; overflow-x: auto; max-height: 420px; }
+    pre.stack .lk { color: var(--warn); }
+    .filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 10px; }
+    .filter input[type=search] { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); width: min(100%, 360px); }
+    .filter label { font-size: 14px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+    .more { margin-top: 10px; }
+    .cycle { background: var(--surface); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); border-radius: 12px; padding: 12px 16px; margin: 0 0 10px; }
+    .cycle ol { margin: 0; padding-left: 20px; font-size: 14px; }
+    .cycle li { margin: 0 0 4px; overflow-wrap: anywhere; }
+
+    .guide { padding-top: 40px; padding-bottom: 8px; }
+    .guide > * { max-width: 680px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 17px; margin: 22px 0 6px; }
+    .guide p, .guide ol, .guide ul { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .guide pre { font: 500 12.5px/1.6 "JetBrains Mono", monospace; background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; overflow-x: auto; color: var(--text); }
+    .tools-end { padding-top: 24px; padding-bottom: 72px; }
+    .tools-end .offer { max-width: 1000px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    :root { --bad: #c2341d; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a7a; } }
+    @media (max-width: 600px) {
+      .dx-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .verdict { padding: 16px; }
+      .stat b { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap dx-hero">
+      <p class="eyebrow">Tools · Java diagnostics</p>
+      <h1>Java thread dump analyser</h1>
+      <p class="lead">Paste or drop one or more thread dumps from <code>jstack</code>, <code>jcmd Thread.print</code> or <code>kill -3</code>. See which threads are stuck where, who holds the lock everyone is waiting for, whether there is a deadlock, and which pool ran dry.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Nothing is uploaded or stored. Thread dumps contain internal class, host and sometimes user names, so they never leave this page.</span></p>
+    </section>
+
+    <section class="wrap dx-tool" aria-label="Analyser">
+      <div class="panel">
+        <h2><label for="td-in">Paste thread dumps, or drop files here</label></h2>
+        <p class="sub">One dump or several taken a few seconds apart (paste them one after another, or drop several files). HotSpot format from JDK 6 to 25; <code>jcmd Thread.dump_to_file</code> text or JSON (includes virtual threads); OpenJ9 javacore best effort.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="slow">3 dumps during a slowdown</button>
+          <button class="chip-btn" type="button" data-sample="deadlock">A deadlock</button>
+        </div>
+        <div class="drop" id="drop">
+          <textarea id="td-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="2026-11-06 14:32:10&#10;Full thread dump OpenJDK 64-Bit Server VM (17.0.12+7 mixed mode, sharing):&#10;&#10;&quot;http-nio-8080-exec-1&quot; #42 daemon prio=5 os_prio=0 cpu=912.40ms elapsed=3612.40s tid=0x00007f... nid=0x2a31 waiting on condition&#10;   java.lang.Thread.State: TIMED_WAITING (parking)&#10;	at jdk.internal.misc.Unsafe.park(java.base@17.0.12/Native Method)&#10;	..."></textarea>
+        </div>
+        <ul class="files" id="files" aria-label="Loaded files"></ul>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="thread-dump-analyse">Analyse</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose files<input type="file" id="file" multiple accept=".txt,.log,.tdump,.json,.dump,text/plain,application/json"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+        </div>
+        <p class="busy" id="busy" hidden>Analysing…</p>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="capture">
+      <p class="eyebrow">How to capture</p>
+      <h2>Take 3 dumps, 5–10 seconds apart, while it is slow</h2>
+      <p>One dump is a photo: a thread caught in a database call might have been there for 2 ms or 2 minutes. Three dumps a few seconds apart show which threads <strong>did not move</strong>. Take them <strong>during</strong> the slowdown or load test, not after.</p>
+      <h3>With jcmd or jstack (same host, same user as the JVM)</h3>
+      <pre>jcmd                                  # list Java processes and their PIDs
+for i in 1 2 3; do jcmd &lt;pid&gt; Thread.print -l &gt; dump-$i.txt; sleep 7; done
+
+jstack -l &lt;pid&gt; &gt; dump.txt               # older equivalent; -l adds ownable synchronizers</pre>
+      <h3>With kill -3 (no JDK tools installed)</h3>
+      <pre>kill -3 &lt;pid&gt;     # the dump goes to the JVM's stdout: the console log, catalina.out, or container logs</pre>
+      <h3>In Docker or Kubernetes</h3>
+      <pre>kubectl exec &lt;pod&gt; -c &lt;container&gt; -- jcmd 1 Thread.print -l &gt; dump-1.txt
+docker exec &lt;container&gt; jcmd 1 Thread.print -l &gt; dump-1.txt
+# JRE-only image? kubectl exec &lt;pod&gt; -- kill -3 1, then kubectl logs &lt;pod&gt;</pre>
+      <h3>Virtual threads (JDK 21+)</h3>
+      <p><code>jstack</code> only shows platform threads. To include virtual threads: <code>jcmd &lt;pid&gt; Thread.dump_to_file -format=json threads.json</code>, then drop the file here.</p>
+    </section>
+
+    <section class="wrap guide" id="look">
+      <p class="eyebrow">What to look for</p>
+      <h2>Reading a thread dump in five minutes</h2>
+      <ol>
+        <li><strong>The biggest group of identical stacks.</strong> Healthy apps have idle workers waiting for tasks. Problems show up as dozens or hundreds of busy threads in the <em>same</em> frame: an exhausted <a href="/glossary/connection-pool/">connection pool</a> (<code>HikariPool.getConnection</code>), a slow downstream (<code>socketRead0</code>, <code>NioSocketImpl.read</code>), or one lock.</li>
+        <li><strong>BLOCKED threads and who they wait for.</strong> The lock table shows each monitor's holder. If the holder is doing I/O inside <code>synchronized</code>, that is your <a href="/glossary/lock-contention/">lock contention</a>.</li>
+        <li><strong>Pool saturation.</strong> If every thread in the request pool is busy, new requests queue. Before raising the size of the <a href="/glossary/thread-pool/">thread pool</a>, check what they are waiting on: more threads behind a shared bottleneck only makes the queue longer.</li>
+        <li><strong>Deadlocks.</strong> The JVM detects monitor and ReentrantLock deadlocks and prints "Found one Java-level deadlock". This tool shows that section and also checks the lock graph itself.</li>
+        <li><strong>Busy GC threads.</strong> If the GC threads have used a big share of CPU, the problem may be memory, not threads: see <a href="/glossary/garbage-collection-pause/">GC pauses</a>, <a href="/glossary/memory-leak/">memory leaks</a> and the <a href="/tools/gc-log/">GC log analyser</a>.</li>
+      </ol>
+      <h3>What this can't tell you</h3>
+      <p>"RUNNABLE" only means the JVM is not blocking the thread; a thread waiting on a socket is RUNNABLE too. A dump shows <strong>where</strong> threads are, not <strong>why</strong> a downstream is slow. Hints point at likely causes; confirm them with metrics (pool usage, DB slow-query logs, CPU per thread with <code>top -H</code>) from the same moment.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/gc-log/">GC log analyser →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/glossary/thread-pool/">Thread pools explained →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Stuck on a production slowdown?</p>
+          <h3>Get a second pair of eyes on your dumps and load test</h3>
+          <p>I find bottlenecks like these for a living: thread pools, connection pools, locks and GC under realistic load. Book a free 30-minute call and we'll go through what you are seeing.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="thread-dump-contact">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/thread-dump/tdump.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const T = window.TDump, esc = T.esc, sf = T.shortFrame;
+    const input = $('td-in'), result = $('result'), err = $('err'), busy = $('busy'), filesEl = $('files');
+    let files = []; // { name, size, text }
+    let last = null, cur = 0;
+    const STATES = ['RUNNABLE', 'BLOCKED', 'WAITING', 'TIMED_WAITING'];
+    const LVL = { bad: '✗', warn: '!', ok: '✓', info: 'i' };
+    const n = (x) => Number(x).toLocaleString('en-AU');
+    const kb = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+
+    function cards(hs) {
+      return '<div class="cards">' + hs.map((h) => `<div class="card-x ${h.level}"><h4><span class="lvl" aria-hidden="true">${LVL[h.level] || ''}</span>${esc(h.title)}</h4><p>${h.text}</p></div>`).join('') + '</div>';
+    }
+
+    function stackHtml(t) {
+      // frames with their lock lines, as in the original dump
+      const out = [];
+      t.frames.forEach((f, i) => {
+        out.push('at ' + esc(f));
+        t.locks.filter((l) => l.frame === i).forEach((l) => out.push(`<span class="lk">  - ${esc(l.kind)} &lt;${esc(l.addr || 'no object reference')}&gt;${l.cls ? ' (a ' + esc(l.cls) + ')' : ''}</span>`));
+      });
+      return out.join('\n');
+    }
+
+    // first frame outside the JDK says more than "Unsafe.park"; show it, with the real top frame underneath
+    const JDK = /^(java\.|javax\.|jdk\.|sun\.|com\.sun\.)/;
+    function frameLabel(fs) {
+      const app = fs.find((f) => !JDK.test(f));
+      if (!app || app === fs[0]) return esc(sf(fs[0] || ''));
+      return `${esc(sf(app))}<small>top: ${esc(sf(fs[0]))}</small>`;
+    }
+
+    function names(ts, max) {
+      const shown = ts.slice(0, max).map((t) => esc(t.name || '(virtual)')).join(', ');
+      return shown + (ts.length > max ? `, … and ${n(ts.length - max)} more` : '');
+    }
+
+    function render() {
+      const r = last, d = r.dumps[cur], many = r.dumps.length > 1;
+      const h = [];
+      if (many) {
+        h.push('<div class="tabs" role="group" aria-label="Choose dump">Showing dump:' + r.dumps.map((x, i) =>
+          `<button class="chip-btn" type="button" data-dump="${i}" aria-pressed="${i === cur}">${i + 1}${x.ts ? ' · ' + esc(x.ts.slice(-8)) : ''}</button>`).join('') + '</div>');
+      }
+      const allHints = d.hints.filter((x) => x.level !== 'ok').concat(r.compare ? r.compare.hints : [], d.hints.filter((x) => x.level === 'ok'));
+      const worst = allHints.find((x) => x.level === 'bad') || allHints.find((x) => x.level === 'warn') || allHints[0];
+      const lvl = worst.level === 'info' ? 'ok' : worst.level;
+      const head = lvl === 'ok' ? 'No obvious problem in this dump' : worst.title;
+      h.push(`<div class="verdict ${lvl}"><h2>${esc(head)}</h2><p>${n(d.threads.length)} threads${d.virtualCount ? ` (${n(d.virtualCount)} virtual)` : ''}${many ? ` in dump ${cur + 1} of ${r.dumps.length}` : ''}. ${allHints.filter((x) => x.level === 'bad' || x.level === 'warn').length} things worth a look below.</p>` +
+        `<p class="fmt">Read as: ${esc(d.format)}${d.header ? ' · ' + esc(d.header.replace(/^Full thread dump /, '').replace(/:$/, '')) : ''}${d.ts ? ' · taken ' + esc(d.ts) : ''}</p></div>`);
+
+      // stats
+      const st = d.states;
+      const other = Object.keys(st).filter((k) => !STATES.includes(k)).reduce((a, k) => a + st[k], 0);
+      const dl = Math.max(d.cycles.length, d.jvmDeadlocks.length);
+      const tiles = [[n(d.threads.length), 'threads', ''], [n(st.RUNNABLE || 0), 'RUNNABLE', ''], [n(st.BLOCKED || 0), 'BLOCKED', st.BLOCKED >= 5 ? 'warn' : ''],
+        [n(st.WAITING || 0), 'WAITING', ''], [n(st.TIMED_WAITING || 0), 'TIMED_WAITING', ''], [dl ? String(dl) : '0', 'deadlocks', dl ? 'bad' : 'ok']];
+      if (r.compare) tiles.push([n(r.compare.counts.stuck), `stuck in all ${r.dumps.length} dumps`, r.compare.counts.stuck ? 'warn' : 'ok']);
+      h.push('<div class="dstats">' + tiles.map((x) => `<div class="stat ${x[2]}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('') + '</div>');
+
+      // state bar
+      const total = d.threads.length || 1;
+      const segs = STATES.filter((s) => st[s]).map((s) => [s, st[s]]).concat(other ? [['other', other]] : []);
+      h.push('<div class="block"><h3>Thread states</h3><div class="statebar" role="img" aria-label="' + esc(segs.map((s) => `${s[0]} ${s[1]}`).join(', ')) + '">' +
+        segs.map((s) => `<i class="s-${s[0]}" style="flex:${s[1]} 1 0" title="${s[0]}: ${s[1]} (${Math.round((s[1] / total) * 100)}%)"></i>`).join('') + '</div>' +
+        '<ul class="lgd">' + segs.map((s) => `<li><i class="s-${s[0]}"></i>${s[0] === 'other' ? 'other / VM' : s[0]} ${n(s[1])} (${Math.round((s[1] / total) * 100)}%)</li>`).join('') + '</ul></div>');
+
+      h.push('<div class="block"><h3>What stands out</h3><p class="note">Hints are pattern matches, not proof: they say what is <em>likely</em> and what to check.</p>' + cards(allHints) + '</div>');
+
+      // across dumps
+      if (r.compare) {
+        const c = r.compare;
+        h.push(`<div class="block"><h3>Across ${r.dumps.length} dumps</h3><p class="note">${n(c.counts.matched)} threads appear in every dump: <b>${n(c.counts.stuck)}</b> stuck in the same frames, ${n(c.counts.moving)} moving, ${n(c.counts.idle)} idle (waiting for work). Thread counts per dump: ${c.sizes.map(n).join(' → ')}.</p>`);
+        if (c.stuckGroups.length) {
+          h.push('<div class="tscroll"><table class="dt"><thead><tr><th>Threads</th><th>State</th><th>Stuck at</th><th>Examples</th></tr></thead><tbody>' +
+            c.stuckGroups.slice(0, 15).map((g) => `<tr><td class="nm">${n(g.rows.length)}</td><td><span class="st ${esc(g.state)}">${esc(g.state)}</span></td><td class="mono top" style="min-width:260px">${frameLabel(g.frames)}</td><td style="min-width:180px">${esc(g.rows.slice(0, 3).map((x) => x.name).join(', '))}${g.rows.length > 3 ? ' …' : ''}</td></tr>`).join('') +
+            '</tbody></table></div>');
+        }
+        h.push('</div>');
+      }
+
+      // deadlocks
+      if (d.cycles.length || d.jvmDeadlocks.length) {
+        h.push('<div class="block"><h3>Deadlocks</h3><p class="note">Each cycle: a thread waits for a lock held by the next thread, and the last waits for the first.</p>');
+        d.cycles.forEach((cyc, i) => {
+          h.push(`<div class="cycle"><b>Cycle ${i + 1}</b><ol>` + cyc.map((e) => `<li><b>${esc(e.t.name)}</b> waits for <span class="mono">&lt;${esc(e.lock.addr)}&gt;</span>${e.lock.cls ? ' (' + esc(e.lock.cls) + ')' : ''}, held by <b>${esc(e.holder.name)}</b>${e.t.frames[0] ? ` <span class="mono">at ${esc(sf(e.t.frames[0]))}</span>` : ''}</li>`).join('') + '</ol></div>');
+        });
+        d.jvmDeadlocks.forEach((x) => h.push(`<p class="note">The JVM's own report:</p><pre class="stack">${esc(x.text)}</pre>`));
+        h.push('</div>');
+      }
+
+      // locks
+      if (d.contended.length) {
+        h.push(`<div class="block"><h3>Most contended locks</h3><p class="note">${n(d.contended.length)} locks have threads waiting. "Waiting" counts threads blocked on a monitor, plus threads parked on a lock that someone holds.</p><div class="tscroll"><table class="dt"><thead><tr><th>Waiting</th><th>Lock</th><th>Held by</th><th>Waiters (examples)</th></tr></thead><tbody>` +
+          d.contended.slice(0, 20).map((L) => {
+            const hd = L.holders[0];
+            const ws = L.waiters.concat(L.holders.length ? L.parked : []);
+            return `<tr><td class="nm"><b>${n(L.contenders)}</b></td><td class="mono" style="min-width:200px">&lt;${esc(L.addr)}&gt;<br>${esc(L.cls || 'monitor')}</td><td style="min-width:200px">${hd ? `<b>${esc(hd.t.name)}</b> <span class="st ${esc(hd.t.state)}">${esc(hd.t.state)}</span><br><span class="mono">${esc(sf(hd.t.frames[0] || ''))}</span>` : '<span class="mono">no holder in this dump</span>'}</td><td style="min-width:180px">${names(ws.map((w) => w.t), 4)}</td></tr>`;
+          }).join('') + '</tbody></table></div></div>');
+      }
+
+      // groups
+      h.push(`<div class="block" id="grp-block"><h3>Threads grouped by identical stack</h3><p class="note">${n(d.groups.length)} distinct stacks. Big groups of <b>busy</b> threads in the same frame are where to look first; idle pool workers are normal.</p>` +
+        '<div class="filter"><input type="search" id="gfilter" placeholder="Filter by thread name, class or method" aria-label="Filter groups"><label><input type="checkbox" id="hideidle"> Hide idle threads</label></div><div class="groups" id="groups"></div><div class="more" id="gmore"></div></div>');
+
+      // pools
+      const pools = d.pools.filter((p) => p.count > 1);
+      if (pools.length) {
+        h.push('<div class="block"><h3>Thread pools</h3><p class="note">Threads grouped by name with the trailing number removed. "Busy" = not idle-waiting for work.</p><div class="tscroll"><table class="dt"><thead><tr><th>Pool</th><th>Threads</th><th>Busy</th><th>Idle</th><th>States</th></tr></thead><tbody>' +
+          pools.slice(0, 30).map((p) => `<tr><td class="mono">${esc(p.name)}</td><td class="nm">${n(p.count)}</td><td class="nm">${n(p.active)}</td><td class="nm">${n(p.idle)}</td><td>${Object.entries(p.states).map(([k, v]) => `${esc(k)} ${n(v)}`).join(', ')}</td></tr>`).join('') +
+          '</tbody></table></div></div>');
+      }
+
+      result.innerHTML = h.join('');
+      result.hidden = false;
+      renderGroups();
+      $('gfilter').addEventListener('input', () => renderGroups());
+      $('hideidle').addEventListener('change', () => renderGroups());
+      result.querySelectorAll('[data-dump]').forEach((b) => b.addEventListener('click', () => { cur = +b.dataset.dump; render(); }));
+    }
+
+    let gLimit = 30;
+    function renderGroups(more) {
+      const d = last.dumps[cur];
+      const q = ($('gfilter').value || '').trim().toLowerCase();
+      const hide = $('hideidle').checked;
+      if (!more) gLimit = 30;
+      let gs = d.groups;
+      if (hide) gs = gs.filter((g) => g.cls !== 'idle');
+      if (q) gs = gs.filter((g) => g.frames.some((f) => f.toLowerCase().includes(q)) || g.threads.some((t) => (t.name || '').toLowerCase().includes(q)));
+      const shown = gs.slice(0, gLimit);
+      $('groups').innerHTML = shown.length ? shown.map((g) => `<details class="grp"><summary><span class="cnt">${n(g.threads.length)}</span><span class="st ${esc(g.state)}">${esc(g.state)}</span><span class="top">${frameLabel(g.frames)}</span>${g.cls === 'idle' ? '<span class="idle">idle</span>' : ''}</summary>` +
+        `<div class="body"><p class="names">${names(g.threads, 20)}</p><pre class="stack">${stackHtml(g.threads[0])}</pre></div></details>`).join('') : '<p class="note">No groups match.</p>';
+      $('gmore').innerHTML = gs.length > gLimit ? `<button class="btn btn-ghost btn-small" type="button" id="gmorebtn">Show ${n(Math.min(100, gs.length - gLimit))} more of ${n(gs.length - gLimit)}</button>` : '';
+      const mb = $('gmorebtn');
+      if (mb) mb.addEventListener('click', () => { gLimit += 100; renderGroups(true); });
+    }
+
+    function sources() {
+      const list = files.map((f) => f.text);
+      if (input.value.trim()) list.unshift(input.value);
+      return list;
+    }
+
+    function go(scroll) {
+      err.hidden = true;
+      busy.hidden = false;
+      setTimeout(() => {
+        try {
+          last = T.analyse(sources());
+          cur = 0;
+          render();
+          if (scroll) result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'thread-dump-analysed', title: 'thread-dump-analysed', event: true });
+        } catch (e) {
+          result.hidden = true;
+          err.textContent = e.message;
+          err.hidden = false;
+        } finally { busy.hidden = true; }
+      }, 20);
+    }
+
+    function showFiles() {
+      filesEl.innerHTML = files.map((f, i) => `<li><span>${esc(f.name)} · ${kb(f.size)}</span><button type="button" data-rm="${i}" aria-label="Remove ${esc(f.name)}">×</button></li>`).join('');
+      filesEl.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { files.splice(+b.dataset.rm, 1); showFiles(); }));
+    }
+
+    async function addFiles(list) {
+      const arr = [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      for (const f of arr) files.push({ name: f.name, size: f.size, text: await f.text() });
+      showFiles();
+      go(true);
+    }
+
+    $('go').addEventListener('click', () => go(true));
+    $('clear').addEventListener('click', () => { input.value = ''; files = []; showFiles(); result.hidden = true; err.hidden = true; input.focus(); });
+    $('file').addEventListener('change', (e) => { if (e.target.files.length) addFiles(e.target.files); e.target.value = ''; });
+    input.addEventListener('paste', () => setTimeout(() => go(true), 0));
+    const drop = $('drop');
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+    document.querySelectorAll('[data-sample]').forEach((b) => b.addEventListener('click', () => {
+      files = []; showFiles();
+      input.value = T.sample(b.dataset.sample === 'deadlock' ? 'deadlock' : undefined);
+      go(true);
+    }));
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!--{"title": "k6 in CI: GitHub Actions and GitLab pipelines", "og_title": "Run k6 in CI: GitHub Actions, GitLab and performance budgets", "description": "Run k6 load tests in GitHub Actions and GitLab CI: setup-k6-action and run-k6-action, exit codes, HTML reports as artifacts, JUnit output and PR budget checks.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · CI pipelines</p>
+      <h1>k6 in CI: catch the slow merge before it ships</h1>
+      <p class="lead">A pull request adds one innocent-looking database call per item in a list. Unit tests
+        pass. Two weeks later the product page takes three seconds. A small load test on every pull
+        request catches that in the review, when it's cheap to fix.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#what">What to run where</a></li>
+          <li><a href="#script">A CI-ready script</a></li>
+          <li><a href="#gha">GitHub Actions with Grafana's actions</a></li>
+          <li><a href="#budget">Budgets and PR comments</a></li>
+          <li><a href="#gitlab">GitLab CI</a></li>
+          <li><a href="#noise">Keeping CI results trustworthy</a></li>
+        </ol>
+      </div>
+
+      <h2 id="what">What to run where</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Trigger</th><th>Test</th><th>Load</th><th>Fails the build on</th></tr></thead>
+        <tbody>
+          <tr><td>Every pull request</td><td><a href="/glossary/smoke-testing/">Smoke</a> or small load</td><td>5-10 VUs, 1-2 minutes</td><td>Errors, failed checks, p95 well over budget</td></tr>
+          <tr><td>Nightly or before release</td><td>Full <a href="/glossary/load-testing/">load test</a></td><td>Expected peak, 15-60 minutes</td><td>SLO-based thresholds</td></tr>
+          <tr><td>Weekly or on demand</td><td><a href="/glossary/stress-testing/">Stress</a> or <a href="/glossary/soak-testing/">soak</a></td><td>Above peak, or hours long</td><td>Usually reviewed by a person, not gated</td></tr>
+        </tbody>
+      </table></div>
+      <p>A pull request check is a regression alarm, not a capacity test. Shared CI runners and
+        shared staging environments are noisy, so it can only catch big changes. That's still worth
+        having, because the costly regressions are often step changes, like an
+        <a href="/glossary/n-plus-one-query/">N+1 query</a> or a missing index, and those show up
+        even in a small, noisy test.</p>
+
+      <h2 id="script">A CI-ready script</h2>
+      <p>Thresholds give CI its exit code. <code>handleSummary()</code> writes a JSON summary and a
+        JUnit file, so the thresholds appear in your CI's test report view.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { textSummary, jUnit } from 'https://jslib.k6.io/k6-summary/0.1.0/index.js';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  vus: 5,
+  duration: '1m',
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(95)&lt;500'],
+    checks: ['rate&gt;0.99'],
+  },
+};
+
+export default function () {
+  const res = http.get(`${BASE_URL}/products`);
+  check(res, { 'status 200': (r) =&gt; r.status === 200 });
+  sleep(1);
+}
+
+export function handleSummary(data) {
+  return {
+    stdout: textSummary(data, { indent: ' ', enableColors: false }),
+    'summary.json': JSON.stringify(data),
+    'junit.xml': jUnit(data), // one test case per threshold, for CI test reports
+  };
+}</code></pre>
+      <div class="g-note"><p><code>handleSummary()</code> doesn't create folders. Write to the
+        working directory, or create the folder in an earlier step. If a file can't be written, k6
+        logs an error but still exits 0.</p></div>
+
+      <h2 id="gha">GitHub Actions with Grafana's actions</h2>
+      <p><code>grafana/setup-k6-action</code> installs k6 (and Chrome, with
+        <code>browser: true</code>). <code>grafana/run-k6-action</code> runs one or more scripts,
+        with globs, <code>parallel</code> and <code>fail-fast</code> options. It runs locally on the
+        runner by default. Set <code>K6_CLOUD_TOKEN</code> only if you also want results in Grafana
+        Cloud k6.</p>
+      <pre class="ex-code"><code># .github/workflows/k6.yml
+name: k6 smoke test
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '2.3.0'          # pin the version you tested with
+
+      - uses: grafana/run-k6-action@v1
+        env:
+          BASE_URL: ${{ vars.STAGING_URL }}
+          API_PASSWORD: ${{ secrets.LOADTEST_PASSWORD }}
+          K6_WEB_DASHBOARD: 'true'
+          K6_WEB_DASHBOARD_PORT: '-1'  # no dashboard server in CI, just the exported report
+          K6_WEB_DASHBOARD_EXPORT: report.html
+        with:
+          path: tests/perf/smoke.js
+          flags: --vus 5 --duration 1m
+
+      - uses: actions/upload-artifact@v4
+        if: always()                    # keep the report when thresholds fail
+        with:
+          name: k6-report
+          path: |
+            report.html
+            summary.json
+            junit.xml</code></pre>
+      <p><code>if: always()</code> on the upload step is the line people forget. Without it, the
+        report is thrown away exactly when the test fails and you need it.</p>
+
+      <h2 id="budget">Budgets and PR comments</h2>
+      <p>I wrote a free action, <a href="https://github.com/pawansinha0612/k6-performance-budget" target="_blank" rel="noopener">k6-performance-budget</a>,
+        for the most common case: fail the pull request when p95 or the error rate is over budget,
+        or when p95 is more than a set percentage slower than a baseline from <code>main</code>. It
+        writes the result to the job summary and, optionally, a comment on the pull request.</p>
+      <pre class="ex-code"><code># .github/workflows/perf-budget.yml
+name: Performance budget
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write                  # for the PR comment
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pawansinha0612/k6-performance-budget@v1
+        with:
+          script: tests/perf/smoke.js
+          p95-ms: 400                   # fail if p95 is over 400 ms
+          error-rate: 1                 # fail if more than 1% of requests fail
+          args: --vus 10 --duration 1m -e BASE_URL=${{ vars.STAGING_URL }}
+          comment-on-pr: true</code></pre>
+      <p>Thresholds inside your script still apply, so you can keep per-endpoint budgets in the
+        script and the headline budget in the workflow. To compare against <code>main</code>, save
+        the <code>k6-budget.json</code> it writes from a <code>main</code> run and pass it as
+        <code>baseline</code>. The action's README has a full workflow for that.</p>
+
+      <h2 id="gitlab">GitLab CI</h2>
+      <p>Use the official <code>grafana/k6</code> image. Its entrypoint is <code>k6</code>, so clear it
+        or GitLab can't run your script lines.</p>
+      <pre class="ex-code"><code># .gitlab-ci.yml
+stages: [perf]
+
+k6-smoke:
+  stage: perf
+  image:
+    name: grafana/k6:latest            # pin a version tag in a real pipeline
+    entrypoint: ['']                   # the image's entrypoint is k6 itself; GitLab needs a shell
+  variables:
+    BASE_URL: https://staging.example.com
+    K6_WEB_DASHBOARD: 'true'
+    K6_WEB_DASHBOARD_PORT: '-1'
+    K6_WEB_DASHBOARD_EXPORT: report.html
+  script:
+    - k6 run tests/perf/smoke.js       # exit code 99 on a failed threshold fails the job
+  artifacts:
+    when: always
+    paths: [report.html, summary.json]
+    reports:
+      junit: junit.xml                 # thresholds show up in the merge request test report
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'schedule'</code></pre>
+      <p>Jenkins, Azure DevOps and CircleCI work the same way: install k6 or use the image, run
+        <code>k6 run</code>, keep the reports as artifacts, and let the exit code fail the stage.</p>
+
+      <h2 id="noise">Keeping CI results trustworthy</h2>
+      <ul>
+        <li><strong>Test a stable target.</strong> A staging environment that's also running three
+          other teams' tests gives random results. A dedicated environment, or at least a quiet time
+          slot, matters more than any tool setting.</li>
+        <li><strong>Set budgets from data.</strong> Run the test five or ten times, take the worst
+          p95 and add headroom. A budget tighter than the run-to-run noise fails randomly, and a
+          flaky gate gets switched off within a month.</li>
+        <li><strong>Pin the k6 version.</strong> Metrics and summary formats change between major
+          versions.</li>
+        <li><strong>Watch the runner.</strong> A 2-vCPU hosted runner is fine for tens of VUs. For
+          hundreds, use a bigger self-hosted runner and check its CPU during the run.</li>
+        <li><strong>Never point PR tests at production</strong> unless the test is read-only, tiny
+          and agreed with whoever runs production.</li>
+      </ul>
+      <p>For trends across runs, send results to a time-series database: see
+        <a href="/guides/k6/outputs-and-dashboards/">outputs and dashboards</a>. To set budgets
+        properly, read <a href="/glossary/performance-budget/">performance budget</a> and
+        <a href="/glossary/shift-left-performance-testing/">shift-left performance testing</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance gates set up for your team?</h2>
+        <p>I set up k6 in your pipeline with budgets that catch real regressions and don't cry wolf.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-ci-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-ci-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

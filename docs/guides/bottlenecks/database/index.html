@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finding database bottlenecks under load — Pawan Sinha</title>
+  <meta name="description" content="Find the database bottleneck in a load test: slow query logs, EXPLAIN ANALYZE, pg_stat_statements, locks, connection pools, N+1 queries and Query Store.">
+  <meta property="og:title" content="Database bottlenecks under load: slow queries, EXPLAIN, locks, pools and N+1">
+  <meta property="og:description" content="Find the database bottleneck in a load test: slow query logs, EXPLAIN ANALYZE, pg_stat_statements, locks, connection pools, N+1 queries and Query Store.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/bottlenecks/database/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/bottlenecks/database/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Finding database bottlenecks under load", "description": "Find the database bottleneck in a load test: slow query logs, EXPLAIN ANALYZE, pg_stat_statements, locks, connection pools, N+1 queries and Query Store.", "url": "https://pawansinha.com.au/guides/bottlenecks/database/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/bottlenecks/">Finding bottlenecks</a> · Database</p>
+      <h1>Database bottlenecks under load</h1>
+      <p class="lead">The app servers are at 30% CPU, the database is at 40%, and checkout still takes 6 seconds at peak. Everyone looks at the database because it is the database. The database might be fine. The slow part could be the pool in front of it, one lock every request queues behind, or 200 tiny queries per page. This is how to tell which.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#where">Is it the database at all?</a></li>
+          <li><a href="#top-sql">Find the expensive queries</a></li>
+          <li><a href="#explain">Read the plan: EXPLAIN and EXPLAIN ANALYZE</a></li>
+          <li><a href="#locks">Locks and waits</a></li>
+          <li><a href="#pools">Connection pools</a></li>
+          <li><a href="#nplus1">N+1 queries</a></li>
+          <li><a href="#sqlserver">SQL Server: Query Store</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="where">Is it the database at all?</h2>
+      <p>Compare two numbers: how long the application waits for the database (from APM spans or pool metrics) and how long the database spends executing the queries (from its own statistics). If the app sees 800 ms per call and the database reports 15 ms per execution, the time is spent before the query runs: waiting for a pool connection, waiting for a lock, or on the network. If the two match, the queries themselves are slow.</p>
+      <p>Then apply the <a href="/guides/bottlenecks/#use">USE method</a> to the database host: CPU, memory (buffer cache hit ratio), disk latency for data and log/WAL volumes, and the connection count against its limit.</p>
+
+      <h2 id="top-sql">Find the expensive queries</h2>
+      <p>Rank queries by <strong>total time</strong> (calls × mean), not by the single slowest execution. A 3 ms query called 40,000 times a minute costs far more than a 4-second report that runs once.</p>
+      <h3>PostgreSQL: pg_stat_statements</h3>
+      <p>Add it to <code>shared_preload_libraries</code> (needs a restart), then <code>CREATE EXTENSION pg_stat_statements;</code> in the database. Reset before the test, read after it:</p>
+      <pre class="ex-code"><code>SELECT pg_stat_statements_reset();   -- before the run
+
+-- after the run: top 15 by total execution time (PostgreSQL 13+ column names)
+SELECT round(total_exec_time::numeric, 0)  AS total_ms,
+       calls,
+       round(mean_exec_time::numeric, 2)   AS mean_ms,
+       rows,
+       round(100.0 * shared_blks_hit / nullif(shared_blks_hit + shared_blks_read, 0), 1) AS hit_pct,
+       left(query, 120)                    AS query
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 15;</code></pre>
+      <p>On PostgreSQL 12 and older the columns are <code>total_time</code> and <code>mean_time</code>. A low <code>hit_pct</code> means the query reads from disk, often because the test data doesn't fit in memory, or because a missing index forces large scans.</p>
+      <h3>PostgreSQL: slow query log</h3>
+      <pre class="ex-code"><code># postgresql.conf, or ALTER SYSTEM SET ... then SELECT pg_reload_conf();
+log_min_duration_statement = 200    # log statements slower than 200 ms
+log_lock_waits = on                 # log waits longer than deadlock_timeout (default 1s)
+# auto_explain logs the plan of slow statements too
+shared_preload_libraries = 'pg_stat_statements,auto_explain'
+auto_explain.log_min_duration = 500</code></pre>
+      <h3>MySQL: slow query log and performance_schema</h3>
+      <pre class="ex-code"><code>SET GLOBAL slow_query_log = ON;
+SET GLOBAL long_query_time = 0.2;         -- seconds
+SET GLOBAL log_queries_not_using_indexes = ON;
+-- summarise afterwards: mysqldumpslow -s t /var/lib/mysql/host-slow.log
+-- or pt-query-digest from Percona Toolkit
+
+-- top statements by total latency, from performance_schema (MySQL 5.7+/8.0)
+SELECT DIGEST_TEXT, COUNT_STAR,
+       ROUND(SUM_TIMER_WAIT/1e12, 2)  AS total_s,
+       ROUND(AVG_TIMER_WAIT/1e9, 2)   AS avg_ms,
+       SUM_ROWS_EXAMINED, SUM_ROWS_SENT
+FROM performance_schema.events_statements_summary_by_digest
+ORDER BY SUM_TIMER_WAIT DESC LIMIT 15;</code></pre>
+      <p>Timer columns in performance_schema are in picoseconds. A big gap between <code>SUM_ROWS_EXAMINED</code> and <code>SUM_ROWS_SENT</code> means the query reads many rows to return few: an index problem.</p>
+
+      <h2 id="explain">Read the plan: EXPLAIN and EXPLAIN ANALYZE</h2>
+      <p><code>EXPLAIN</code> shows the plan the optimiser intends to use, with estimates. <code>EXPLAIN ANALYZE</code> actually runs the query and shows real row counts and timings. Run it on a database with production-like data volumes. Plans on a 1,000-row test table tell you nothing about a 50-million-row table.</p>
+      <pre class="ex-code"><code>-- PostgreSQL
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20;
+
+-- MySQL 8.0.18+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20;</code></pre>
+      <div class="g-warn"><p><code>EXPLAIN ANALYZE</code> executes the statement. For <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code>, wrap it in <code>BEGIN; ... ROLLBACK;</code>.</p></div>
+      <p>What to look for:</p>
+      <ul>
+        <li><strong>Estimated rows far from actual rows</strong> (PostgreSQL shows <code>rows=</code> in both the estimate and the actual). Off by 100× or more means stale statistics or correlated columns, and the optimiser is choosing the plan blind. Run <code>ANALYZE</code> and look again.</li>
+        <li><strong>Sequential scan (Seq Scan, or <code>type: ALL</code> in MySQL) on a large table</strong> with a selective filter: a missing or unusable index. Functions on the column (<code>WHERE lower(email) = ...</code>) and implicit type casts make an index unusable.</li>
+        <li><strong>Sort or hash spilling to disk</strong>: <code>Sort Method: external merge Disk</code> in PostgreSQL (raise <code>work_mem</code> for that query, or add an index that returns rows in order).</li>
+        <li><strong>Nested loop with a big outer side</strong>: fine for 10 rows, painful for 100,000.</li>
+        <li><strong>BUFFERS read vs hit</strong>: many <code>read</code> blocks mean disk I/O.</li>
+      </ul>
+      <p>Load tests also find plans that change. The same query can use a good plan for most parameter values and a bad one for a few "big" customers. Test with a realistic spread of parameter values, not the same ID every time (see <a href="/glossary/parameterisation/">parameterisation</a>).</p>
+
+      <h2 id="locks">Locks and waits</h2>
+      <p>When queries are fast alone but slow under load, they are probably waiting. Ask the database what sessions are waiting on, during the test:</p>
+      <pre class="ex-code"><code>-- PostgreSQL: what every active session is waiting on right now
+SELECT wait_event_type, wait_event, state, count(*)
+FROM pg_stat_activity
+WHERE backend_type = 'client backend'
+GROUP BY 1, 2, 3 ORDER BY 4 DESC;
+
+-- PostgreSQL: who blocks whom
+SELECT blocked.pid  AS blocked_pid, left(blocked.query, 60)  AS blocked_query,
+       blocking.pid AS blocking_pid, left(blocking.query, 60) AS blocking_query
+FROM pg_stat_activity blocked
+JOIN pg_stat_activity blocking ON blocking.pid = ANY(pg_blocking_pids(blocked.pid));</code></pre>
+      <pre class="ex-code"><code>-- MySQL 8.0: InnoDB lock waits (sys schema)
+SELECT * FROM sys.innodb_lock_waits\G
+-- recent deadlocks
+SHOW ENGINE INNODB STATUS\G</code></pre>
+      <p>Typical causes: a hot row everyone updates (a counter, an inventory row, a sequence table), long transactions that hold locks while calling an external service, and foreign keys without an index on the child table, which forces wider lock checks. See <a href="/glossary/lock-contention/">lock contention</a> and <a href="/glossary/database-deadlock/">database deadlocks</a>. In PostgreSQL, sessions <code>idle in transaction</code> are a red flag: the app opened a transaction and is doing something else while holding locks.</p>
+
+      <h2 id="pools">Connection pools</h2>
+      <p>The pool is the most common database "bottleneck" that isn't in the database. If 200 request threads share a pool of 10 connections, 190 of them wait, and their wait shows up as database time in most APM tools.</p>
+      <ul>
+        <li><strong>Measure pool wait, not just pool usage.</strong> HikariCP exposes <code>hikaricp_connections_pending</code> and <code>hikaricp_connections_acquire_seconds</code> through Micrometer. Active connections pinned at the maximum and pending above zero means the pool is the limit.</li>
+        <li><strong>Bigger is not automatically better.</strong> A database with 8 cores can only run so many queries in parallel. 500 connections all doing work cause context switching and lock contention inside the database and make throughput worse. Size the pool to what the database can actually execute in parallel, and let the extra requests queue in the app where you can see them.</li>
+        <li><strong>Multiply by instances.</strong> 20 pods × a pool of 30 = 600 connections. Check that against <code>max_connections</code>, and remember PostgreSQL uses a process per connection. A pooler such as PgBouncer in transaction mode is the usual fix when you need many app instances.</li>
+        <li><strong>Pool timeouts in the logs</strong> ("Connection is not available, request timed out after 30000ms") confirm it. A 30-second acquisition timeout also means your users wait 30 seconds before getting an error.</li>
+      </ul>
+      <p>The <a href="/glossary/connection-pool/">connection pool</a> glossary entry has the Little's Law sizing maths.</p>
+
+      <h2 id="nplus1">N+1 queries</h2>
+      <p>An <a href="/glossary/n-plus-one-query/">N+1 query</a> loads a list with one query, then runs one more query per item. With 20 test items it costs 21 fast queries and nobody notices. With 400 items in production it costs 401 round trips per page. Under load, the round-trip latency and pool time add up, not the query time.</p>
+      <ul>
+        <li><strong>Detect it in traces:</strong> a single request with dozens of identical database spans that differ only in a parameter.</li>
+        <li><strong>Detect it in statistics:</strong> a cheap query whose <code>calls</code> count in pg_stat_statements is a large multiple of the request count.</li>
+        <li><strong>Fix it:</strong> fetch joins or batch fetching in the ORM (JPA <code>JOIN FETCH</code> or entity graphs, Hibernate <code>@BatchSize</code>, Django <code>select_related</code>/<code>prefetch_related</code>, Rails <code>includes</code>), or one query with <code>WHERE id IN (...)</code>.</li>
+        <li><strong>Make test data realistic</strong> so the N in N+1 matches production. See <a href="/guides/topics/database-load-testing/">database load testing</a>.</li>
+      </ul>
+
+      <h2 id="sqlserver">SQL Server: Query Store</h2>
+      <p>On SQL Server 2016 and later, and Azure SQL Database where it is on by default, Query Store keeps per-query runtime statistics and plan history in the database. It answers the two questions a load test raises: which queries cost the most during the run, and did any query change plan. Enable it with <code>ALTER DATABASE [YourDb] SET QUERY_STORE = ON;</code>, then use the "Top Resource Consuming Queries" and "Regressed Queries" reports in SQL Server Management Studio. A plan that regressed can be pinned to the known good one there while you fix the root cause. For live waits, <code>sys.dm_exec_requests</code> and <code>sys.dm_os_wait_stats</code> play the role of <code>pg_stat_activity</code>, and SQL Server 2017+ also records wait statistics per query in Query Store.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Database slowing down at peak?</h2>
+        <p>Book a free 30-minute call. Bring your top queries or a slow trace and we'll work out whether it is the queries, the locks or the pool.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-db-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="guide-db-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

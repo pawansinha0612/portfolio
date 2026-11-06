@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finding JVM bottlenecks: heap, threads, GC and profiling — Pawan Sinha</title>
+  <meta name="description" content="Diagnose Java services under load: heap dumps with jcmd and Eclipse MAT, thread dumps, GC logs, async-profiler and JDK Flight Recorder, with the exact commands.">
+  <meta property="og:title" content="JVM bottlenecks under load: heap dumps, thread dumps, GC logs, async-profiler, JFR">
+  <meta property="og:description" content="Diagnose Java services under load: heap dumps with jcmd and Eclipse MAT, thread dumps, GC logs, async-profiler and JDK Flight Recorder, with the exact commands.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/bottlenecks/jvm/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/bottlenecks/jvm/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Finding JVM bottlenecks: heap, threads, GC and profiling", "description": "Diagnose Java services under load: heap dumps with jcmd and Eclipse MAT, thread dumps, GC logs, async-profiler and JDK Flight Recorder, with the exact commands.", "url": "https://pawansinha.com.au/guides/bottlenecks/jvm/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/bottlenecks/">Finding bottlenecks</a> · JVM</p>
+      <h1>JVM bottlenecks under load</h1>
+      <p class="lead">At 300 users the Java service is fine. At 400, p99 jumps to 3 seconds and CPU sits at 55%. Restarting it helps for twenty minutes. That pattern has four usual suspects: threads waiting on something, the garbage collector, a leak, or hot code. Each has its own evidence, and all of it can be collected from a running JVM without a restart.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#which">Which tool for which symptom</a></li>
+          <li><a href="#threads">Thread dumps</a></li>
+          <li><a href="#gc">GC logs</a></li>
+          <li><a href="#heap">Heap dumps and Eclipse MAT</a></li>
+          <li><a href="#async">async-profiler</a></li>
+          <li><a href="#jfr">JDK Flight Recorder</a></li>
+          <li><a href="#containers">JVMs in containers</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="which">Which tool for which symptom</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Evidence to collect</th></tr></thead>
+        <tbody>
+          <tr><td>Latency up, CPU low or flat</td><td>Threads waiting: pool exhaustion, locks, slow downstream</td><td>Thread dumps, wall-clock profile</td></tr>
+          <tr><td>Latency spikes at intervals</td><td>GC pauses</td><td>GC log</td></tr>
+          <tr><td>Gets worse over hours, restart fixes it</td><td>Memory leak, growing caches</td><td>GC log (old gen after each collection), heap dumps</td></tr>
+          <tr><td>CPU near 100%, throughput capped</td><td>Hot code, or GC burning CPU</td><td>CPU profile (async-profiler, JFR), GC log</td></tr>
+          <tr><td>Throughput falls as load rises</td><td>Lock contention</td><td>Thread dumps, lock profile</td></tr>
+        </tbody>
+      </table></div>
+      <p>Use <code>jcmd</code> from the same JDK version as the target JVM, run as the same OS user. <code>jcmd</code> with no arguments lists Java processes, and <code>jcmd &lt;PID&gt; help</code> lists what that JVM supports.</p>
+
+      <h2 id="threads">Thread dumps</h2>
+      <p>A thread dump is a snapshot of every thread's stack and state. One dump is a photo. Three to five dumps taken 5 to 10 seconds apart at the load where latency climbs is a film: a thread stuck in the same frame across all of them is your answer.</p>
+      <pre class="ex-code"><code>PID=$(pgrep -f my-service.jar)
+for i in 1 2 3 4 5; do
+  jcmd $PID Thread.print -l &gt; threads.$i.txt
+  sleep 5
+done
+# alternatives: jstack -l $PID, or kill -3 $PID (dump goes to the JVM's stdout)</code></pre>
+      <p>What to look for:</p>
+      <ul>
+        <li><strong>Many threads <code>BLOCKED</code> with "waiting to lock &lt;0x...&gt;"</strong>, all on the same monitor. Find the one thread that "locked" it and see what it is doing. That is <a href="/glossary/lock-contention/">lock contention</a>.</li>
+        <li><strong>Request threads <code>WAITING</code> or <code>TIMED_WAITING</code> in a pool's borrow method</strong>, for example HikariCP's <code>ConcurrentBag.borrow</code> or Apache HttpClient's pool lease. That is <a href="/glossary/connection-pool/">pool exhaustion</a>, and raising the database's capacity won't help until the pool is right-sized.</li>
+        <li><strong>Request threads <code>RUNNABLE</code> in <code>SocketInputStream.read</code> or <code>NioSocketImpl.read</code></strong>: they are waiting on a downstream call. RUNNABLE here doesn't mean using CPU.</li>
+        <li><strong>All worker threads busy and the acceptor idle</strong>: the <a href="/glossary/thread-pool/">thread pool</a> is the limit. Check what the busy threads are doing before making the pool bigger.</li>
+        <li><strong>"Found one Java-level deadlock"</strong> at the end of the dump: the JVM detected a deadlock for you.</li>
+      </ul>
+      <p>Paste dumps into the <a href="/tools/thread-dump/">thread dump analyser</a> to group threads by state and identical stack, which turns 400 threads into five groups you can actually read. To find which thread is burning CPU, use <code>top -H -p $PID</code>, convert the thread ID to hex (<code>printf '%x\n' 23817</code> gives <code>5d09</code>) and search the dump for <code>nid=0x5d09</code>.</p>
+
+      <h2 id="gc">GC logs</h2>
+      <p>Turn GC logging on in every performance test environment. It costs almost nothing and is the only reliable record of pauses. On JDK 9 and later, unified logging does it:</p>
+      <pre class="ex-code"><code>-Xlog:gc*,safepoint:file=/var/log/app/gc.log:time,uptime,level,tags:filecount=5,filesize=50m</code></pre>
+      <p>On JDK 8 the old flags are <code>-XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log</code>.</p>
+      <ul>
+        <li><strong>Pause times:</strong> compare the longest pauses with your p99 target. A 400 ms pause every 30 seconds puts a 400 ms floor under every request in flight at that moment. See <a href="/glossary/garbage-collection-pause/">GC pauses</a>.</li>
+        <li><strong>GC overhead:</strong> total pause time divided by wall time. Above about 5% is worth tuning. Above 10 to 20% the service is spending its life collecting garbage.</li>
+        <li><strong>Old gen (or heap) occupancy after each full or mixed collection:</strong> if this floor keeps rising across a <a href="/glossary/soak-testing/">soak test</a>, something is retaining memory. That is the leak signature. The peak is irrelevant, the floor after collection is what matters.</li>
+        <li><strong>Allocation rate:</strong> a high allocation rate (several GB/s) drives frequent young collections. The fix is usually in the code (fewer temporary objects), not GC flags.</li>
+        <li><strong>Collector choice:</strong> G1 is the default since JDK 9. ZGC (production-ready from JDK 15, generational from JDK 21) keeps pauses to around a millisecond at the cost of some throughput and memory. If pauses are the problem on a large heap and you are on a recent JDK, test ZGC before hand-tuning G1.</li>
+      </ul>
+      <p>Upload a log to the <a href="/tools/gc-log/">GC log analyser</a> for pause percentiles, overhead and the heap-after-GC trend. Safepoint logging (the <code>safepoint</code> tag above) catches pauses that aren't GC: time-to-safepoint problems, biased lock revocation on older JDKs, and deoptimisation.</p>
+
+      <h2 id="heap">Heap dumps and Eclipse MAT</h2>
+      <p>A heap dump captures every object on the heap. It is how you find out <em>what</em> is leaking.</p>
+      <pre class="ex-code"><code># live objects only (forces a full GC first)
+jcmd $PID GC.heap_dump /tmp/app-heap.hprof
+
+# all objects, including unreachable ones (no full GC)
+jcmd $PID GC.heap_dump -all /tmp/app-heap-all.hprof
+
+# capture automatically when the JVM runs out of heap
+-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/app/</code></pre>
+      <div class="g-warn"><p><strong>Heap dumps pause the JVM</strong> for seconds to minutes on a large heap and write a file roughly the size of the used heap. Take them out of rotation or after the test, check disk space first, and treat the file as sensitive: it contains whatever was in memory, including customer data and secrets.</p></div>
+      <p>Open the file in <a href="https://eclipse.dev/mat/" rel="noopener">Eclipse Memory Analyzer (MAT)</a>. Give MAT enough memory to load it (edit <code>-Xmx</code> in <code>MemoryAnalyzer.ini</code>). Then:</p>
+      <ol>
+        <li><strong>Leak Suspects report:</strong> runs automatically and is right surprisingly often.</li>
+        <li><strong>Dominator tree:</strong> objects sorted by <em>retained size</em>, the memory that would be freed if that object were collected. A single <code>HashMap</code> or cache retaining 60% of the heap is the classic find.</li>
+        <li><strong>Path to GC roots</strong> (excluding weak and soft references) on the suspect: shows the chain keeping it alive, usually a static field, a cache without eviction, a ThreadLocal on a pooled thread, or a listener that was never removed.</li>
+        <li><strong>Compare two dumps</strong> taken an hour apart in a soak test. The class whose instance count grows in step with requests is the leak. See <a href="/glossary/memory-leak/">memory leak</a>.</li>
+      </ol>
+      <p>For a quick look without a full dump, <code>jcmd $PID GC.class_histogram | head -30</code> lists instance counts and bytes per class. Two histograms a few minutes apart often point straight at the leak.</p>
+
+      <h2 id="async">async-profiler</h2>
+      <p><a href="https://github.com/async-profiler/async-profiler" rel="noopener">async-profiler</a> is a low-overhead sampling profiler for HotSpot JVMs. It doesn't suffer from safepoint bias, the distortion where profilers that can only sample at safepoints over-report the code near safepoint polls. It produces flame graphs directly.</p>
+      <pre class="ex-code"><code># CPU profile for 60 seconds during the load test (async-profiler 3.x / 4.x)
+asprof -d 60 -e cpu -f /tmp/cpu.html $PID
+
+# wall-clock: all threads, running or waiting. Best for "slow but CPU is low"
+asprof -d 60 -e wall -t -f /tmp/wall.html $PID
+
+# allocation profile: who creates the garbage
+asprof -d 60 -e alloc -f /tmp/alloc.html $PID
+
+# lock contention
+asprof -d 60 -e lock -f /tmp/lock.html $PID</code></pre>
+      <p>In versions before 3.0 the launcher was <code>profiler.sh</code> with the same options. On Linux, CPU mode uses <code>perf_events</code>, which may need <code>sysctl kernel.perf_event_paranoid=1</code> and <code>kernel.kptr_restrict=0</code>. Inside containers that may not be allowed. <code>-e itimer</code> is the fallback that needs no special permissions. Check the project's README for your version.</p>
+      <p>Reading the output: in a CPU flame graph, look for wide frames in <em>your</em> code or in libraries you call (JSON serialisation, regex, logging, crypto). In a wall-clock profile filtered to request threads, wide frames in socket reads, pool borrows or <code>park</code> show where requests wait.</p>
+
+      <h2 id="jfr">JDK Flight Recorder</h2>
+      <p>JFR is built into the JDK (open source since JDK 11, backported to OpenJDK 8u262). Its default settings are designed for production use with low overhead, and it records CPU samples, allocations, GC, locks, I/O and thread states in one file.</p>
+      <pre class="ex-code"><code># start a 5-minute recording with the more detailed "profile" settings
+jcmd $PID JFR.start name=loadtest settings=profile duration=5m filename=/tmp/loadtest.jfr
+
+# or from JVM start
+-XX:StartFlightRecording=settings=profile,duration=5m,filename=/tmp/loadtest.jfr
+
+# check and dump an ongoing recording
+jcmd $PID JFR.check
+jcmd $PID JFR.dump name=loadtest filename=/tmp/now.jfr</code></pre>
+      <p>Open the file in <a href="https://adoptium.net/jmc/" rel="noopener">JDK Mission Control</a>. The Automated Analysis page flags common problems. The most useful views under load are Method Profiling, Lock Instances (monitor blocked time per lock), Socket I/O (time per remote host) and Garbage Collections. The <code>jfr</code> command-line tool (<code>jfr print --events jdk.GarbageCollection /tmp/loadtest.jfr</code>) is handy on a server without a GUI.</p>
+
+      <h2 id="containers">JVMs in containers</h2>
+      <ul>
+        <li>Modern JDKs (10+, and 8u191+) read cgroup memory and CPU limits. Size the heap with <code>-XX:MaxRAMPercentage=70</code> or so, leaving room for metaspace, thread stacks, direct buffers and the code cache. A heap equal to the container limit ends in OOM kills, not <code>OutOfMemoryError</code>.</li>
+        <li>The JVM sizes GC threads, the common ForkJoinPool and many frameworks' pools from the CPU count it sees. With a CPU limit of 1 or 2 it may pick a serial collector or tiny pools. Check with <code>java -XX:+PrintFlagsFinal -version | grep -E 'ActiveProcessorCount|UseG1GC|UseSerialGC'</code> inside the container.</li>
+        <li>CPU throttling from the CFS quota looks like random latency spikes. See <a href="/guides/bottlenecks/linux-server/#containers">containers and CPU throttling</a>.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need help reading the dumps?</h2>
+        <p>Bring a thread dump, a GC log or a flame graph to a free 30-minute call and we'll read it together.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jvm-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/tools/thread-dump/" data-track="guide-jvm-tool">Thread dump analyser</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

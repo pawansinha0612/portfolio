@@ -1,0 +1,103 @@
+<!--{"title": "Free go-live performance sign-off checklist (go/no-go)", "description": "A free go/no-go checklist for performance before go-live: 14 checks across performance, capacity, resilience, observability and release, plus approvals.", "article": true}-->
+    <style>
+      .t-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+      .t-doc .t-title { font-size: clamp(22px, 3vw, 28px); }
+      .t-doc h3 { margin-top: 26px; }
+      .t-fill { background: var(--alt); border: 1px dashed var(--border); border-radius: 6px; padding: 0 5px; color: var(--text); }
+      .t-checks { list-style: none; padding-left: 0; }
+      .t-checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin: 8px 0; }
+      .t-box { width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--muted); border-radius: 4px; }
+      @media print {
+        .t-actions, .t-howto { display: none !important; }
+        .t-doc > * { max-width: none; }
+        .t-doc .g-tablewrap { overflow: visible; }
+        .t-doc .g-table { font-size: 12px; }
+      }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/templates/">Free templates</a> · Go-live sign-off</p>
+      <h1>Go-live performance sign-off checklist</h1>
+      <p class="lead">Fourteen checks to run through before a release or peak season, with a GO, GO WITH CONDITIONS or NO-GO decision and the names of the people who made it.</p>
+      <p class="t-actions">
+        <a class="btn" href="/guides/templates/files/go-live-signoff.md.txt" download="go-live-performance-signoff.md" data-track="tpl-free-go-live-signoff-md">Download as Markdown</a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()" data-track="tpl-free-go-live-signoff-print">Print or save as PDF</button>
+      </p>
+    </section>
+
+    <section class="wrap ex-prose t-howto">
+      <h2>How to use it</h2>
+      <ul>
+        <li><strong>Tick only with evidence.</strong> Each check has an Evidence slot. A link to a report or dashboard, not "should be fine".</li>
+        <li><strong>Unticked means a condition or a NO-GO.</strong> Every gap goes in the conditions table with an owner and a date, or the release waits.</li>
+        <li><strong>Run it a week before go-live,</strong> not on the day. That leaves time to close the gaps it finds.</li>
+        <li>Planning for a known peak? The <a href="/tools/capacity-calculator/">capacity calculator</a> checks the "breaking point above peak" line.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose t-doc" aria-label="Template">
+      <h2 class="t-title">Go-live Performance Sign-off: <span class="t-fill">Release name</span></h2>
+      <table class="g-table">
+      <thead><tr><th>System</th><th>Release</th><th>Planned go-live</th><th>Decision meeting</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">Name</span></td><td><span class="t-fill">v2.4</span></td><td><span class="t-fill">DD/MM/YYYY</span></td><td><span class="t-fill">DD/MM/YYYY</span></td></tr>
+      </tbody></table>
+      <div class="g-note"><p>Tick each check only when there is evidence: a report, a dashboard link or a test result. Anything unticked must appear under "Conditions" or the answer is NO-GO.</p></div>
+      <h3>Performance</h3>
+      <ul class="t-checks">
+      <li><span class="t-box" aria-hidden="true"></span>All response-time and error-rate targets met at peak load, with the report linked. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Soak test run for long enough to show no leaks or slow degradation. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Breaking point known, and it sits above expected peak with agreed headroom. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Results from a production-like environment, or the gaps written down and accepted. Evidence: <span class="t-fill">link</span></li>
+      </ul>
+      <h3>Capacity</h3>
+      <ul class="t-checks">
+      <li><span class="t-box" aria-hidden="true"></span>Autoscaling tested: it scales out fast enough for the expected ramp and scales back in. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Connection pools, thread pools and database connection limits sized for peak. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Third-party rate limits and quotas known and above peak demand. Evidence: <span class="t-fill">link</span></li>
+      </ul>
+      <h3>Resilience</h3>
+      <ul class="t-checks">
+      <li><span class="t-box" aria-hidden="true"></span>A slow or failing dependency tested: timeouts, retries and circuit breakers behave. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Rollback tested, and the time it takes is known. Evidence: <span class="t-fill">link</span></li>
+      </ul>
+      <h3>Observability</h3>
+      <ul class="t-checks">
+      <li><span class="t-box" aria-hidden="true"></span>Dashboards show latency percentiles, throughput, errors and saturation for every key journey. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Alerts set on SLOs (not only CPU), routed to an on-call person. Evidence: <span class="t-fill">link</span></li>
+      </ul>
+      <h3>Operations and release</h3>
+      <ul class="t-checks">
+      <li><span class="t-box" aria-hidden="true"></span>Runbook covers the known failure modes found in testing. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Release window avoids peak trading, with a named person watching the first peak. Evidence: <span class="t-fill">link</span></li>
+      <li><span class="t-box" aria-hidden="true"></span>Feature flags or a kill switch ready for new heavy features. Evidence: <span class="t-fill">link</span></li>
+      </ul>
+      <h3>Decision</h3>
+      <p><strong><span class="t-fill">GO / GO WITH CONDITIONS / NO-GO</span></strong></p>
+      <p><strong>Conditions and open risks:</strong></p>
+      <table class="g-table">
+      <thead><tr><th>Condition or risk</th><th>Owner</th><th>Due</th><th>Accepted by</th></tr></thead>
+      <tbody>
+      <tr><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+      <p><strong>Approvers:</strong></p>
+      <table class="g-table">
+      <thead><tr><th>Role</th><th>Name</th><th>Decision</th><th>Date</th></tr></thead>
+      <tbody>
+      <tr><td>Business owner</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>Engineering lead</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>Operations or SRE lead</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      <tr><td>Performance lead</td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td><td><span class="t-fill">&nbsp;</span></td></tr>
+      </tbody></table>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want the full editable version?</h2>
+        <p>This free page is the short version. The <a href="/templates/">Performance Test Templates Pack</a> (A$15) has Word and Excel files with guidance in every section: a 13-section test plan, a verdict-first report with sign-off, a 36-check go-live checklist that scores itself, a risk register and a workload calculator.</p>
+        <p class="cta-row">
+          <a class="btn" href="/templates/" data-track="tpl-free-go-live-signoff-pack">See the full pack</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="tpl-free-go-live-signoff-peak">Or have me run the test</a>
+        </p>
+        <p>More free templates: <a href="/guides/templates/test-strategy/">Test strategy</a> · <a href="/guides/templates/test-plan/">Test plan</a> · <a href="/guides/templates/workload-model-sheet/">Workload model sheet</a> · <a href="/guides/templates/results-report/">Results report</a>.</p>
+      </div>
+    </section>

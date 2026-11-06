@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatling guides: load testing with the Java DSL — Pawan Sinha</title>
+  <meta name="description" content="Practical Gatling 3 guides in the Java DSL: first simulation with Maven or Gradle, open and closed injection profiles, feeders and correlation, CI and reports.">
+  <meta property="og:title" content="Gatling how-to guides: Java DSL, injection profiles, feeders and CI">
+  <meta property="og:description" content="Practical Gatling 3 guides in the Java DSL: first simulation with Maven or Gradle, open and closed injection profiles, feeders and correlation, CI and reports.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/gatling/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/gatling/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Gatling guides: load testing with the Java DSL", "description": "Practical Gatling 3 guides in the Java DSL: first simulation with Maven or Gradle, open and closed injection profiles, feeders and correlation, CI and reports.", "url": "https://pawansinha.com.au/guides/gatling/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Gatling</p>
+      <h1>Gatling guides</h1>
+      <p class="lead">Practical recipes for Gatling 3 using the Java DSL, with Maven or Gradle. Every
+        simulation on these pages compiles against Gatling 3.16's Java API, so you can paste it into a
+        project and change the URLs.</p>
+    </section>
+
+    <section class="wrap g-cards">
+      <a class="g-card" href="/guides/gatling/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>Maven or Gradle setup, a first simulation with checks and assertions, and the report.</p>
+      </a>
+      <a class="g-card" href="/guides/gatling/injection-profiles/">
+        <span class="g-tag">Load model</span>
+        <h3>Injection profiles</h3>
+        <p>Every open and closed injection step, capacity searches and throttling.</p>
+      </a>
+      <a class="g-card" href="/guides/gatling/feeders-and-correlation/">
+        <span class="g-tag">Data and sessions</span>
+        <h3>Feeders and correlation</h3>
+        <p>CSV and generated data, checks, saveAs and the session.</p>
+      </a>
+      <a class="g-card" href="/guides/gatling/ci-and-reports/">
+        <span class="g-tag">CI/CD</span>
+        <h3>CI and reports</h3>
+        <p>Assertions that fail the build, GitHub Actions, GitLab and reading the report.</p>
+      </a>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>When Gatling is a good fit</h2>
+      <ul>
+        <li>Your team works in Java, Kotlin or Scala and wants load tests in the same language,
+          build and code review as the service.</li>
+        <li>You need high load from few machines: Gatling's async engine is efficient.</li>
+        <li>You want a detailed HTML report with no extra setup.</li>
+      </ul>
+      <p>Weighing it against other tools? Read <a href="/compare/k6-vs-gatling/">k6 vs Gatling</a>,
+        or see the <a href="/guides/k6/">k6</a> and <a href="/guides/locust/">Locust</a> guides. The
+        ideas behind injection profiles are in the <a href="/explain/load-profiles/">load profiles</a>
+        and <a href="/explain/queueing/">queueing</a> explainers.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need Gatling expertise on your project?</h2>
+        <p>I build, review and run Gatling and k6 load tests, and turn the results into clear
+          fixes.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-gat-hub-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-gat-hub-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

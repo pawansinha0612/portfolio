@@ -1,0 +1,112 @@
+<!--{"title": "JMeter assertions: Response, JSON, Duration, Size", "og_title": "JMeter assertions that catch real failures without eating your CPU", "description": "Use JMeter's Response, JSON, Duration and Size assertions to catch 200-OK error pages, and keep assertion cost low so the load generator stays honest.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Assertions</p>
+      <h1>JMeter assertions: a 200 is not a pass</h1>
+      <p class="lead">Your report shows 0% errors at 800 requests per second. Then someone opens a response and finds the "Sorry, something went wrong" page, served with HTTP 200 and fast because it skips the database. Without assertions, JMeter judges success only by the status code. With too many, the load generator burns CPU checking instead of sending.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#how">How JMeter decides pass or fail</a></li>
+          <li><a href="#response">Response Assertion</a></li>
+          <li><a href="#json">JSON Assertion</a></li>
+          <li><a href="#duration">Duration Assertion</a></li>
+          <li><a href="#size">Size Assertion</a></li>
+          <li><a href="#cost">What assertions cost</a></li>
+          <li><a href="#strategy">A sensible assertion strategy</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="how">1. How JMeter decides pass or fail</h2>
+      <p>A sample starts as successful unless the sampler itself fails. For HTTP, any 4xx or 5xx status, a connection error or a timeout is a failure. Then every assertion in scope runs, and any failing assertion marks the sample failed and writes its message into the <code>failureMessage</code> column of the JTL. The <code>success</code> column is what the HTML report's error rate and APDEX use.</p>
+      <p>Assertions apply to every sampler in their scope. Put an assertion under one sampler to check that sampler. Put it on the Thread Group to check every sampler in it, which is handy for a blanket "no error page" check.</p>
+
+      <h2 id="response">2. Response Assertion</h2>
+      <p><strong>Add → Assertions → Response Assertion.</strong> The general-purpose check.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Options</th></tr></thead>
+        <tbody>
+          <tr><td>Apply to</td><td>Main sample only, Sub-samples only, Main sample and sub-samples, or a JMeter Variable</td></tr>
+          <tr><td>Field to Test</td><td>Text Response, Response Code, Response Message, Response Headers, Request Headers, URL Sampled, Document (text), Request Data</td></tr>
+          <tr><td>Ignore Status</td><td>Treat 4xx/5xx as success before the patterns are checked</td></tr>
+          <tr><td>Pattern Matching Rules</td><td>Contains and Matches (regular expressions), Equals and Substring (plain text). Plus Not and Or modifiers</td></tr>
+          <tr><td>Custom failure message</td><td>Replaces the generated message in the JTL</td></tr>
+        </tbody>
+      </table></div>
+      <p>Three patterns that cover most cases:</p>
+      <pre class="ex-code"><code>1. Right page:      Field: Text Response   Rule: Substring        Pattern: "orderId"
+2. No error page:   Field: Text Response   Rule: Substring + Not  Pattern: Something went wrong
+3. Expected status: Field: Response Code   Rule: Equals           Pattern: 201</code></pre>
+      <ul>
+        <li><strong>Prefer Substring over Contains</strong> when you do not need a regex. Substring is a plain, case-sensitive text search and is cheaper.</li>
+        <li><strong>Equals and Matches</strong> test the whole field, which suits Response Code but rarely a body.</li>
+        <li><strong>Expecting a 404 or 409?</strong> Tick <em>Ignore Status</em> and assert on Response Code equals <code>404</code>. Ignore Status clears earlier failures on that sample, so only use it on the first assertion.</li>
+        <li><strong>Use the custom failure message</strong>, for example <code>Checkout returned error page</code>. The HTML report groups errors by message, so a good message turns a list of failures into a diagnosis.</li>
+      </ul>
+
+      <h2 id="json">3. JSON Assertion</h2>
+      <p><strong>Add → Assertions → JSON Assertion.</strong> Parses the response as JSON, fails if it is not valid JSON, then checks a JSONPath.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Assert JSON Path exists</td><td><code>$.status</code></td></tr>
+          <tr><td>Additionally assert value</td><td>Ticked</td></tr>
+          <tr><td>Match as regular expression</td><td>Unticked for an exact value</td></tr>
+          <tr><td>Expected Value</td><td><code>CONFIRMED</code></td></tr>
+          <tr><td>Expect null</td><td>For fields that must be null</td></tr>
+          <tr><td>Invert assertion</td><td>Fail if the conditions are met, e.g. <code>$.errors</code> exists</td></tr>
+        </tbody>
+      </table></div>
+      <p>If the path returns an array, the assertion passes when any element matches the expected value. With an indefinite path such as <code>$.items[*].status</code>, always set an expected value. Since JMeter 5.5, an indefinite path that returns an empty list with no expected value fails.</p>
+      <div class="g-note">
+        <p>The JSON Assertion parses the full body on every sample. On a 500 KB response at high throughput that is real CPU. If you already have a JSON Extractor on the same sampler, a cheaper check is a Response Assertion on the extracted variable (Apply to: JMeter Variable) that it is not your default value.</p>
+      </div>
+
+      <h2 id="duration">4. Duration Assertion</h2>
+      <p><strong>Add → Assertions → Duration Assertion</strong>, with one field: Duration in Milliseconds. Any sample slower than this is marked failed.</p>
+      <p>Use it carefully. It turns a latency question into an error-rate question, so a slow run shows up as "3% errors" rather than as a latency distribution. It also cannot express a percentile target. A p95 under 800 ms target allows 5% of requests above 800 ms, but a Duration Assertion at 800 ms fails every one of them. Good uses are a hard timeout the business really has (a payment gateway that gives up at 10 seconds) and smoke tests. For percentile targets, compute them from the JTL afterwards, as shown in <a href="/guides/jmeter/ci-pipelines/">CI pipelines</a>. See also <a href="/glossary/thresholds/">thresholds</a>.</p>
+
+      <h2 id="size">5. Size Assertion</h2>
+      <p><strong>Add → Assertions → Size Assertion</strong>: a size in bytes and a comparison (equal, not equal, greater than, less than, and the inclusive versions). It is the cheapest content check there is, because JMeter already knows the size.</p>
+      <pre class="ex-code"><code>Product page:   Size in bytes: 20000   Type of Comparison: &gt;
+→ catches the 3 KB error template served with a 200</code></pre>
+      <p>It suits pages with a predictable size. It is less useful for APIs whose responses vary a lot.</p>
+
+      <h2 id="cost">6. What assertions cost</h2>
+      <p>Every assertion runs on the load generator's CPU, for every sample in scope, while the thread that made the request waits. At 2,000 samples per second, 5 assertions per sample means 10,000 checks per second. When the generator's CPU saturates, threads queue for CPU and response times grow. That latency comes from your tool, not from the system under test.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Assertion</th><th>Relative cost</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Size, Duration</td><td>Very low</td><td>Compares numbers JMeter already has</td></tr>
+          <tr><td>Response (Substring, Equals)</td><td>Low</td><td>Plain string search</td></tr>
+          <tr><td>Response (Contains, Matches)</td><td>Medium</td><td>Regex over the whole body. Patterns like <code>.*</code> can backtrack badly</td></tr>
+          <tr><td>JSON, JSON JMESPath</td><td>Medium to high</td><td>Parses the full document</td></tr>
+          <tr><td>XPath, XML Schema</td><td>High</td><td>Builds a DOM, and XPath with tolerant parsing runs HTML through a cleaner first</td></tr>
+          <tr><td>JSR223 (Groovy)</td><td>Depends on the code</td><td>Fast if compiled and cached, very slow if the script contains <code>${...}</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Watch the load generator's CPU during every test. Above about 70–80%, treat the results as suspect. A useful check is to run the same load with assertions disabled. If response times drop noticeably, the generator was the bottleneck.</p>
+
+      <h2 id="strategy">7. A sensible assertion strategy</h2>
+      <ol>
+        <li><strong>One meaningful check per business request.</strong> A Substring on something only the correct response contains (<code>"orderId"</code>, the product name).</li>
+        <li><strong>One blanket negative check</strong> at Thread Group level for the site's error page text.</li>
+        <li><strong>Correlation doubles as validation.</strong> If the extractor's default value shows up in the next request, that request will fail anyway. Assert on extracted variables instead of parsing again.</li>
+        <li><strong>Keep latency judgement out of assertions.</strong> Compute percentiles from the results and apply targets there.</li>
+        <li><strong>Heavier checks during functional debugging,</strong> lighter ones under load. Disable the expensive ones in the tree (right-click → Disable) before the big run. The glossary entry on <a href="/glossary/checks-and-assertions/">checks and assertions</a> covers the idea in tool-neutral terms.</li>
+      </ol>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/thinktime-and-pacing/">think time and pacing</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure your 0% error rate is real?</h2>
+        <p>Book a free 30-minute call and I'll review how your test decides pass and fail. More on <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-assert-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-assert-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

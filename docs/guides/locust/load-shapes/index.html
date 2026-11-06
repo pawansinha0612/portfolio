@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Locust load shapes: steps, spikes and custom profiles — Pawan Sinha</title>
+  <meta name="description" content="Write custom Locust load profiles with LoadTestShape: step loads, spikes, recovery checks and per-stage user classes, with the gotchas around run time and spawn rate.">
+  <meta property="og:title" content="Locust LoadTestShape: step, spike and time-of-day load profiles in code">
+  <meta property="og:description" content="Write custom Locust load profiles with LoadTestShape: step loads, spikes, recovery checks and per-stage user classes, with the gotchas around run time and spawn rate.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/locust/load-shapes/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/locust/load-shapes/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Locust load shapes: steps, spikes and custom profiles", "description": "Write custom Locust load profiles with LoadTestShape: step loads, spikes, recovery checks and per-stage user classes, with the gotchas around run time and spawn rate.", "url": "https://pawansinha.com.au/guides/locust/load-shapes/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/locust/">Locust</a> · Load shapes</p>
+      <h1>Locust load shapes: any profile, in code</h1>
+      <p class="lead">"Ramp to 100 users and hold" answers one question. The questions that matter are
+        harder: what happens when traffic doubles in a minute, and does the system recover afterwards?
+        A <code>LoadTestShape</code> lets you script that profile in a few lines of Python.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#how">How a shape works</a></li>
+          <li><a href="#step">Steps, a spike and recovery</a></li>
+          <li><a href="#classes">Different users at different times</a></li>
+          <li><a href="#gotchas">Gotchas</a></li>
+        </ol>
+      </div>
+
+      <h2 id="how">How a shape works</h2>
+      <p>Add a subclass of <code>LoadTestShape</code> to your locustfile. Locust calls its
+        <code>tick()</code> method about once a second. <code>tick()</code> returns a tuple of
+        <code>(user_count, spawn_rate)</code>, optionally with a list of user classes as a third
+        item, or <code>None</code> to stop the test. <code>self.get_run_time()</code> gives the
+        seconds since the test started.</p>
+      <p>The shape sets how many users exist, not how many requests they send. The request rate
+        still comes from the users' <code>wait_time</code> and the response times. For a rate-based
+        profile, combine a shape with <code>constant_throughput</code> or
+        <code>constant_pacing</code> (see <a href="/guides/locust/getting-started/#wait">wait_time</a>).</p>
+
+      <h2 id="step">Steps, a spike and recovery</h2>
+      <pre class="ex-code"><code>from locust import HttpUser, LoadTestShape, task, constant
+
+
+class ApiUser(HttpUser):
+    wait_time = constant(1)
+
+    @task
+    def browse(self):
+        self.client.get("/products")
+
+
+class StepThenSpike(LoadTestShape):
+    """Steps of 50 users every 2 minutes up to 200, a 1-minute spike to 500, then stop.
+
+    tick() is called about once a second. Return (user_count, spawn_rate),
+    optionally with a list of user classes, or None to stop the test.
+    """
+
+    stages = [
+        # (end time in seconds, users, spawn rate per second)
+        (120, 50, 10),
+        (240, 100, 10),
+        (360, 150, 10),
+        (480, 200, 10),
+        (540, 500, 50),   # spike
+        (660, 200, 50),   # recovery: does latency come back down?
+    ]
+
+    def tick(self):
+        run_time = self.get_run_time()
+        for end, users, rate in self.stages:
+            if run_time &lt; end:
+                return users, rate
+        return None</code></pre>
+      <pre class="ex-code"><code>locust -f shape.py -H https://staging.example.com --headless --csv results/step</code></pre>
+      <p>Read the result per stage, not as one number:</p>
+      <ul>
+        <li><strong>Each step:</strong> did p95 settle at a new level, or keep climbing during the
+          step? A climb within a step means work arrives faster than it's done: a queue is
+          growing. See <a href="/explain/queueing/">queueing</a>.</li>
+        <li><strong>The spike:</strong> errors, timeouts and autoscaling lag. See
+          <a href="/glossary/spike-testing/">spike testing</a>.</li>
+        <li><strong>Recovery:</strong> back at 200 users, does latency return to the level it had
+          at 200 users on the way up? If not, something stayed broken: a full queue, exhausted
+          connection pool, or a retry storm. That's the most valuable finding in this test, and the
+          one a plain ramp never shows.</li>
+      </ul>
+      <p>The <code>_stats_history.csv</code> file from <code>--csv</code> has a row every few
+        seconds, so you can chart each stage. The HTML report (<code>--html</code>) has the same
+        charts.</p>
+
+      <h2 id="classes">Different users at different times</h2>
+      <p>The optional third item picks which user classes to spawn. Class <code>weight</code> sets
+        the mix between them:</p>
+      <pre class="ex-code"><code>from locust import HttpUser, LoadTestShape, task, constant
+
+
+class Browser(HttpUser):
+    weight = 9
+    wait_time = constant(2)
+
+    @task
+    def browse(self):
+        self.client.get("/products")
+
+
+class Buyer(HttpUser):
+    weight = 1
+    wait_time = constant(5)
+
+    @task
+    def buy(self):
+        self.client.get("/products/3", name="/products/[id]")
+
+
+class MorningRush(LoadTestShape):
+    """Background browsing all the time, plus buyers only during the 'sale'."""
+
+    def tick(self):
+        t = self.get_run_time()
+        if t &lt; 300:
+            return 50, 5, [Browser]              # 5 min of browsing only
+        if t &lt; 900:
+            return 150, 10, [Browser, Buyer]     # 10 min sale: both classes, by weight
+        if t &lt; 1200:
+            return 50, 10, [Browser]             # back to browsing
+        return None</code></pre>
+      <p>At 150 users with weights 9 and 1, you get about 135 browsers and 15 buyers.</p>
+
+      <h2 id="gotchas">Gotchas</h2>
+      <ul>
+        <li><strong><code>-u</code>, <code>-r</code> and <code>-t</code> are ignored</strong> when the
+          locustfile has a shape class, and Locust logs a warning. The shape decides. A shape that
+          never returns <code>None</code> runs forever, so make sure the last stage ends.</li>
+        <li><strong>A spawn rate is a speed, not a step.</strong> Going from 200 to 500 users at 50 a
+          second takes 6 seconds. For a sharper spike, raise the spawn rate. Very high spawn rates
+          cost CPU on the load generator.</li>
+        <li><strong>Removing users stops them mid-task.</strong> Locust stops surplus users
+          immediately by default. Set <code>--stop-timeout</code> to let them finish the current task
+          first.</li>
+        <li><strong>Distributed runs:</strong> the shape runs on the master, and the master spreads the
+          users across workers. Nothing changes in the shape code.</li>
+      </ul>
+      <p>The shapes themselves (step, spike, soak, breakpoint) are explained in the
+        <a href="/explain/load-profiles/">load profiles explainer</a>. Next:
+        <a href="/guides/locust/distributed/">distributed Locust</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want to know how your system handles a spike?</h2>
+        <p>I design spike, step and recovery tests that show where your system breaks and whether it
+          comes back.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-shape-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-shape-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

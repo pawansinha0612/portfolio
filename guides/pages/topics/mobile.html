@@ -1,0 +1,115 @@
+<!--{"title": "Mobile app performance testing", "og_title": "Mobile performance testing: startup time, frame rate, profilers and backend load from apps", "description": "Mobile performance testing in two halves: the app on the device (startup, frame rate, network conditions) and the load mobile traffic puts on your backend.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Mobile</p>
+      <h1>Mobile app performance testing</h1>
+      <p class="lead">The marketing team sends a push notification to 800,000 users at 7 pm. Within 90 seconds, 120,000 people open the app. Each launch makes 14 API calls, a few thousand retry on patchy 4G, and the backend that handled the load test's smooth ramp falls over. The ones who get in wait 6 seconds for the home screen on a three-year-old Android phone. Mobile performance has two halves, and most teams only test one.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#two-halves">App performance vs API performance</a></li>
+          <li><a href="#startup">Startup time</a></li>
+          <li><a href="#frames">Frame rate and jank</a></li>
+          <li><a href="#profilers">Profilers: Android Studio and Xcode Instruments</a></li>
+          <li><a href="#network">Network conditioning</a></li>
+          <li><a href="#backend">Backend load from mobile traffic patterns</a></li>
+          <li><a href="#field">Field data from real devices</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="two-halves">App performance vs API performance</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th></th><th>On the device</th><th>On the backend</th></tr></thead>
+        <tbody>
+          <tr><td>Question</td><td>Does the app feel fast on the phones our users own?</td><td>Can the backend take what the apps send at peak?</td></tr>
+          <tr><td>Metrics</td><td>Startup time, frame rate and jank, memory, battery, app size</td><td>Throughput, latency percentiles and errors per endpoint</td></tr>
+          <tr><td>Tools</td><td>Android Studio profilers, Macrobenchmark, Xcode Instruments, XCTest metrics</td><td>k6, JMeter, Gatling with a mobile-shaped workload model</td></tr>
+          <tr><td>Common gap</td><td>Testing on a flagship phone on office Wi-Fi</td><td>Smooth ramps instead of push-notification bursts</td></tr>
+        </tbody>
+      </table></div>
+      <p>The two meet on the network: a slow API response is worse on a 300 ms round trip, and an app that makes 14 sequential calls at launch multiplies every millisecond of backend latency.</p>
+
+      <h2 id="startup">Startup time</h2>
+      <p>Startup is the first thing users feel and the metric app stores report. Both platforms distinguish cold starts (process not running, the slowest and the one to test), warm starts and hot starts.</p>
+      <ul>
+        <li><strong>Android:</strong> Time to Initial Display (TTID) is the first frame. Time to Full Display (TTFD) is when the app calls <code>reportFullyDrawn()</code> after loading its real content, which is the number that matters to users. Android vitals in the Play Console flags cold starts of 5 seconds or more as excessive.</li>
+        <li><strong>iOS:</strong> Apple's guidance is for the first frame to appear within about 400 ms of launch. Measure with the App Launch template in Instruments, or in an XCTest with <code>XCTApplicationLaunchMetric</code>.</li>
+      </ul>
+      <pre class="ex-code"><code># Android: quick cold-start check from the command line
+adb shell am force-stop com.example.app
+adb shell am start -W -n com.example.app/.MainActivity
+# TotalTime: 1243   &lt;- ms to the first frame of the launched activity</code></pre>
+      <pre class="ex-code"><code>// iOS: launch time in an XCTest UI test target
+func testLaunchPerformance() throws {
+    measure(metrics: [XCTApplicationLaunchMetric()]) {
+        XCUIApplication().launch()
+    }
+}</code></pre>
+      <p>For repeatable Android measurements in CI, use the Jetpack Macrobenchmark library, which runs cold, warm and hot starts many times on a real device and reports percentiles. Typical causes of slow starts: heavy work in <code>Application.onCreate</code> or the app delegate, SDKs initialised eagerly, synchronous disk or network calls before the first frame, and on Android, code that hasn't been ahead-of-time compiled (Baseline Profiles help).</p>
+
+      <h2 id="frames">Frame rate and jank</h2>
+      <p>At 60 Hz the app has 16.7 ms to produce each frame. At 120 Hz, 8.3 ms. A frame that misses its deadline is a dropped frame, and the user sees stutter while scrolling or animating. That is jank on Android and a hitch on iOS.</p>
+      <pre class="ex-code"><code># Android: frame statistics since the last reset, for one app
+adb shell dumpsys gfxinfo com.example.app reset
+# ... scroll the feed for 30 seconds ...
+adb shell dumpsys gfxinfo com.example.app
+# Total frames rendered: 1820
+# Janky frames: 146 (8.02%)
+# 50th percentile: 9ms   90th: 17ms   95th: 23ms   99th: 61ms</code></pre>
+      <p>Android vitals also counts slow frames and frozen frames (frames taking over 700 ms). On iOS, the Animation Hitches instrument in Xcode shows hitch time ratio and which frames missed. Test on a low-end device: frame budgets that a flagship meets with room to spare are often missed on the mid-range phones that many users actually own.</p>
+
+      <h2 id="profilers">Profilers: Android Studio and Xcode Instruments</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Question</th><th>Android Studio Profiler</th><th>Xcode Instruments</th></tr></thead>
+        <tbody>
+          <tr><td>Where does CPU time go?</td><td>CPU profiler: method sampling or tracing, system trace</td><td>Time Profiler</td></tr>
+          <tr><td>Why is the UI stuttering?</td><td>System trace (Perfetto) with frame timeline</td><td>Animation Hitches, Time Profiler on the main thread</td></tr>
+          <tr><td>Memory growth or leaks?</td><td>Memory profiler, heap dumps (and LeakCanary in debug builds)</td><td>Allocations, Leaks</td></tr>
+          <tr><td>What does the app send over the network?</td><td>Network Inspector</td><td>Network instrument (HTTP traffic)</td></tr>
+          <tr><td>Battery cost?</td><td>Power Profiler on supported devices</td><td>Energy instruments (names vary by Xcode version)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Profile release-like builds on real devices. Debug builds on Android run without many optimisations and can be several times slower, and the emulator and simulator use your computer's CPU, not the phone's.</p>
+
+      <h2 id="network">Network conditioning</h2>
+      <p>Office Wi-Fi hides the problems users have on trains and in lifts. Test under realistic latency, bandwidth and packet loss:</p>
+      <ul>
+        <li><strong>iOS:</strong> Network Link Conditioner, in the Developer settings on a device, and as a macOS tool in Apple's Additional Tools for Xcode. It has presets such as 3G, LTE and Very Bad Network.</li>
+        <li><strong>Android emulator:</strong> network speed and latency settings in the emulator's extended controls.</li>
+        <li><strong>Any device through a proxy:</strong> Charles Proxy and similar tools can throttle traffic.</li>
+        <li><strong>Linux gateway or test host:</strong> <code>tc netem</code> adds latency, jitter and loss to an interface.</li>
+      </ul>
+      <pre class="ex-code"><code># add 150 ms ± 30 ms latency and 1% loss on eth0 (Linux, as root)
+tc qdisc add dev eth0 root netem delay 150ms 30ms loss 1%
+# remove it
+tc qdisc del dev eth0 root</code></pre>
+      <p>Watch what the app does under these conditions: how many requests it makes before showing content, whether they run in parallel, timeouts and retries, and whether it shows cached content while waiting.</p>
+
+      <h2 id="backend">Backend load from mobile traffic patterns</h2>
+      <p>Mobile traffic has a shape web traffic often doesn't. Build it into the <a href="/glossary/workload-model/">workload model</a>:</p>
+      <ul>
+        <li><strong>Push-notification bursts.</strong> A campaign sent to everyone at once produces a <a href="/glossary/spike-testing/">spike</a> in minutes, not a ramp over an hour. Model it from real open-rate curves after past pushes, and test a <a href="/glossary/thundering-herd/">thundering herd</a> explicitly.</li>
+        <li><strong>Launch fan-out.</strong> One app open can mean 10 to 20 API calls (config, feature flags, profile, feed, notifications count). Load = launches per second × calls per launch. Script the real launch sequence, not one endpoint at a time.</li>
+        <li><strong>Retries on bad networks.</strong> Mobile clients retry. Under backend stress, aggressive client retries multiply traffic exactly when it hurts most. Check the app's retry policy and include it in the model. See <a href="/glossary/retry-storm/">retry storms</a>.</li>
+        <li><strong>Scheduled background work.</strong> Background refresh and sync jobs set to fixed times (midnight, top of the hour) line up across millions of devices. Jitter in the app avoids it. Test that it is there.</li>
+        <li><strong>Old app versions.</strong> Users update slowly, so old versions keep calling old endpoints with old payloads. Include their share in the mix.</li>
+        <li><strong>Slow clients hold connections longer.</strong> Requests from slow networks keep server connections and threads busy longer than requests from the data centre. Some load tools can limit bandwidth per virtual user. Otherwise allow for it in connection and thread sizing.</li>
+      </ul>
+      <p>Capture the real sequence from a device with a proxy, or from your API gateway logs, then convert it into a script. The <a href="/tools/workload-model/">workload model builder</a> helps turn launch rates into request rates, and the <a href="/tools/capacity-calculator/">capacity calculator</a> sizes the backend.</p>
+
+      <h2 id="field">Field data from real devices</h2>
+      <p>Lab tests on a few devices can't cover the range your users have. Field data fills that gap: Android vitals in the Google Play Console and Firebase Performance Monitoring on Android, and Xcode Organizer and MetricKit on iOS, report launch times, hangs and frame metrics from real users' devices. Use field data to choose which devices and network profiles to test in the lab, and to confirm that a fix worked.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Big push campaign or app launch coming up?</h2>
+        <p>Book a free 30-minute call. We'll model the burst your backend will really see and test the app on the devices your users own.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-mobile-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="guide-mobile-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,136 @@
+<!--{"title": "JMeter auth tokens: login once, OAuth2, Bearer, refresh", "og_title": "JMeter auth tokens: log in once, share an OAuth2 token, refresh before expiry", "description": "Handle auth in JMeter: log in once per thread, share an OAuth2 client-credentials token via properties, send Bearer headers and refresh before expiry.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Auth tokens</p>
+      <h1>JMeter auth tokens: log in once, not on every loop</h1>
+      <p class="lead">Your four-hour soak test is green for exactly one hour. From minute 60 every request returns 401, because the access token expired and nothing renewed it. Or the opposite: every iteration logs in again, and the identity provider becomes the bottleneck you end up reporting. This guide covers the patterns that avoid both.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#choose">Pick the right pattern</a></li>
+          <li><a href="#once">Per-user login with Once Only Controller</a></li>
+          <li><a href="#bearer">Sending the Bearer header</a></li>
+          <li><a href="#oauth">OAuth2 client credentials</a></li>
+          <li><a href="#shared">One shared token: setUp Thread Group and properties</a></li>
+          <li><a href="#refresh">Refreshing before expiry</a></li>
+          <li><a href="#pitfalls">Pitfalls</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="choose">1. Pick the right pattern</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Situation</th><th>Pattern</th></tr></thead>
+        <tbody>
+          <tr><td>Each virtual user is a different person (web or mobile app)</td><td>Per-thread login in a Once Only Controller, token in a variable</td></tr>
+          <tr><td>Service-to-service API with one client ID</td><td>One token fetched in a setUp Thread Group, shared as a property</td></tr>
+          <tr><td>Test is longer than the token lifetime</td><td>Expiry check in an If Controller (per thread) or a refresher thread group (shared)</td></tr>
+          <tr><td>You are load testing the login itself</td><td>Login is a normal sampler inside the loop, with its own target rate</td></tr>
+        </tbody>
+      </table></div>
+      <p>The question to ask the product owner is how often real users log in. A banking app might log in on almost every session. A B2B dashboard might keep a session for a full working day. Copy that ratio, do not default to "every iteration" or "never".</p>
+
+      <h2 id="once">2. Per-user login with Once Only Controller</h2>
+      <pre class="ex-code"><code>Thread Group  (Same user on each iteration: ticked)
+├── CSV Data Set Config          users.csv → username, password
+├── HTTP Cookie Manager
+├── HTTP Header Manager          Authorization: Bearer ${token}
+├── Once Only Controller
+│   └── POST /auth/login         body: {"username":"${username}","password":"${password}"}
+│       └── JSON Extractor       token ← $.accessToken   default TOKEN_NOT_FOUND
+├── GET  /api/accounts
+└── POST /api/transfers</code></pre>
+      <p>The <strong>Once Only Controller</strong> (Add → Logic Controller → Once Only Controller) runs its children only on the first iteration of each thread. Every later iteration reuses that thread's <code>${token}</code>. Variables are per thread, so 200 threads hold 200 independent tokens.</p>
+      <div class="g-warn">
+        <p>The CSV row is read at the start of every iteration, but the login only runs on the first. From iteration 2 onwards <code>${username}</code> no longer matches the logged-in token. If later requests use the username, copy it into another variable during login, for example with a JSR223 PostProcessor: <code>vars.put('loginUser', vars.get('username'))</code>, and use <code>${loginUser}</code> afterwards.</p>
+      </div>
+
+      <h2 id="bearer">3. Sending the Bearer header</h2>
+      <p>Add <strong>Config Element → HTTP Header Manager</strong> with <code>Authorization</code> = <code>Bearer ${token}</code>. Where you place it decides which requests get it:</p>
+      <ul>
+        <li>At Thread Group level it applies to every sampler, including the login call. Most identity providers ignore an invalid <code>Bearer TOKEN_NOT_FOUND</code> header on the token endpoint, but some reject it. If yours does, move the business requests under a Simple Controller and put the Header Manager there.</li>
+        <li>Several Header Managers in scope are merged into one list. If two of them set the same header name, only one value is sent, so avoid duplicates rather than relying on which one wins.</li>
+      </ul>
+      <p>Header values are evaluated per request, so <code>Bearer ${token}</code> always uses the thread's current value, and <code>Bearer ${__P(accessToken)}</code> always reads the current property.</p>
+
+      <h2 id="oauth">4. OAuth2 client credentials</h2>
+      <p>The client-credentials grant is a form POST to the token endpoint. In an HTTP Request sampler:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Method / Path</td><td><code>POST</code> <code>/oauth2/token</code> (check your provider's discovery document)</td></tr>
+          <tr><td>Parameters tab</td><td><code>grant_type</code> = <code>client_credentials</code><br><code>client_id</code> = <code>${__P(clientId)}</code><br><code>client_secret</code> = <code>${__P(clientSecret)}</code><br><code>scope</code> = <code>payments.read</code></td></tr>
+          <tr><td>Header Manager</td><td><code>Content-Type</code> = <code>application/x-www-form-urlencoded</code></td></tr>
+          <tr><td>JSON Extractor</td><td>Names <code>token;expiresIn</code>, paths <code>$.access_token;$.expires_in</code>, match <code>1;1</code>, defaults <code>TOKEN_NOT_FOUND;300</code></td></tr>
+          <tr><td>Response Assertion</td><td>Response Code equals <code>200</code>, so a failed token call stops looking like success</td></tr>
+        </tbody>
+      </table></div>
+      <p>Pass the secret in at run time (<code>-JclientSecret=$CLIENT_SECRET</code> from a CI secret), never in the <code>.jmx</code>. Some providers want the client ID and secret in a Basic auth header instead of the body. A JSR223 PreProcessor on the token request can build it:</p>
+      <pre class="ex-code"><code>// JSR223 PreProcessor, language groovy
+def raw = props.get('clientId') + ':' + props.get('clientSecret')
+vars.put('basicAuth', 'Basic ' + raw.bytes.encodeBase64().toString())
+// then Header Manager: Authorization = ${basicAuth}</code></pre>
+
+      <h2 id="shared">5. One shared token: setUp Thread Group and properties</h2>
+      <p>When every thread can use the same token, fetch it once. A <strong>setUp Thread Group</strong> (Add → Threads (Users) → setUp Thread Group) runs to completion before normal thread groups start. Variables do not cross thread boundaries, so hand the value over as a <em>property</em>:</p>
+      <pre class="ex-code"><code>setUp Thread Group  (1 thread, 1 loop)
+└── POST /oauth2/token
+    ├── JSON Extractor        token ← $.access_token
+    └── JSR223 PostProcessor  props.put('accessToken', vars.get('token'))
+
+Thread Group  (the real load)
+├── HTTP Header Manager       Authorization: Bearer ${__P(accessToken)}
+└── ... business requests ...</code></pre>
+      <p>Post-processors under the same sampler run in tree order, so keep the JSR223 PostProcessor below the JSON Extractor. If you prefer functions to scripts, any evaluated field can call <code>__setProperty</code>. A common idiom is a Debug Sampler in the setUp group named <code>Save token ${__setProperty(accessToken,${token},)}</code>. It works, but the script version is easier for the next person to spot.</p>
+      <div class="g-note">
+        <p>In <a href="/guides/jmeter/distributed-testing/">distributed mode</a> every remote node runs its own setUp Thread Group, so each node fetches its own token. That is usually fine. If the provider limits token issuance per client, plan for one call per node.</p>
+      </div>
+
+      <h2 id="refresh">6. Refreshing before expiry</h2>
+      <h3>Per-thread tokens: an If Controller in front of the work</h3>
+      <p>Replace the Once Only Controller with an If Controller that fetches a token when there is none or it is about to expire. The same branch handles the first login and every refresh.</p>
+      <pre class="ex-code"><code>Thread Group
+├── HTTP Header Manager            Authorization: Bearer ${token}
+├── If Controller                  "If token missing or expiring"
+│   │  Condition (Interpret Condition as Variable Expression: ticked):
+│   │  ${__groovy(System.currentTimeMillis() &gt; (vars.get('tokenExpiry') ?: '0').toLong(),)}
+│   └── POST /oauth2/token
+│       ├── JSON Extractor         token;expiresIn ← $.access_token;$.expires_in
+│       └── JSR223 PostProcessor   (script below)
+└── ... business requests ...</code></pre>
+      <pre class="ex-code"><code>// JSR223 PostProcessor, language groovy: refresh 60 s before the real expiry
+long ttl = (vars.get('expiresIn') ?: '300').toLong()
+vars.put('tokenExpiry', String.valueOf(System.currentTimeMillis() + (ttl - 60) * 1000))</code></pre>
+      <p>The If Controller runs at the start of each iteration. With a 3-second iteration and a 1-hour token, that is one token call per user per hour, which matches how a real client behaves. If your API offers a <code>refresh_token</code> grant, use it inside the same branch with <code>grant_type=refresh_token</code>.</p>
+      <h3>Shared token: a refresher thread group</h3>
+      <pre class="ex-code"><code>Thread Group "Token refresher"   1 thread, Loop Count: Infinite,
+│                                Specify Thread lifetime: same duration as the test
+├── POST /oauth2/token
+│   ├── JSON Extractor           token;expiresIn
+│   └── JSR223 PostProcessor     props.put('accessToken', vars.get('token'))
+└── Flow Control Action          Logical action: Pause, Duration (ms):
+                                 ${__groovy(((vars.get('expiresIn') ?: '300').toLong() - 60) * 1000,)}</code></pre>
+      <p>Keep the setUp group too, so the first token exists before load starts. The worker threads read <code>${__P(accessToken)}</code> on every request and pick up the new value as soon as it is stored.</p>
+
+      <h2 id="pitfalls">7. Pitfalls</h2>
+      <ul>
+        <li><strong>Token calls in the results.</strong> They are real samples. Name them clearly (<code>00 Auth token</code>) and exclude them from SLA checks if they are not part of what you are testing. They still count toward error rate, which is what you want.</li>
+        <li><strong>Rate limits on the identity provider.</strong> Ramping 2,000 threads with ramp-up 0 sends 2,000 logins at once. Ramp up gradually, as real users arrive. See <a href="/glossary/ramp-up/">ramp-up</a>.</li>
+        <li><strong>MFA and captchas.</strong> Ask for a test-only bypass or pre-issued tokens in the test environment. Do not try to script around them.</li>
+        <li><strong>Silent failures.</strong> A distinctive default (<code>TOKEN_NOT_FOUND</code>) plus a Response Assertion on the token call turns a confusing wall of 401s into one obvious error.</li>
+        <li><strong>Cookie-based sessions.</strong> If the app uses session cookies rather than tokens, the HTTP Cookie Manager does the work. Tick "Same user on each iteration" on the Thread Group so the cookies survive between iterations.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/assertions/">assertions</a>, so a 200 with an error page counts as a failure.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Fighting 401s halfway through a test?</h2>
+        <p>Book a free 30-minute call and we'll work out the right login and refresh pattern for your system. Or see <a href="/services/performance-testing/">performance testing services</a> if you'd like it built for you.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-auth-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-auth-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

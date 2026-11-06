@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatling in CI: assertions, exit codes and reports — Pawan Sinha</title>
+  <meta name="description" content="Run Gatling simulations in GitHub Actions and GitLab CI, fail the build with assertions on percentiles and errors, keep HTML reports as artifacts, and read them.">
+  <meta property="og:title" content="Gatling in CI: assertions that fail the build, and reports as artifacts">
+  <meta property="og:description" content="Run Gatling simulations in GitHub Actions and GitLab CI, fail the build with assertions on percentiles and errors, keep HTML reports as artifacts, and read them.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/gatling/ci-and-reports/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/gatling/ci-and-reports/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Gatling in CI: assertions, exit codes and reports", "description": "Run Gatling simulations in GitHub Actions and GitLab CI, fail the build with assertions on percentiles and errors, keep HTML reports as artifacts, and read them.", "url": "https://pawansinha.com.au/guides/gatling/ci-and-reports/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/gatling/">Gatling</a> · CI and reports</p>
+      <h1>Gatling in CI: assertions that fail the build</h1>
+      <p class="lead">The nightly Gatling job has been green for months. Someone opens the report and
+        finds 30% of requests failed every night. Without assertions, Gatling reports problems but
+        doesn't fail anything. Here's how to make the pipeline care.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#assertions">Assertions: the pass/fail budget</a></li>
+          <li><a href="#exit">How a failed assertion reaches CI</a></li>
+          <li><a href="#gha">GitHub Actions</a></li>
+          <li><a href="#gitlab">GitLab CI</a></li>
+          <li><a href="#reports">Reports and comparing runs</a></li>
+          <li><a href="#scale">Scaling past one machine</a></li>
+        </ol>
+      </div>
+
+      <h2 id="assertions">Assertions: the pass/fail budget</h2>
+      <p>Assertions are checked once, at the end of the run, against the whole simulation's
+        statistics. Add them to <code>setUp</code>:</p>
+      <pre class="ex-code"><code>.assertions(
+    global().responseTime().percentile(95.0).lt(500),        // p95 under 500 ms overall
+    global().responseTime().percentile(99.0).lt(1500),
+    global().failedRequests().percent().lt(1.0),             // under 1% KO
+    global().requestsPerSec().gte(100.0),                    // and the load was actually generated
+    details("Pay").responseTime().percentile(95.0).lt(800),  // one request by name
+    details("Checkout", "Pay").failedRequests().count().is(0L), // a request inside a group
+    forAll().responseTime().percentile(99.0).lt(2000))       // every request, individually</code></pre>
+      <ul>
+        <li><strong>Scope:</strong> <code>global()</code> is all requests together,
+          <code>forAll()</code> applies the rule to each request separately, and
+          <code>details(...)</code> targets one request or group by name.</li>
+        <li><strong>Always pair latency with errors.</strong> Failed requests are often fast, so a
+          p95 budget alone can pass while the system returns errors.</li>
+        <li><strong>Assert the throughput too.</strong> If the load generator couldn't produce the
+          planned load, a latency budget passes for the wrong reason.</li>
+        <li><strong>Percentiles, not the mean.</strong> Gatling can assert <code>mean()</code>, but
+          the mean hides the tail. See <a href="/glossary/percentiles/">percentiles</a> and set the
+          numbers from your <a href="/glossary/slo/">SLO</a>.</li>
+      </ul>
+
+      <h2 id="exit">How a failed assertion reaches CI</h2>
+      <p>With the Maven plugin, a failed assertion fails the build, so <code>mvn</code> exits
+        non-zero and the CI job goes red. That's the plugin's <code>failOnError</code> setting, on by
+        default. Two other plugin settings matter in CI:</p>
+      <ul>
+        <li><strong>More than one simulation:</strong> in non-interactive mode the plugin stops and
+          asks you to pick one. Pass <code>-Dgatling.simulationClass=...</code>, or
+          <code>-Dgatling.runMultipleSimulations=true</code> to run them all.</li>
+        <li><strong>Keep going after a failure:</strong> with several simulations,
+          <code>-Dgatling.continueOnAssertionFailure=true</code> runs the rest and fails at the end,
+          so you get every report.</li>
+      </ul>
+      <p>The Gradle plugin's <code>gatlingRun</code> task fails the same way when assertions fail.</p>
+
+      <h2 id="gha">GitHub Actions</h2>
+      <pre class="ex-code"><code># .github/workflows/gatling.yml
+name: Gatling load test
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 14 * * 1-5'            # weekdays 14:00 UTC (overnight in Australia)
+
+jobs:
+  gatling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run simulation
+        run: &gt;
+          ./mvnw --batch-mode gatling:test
+          -Dgatling.simulationClass=example.CheckoutSimulation
+          -DbaseUrl=${{ vars.STAGING_URL }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()                    # keep the report when assertions fail
+        with:
+          name: gatling-report
+          path: target/gatling/</code></pre>
+      <p><code>if: always()</code> keeps the report when assertions fail, which is when you need it.
+        Load tests usually run on a schedule or on demand rather than on every pull request: a
+        Gatling run with a realistic ramp and steady state takes 20 minutes or more. For a quick
+        check on pull requests, keep a short smoke simulation with a handful of users.</p>
+
+      <h2 id="gitlab">GitLab CI</h2>
+      <pre class="ex-code"><code># .gitlab-ci.yml
+gatling:
+  stage: test
+  image: maven:3-eclipse-temurin-21
+  script:
+    - mvn --batch-mode gatling:test -Dgatling.simulationClass=example.CheckoutSimulation -DbaseUrl=$STAGING_URL
+  artifacts:
+    when: always
+    paths: [target/gatling/]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+    - if: $CI_PIPELINE_SOURCE == 'web'</code></pre>
+
+      <h2 id="reports">Reports and comparing runs</h2>
+      <p>Each run writes a self-contained HTML report folder under <code>target/gatling/</code>
+        (Maven) or <code>build/reports/gatling/</code> (Gradle). Upload the whole folder: the
+        <code>index.html</code> needs the files next to it.</p>
+      <p>What to read, in order:</p>
+      <ol>
+        <li><strong>Errors</strong>: anything above a trickle invalidates the latency numbers. Fix
+          or explain errors first.</li>
+        <li><strong>Active users and requests per second over time</strong>: did the injection
+          profile happen as planned?</li>
+        <li><strong>Response time percentiles over time</strong>: flat during the steady state, or
+          climbing? A steady climb under constant load is a queue or a leak filling up.</li>
+        <li><strong>Per-request table</strong>: the slowest request names and their p95 and p99.</li>
+      </ol>
+      <p>The open-source report covers one run. To compare runs, keep the reports as artifacts with
+        the commit or build number in the name, and track the key numbers (p95, p99, error rate,
+        throughput) per run in a spreadsheet or dashboard. Line them up with server metrics from the
+        same time window to find the cause: see the <a href="/guides/monitoring/">monitoring
+        guide</a>.</p>
+
+      <h2 id="scale">Scaling past one machine</h2>
+      <p>Gatling is efficient, and one well-sized machine generates a lot of HTTP load. Watch the
+        load generator's CPU and network during the run: if it's saturated, the response times
+        include Gatling waiting for its own CPU. The open-source version runs on one machine. To
+        spread load across several, you can run the same simulation on several machines and combine
+        the results yourself (request counts and error counts add up, percentiles don't: averaging
+        each machine's p95 is not the overall p95), or use Gatling Enterprise, the commercial edition, which handles
+        distributed load generators and run-to-run comparison.</p>
+      <p>Back to the <a href="/guides/gatling/">Gatling guides</a>, or compare with
+        <a href="/guides/k6/ci-pipelines/">k6 in CI</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want load tests that gate your releases?</h2>
+        <p>I set up Gatling or k6 in your pipeline with budgets from your SLOs and reports your team
+          can act on.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-gat-ci-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-gat-ci-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

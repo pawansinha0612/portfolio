@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter results: JTL columns and the HTML report — Pawan Sinha</title>
+  <meta name="description" content="What every column in a JMeter JTL means, what each HTML dashboard graph tells you, how JMeter reports percentiles, and the report settings worth changing.">
+  <meta property="og:title" content="Reading JMeter results: JTL columns, the HTML dashboard and percentiles">
+  <meta property="og:description" content="What every column in a JMeter JTL means, what each HTML dashboard graph tells you, how JMeter reports percentiles, and the report settings worth changing.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/results-and-reports/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/results-and-reports/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "JMeter results: JTL columns and the HTML report", "description": "What every column in a JMeter JTL means, what each HTML dashboard graph tells you, how JMeter reports percentiles, and the report settings worth changing.", "url": "https://pawansinha.com.au/guides/jmeter/results-and-reports/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Results and reports</p>
+      <h1>Reading JMeter results without fooling yourself</h1>
+      <p class="lead">The dashboard says p95 is 640 ms, under the 800 ms target. But 6% of requests failed in under 20 ms with connection resets, and the percentile chart only counts successful responses. Or the one-minute granularity flattened a 40-second stall into a gentle bump. The HTML report is good, once you know what each number includes and leaves out.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#jtl">The JTL file, column by column</a></li>
+          <li><a href="#timing">Elapsed, Latency and Connect</a></li>
+          <li><a href="#dashboard">The HTML dashboard</a></li>
+          <li><a href="#graphs">What each graph tells you</a></li>
+          <li><a href="#percentiles">Percentiles in JMeter</a></li>
+          <li><a href="#settings">Report settings worth changing</a></li>
+          <li><a href="#live">Live results while the test runs</a></li>
+          <li><a href="#order">A reading order</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="jtl">1. The JTL file, column by column</h2>
+      <p>With default settings, <code>-l results.jtl</code> writes CSV with this header in JMeter 5.6:</p>
+      <pre class="ex-code"><code>timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>timeStamp</code></td><td>Sample start time, epoch milliseconds (the default <code>sampleresult.timestamp.start=true</code>)</td></tr>
+          <tr><td><code>elapsed</code></td><td>Response time in ms: from just before sending to the last byte received</td></tr>
+          <tr><td><code>label</code></td><td>Sampler or transaction name. Group and filter on it</td></tr>
+          <tr><td><code>responseCode</code></td><td>HTTP status, or an exception class name such as <code>Non HTTP response code: java.net.SocketTimeoutException</code></td></tr>
+          <tr><td><code>responseMessage</code></td><td>HTTP reason phrase or error text</td></tr>
+          <tr><td><code>threadName</code></td><td>Thread group name plus thread number, e.g. <code>Buyers 1-17</code></td></tr>
+          <tr><td><code>dataType</code></td><td><code>text</code> or <code>bin</code>, empty for transaction parents</td></tr>
+          <tr><td><code>success</code></td><td><code>true</code> or <code>false</code> after status and assertions</td></tr>
+          <tr><td><code>failureMessage</code></td><td>First failing assertion's message</td></tr>
+          <tr><td><code>bytes</code></td><td>Bytes received, headers included</td></tr>
+          <tr><td><code>sentBytes</code></td><td>Bytes sent</td></tr>
+          <tr><td><code>grpThreads</code></td><td>Active threads in this sample's thread group at that moment</td></tr>
+          <tr><td><code>allThreads</code></td><td>Active threads across all groups (per node in distributed runs)</td></tr>
+          <tr><td><code>URL</code></td><td>Final URL requested</td></tr>
+          <tr><td><code>Latency</code></td><td>Time to first byte of the response, in ms</td></tr>
+          <tr><td><code>IdleTime</code></td><td>Time not spent sampling, usually 0. Used by transaction parents</td></tr>
+          <tr><td><code>Connect</code></td><td>Time to establish the connection, TLS included. 0 when a kept-alive connection was reused</td></tr>
+        </tbody>
+      </table></div>
+      <p>Columns are controlled by the <code>jmeter.save.saveservice.*</code> properties. The dashboard needs the defaults, so do not trim them to save disk. Do keep <code>jmeter.save.saveservice.response_data</code> off (the default). Saving bodies for every sample produces multi-gigabyte files and slows the generator.</p>
+      <p>The <a href="/tools/jtl-analyser/">JTL analyser</a> reads a JTL in the browser and gives you percentiles per label, error breakdowns and timelines without uploading the file anywhere.</p>
+
+      <h2 id="timing">2. Elapsed, Latency and Connect</h2>
+      <pre class="ex-code"><code>|— Connect —|— request sent, server working —|— first byte … last byte —|
+|——————————————— Latency ——————————————————|
+|———————————————————————————— elapsed ——————————————————————————————|</code></pre>
+      <ul>
+        <li><strong>Connect high, Latency − Connect low:</strong> connection setup is the cost. New TLS handshakes on every iteration ("Same user on each iteration" unticked), DNS issues, or a load balancer struggling with new connections.</li>
+        <li><strong>Latency high:</strong> the server is slow to produce the first byte. Application, database or a queue in front of them. See <a href="/glossary/ttfb/">TTFB</a>.</li>
+        <li><strong>elapsed much larger than Latency:</strong> the body takes long to arrive. Big payloads, bandwidth limits, or a server that streams slowly.</li>
+      </ul>
+      <p>None of these include timer delays. They do include time the load generator spends on its own work, which is why a saturated generator inflates every number.</p>
+
+      <h2 id="dashboard">3. The HTML dashboard</h2>
+      <p>Generate it at the end of a run with <code>-e -o report/</code>, or later from any JTL with <code>jmeter -g results.jtl -o report/</code>. The first page shows:</p>
+      <ul>
+        <li><strong>Test and Report information:</strong> file, start and end time, and the time window used for the report.</li>
+        <li><strong>APDEX table:</strong> per label, using the satisfied threshold (500 ms by default) and the tolerated threshold (1500 ms by default). Set them to your real targets or ignore the table. See <a href="/glossary/apdex/">APDEX</a>.</li>
+        <li><strong>Requests Summary:</strong> pass and fail share.</li>
+        <li><strong>Statistics:</strong> per label: samples, errors, error %, average, min, max, median, the three configured percentiles (90th, 95th and 99th by default), throughput, and received and sent KB/s.</li>
+        <li><strong>Errors:</strong> each error type with its share of errors and of all samples.</li>
+        <li><strong>Top 5 Errors by sampler:</strong> where the errors came from.</li>
+      </ul>
+      <p>The same statistics are written to <code>report/statistics.json</code>, which is handy for <a href="/guides/jmeter/ci-pipelines/">CI gates</a> and trend charts.</p>
+
+      <h2 id="graphs">4. What each graph tells you</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Graph</th><th>Look for</th></tr></thead>
+        <tbody>
+          <tr><td>Response Times Over Time</td><td>Average per label over time. Drift upward in a soak test suggests a leak, growing queue or bloating table</td></tr>
+          <tr><td>Response Time Percentiles Over Time (successful responses)</td><td>The tail over time. Spikes lined up across all labels point to a shared cause: GC pauses, a cron job, autoscaling</td></tr>
+          <tr><td>Active Threads Over Time</td><td>The load shape you actually applied. Compare it with what you planned</td></tr>
+          <tr><td>Bytes Throughput Over Time</td><td>A flat line while threads rise can mean a network ceiling</td></tr>
+          <tr><td>Latencies Over Time / Connect Time Over Time</td><td>Separate server time from connection setup (section 2)</td></tr>
+          <tr><td>Hits Per Second</td><td>Requests sent per second. If it stops rising while threads rise, something is saturated</td></tr>
+          <tr><td>Codes Per Second</td><td>When errors started and which codes: 429 means rate limiting, 502 or 503 the proxy or load balancer, 500 the application</td></tr>
+          <tr><td>Transactions Per Second</td><td>Per-label throughput, split by success and failure</td></tr>
+          <tr><td>Response Time Vs Request</td><td>Median response time against request rate. The knee is where capacity runs out</td></tr>
+          <tr><td>Response Time Percentiles</td><td>The full distribution curve for the whole run. A long flat tail with a sharp jump at the end shows a bimodal pattern such as cache hits and misses</td></tr>
+          <tr><td>Response Time Overview</td><td>Counts in the APDEX buckets plus failures</td></tr>
+          <tr><td>Time Vs Threads</td><td>Response time against concurrency. Rising roughly linearly beyond a point is the signature of a queue (<a href="/explain/queueing/">queueing explainer</a>)</td></tr>
+          <tr><td>Response Time Distribution</td><td>Histogram per label. Two humps mean two populations of requests that deserve separate analysis</td></tr>
+        </tbody>
+      </table></div>
+      <p>Some graphs include Transaction Controller samples and some exclude them. The <a href="https://jmeter.apache.org/usermanual/generating-dashboard.html" rel="noopener">dashboard documentation</a> lists which is which. Use "Apply Naming Policy" on Transaction Controllers if you want only the transaction names to appear.</p>
+
+      <h2 id="percentiles">5. Percentiles in JMeter</h2>
+      <p>The Statistics table and Aggregate Report show the 90th, 95th and 99th percentiles by default (properties <code>aggregate_rpt_pct1</code>, <code>pct2</code> and <code>pct3</code>). Things to keep in mind:</p>
+      <ul>
+        <li><strong>Read the error rate first.</strong> Failed requests are often very fast (connection refused, instant 503) or very slow (timeouts). Either way they distort the latency numbers. Fix errors, then trust the percentiles.</li>
+        <li><strong>A run-wide percentile hides time.</strong> A p95 over one hour can look fine while minutes 40 to 45 were terrible. Use the percentiles-over-time graph for that.</li>
+        <li><strong>Small samples are noisy.</strong> A p99 from 300 samples rests on three requests.</li>
+        <li><strong>Never average percentiles</strong> across labels, nodes or runs. Recompute from the raw samples. That is why merging JTLs and regenerating the report is correct, and averaging three reports' p95s is not.</li>
+        <li><strong>A closed model under-reports the tail.</strong> When the server stalls, JMeter threads wait instead of sending, so the slow period has fewer samples than real users would have produced. That is coordinated omission, shown in the <a href="/explain/percentiles/">percentiles explainer</a>.</li>
+      </ul>
+
+      <h2 id="settings">6. Report settings worth changing</h2>
+      <p>Put these in <code>user.properties</code>, or pass them with <code>-J</code> when generating the report:</p>
+      <pre class="ex-code"><code># Over-time graphs default to 1-minute points. Use 5-10 s for tests under ~30 min.
+# Must be above 1000 ms or throughput graphs are wrong.
+jmeter.reportgenerator.overall_granularity=5000
+
+# Your real targets instead of 500 / 1500 ms
+jmeter.reportgenerator.apdex_satisfied_threshold=800
+jmeter.reportgenerator.apdex_tolerated_threshold=2000
+
+jmeter.reportgenerator.report_title=Checkout API, release 4.2, 400 rps
+
+# Leave warm-up out of the report (format set by jmeter.reportgenerator.date_format)
+jmeter.reportgenerator.date_format=yyyyMMddHHmmss
+jmeter.reportgenerator.start_date=20261106100500
+jmeter.reportgenerator.end_date=20261106110500
+
+# Hide setup and token calls from the graphs (regular expression on labels)
+jmeter.reportgenerator.exporter.html.series_filter=^(01|02|03|04).*</code></pre>
+      <pre class="ex-code"><code>jmeter -g results.jtl -o report-steady/ -q report.properties</code></pre>
+
+      <h2 id="live">7. Live results while the test runs</h2>
+      <p>The CLI summariser prints a line every 30 seconds by default (<code>summariser.interval</code>). For a live dashboard, add a <strong>Backend Listener</strong> with the <code>InfluxdbBackendListenerClient</code> implementation and point it at InfluxDB, then chart it in Grafana. It sends aggregated metrics, not every sample, so it is cheap. Keep the JTL as the source of truth for the final analysis.</p>
+      <p>Do not use View Results Tree, Aggregate Report or graph listeners during load. They hold results in memory and cost CPU. See <a href="/guides/jmeter/common-mistakes/">common mistakes</a>.</p>
+
+      <h2 id="order">8. A reading order</h2>
+      <ol>
+        <li><strong>Did the test do what you planned?</strong> Active threads, hits per second and total samples against the plan.</li>
+        <li><strong>Was the load generator healthy?</strong> Its CPU, memory and GC during the run. If not, stop here.</li>
+        <li><strong>Errors:</strong> when they started, which codes and which labels.</li>
+        <li><strong>Latency over time,</strong> then the percentile table for the steady-state window.</li>
+        <li><strong>Correlate with server-side metrics</strong> for the same window: CPU, saturation, pools, GC, database. The report tells you <em>what</em> happened. Server telemetry tells you <em>why</em>. The <a href="/glossary/use-method/">USE method</a> is a good checklist.</li>
+      </ol>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/common-mistakes/">common JMeter mistakes</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want a second pair of eyes on a report?</h2>
+        <p>Book a free 30-minute call and we'll read your JMeter results together and work out where the bottleneck really is. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-results-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-results-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

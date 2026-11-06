@@ -1,0 +1,45 @@
+# Workload Model: [System name]
+
+| Data source | Peak hour used | Uplift factor | Author | Date |
+|---|---|---|---|---|
+| [Analytics, access logs, APM] | [For example: Mon 2 Dec, 12:00-13:00] | [1.5] | [Name] | [DD/MM/YYYY] |
+
+> Use the busiest real hour you can find, not a daily average divided by 24. The uplift factor covers growth plus a safety margin. Write down where it comes from.
+
+## 1. Volumes and targets
+
+| Journey | Peak hour (production) | Uplift | Target per hour | Iterations per second | Iteration time (s) | Minimum VUs | VUs with spare | Pacing (s) |
+|---|---|---|---|---|---|---|---|---|
+| [Login] | [] | [] | [] | [] | [] | [] | [] | [] |
+| [Search] | [] | [] | [] | [] | [] | [] | [] | [] |
+| [Checkout] | [] | [] | [] | [] | [] | [] | [] | [] |
+| **Total** | [] | | [] | [] | | [] | [] | |
+
+## 2. Formulas
+
+- **Target per hour** = peak hour (production) × uplift
+- **Iterations per second** = target per hour ÷ 3,600
+- **Iteration time** = the sum of response times and think times for one pass through the journey script
+- **Minimum VUs** (Little's Law) = iterations per second × iteration time
+- **VUs with spare** = minimum VUs × 1.25, rounded up, so slower responses under load don't cut throughput
+- **Pacing** = VUs with spare ÷ iterations per second. Each virtual user starts a new iteration this often.
+
+> With an open-model tool setting (k6 constant-arrival-rate, Gatling injectOpen, JMeter's Open Model Thread Group) you set iterations per second directly and the tool adds users as needed. Use the minimum VUs figure to size the pool of pre-allocated users.
+
+## 3. Worked example
+
+| Journey | Peak hour | Uplift | Target per hour | Iterations per second | Iteration time (s) | Minimum VUs | VUs with spare | Pacing (s) |
+|---|---|---|---|---|---|---|---|---|
+| Login | 12,000 | 1.5 | 18,000 | 5.0 | 8 | 40 | 50 | 10.0 |
+| Search | 30,000 | 1.5 | 45,000 | 12.5 | 12 | 150 | 188 | 15.0 |
+| Checkout | 2,400 | 1.5 | 3,600 | 1.0 | 40 | 40 | 50 | 50.0 |
+| **Total** | 44,400 | | 66,600 | 18.5 | | 230 | 288 | |
+
+## 4. Assumptions
+
+- [Journey mix taken from the same peak hour as the volumes.]
+- [Think times taken from real session data, or a stated estimate.]
+- [Background traffic (batch jobs, integrations, bots) included or excluded, and why.]
+
+---
+Free template from https://pawansinha.com.au/guides/templates/ . Try the numbers online at https://pawansinha.com.au/tools/workload-model/ . The full pack includes an Excel workload calculator that does these sums for you: https://pawansinha.com.au/templates/

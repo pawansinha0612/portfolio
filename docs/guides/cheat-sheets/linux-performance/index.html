@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux performance cheat sheet — Pawan Sinha</title>
+  <meta name="description" content="One printable page of Linux performance commands for load testing: what each shows, the column to read, and the threshold where it starts to hurt.">
+  <meta property="og:title" content="Linux performance cheat sheet: commands, what to look at, danger thresholds">
+  <meta property="og:description" content="One printable page of Linux performance commands for load testing: what each shows, the column to read, and the threshold where it starts to hurt.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/cheat-sheets/linux-performance/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/cheat-sheets/linux-performance/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Linux performance cheat sheet", "description": "One printable page of Linux performance commands for load testing: what each shows, the column to read, and the threshold where it starts to hurt.", "url": "https://pawansinha.com.au/guides/cheat-sheets/linux-performance/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/cheat-sheets/">Cheat sheets</a> · Linux performance</p>
+      <h1>Linux performance cheat sheet</h1>
+      <p class="lead">Every command worth running on a Linux server during a load test, the column to read and the point where it starts to hurt. Thresholds are rules of thumb for latency-sensitive services. Compare against your own baseline, and print it: the nav and buttons drop out on paper.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>First 60 seconds</h2>
+      <pre class="ex-code"><code>uptime; dmesg -T | tail; vmstat 1 5; mpstat -P ALL 1 3; pidstat 1 3
+iostat -xz 1 3; free -m; sar -n DEV 1 3; sar -n TCP,ETCP 1 3; ss -s</code></pre>
+      <p>Install <code>sysstat</code> for mpstat, pidstat, iostat and sar. Ignore the first line of vmstat and iostat: it is the average since boot.</p>
+
+      <h2>CPU</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Look at</th><th>Danger when</th></tr></thead>
+        <tbody>
+          <tr><td><code>uptime</code></td><td>1, 5, 15-minute load average</td><td>Load above core count (<code>nproc</code>). Includes disk waits (D state).</td></tr>
+          <tr><td><code>vmstat 1</code></td><td><code>r</code> run queue</td><td><code>r</code> above core count for more than a few seconds</td></tr>
+          <tr><td><code>vmstat 1</code></td><td><code>us</code> <code>sy</code> <code>wa</code> <code>st</code></td><td><code>sy</code> over 20-30%, <code>wa</code> over 10%, <code>st</code> over 5%</td></tr>
+          <tr><td><code>vmstat 1</code></td><td><code>cs</code> context switches/s</td><td>Large jump vs baseline at the same throughput</td></tr>
+          <tr><td><code>mpstat -P ALL 1</code></td><td><code>%usr</code> per core, <code>%soft</code></td><td>One core near 100% while others idle (single-thread or IRQ bottleneck)</td></tr>
+          <tr><td><code>top</code> then <code>1</code>, <code>H</code>, <code>P</code></td><td>Per core, threads, sort by CPU</td><td>Same hot thread every refresh</td></tr>
+          <tr><td><code>pidstat -u 1</code></td><td><code>%wait</code> per process</td><td>Over 10%: process is queueing for CPU</td></tr>
+          <tr><td><code>pidstat -t -p PID 1</code></td><td>Per-thread CPU</td><td>One thread pinned at 100%</td></tr>
+          <tr><td><code>pidstat -w 1</code></td><td><code>nvcswch/s</code> involuntary switches</td><td>High and rising: more runnable threads than cores</td></tr>
+          <tr><td><code>cat /sys/fs/cgroup/cpu.stat</code></td><td><code>nr_throttled</code> ÷ <code>nr_periods</code></td><td>Over about 5% for a latency-sensitive container</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Memory</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Look at</th><th>Danger when</th></tr></thead>
+        <tbody>
+          <tr><td><code>free -m</code></td><td><code>available</code> (not <code>free</code>)</td><td>Under 10% of total</td></tr>
+          <tr><td><code>vmstat 1</code></td><td><code>si</code> <code>so</code> swap in/out</td><td>Any sustained non-zero value</td></tr>
+          <tr><td><code>sar -B 1</code></td><td><code>majflt/s</code>, <code>pgscank/s</code></td><td>Major faults or kswapd scanning climbing under load</td></tr>
+          <tr><td><code>dmesg -T | grep -i oom</code></td><td>OOM killer messages</td><td>Any, during a test</td></tr>
+          <tr><td><code>ps -eo pid,rss,vsz,comm --sort=-rss | head</code></td><td>Resident memory per process</td><td>RSS still growing after warm-up (leak or unbounded cache)</td></tr>
+          <tr><td><code>cat /sys/fs/cgroup/memory.events</code></td><td><code>oom_kill</code>, <code>high</code></td><td>Counters increasing</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Disk</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Look at</th><th>Danger when</th></tr></thead>
+        <tbody>
+          <tr><td><code>iostat -xz 1</code></td><td><code>r_await</code> <code>w_await</code> (ms)</td><td>SSD over a few ms, cloud volume over about 10 ms, or rising with load</td></tr>
+          <tr><td><code>iostat -xz 1</code></td><td><code>aqu-sz</code> queue length</td><td>Growing steadily with load</td></tr>
+          <tr><td><code>iostat -xz 1</code></td><td><code>%util</code></td><td>Near 100% on spinning disks. On SSD/NVMe/cloud, judge by await and IOPS limits.</td></tr>
+          <tr><td><code>iostat -xz 1</code></td><td><code>r/s</code> <code>w/s</code> vs volume limit</td><td>Flat at a round number while await rises: provisioned IOPS cap</td></tr>
+          <tr><td><code>pidstat -d 1</code></td><td><code>kB_rd/s</code> <code>kB_wr/s</code> per process</td><td>Unexpected writer (logging, swap, temp files)</td></tr>
+          <tr><td><code>df -h</code>, <code>df -i</code></td><td>Space and inodes</td><td>Over 90% used, or inodes exhausted</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Network</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Look at</th><th>Danger when</th></tr></thead>
+        <tbody>
+          <tr><td><code>sar -n DEV 1</code></td><td><code>rxkB/s</code> <code>txkB/s</code></td><td>Near the NIC or cloud instance bandwidth limit</td></tr>
+          <tr><td><code>sar -n EDEV 1</code>, <code>ip -s link</code></td><td>Errors and drops</td><td>Any non-zero and rising</td></tr>
+          <tr><td><code>sar -n TCP,ETCP 1</code></td><td><code>retrans/s</code> vs <code>oseg/s</code></td><td>Retransmits over about 1% of segments sent</td></tr>
+          <tr><td><code>ss -s</code></td><td>estab, timewait totals</td><td>Tens of thousands of timewait: no connection reuse</td></tr>
+          <tr><td><code>ss -ltn</code></td><td><code>Recv-Q</code> vs <code>Send-Q</code> on listeners</td><td>Recv-Q reaching Send-Q (accept queue full)</td></tr>
+          <tr><td><code>nstat -az | grep -i listen</code></td><td><code>TcpExtListenOverflows</code>, <code>ListenDrops</code></td><td>Increasing during the test</td></tr>
+          <tr><td><code>ss -tnp state established '( dport = :5432 )'</code></td><td>Connections to a dependency</td><td>Count pinned at the pool maximum</td></tr>
+          <tr><td><code>sysctl net.ipv4.ip_local_port_range</code></td><td>Ephemeral port range (client side)</td><td>Outbound connections near the range size: port exhaustion</td></tr>
+          <tr><td><code>cat /proc/sys/net/netfilter/nf_conntrack_count</code></td><td>vs <code>nf_conntrack_max</code></td><td>Over about 80%. Full table drops new connections ("table full" in dmesg).</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Files, processes and limits</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Look at</th><th>Danger when</th></tr></thead>
+        <tbody>
+          <tr><td><code>ls /proc/PID/fd | wc -l</code></td><td>Open files of a process</td><td>Near <code>Max open files</code> in <code>/proc/PID/limits</code></td></tr>
+          <tr><td><code>cat /proc/sys/fs/file-nr</code></td><td>System-wide open files</td><td>Near the third number (file-max)</td></tr>
+          <tr><td><code>ps -eLf | wc -l</code></td><td>Total threads</td><td>Near <code>kernel.threads-max</code> or the cgroup <code>pids.max</code></td></tr>
+          <tr><td><code>ps -eo state | sort | uniq -c</code></td><td>Processes in D state</td><td>Many in D: stuck on I/O or NFS</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Profiling and history</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td><code>perf top</code></td><td>Live view of the hottest functions system-wide</td></tr>
+          <tr><td><code>perf record -F 99 -a -g -- sleep 30</code></td><td>Record stacks on all CPUs for 30 s, then <code>perf report</code> or a <a href="/glossary/flame-graph/">flame graph</a></td></tr>
+          <tr><td><code>perf stat -p PID -- sleep 10</code></td><td>Instructions per cycle, cache misses, context switches for one process</td></tr>
+          <tr><td><code>strace -c -f -p PID</code></td><td>Syscall counts and time. High overhead: short bursts only, never at peak in production.</td></tr>
+          <tr><td><code>sar -o /tmp/run.sar 1</code></td><td>Record everything every second during a test, read back with <code>sar -f /tmp/run.sar -u</code></td></tr>
+          <tr><td><code>sar -u -s 14:00:00 -e 14:30:00</code></td><td>CPU history for a time window (needs the sysstat collector)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2>Reading it together</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Pattern</th><th>Probably</th></tr></thead>
+        <tbody>
+          <tr><td>High load, CPUs idle, <code>b</code> and <code>wa</code> up</td><td>Disk or NFS bound</td></tr>
+          <tr><td>Latency up, CPU low, nothing saturated on the host</td><td>Waiting on a pool, lock or downstream. Take thread dumps or traces.</td></tr>
+          <tr><td>Average CPU 40%, one core 100%</td><td>Single-threaded bottleneck or IRQs on one core</td></tr>
+          <tr><td>Container latency spikes, CPU usage under the limit</td><td>CFS throttling</td></tr>
+          <tr><td>Connect timeouts, listen overflows rising</td><td>Accept queue full: app too slow to accept, or backlog too small</td></tr>
+          <tr><td><code>st</code> rising on a VM</td><td>Noisy neighbour or burst credits exhausted</td></tr>
+        </tbody>
+      </table></div>
+      <p>The full explanations are in <a href="/guides/bottlenecks/linux-server/">reading a Linux server under load</a>, and the order to use them in is the <a href="/guides/bottlenecks/">bottleneck playbook</a>. Definitions: <a href="/glossary/saturation/">saturation</a>, <a href="/glossary/use-method/">USE method</a>, <a href="/glossary/headroom/">headroom</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need someone at the console during your big test?</h2>
+        <p>Book a free 30-minute call to talk about load testing and live analysis for your next release or peak event.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="cheat-linux-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="cheat-linux-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!--{"title": "Performance testing microservices and cloud systems", "og_title": "Microservices and cloud performance testing: autoscaling, cold starts, rate limits, cost per transaction", "description": "What changes when you load test microservices in the cloud: testing autoscaling, cold starts, service and cloud rate limits, and measuring cost per transaction.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Microservices and cloud</p>
+      <h1>Performance testing microservices and cloud systems</h1>
+      <p class="lead">"It autoscales" is the most expensive sentence in cloud performance. The traffic spike arrives in 40 seconds. The metrics notice after 30, the autoscaler decides after 15 more, new pods wait 2 minutes for a node, then 50 seconds for the JVM to warm up. For four minutes the existing pods take the full spike alone, and that's when users see errors. Meanwhile a downstream SaaS API starts returning 429s at a limit nobody knew about.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#different">What's different about microservices</a></li>
+          <li><a href="#autoscaling">Testing autoscaling</a></li>
+          <li><a href="#cold-starts">Cold starts</a></li>
+          <li><a href="#limits">Rate limits and quotas</a></li>
+          <li><a href="#cost">Cost per transaction</a></li>
+          <li><a href="#environments">Test environments in the cloud</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="different">What's different about microservices</h2>
+      <ul>
+        <li><strong>Latency adds up and tails multiply.</strong> A request through six services pays six sets of network hops, serialisation and queueing. If a page calls 10 services in parallel, each with 1% of requests above 1 second, about 10% of page loads hit at least one slow call (1 − 0.99<sup>10</sup>). See <a href="/glossary/fan-out-amplification/">fan-out amplification</a> and <a href="/glossary/tail-latency/">tail latency</a>.</li>
+        <li><strong>The bottleneck moves.</strong> Scaling one service pushes load onto the next. Test the whole journey, not each service alone, then test individual services to find their limits.</li>
+        <li><strong>Shared resources hide behind service boundaries.</strong> Five services sharing one database, cache cluster or message broker all slow down together. Testing services one at a time won't show it.</li>
+        <li><strong>Timeouts and retries interact.</strong> If service A times out after 5 seconds and retries 3 times, and B does the same towards C, one slow call to C can become 9 calls. Check that timeouts get shorter as you go deeper, and that retries have budgets and jittered back-off.</li>
+      </ul>
+      <p>Distributed tracing is close to essential here. See <a href="/guides/bottlenecks/apm-and-tracing/">reading a trace waterfall</a>.</p>
+
+      <h2 id="autoscaling">Testing autoscaling</h2>
+      <p>The question isn't whether autoscaling works. It's how long it takes and what users experience while it happens. Use the <a href="/explain/load-profiles/">load profiles</a> that stress it:</p>
+      <ul>
+        <li><strong>Step test:</strong> jump from 30% to 100% of peak in under a minute, hold for 20 minutes. Measures reaction time and the error window.</li>
+        <li><strong>Slow ramp:</strong> grow over an hour. Checks that scaling keeps up smoothly and that thresholds are sensible.</li>
+        <li><strong>Spike and drop:</strong> spike, drop back, spike again. Catches scale-down that is too aggressive (flapping) and in-flight requests failing on pods being removed.</li>
+      </ul>
+      <p>Record a timeline for each step: when load changed, when the metric crossed the threshold, when the scaler acted, when new capacity was ready and taking traffic, and when latency recovered. Each delay is a separate knob.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Delay</th><th>Where it comes from</th><th>What helps</th></tr></thead>
+        <tbody>
+          <tr><td>Metric delay</td><td>Scrape and aggregation interval of the metric the scaler reads</td><td>Faster metrics, scaling on a leading signal (queue depth, request rate) instead of CPU</td></tr>
+          <tr><td>Decision delay</td><td>Scaler sync period and stabilisation windows</td><td>Tuned scale-up policy. Kubernetes HPA scales up with no stabilisation window by default and scales down after 5 minutes.</td></tr>
+          <tr><td>Capacity delay</td><td>New nodes (minutes), image pull, scheduling</td><td>Spare node capacity or over-provisioning, smaller images, pre-pulled images</td></tr>
+          <tr><td>Warm-up delay</td><td>Application start, JIT warm-up, cache fill, connection pools</td><td>Readiness probes that reflect real readiness, warm-up requests, start-up tuning</td></tr>
+        </tbody>
+      </table></div>
+      <p>Also test the ceiling: maximum replica counts, node group limits, IP addresses in the subnet, and database connections (each new pod opens its own pool). Autoscaling that works up to 20 pods can fail at 21 for reasons that have nothing to do with CPU. See <a href="/glossary/autoscaling/">autoscaling</a>.</p>
+
+      <h2 id="cold-starts">Cold starts</h2>
+      <p>Serverless functions (AWS Lambda, Azure Functions, Google Cloud Run functions) start new execution environments on demand. The first request on a new environment pays for the runtime starting and your initialisation code. That can be tens of milliseconds for a small function or several seconds for a large JVM function with heavy frameworks.</p>
+      <ul>
+        <li><strong>Cold starts happen during scale-out</strong>, which is exactly when load rises. A test that warms up slowly never sees them. A spike test sees many at once.</li>
+        <li><strong>Measure them separately.</strong> In Lambda, the <code>REPORT</code> log line includes <code>Init Duration</code> on cold starts. Split latency percentiles into cold and warm invocations, or the cold ones disappear into the average.</li>
+        <li><strong>Mitigations to test:</strong> provisioned concurrency (pre-initialised environments, at a cost), Lambda SnapStart for supported runtimes, smaller deployment packages, lazy initialisation, and lighter frameworks.</li>
+        <li><strong>Concurrency limits.</strong> Lambda has an account-level concurrency quota per region (1,000 by default, shared by all functions in the account and region) and a limit on how fast each function can scale out. A load test can throttle other functions in the same account. Check the current quotas for your account before testing.</li>
+      </ul>
+      <p>Containers have cold starts too: a new pod on Kubernetes or a new task on ECS or Cloud Run must pull the image, start the runtime and warm up before it is fast. That is the warm-up delay in the autoscaling table above.</p>
+
+      <h2 id="limits">Rate limits and quotas</h2>
+      <p>Cloud and SaaS systems are full of <a href="/glossary/rate-limiting/">rate limits</a> that never show up in functional tests:</p>
+      <ul>
+        <li><strong>Your own API gateway and WAF:</strong> per-client throttles and burst limits. A load test from a few IPs or one API key hits them long before real traffic would.</li>
+        <li><strong>Cloud service quotas:</strong> API Gateway account throttles, Lambda concurrency, DynamoDB per-partition throughput, managed database connection limits, KMS and Secrets Manager request rates, and many more. Many are per account and region, shared with everything else running there.</li>
+        <li><strong>Third-party APIs:</strong> payment, identity, address lookup, email and SMS providers all have rate limits, and many forbid load testing against their production endpoints. Use their sandbox, or stub them with a mock that reproduces their latency and their limits, including <a href="/glossary/http-429/">429 responses</a>.</li>
+      </ul>
+      <p>Before the test, list every external call in the journey and its documented limit. Compare each limit with peak load × calls per transaction. Then test what the system does when a limit is hit: does it back off and queue, or retry immediately and make it worse?</p>
+      <div class="g-warn"><p>Tell your cloud provider and third parties before large tests where their terms require it, and agree WAF and DDoS-protection allow-lists with your security team. A load test that looks like an attack can get IPs blocked or trigger an incident response.</p></div>
+
+      <h2 id="cost">Cost per transaction</h2>
+      <p>In the cloud, performance and cost are the same conversation. A system that meets its latency target by running 3 times the infrastructure it needs has a cost problem. A load test is the cheapest place to measure that.</p>
+      <pre class="ex-code"><code>cost per 1,000 transactions = (cost of the system for the test hour) ÷ (transactions in that hour ÷ 1,000)
+
+Example: 12 pods + database + cache + load balancer + data transfer ≈ $9.40 for one hour
+         at 150 transactions/s = 540,000 transactions
+         → about $0.017 per 1,000 transactions</code></pre>
+      <ul>
+        <li><strong>Include everything that scales with traffic:</strong> compute, managed databases, data transfer between zones and to the internet, NAT gateway processing, request-priced services (serverless, API gateways, queues), and logging and APM ingestion, which often grow faster than expected under load.</li>
+        <li><strong>Track it across runs.</strong> A release that holds latency but raises cost per transaction by 40% is a regression worth catching. Put it in the <a href="/guides/templates/results-report/">results report</a> next to latency and throughput.</li>
+        <li><strong>Use it to compare options:</strong> bigger instances vs more instances (<a href="/glossary/horizontal-vs-vertical-scaling/">horizontal vs vertical</a>), ARM vs x86, provisioned vs on-demand capacity, caching vs a larger database.</li>
+        <li><strong>Remember the test's own cost:</strong> load generators, data transfer from them, and the environment running for the test window. Tear environments down afterwards.</li>
+      </ul>
+      <p>The <a href="/tools/capacity-calculator/">capacity calculator</a> helps size instances from measured throughput per instance.</p>
+
+      <h2 id="environments">Test environments in the cloud</h2>
+      <ul>
+        <li><strong>Same instance types, same limits.</strong> A test environment on smaller instances, with burstable CPU credits, or with a different database class tells you about a different system. Scaling results down from a smaller environment is guesswork, because bottlenecks don't scale linearly.</li>
+        <li><strong>Same autoscaling configuration</strong>, including minimums and maximums, or the autoscaling test is meaningless.</li>
+        <li><strong>Watch for burst behaviour:</strong> burstable instances, storage with burst credits and some network limits are fast for the first minutes of a test and slow after. Run tests long enough to drain the credits.</li>
+        <li><strong>Noisy neighbours:</strong> results vary between runs on shared infrastructure. Run each important test at least twice and compare (the <a href="/tools/compare-runs/">compare runs</a> tool helps).</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Does your autoscaling actually keep up?</h2>
+        <p>Book a free 30-minute call. We'll plan a test that measures scale-out time, cold starts, limits and cost per transaction together.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-cloud-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="guide-cloud-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>

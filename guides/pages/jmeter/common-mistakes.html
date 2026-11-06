@@ -1,0 +1,101 @@
+<!--{"title": "Common JMeter mistakes and how to fix them", "og_title": "12 JMeter mistakes that quietly invalidate your load test", "description": "GUI mode under load, listeners, default heap, missing cookie and cache managers, embedded resources, no think time or timeouts, coordinated omission.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Common mistakes</p>
+      <h1>12 JMeter mistakes that quietly invalidate a test</h1>
+      <p class="lead">Your test "proves" the system handles 3,000 users. In production it falls over at 1,200. Nothing crashed in the test, and the report looked clean. The load was simply wrong: the generator was the bottleneck, users never paused, the cache was never cold, or slow responses were never sent. These are the mistakes to rule out before you trust a number.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="summary">At a glance</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>#</th><th>Mistake</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><a href="#gui">Load in GUI mode</a></td><td><code>jmeter -n -t … -l …</code></td></tr>
+          <tr><td>2</td><td><a href="#listeners">Listeners enabled during load</a></td><td>Disable them, write a JTL, build the report after</td></tr>
+          <tr><td>3</td><td><a href="#heap">Default 1 GB heap</a></td><td><code>HEAP="-Xms4g -Xmx4g …"</code></td></tr>
+          <tr><td>4</td><td><a href="#generator">Unwatched load generator</a></td><td>Monitor its CPU, memory, GC and network</td></tr>
+          <tr><td>5</td><td><a href="#managers">No cookie or cache manager</a></td><td>Add HTTP Cookie Manager, and HTTP Cache Manager for browser traffic</td></tr>
+          <tr><td>6</td><td><a href="#embedded">Embedded resources handled wrongly</a></td><td>Decide deliberately, exclude third parties</td></tr>
+          <tr><td>7</td><td><a href="#think">No think time</a></td><td>Random timers or pacing</td></tr>
+          <tr><td>8</td><td><a href="#rampup">Ramp-up of zero</a></td><td>Ramp at a realistic arrival rate</td></tr>
+          <tr><td>9</td><td><a href="#data">One user, one search term</a></td><td>CSV data with a realistic spread</td></tr>
+          <tr><td>10</td><td><a href="#timeouts">No timeouts</a></td><td>Connect and response timeouts in HTTP Request Defaults</td></tr>
+          <tr><td>11</td><td><a href="#scripting">BeanShell, or ${} inside Groovy</a></td><td>JSR223 + Groovy, cached, using <code>vars.get()</code></td></tr>
+          <tr><td>12</td><td><a href="#co">Ignoring coordinated omission</a></td><td>Watch for rate drops, consider an open model</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="gui">1. Running load in GUI mode</h2>
+      <p>The Swing GUI repaints trees and graphs while your threads compete for the same CPU. Results get slower as the GUI gets busier, and long runs can freeze it. Build and debug in the GUI with a handful of threads, then run every real test in CLI mode: <code>jmeter -n -t plan.jmx -l results.jtl -e -o report/</code>. See <a href="/guides/jmeter/getting-started/">getting started</a>.</p>
+
+      <h2 id="listeners">2. Listeners enabled during load</h2>
+      <p>View Results Tree keeps every request and response in memory. Aggregate Report, Summary Report and the graph listeners compute on every sample. In CLI mode they still run, and some write their own files. Remove or disable them before a load run, keep only <code>-l</code> for results, and generate the HTML report afterwards. The one listener worth keeping is a Backend Listener feeding InfluxDB for live monitoring, which sends aggregates. See <a href="/guides/jmeter/results-and-reports/">results and reports</a>.</p>
+
+      <h2 id="heap">3. Running on the default 1 GB heap</h2>
+      <p>The <code>jmeter</code> start script defaults to <code>-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m</code>. That suits debugging, not hundreds of threads with large responses. Override it with the <code>HEAP</code> environment variable rather than editing the script:</p>
+      <pre class="ex-code"><code># macOS / Linux
+HEAP="-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m" jmeter -n -t plan.jmx -l results.jtl
+
+# Windows (cmd)
+set HEAP=-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m
+jmeter.bat -n -t plan.jmx -l results.jtl</code></pre>
+      <p>Leave room for the operating system and network buffers. Around half to three quarters of the machine's RAM is a sensible ceiling. Setting <code>-Xms</code> equal to <code>-Xmx</code> avoids heap resizing during the run. Signs you need more: <code>OutOfMemoryError</code> in <code>jmeter.log</code>, or long GC pauses showing up as latency spikes across every label at once.</p>
+
+      <h2 id="generator">4. Not watching the load generator</h2>
+      <p>If the generator's CPU is saturated, threads queue for CPU before sending and before timing the response, so every measurement includes your own bottleneck. Watch CPU, memory, GC and network on every generator during the run. Above about 70–80% CPU, add generators or reduce per-sample work (fewer assertions, less regex, no saved response data). Never run the generator on the same host as the system under test. See <a href="/guides/jmeter/distributed-testing/">distributed testing</a>.</p>
+
+      <h2 id="managers">5. Missing cookie and cache managers</h2>
+      <ul>
+        <li><strong>HTTP Cookie Manager:</strong> without it, <code>Set-Cookie</code> is ignored and sessions break, sometimes with 200 responses that are really login pages. Add one at Thread Group level in almost every web test. Tick "Clear cookies each iteration" if each iteration should be a new visitor.</li>
+        <li><strong>HTTP Cache Manager:</strong> browsers cache static content. Without a cache manager, every iteration re-downloads every embedded resource, and the test over-loads static content. With one, honour <code>Cache-Control</code> and <code>Expires</code> on GET requests and decide whether each iteration is a new visitor ("Clear cache each iteration" ticked) or a returning one.</li>
+        <li>Tick <strong>Same user on each iteration</strong> on the Thread Group for returning visitors. Untick it and every iteration opens new connections, with a new TLS handshake each time. That is realistic for first visits but costly, so make it a decision, not an accident.</li>
+      </ul>
+
+      <h2 id="embedded">6. Embedded resources handled wrongly</h2>
+      <p>JMeter does not run JavaScript. It fetches only what you script, plus embedded resources parsed from HTML if you ask it to. In the HTTP Request's <strong>Advanced</strong> tab (or HTTP Request Defaults):</p>
+      <ul>
+        <li><strong>Retrieve All Embedded Resources:</strong> parses HTML for images, CSS and scripts and fetches them as sub-samples.</li>
+        <li><strong>Parallel downloads</strong> (called "Use concurrent pool" in the reference docs): how many embedded resources each thread fetches at once, like a browser's connection pool. Around 6 per host is typical for browsers.</li>
+        <li><strong>URLs must match:</strong> a regex to keep only your own domains, for example <code>https?://([^/]+\.)?example\.com/.*</code>. Do not load test Google Analytics, a payment provider's widget or a third-party CDN without permission. "URLs must not match" does the opposite, for example to skip fonts or images.</li>
+      </ul>
+      <p>API calls made by front-end JavaScript (XHR, fetch) are never discovered this way. Record them with the HTTP(S) Test Script Recorder or add them by hand. And if static content is served by a CDN in production, decide whether the test should hit the origin at all. Usually it should not. See <a href="/glossary/cdn-hit-ratio/">CDN hit ratio</a>.</p>
+
+      <h2 id="think">7. No think time</h2>
+      <p>Without timers, each thread fires requests back to back. 100 threads become a far heavier load than 100 real users, and the thread count stops meaning anything. Add Uniform or Gaussian random timers where users pause, or pace the iteration to a target rate. If the goal is a request rate rather than a user count, say so and use a throughput timer or an arrivals-based thread group. See <a href="/guides/jmeter/thinktime-and-pacing/">think time and pacing</a> and <a href="/glossary/think-time/">think time</a>.</p>
+
+      <h2 id="rampup">8. Ramp-up of zero</h2>
+      <p>All threads start in the same second: logins collide, connection pools and autoscalers get a thundering herd, and the first minutes of data describe an event production never sees. Ramp at a realistic rate of new sessions and analyse only the steady state. If a sudden surge is what you want to test, design a <a href="/glossary/spike-testing/">spike test</a> on purpose. See <a href="/guides/jmeter/thread-groups-and-load-shapes/">thread groups and load shapes</a>.</p>
+
+      <h2 id="data">9. One user, one search term</h2>
+      <p>Every thread logging in as <code>testuser1</code> and searching for "shoes" exercises one cache entry and one row lock. Results are either far too good (everything cached) or far too bad (contention on one record). Use CSV data with enough rows for the test, and a realistic spread of popular and rare items. See <a href="/guides/jmeter/parameterisation/">parameterisation</a>.</p>
+
+      <h2 id="timeouts">10. No timeouts</h2>
+      <p>The HTTP Request's Connect and Response timeouts are empty by default, so a hung request holds its thread until the operating system or server gives up, often minutes later. Threads silently drop out of the load and the arrival rate falls. Set timeouts in HTTP Request Defaults to match your clients, for example Connect <code>5000</code> and Response <code>30000</code> ms. A timeout then appears as an error you can count, not as missing load.</p>
+
+      <h2 id="scripting">11. BeanShell, or ${} inside Groovy</h2>
+      <p>BeanShell is interpreted and much slower than Groovy under load. Use JSR223 elements with language <code>groovy</code> and keep "Cache compiled script if available" ticked. Never write <code>${var}</code> inside the script body. JMeter substitutes it before compilation, so the script text changes on every call and cannot be cached. Read values with <code>vars.get('var')</code> and properties with <code>props.get('name')</code>. Pass values in through the Parameters field (as <code>args</code>) if needed.</p>
+
+      <h2 id="co">12. Ignoring coordinated omission</h2>
+      <p>In a standard Thread Group, a thread waiting on a slow response sends nothing else. During a 5-second stall, the requests real users would have sent in those 5 seconds are never made, so the slowest period is the least sampled. Percentiles then look better than what users lived through. This is <a href="/glossary/coordinated-omission/">coordinated omission</a>.</p>
+      <p>Signs of it: hits per second dips at the same moment response times spike. Mitigations: keep enough threads that the target rate holds even at degraded response times, use the Open Model Thread Group or Arrivals Thread Group when arrivals should not depend on your server, and report the achieved rate next to the latency. The <a href="/explain/percentiles/">percentiles explainer</a> shows the effect, and <a href="/blog/coordinated-omission-why-your-load-tool-under-reports-tail-latency/">this article</a> goes deeper.</p>
+
+      <h2 id="checklist">Before you trust the numbers</h2>
+      <ol>
+        <li>CLI mode, listeners off, heap sized, generator healthy throughout.</li>
+        <li>Achieved request rate and thread count matched the plan.</li>
+        <li>Error rate understood, with assertions that catch error pages.</li>
+        <li>Realistic data, think time, ramp-up and caching behaviour.</li>
+        <li>Steady-state window analysed, warm-up excluded.</li>
+      </ol>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure your load test is telling the truth?</h2>
+        <p>Book a free 30-minute call and I'll review your plan and results against this list. For a full engagement, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-mistakes-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-mistakes-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

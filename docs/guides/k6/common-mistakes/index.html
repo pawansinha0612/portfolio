@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Common k6 mistakes that make load tests lie — Pawan Sinha</title>
+  <meta name="description" content="The k6 mistakes that produce green results for broken systems: no checks, the wrong executor, untagged URLs, shared test data, a saturated load generator and more.">
+  <meta property="og:title" content="12 common k6 mistakes that make your load test lie">
+  <meta property="og:description" content="The k6 mistakes that produce green results for broken systems: no checks, the wrong executor, untagged URLs, shared test data, a saturated load generator and more.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/common-mistakes/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/common-mistakes/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Common k6 mistakes that make load tests lie", "description": "The k6 mistakes that produce green results for broken systems: no checks, the wrong executor, untagged URLs, shared test data, a saturated load generator and more.", "url": "https://pawansinha.com.au/guides/k6/common-mistakes/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Common mistakes</p>
+      <h1>12 k6 mistakes that make your load test lie</h1>
+      <p class="lead">The test passed. Every number was green. Production fell over at half the load. In
+        most cases the system wasn't the problem. The test was measuring something other than what
+        everyone thought. These are the mistakes behind that.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="results">Mistakes that give wrong results</h2>
+      <h3>1. No checks, so fast errors count as fast responses</h3>
+      <p>A 503 from the load balancer returns in 2 ms. Without a check, k6 records a 2 ms response
+        and p95 improves as the system collapses. <code>http_req_failed</code> catches status codes,
+        but not a 200 with an error page or an empty list. Check the body on the calls that matter,
+        and put a threshold on <code>checks</code>.</p>
+
+      <h3>2. Using VUs when the target is requests per second</h3>
+      <p>"Handle 1,000 requests a second" is an open-model target. <code>constant-vus</code> and
+        <code>stages</code> are closed: when latency rises, the request rate falls and the test eases
+        off exactly when it should push. Use <code>constant-arrival-rate</code> or
+        <code>ramping-arrival-rate</code>. Details in
+        <a href="/guides/k6/scenarios-and-executors/">scenarios and executors</a>.</p>
+
+      <h3>3. Same user, same product, same search</h3>
+      <p>One account and one id for every VU means every request hits a warm cache and the same
+        database rows. You measure the cache. Feed varied data and give each VU its own identity:
+        <a href="/guides/k6/data-and-parameterisation/">test data in k6</a>.</p>
+
+      <h3>4. A saturated load generator</h3>
+      <p>If the machine running k6 is at 100% CPU, or out of network bandwidth, the latency you
+        measure includes k6 waiting for its own CPU. Watch the generator's CPU, memory and network
+        during every run. Warning signs: <code>dropped_iterations</code> while the server looks
+        healthy, <code>http_req_blocked</code> growing, or latency that rises on k6 but not in the
+        server's own metrics. Fix it with a bigger machine, less per-iteration work, or several
+        generators.</p>
+
+      <h3>5. Testing from a laptop over Wi-Fi and a VPN</h3>
+      <p>Home broadband and a corporate VPN have far less capacity than a production network, and
+        they add their own latency and jitter. The VPN concentrator becomes the bottleneck you
+        measure. Run from a machine in the same cloud region as real users or clients would be.</p>
+
+      <h3>6. Reporting the average</h3>
+      <p>The average hides the slow tail, and averaging per-endpoint p95s does not give an overall
+        p95. Report p50, p95 and p99 with the request count. See
+        <a href="/explain/percentiles/">why averages lie</a>.</p>
+
+      <h3>7. Too short, no steady state</h3>
+      <p>Two minutes is a warm-up: JIT compilation, connection pools filling, caches loading, the
+        autoscaler reacting. Measure a <a href="/glossary/steady-state/">steady state</a> of at
+        least 10-15 minutes after the ramp, and exclude the ramp when you quote numbers.
+        <a href="/glossary/memory-leak/">Memory leaks</a> and pool exhaustion need hours: that's a
+        <a href="/glossary/soak-testing/">soak test</a>.</p>
+
+      <h2 id="script">Mistakes in the script</h2>
+      <h3>8. Untagged dynamic URLs</h3>
+      <p><code>/products/1</code>, <code>/products/2</code> and so on each become their own metric
+        series. With thousands of ids, k6's memory grows, outputs struggle and the summary is useless.
+        Add a <code>name</code> tag, or use the <code>http.url</code> template tag, which names the
+        request after the template rather than the concrete URL.</p>
+
+      <h3>9. Big files without SharedArray</h3>
+      <p><code>JSON.parse(open('data.json'))</code> at the top level runs in every VU. A 20 MB file
+        at 500 VUs is 10 GB of memory. Wrap it in <code>SharedArray</code>.</p>
+
+      <h3>10. Keeping every response body</h3>
+      <p>By default k6 reads every response body into memory, even when the script never looks at
+        it. For large responses at high rates that's a lot of memory and CPU you don't need. Set <code>discardResponseBodies: true</code> and
+        ask for the body only on requests you check or extract from.</p>
+
+      <h3>11. sleep() in an arrival-rate scenario</h3>
+      <p>With an arrival-rate executor, the rate sets the pacing. A <code>sleep(3)</code> at the end
+        doesn't reduce load, it holds each VU three seconds longer, so you need far more VUs and may
+        drop iterations. Use sleeps between steps of a journey, not as pacing at the end.</p>
+
+      <h3>12. A threshold that matches nothing</h3>
+      <p>A threshold on <code>'http_req_duration{name:GET /product}'</code> when the tag is
+        <code>GET /products</code> has no data, and a threshold with no data passes. The test has
+        never been able to fail on that endpoint. After changing tags or thresholds, check that each
+        threshold shows a value in the summary.</p>
+
+      <h2 id="fixed">The fixes in one script</h2>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = {
+  discardResponseBodies: true, // don't keep bodies in memory unless a request asks for one
+  scenarios: {
+    browse: {
+      executor: 'constant-arrival-rate', // a rate target needs an open model
+      rate: 50, timeUnit: '1s', duration: '10m',
+      preAllocatedVUs: 20, maxVUs: 200,
+    },
+  },
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    'http_req_duration{name:GET /products/:id}': ['p(95)&lt;300'],
+    checks: ['rate&gt;0.99'],
+    dropped_iterations: ['count&lt;1'],
+  },
+};
+
+export default function () {
+  // Body needed for the check, so ask for it on this request only
+  const list = http.get(`${BASE_URL}/products`, { responseType: 'text' });
+  check(list, { 'list ok': (r) =&gt; r.status === 200 &amp;&amp; r.json('items.#') &gt; 0 });
+
+  const id = Math.floor(Math.random() * 10) + 1;
+  // One name for every id: one metric series, not one per URL
+  const item = http.get(`${BASE_URL}/products/${id}`, { tags: { name: 'GET /products/:id' } });
+  check(item, { 'item ok': (r) =&gt; r.status === 200 });
+}</code></pre>
+
+      <h2 id="process">And three process mistakes</h2>
+      <ul>
+        <li><strong>Load testing without permission.</strong> Third-party APIs, payment gateways, CDNs
+          and WAFs may block, bill or ban you. Stub third parties or agree a test window with them.
+          Never load test a system you don't own or have written permission to test.</li>
+        <li><strong>No monitoring on the system under test.</strong> k6 tells you that latency went
+          up, not why. Have server, database and APM metrics running during the test. See the
+          <a href="/guides/monitoring/">monitoring guide</a>.</li>
+        <li><strong>Changing three things between runs.</strong> If you change the code, the config and
+          the load at once, you can't tell which one moved the result. Change one thing per run.</li>
+      </ul>
+      <p>Already have a result you're unsure about? Paste the summary into the
+        <a href="/tools/k6-results/">k6 results analyser</a>. Back to the
+        <a href="/guides/k6/">k6 guides</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure your load test is telling the truth?</h2>
+        <p>I review k6 and JMeter tests and their results, and tell you what they do and don't
+          prove.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-mist-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-mist-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

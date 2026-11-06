@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Access Log to Workload Model (k6 + JMeter) — Pawan Sinha</title>
+  <meta name="description" content="Drop production access logs (nginx, Apache, AWS ALB, CloudFront, IIS, CSV, JSON) and get peak RPS, the transaction mix, a Little's law user count and a ready k6 script. Runs in your browser; logs never leave your computer.">
+  <meta property="og:title" content="Access log to workload model — Pawan Sinha">
+  <meta property="og:description" content="Free tool: turn production access logs into a load-test workload model: peak RPS, transaction mix, virtual users and a ready k6 script. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/workload-model/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/workload-model/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Access log to workload model","url":"https://pawansinha.com.au/tools/workload-model/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .project-hero .lead { max-width: 720px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: flex-start; margin: 18px 0 0; padding: 8px 16px; border-radius: 14px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; max-width: 620px; }
+    .explainer { max-width: 1000px; padding: 32px 16px 16px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel h3 { font-size: 16px; margin: 18px 0 6px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; max-width: 64ch; }
+    .panel p { max-width: 760px; }
+    .panel code, .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .drop { display: block; border: 2px dashed var(--border); border-radius: 14px; padding: 28px 18px; text-align: left; cursor: pointer;
+      background: var(--alt); transition: border-color .15s; }
+    .drop:hover, .drop.over { border-color: var(--accent); }
+    .drop b { display: block; font-size: 17px; }
+    .drop span { color: var(--muted); font-size: 14px; }
+    .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+    .or-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; font-size: 14px; color: var(--muted); }
+    textarea.code { width: 100%; min-height: 150px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    textarea.rules { min-height: 90px; }
+    details.opt { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+    details.opt > summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+    details.opt[open] > summary { margin-bottom: 10px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+    .actions button { font: inherit; cursor: pointer; }
+    .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; max-width: 868px; }
+    .fields label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+    .fields input, .fields select { font: inherit; font-size: 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; min-width: 0; width: 100%; }
+    .fields input:focus, .fields select:focus { outline: none; border-color: var(--accent); }
+    .fields label[hidden] { display: none; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .checks { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 4px 0 12px; font-size: 14px; }
+    .checks label { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+    .builtin { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    .err { margin: 12px 0 0; border-radius: 10px; padding: 10px 14px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+    .err[hidden], .progress[hidden], #mapping[hidden], #result[hidden] { display: none; }
+    .progress { margin-top: 14px; }
+    .meter { height: 10px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); overflow: hidden; }
+    .meter > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+    .progress p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+    .detected { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .detected b { color: var(--text); }
+
+    #result { margin-top: 16px; scroll-margin-top: 80px; }
+    .wm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+    .stat { background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+    .stat b { color: var(--text); display: block; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; overflow-wrap: anywhere; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .stat.hl { border-color: var(--accent); }
+    .note { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+    .chart { margin-top: 14px; }
+    .chart-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; max-width: 100%; }
+    .chart-head h3 { margin: 0; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+    .chart .readout { font-size: 13px; color: var(--muted); min-height: 20px; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+    .legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+    .wm-grid { stroke: var(--border); stroke-width: 1; }
+    .wm-axis { fill: var(--muted); font: 11px Inter, system-ui, sans-serif; }
+    .wm-area { fill: color-mix(in srgb, var(--accent) 18%, transparent); stroke: none; }
+    .wm-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; }
+    .wm-peak { fill: color-mix(in srgb, var(--warn) 16%, transparent); }
+    .wm-ref { stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+    .wm-ref.p99, i.p99 { stroke: var(--warn); border-color: var(--warn) !important; }
+    .wm-ref.min, i.min { stroke: var(--ok); border-color: var(--ok) !important; }
+    .wm-ref.avg, i.avg { stroke: var(--muted); border-color: var(--muted) !important; }
+    i.line { border-color: var(--accent) !important; }
+    .wm-col { fill: var(--accent); }
+    .wm-col.hot { fill: var(--warn); }
+    .wm-cross { stroke: var(--text); stroke-width: 1; opacity: .5; }
+    .wm-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+    .table-wrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; }
+    table.mix { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+    table.mix th, table.mix td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.mix th { font-size: 12px; color: var(--muted); font-weight: 700; background: var(--alt); position: sticky; top: 0; }
+    table.mix td.ep, table.mix th.ep { text-align: left; white-space: normal; min-width: 220px; }
+    table.mix td.ep code { font-size: 12.5px; overflow-wrap: anywhere; }
+    table.mix tr:last-child td { border-bottom: 0; }
+    table.mix .m { color: var(--muted); font-size: 12px; font-weight: 700; margin-right: 6px; }
+    table.mix .members { display: block; color: var(--muted); font-size: 12px; }
+    table.mix .bad { color: var(--bad); font-weight: 700; }
+    .share { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: middle; margin-left: 6px; opacity: .6; }
+    .merge-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; font-size: 14px; }
+    .merge-row input { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; min-width: 0; flex: 1 1 200px; max-width: 360px; }
+    .formula { background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-top: 12px; font-size: 15px; max-width: 868px; overflow-wrap: anywhere; }
+    .formula b { color: var(--text); }
+    .formula p { margin: 4px 0; }
+    .est { display: inline-block; font-size: 12px; font-weight: 700; color: var(--warn); background: var(--warn-bg); border-radius: 999px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+    textarea.out { min-height: 320px; margin-top: 12px; }
+    .guide { max-width: 1000px; padding: 40px 16px 8px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 17px; margin: 20px 0 6px; }
+    .guide ol, .guide ul { color: var(--muted); padding-left: 22px; }
+    .guide p { color: var(--muted); }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .project-hero > :not(p, ul, ol), .guide > :not(p, ul, ol), .tools-end > :not(p, ul, ol) { max-width: 868px; }
+    .guide > p, .guide > ul, .guide > ol { max-width: 680px; }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    :root { --bad: #c2341d; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a7a; } }
+    @media (max-width: 600px) {
+      .project-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .stat b { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Workload modelling</p>
+      <h1>Turn access logs into a workload model</h1>
+      <p class="lead">Drop your production access logs and get the numbers a load test should be built on: peak requests per second, the transaction mix at the busiest hour, an estimate of concurrent users, and a k6 script that sends that mix at your target rate.</p>
+      <p class="private-note">🔒 Your logs never leave your computer. Files are read in your browser by a background worker; nothing is uploaded, stored or sent anywhere. IPs and user agents are only hashed in memory to estimate sessions and are never shown.</p>
+    </section>
+
+    <section class="wrap explainer" aria-label="Workload model">
+      <div class="panel" id="input">
+        <h2>1. Add your logs</h2>
+        <p class="sub">nginx or Apache (combined or common), AWS ALB, AWS CloudFront, IIS (W3C), or CSV / JSON lines. Several files at once is fine, and so is <code>.gz</code>. Hundreds of MB work; a busy day or week is ideal.</p>
+        <label class="drop" id="drop" for="files">
+          <input type="file" id="files" multiple>
+          <b>Drop log files here, or click to choose</b>
+          <span>Read in your browser, line by line. Nothing is uploaded.</span>
+        </label>
+        <div class="or-row">
+          <button class="btn btn-ghost btn-small" type="button" id="sample" data-track="workload-sample">Load sample logs</button>
+          <span>a synthetic shop: one day of nginx logs with a daily curve, a promo spike and a few 5xx</span>
+        </div>
+
+        <details class="opt" id="paste-box">
+          <summary>Or paste a few lines</summary>
+          <label class="sub" for="paste">Paste log lines (any supported format). Useful to check the format is recognised before you drop a big file.</label>
+          <textarea id="paste" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder='203.0.113.7 - - [30/Oct/2026:20:01:12 +1100] "GET /product/1234 HTTP/1.1" 200 5123 "-" "Mozilla/5.0" 0.112'></textarea>
+          <div class="actions"><button class="btn btn-small" type="button" id="paste-go">Analyse pasted lines</button></div>
+        </details>
+
+        <details class="opt" id="settings">
+          <summary>Format, timezone and endpoint rules</summary>
+          <div class="fields">
+            <label>Log format
+              <select id="fmt">
+                <option value="auto">Detect automatically</option>
+                <option value="clf">nginx / Apache (combined, common)</option>
+                <option value="alb">AWS ALB</option>
+                <option value="cloudfront">AWS CloudFront</option>
+                <option value="iis">IIS W3C</option>
+                <option value="csv">CSV / delimited</option>
+                <option value="jsonl">JSON lines</option>
+              </select>
+            </label>
+            <label>Show UTC logs in (ALB, CloudFront, IIS)
+              <select id="tz"></select>
+            </label>
+          </div>
+          <h3><label for="rules">Your endpoint rules</label></h3>
+          <p class="sub">Query strings are always stripped. Numbers, UUIDs, long hex, emails and long tokens in a path segment become <code>{id}</code> automatically. Add your own, one per line as <code>regex =&gt; replacement</code> (applied after the built-ins), then re-analyse.</p>
+          <textarea id="rules" class="code rules" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="^/category/[^/]+$ => /category/{slug}&#10;^/(en|fr|de)/ => /{locale}/"></textarea>
+          <div class="actions"><button class="btn btn-small" type="button" id="reanalyse" disabled>Re-analyse with these settings</button></div>
+        </details>
+
+        <div id="mapping" class="opt" hidden>
+          <h3>Which column is which?</h3>
+          <p class="sub" id="map-sub">We guessed from the column names. Check them, then analyse.</p>
+          <div class="fields" id="map-fields"></div>
+          <div class="actions"><button class="btn" type="button" id="map-go">Analyse</button></div>
+        </div>
+
+        <p class="detected" id="detected" hidden></p>
+        <div class="progress" id="progress" hidden>
+          <div class="meter" role="progressbar" aria-label="Reading logs" aria-valuemin="0" aria-valuemax="100" id="meter"><i></i></div>
+          <p><span id="prog-text">Reading…</span> <button class="chip-btn" type="button" id="cancel">Cancel</button></p>
+        </div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" aria-live="polite" hidden>
+        <div class="panel" id="peak-panel">
+          <h2>2. When is the peak?</h2>
+          <p class="sub" id="peak-sub"></p>
+          <div class="checks">
+            <label><input type="checkbox" id="x-static" checked> Exclude static assets (.js .css images fonts)</label>
+            <label><input type="checkbox" id="x-bots" checked> Exclude health checks and bots</label>
+          </div>
+          <div class="wm-stats" id="peak-stats"></div>
+          <div class="chart" id="chart-timeline"></div>
+          <div class="chart" id="chart-hour"></div>
+          <div class="chart" id="chart-hod"></div>
+        </div>
+
+        <div class="panel" id="mix-panel">
+          <h2>3. Transaction mix at the peak hour</h2>
+          <p class="sub" id="mix-sub"></p>
+          <div class="table-wrap"><table class="mix" id="mix-table"></table></div>
+          <div class="merge-row">
+            <input type="text" id="merge-name" placeholder="Name for merged endpoint (optional)" aria-label="Name for merged endpoint">
+            <button class="chip-btn" type="button" id="merge-go">Merge selected</button>
+            <button class="chip-btn" type="button" id="more-rows" hidden>Show all</button>
+          </div>
+          <p class="note" id="mix-note"></p>
+        </div>
+
+        <div class="panel" id="sess-panel">
+          <h2>4. Sessions <span class="est">Estimate</span></h2>
+          <div id="sess-body"></div>
+        </div>
+
+        <div class="panel" id="model-panel">
+          <h2>5. Load model</h2>
+          <p class="sub">Target rate = peak × growth × headroom. Users from <a href="/glossary/littles-law/">Little's law</a>: concurrency = throughput × (response time + think time). See <a href="/explain/queueing/">why queues explode near capacity</a>.</p>
+          <div class="fields">
+            <label>Peak to design for
+              <select id="basis">
+                <option value="p99">99th percentile second</option>
+                <option value="minute">Busiest minute average</option>
+                <option value="hour">Peak hour average</option>
+                <option value="max">Single busiest second</option>
+              </select>
+            </label>
+            <label>Growth factor (e.g. 1.5 for Black Friday)
+              <input type="number" id="growth" value="1.5" min="0.1" step="0.1" inputmode="decimal">
+            </label>
+            <label>Headroom %
+              <input type="number" id="headroom" value="20" min="0" step="5" inputmode="decimal">
+            </label>
+            <label>Logs cover 1 of N servers (N)
+              <input type="number" id="coverage" value="1" min="1" step="1" inputmode="numeric">
+            </label>
+            <label>Response time, ms (blank = from logs)
+              <input type="number" id="rt" min="0" step="10" inputmode="decimal" placeholder="from logs">
+            </label>
+            <label>Think time, s (blank = from sessions)
+              <input type="number" id="think" min="0" step="0.5" inputmode="decimal" placeholder="from sessions">
+            </label>
+          </div>
+          <div class="wm-stats" id="model-stats"></div>
+          <div class="formula" id="model-formula"></div>
+        </div>
+
+        <div class="panel" id="export-panel">
+          <h2>6. Export</h2>
+          <p class="sub">A k6 script with one arrival-rate scenario per endpoint group, rates and VUs filled in. Arrival-rate executors keep the request rate fixed even when the system slows, which is what production traffic does.</p>
+          <div class="fields">
+            <label>Endpoints with their own scenario
+              <input type="number" id="topn" value="8" min="1" max="40" step="1" inputmode="numeric">
+            </label>
+            <label>Load profile
+              <select id="profile">
+                <option value="ramp">Ramp up, then hold at target</option>
+                <option value="constant">Constant rate (constant-arrival-rate)</option>
+                <option value="curve">Follow the daily curve (compressed)</option>
+              </select>
+            </label>
+            <label id="l-ramp">Ramp-up, minutes
+              <input type="number" id="ramp" value="5" min="0" step="1" inputmode="numeric">
+            </label>
+            <label id="l-dur">Hold, minutes
+              <input type="number" id="dur" value="30" min="1" step="1" inputmode="numeric">
+            </label>
+            <label id="l-comp" hidden>Compress 24 hours into, minutes
+              <input type="number" id="comp" value="24" min="1" step="1" inputmode="numeric">
+            </label>
+            <label>Base URL
+              <input type="url" id="base" value="https://staging.example.com" spellcheck="false">
+            </label>
+          </div>
+          <div class="actions">
+            <button class="btn" type="button" id="dl-k6" data-track="workload-k6">Download k6 script</button>
+            <button class="btn btn-ghost btn-small" type="button" id="copy-k6">Copy</button>
+            <button class="btn btn-ghost btn-small" type="button" id="dl-json">Mix as JSON</button>
+            <button class="btn btn-ghost btn-small" type="button" id="dl-csv">Mix as CSV</button>
+            <button class="btn btn-ghost btn-small" type="button" id="dl-jmx">JMeter weights CSV</button>
+          </div>
+          <p class="note" id="k6-note"></p>
+          <p class="note"><strong>JMeter:</strong> the weights CSV lists each endpoint and its share. Put each sampler under a Throughput Controller set to <em>Percent Executions</em> with that weight (untick “Per User”), or use the Weighted Switch Controller plugin. Pace the thread group with a Constant Throughput Timer (or the Throughput Shaping Timer) set to the target rate × 60 per minute.</p>
+          <textarea id="k6-out" class="code out" spellcheck="false" readonly aria-label="Generated k6 script"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="get-logs">
+      <p class="eyebrow">How to get the logs</p>
+      <h2>Where your access logs live</h2>
+      <ul>
+        <li><strong>nginx:</strong> <code>/var/log/nginx/access.log</code> plus rotated <code>access.log.1</code>, <code>access.log.2.gz</code>. To get response times, add <code>$request_time</code> to the end of your <code>log_format</code> (bare or as <code>rt=$request_time</code>).</li>
+        <li><strong>Apache:</strong> <code>/var/log/apache2/access.log</code> (Debian, Ubuntu) or <code>/var/log/httpd/access_log</code> (RHEL). Add <code>%D</code> (microseconds) at the end of the <code>LogFormat</code> for response times.</li>
+        <li><strong>AWS ALB:</strong> enable access logs on the load balancer; they land in S3 under <code>AWSLogs/&lt;account&gt;/elasticloadbalancing/&lt;region&gt;/YYYY/MM/DD/</code> as <code>.log.gz</code> files, every 5 minutes. Download a day's folder (<code>aws s3 cp --recursive</code>) and drop all of them.</li>
+        <li><strong>AWS CloudFront:</strong> standard logs go to the S3 bucket you chose, named <code>&lt;distribution-id&gt;.YYYY-MM-DD-HH.&lt;id&gt;.gz</code>. Times are UTC: pick your timezone above.</li>
+        <li><strong>IIS:</strong> <code>%SystemDrive%\inetpub\logs\LogFiles\W3SVC&lt;n&gt;\u_exYYMMDD.log</code>. Make sure <em>time-taken</em> is ticked in the logging fields.</li>
+        <li><strong>Anything else</strong> (Kong, Envoy, an APM export, a SIEM query): export CSV or JSON lines with a timestamp, method, path, status and, if you can, response time. You'll be asked which column is which.</li>
+      </ul>
+      <h3>How much to take</h3>
+      <p>Take the <strong>busiest day</strong> you can find (a sale, a campaign, end of month, payroll day), or a whole week if you want to see the weekly shape. One normal Tuesday will under-sell your peak. If several servers write their own logs, include all of them, or set “Logs cover 1 of N servers”.</p>
+    </section>
+
+    <section class="wrap guide" id="use-model">
+      <p class="eyebrow">How to use the model</p>
+      <h2>From numbers to a test you can trust</h2>
+      <ol>
+        <li><strong>Check the peak.</strong> Design for the 99th percentile second or the busiest minute, not the daily average. The single busiest second is usually a burst you test separately as a spike test.</li>
+        <li><strong>Agree the growth factor.</strong> Ask the business what the next peak looks like: Black Friday, a campaign, a launch. 1.5 to 3× last year's peak is common. Headroom covers the gap between “survived” and “comfortable”.</li>
+        <li><strong>Clean up the mix.</strong> Merge endpoints that hit the same code path, add rules for slugs, and drop anything the test can't or shouldn't call (third-party callbacks, admin pages).</li>
+        <li><strong>Make the script real.</strong> Swap the random <code>{id}</code> values for real test data, add logins and request bodies, then run it at 10% of target first to check every request succeeds.</li>
+        <li><strong>Run it, then compare.</strong> The test should reproduce the production mix and response times at today's peak before you trust what it says at tomorrow's. See the <a href="/explain/load-profiles/">load profiles explainer</a> for which shape to run when.</li>
+      </ol>
+    </section>
+
+    <section class="wrap guide" id="limits">
+      <p class="eyebrow">Honest limitations</p>
+      <h2>What logs can't tell you</h2>
+      <ul>
+        <li><strong>Logs show requests, not intent.</strong> You see that someone called <code>POST /api/cart/items</code>, not why, or which journeys matter to the business. Check the mix against analytics and product owners.</li>
+        <li><strong>Caching hides traffic.</strong> Requests answered by a CDN, browser cache or reverse proxy never reach origin logs. Use CDN logs for edge traffic and origin logs for what your servers actually do, and don't mix them up.</li>
+        <li><strong>Sessions are an estimate.</strong> One IP and user agent can be many people (offices, mobile carriers, NAT) or one person can change IP. Think time counts gaps of one second or more inside a 30-minute session.</li>
+        <li><strong>Payloads aren't in the logs.</strong> Request bodies, search terms that hit cold cache paths, and the data your users touch all change the cost of a request. The script needs real test data.</li>
+        <li><strong>Response times are from your log.</strong> nginx <code>$request_time</code> includes slow clients; ALB adds its own processing time. Treat p95 here as a guide, not your SLO.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/explain/load-profiles/">Load profiles explained →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Peak coming up?</p>
+          <h3>Get a workload model and load test you can take to the business</h3>
+          <p>I build workload models from real traffic, run the test, and tell you in plain English whether you'll survive the peak and what to fix first. Book a free call, or see the <a href="/peak-readiness/">peak-readiness load test</a>.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="workload-contact">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="workload-peak-readiness">Peak-readiness test</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/workload-model/workload.js"></script>
+  <script src="/tools/workload-model/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

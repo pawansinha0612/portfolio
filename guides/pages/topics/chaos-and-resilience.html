@@ -1,0 +1,129 @@
+<!--{"title": "Chaos engineering and resilience testing under load", "og_title": "Chaos and resilience testing: fault injection with Toxiproxy, AWS FIS, Chaos Mesh and Litmus", "description": "Resilience testing that means something: chaos engineering principles, fault injection with Toxiproxy, AWS FIS, Chaos Mesh and LitmusChaos, under load.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Chaos and resilience</p>
+      <h1>Chaos and resilience testing under load</h1>
+      <p class="lead">The architecture diagram has retries, a circuit breaker, a fallback cache and two availability zones. Nobody has seen any of them work. Then the payment provider slows from 200 ms to 4 seconds at 8 pm on a Friday. Retries triple the traffic to it, every request thread waits on it, and the whole site goes down because one optional dependency got slow. Resilience you haven't tested is a hope, not a feature.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#principles">Chaos engineering in five rules</a></li>
+          <li><a href="#faults">Faults worth injecting</a></li>
+          <li><a href="#toxiproxy">Toxiproxy: faults between services</a></li>
+          <li><a href="#fis">AWS Fault Injection Service</a></li>
+          <li><a href="#k8s">Kubernetes: Chaos Mesh and LitmusChaos</a></li>
+          <li><a href="#load">Combine faults with load</a></li>
+          <li><a href="#safety">Running experiments safely</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="principles">Chaos engineering in five rules</h2>
+      <p><a href="/glossary/chaos-engineering/">Chaos engineering</a> grew out of Netflix's practice of deliberately breaking parts of its production system (Chaos Monkey). The published principles boil down to this:</p>
+      <ol>
+        <li><strong>Define steady state</strong> as a measurable output: orders per minute, p95 latency, error rate. Not CPU.</li>
+        <li><strong>Write a hypothesis:</strong> "If one of three payment pods is killed, checkout success stays above 99.5% and p95 stays under 1 second."</li>
+        <li><strong>Inject real-world events:</strong> instance loss, latency, errors from dependencies, network partitions, full disks, clock skew.</li>
+        <li><strong>Minimise the blast radius:</strong> start small (one pod, a small share of traffic, a test environment) and have a way to stop at once.</li>
+        <li><strong>Automate and repeat:</strong> resilience decays as the system changes. An experiment that passed in March proves little in November.</li>
+      </ol>
+      <p>An experiment that disproves the hypothesis is a success: you found a weakness before your users did.</p>
+
+      <h2 id="faults">Faults worth injecting</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Fault</th><th>What it tests</th></tr></thead>
+        <tbody>
+          <tr><td>Dependency latency (200 ms to several seconds)</td><td>Timeouts, thread and pool exhaustion, <a href="/glossary/circuit-breaker/">circuit breakers</a>. Usually more damaging than outright failure.</td></tr>
+          <tr><td>Dependency errors (500s, connection resets)</td><td>Retry policy, fallbacks, error handling, <a href="/glossary/retry-storm/">retry storms</a></td></tr>
+          <tr><td>Instance, pod or container killed</td><td>Load balancer health checks, in-flight request handling, restart time, capacity of the remaining nodes</td></tr>
+          <tr><td>Zone or node loss</td><td>Spread across zones, whether the remaining capacity handles peak (N+1 sizing)</td></tr>
+          <tr><td>Database failover</td><td>Connection pool recovery, DNS caching of the endpoint, transaction retries</td></tr>
+          <tr><td>CPU or memory stress</td><td>Autoscaling triggers, noisy-neighbour behaviour, OOM handling</td></tr>
+          <tr><td>Rate limiting or throttling by a cloud API or partner</td><td>Back-off, queueing, <a href="/glossary/http-429/">HTTP 429</a> handling</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="toxiproxy">Toxiproxy: faults between services</h2>
+      <p><a href="https://github.com/Shopify/toxiproxy" rel="noopener">Toxiproxy</a>, open-sourced by Shopify, is a TCP proxy you put between a service and its dependency. You then add "toxics" through its API or CLI: latency, bandwidth limits, timeouts, connection resets, slow closes. It works with any TCP protocol (HTTP, database, Redis, Kafka), runs anywhere, and is ideal for test environments and CI.</p>
+      <pre class="ex-code"><code># start the server (API on port 8474)
+toxiproxy-server &amp;
+
+# proxy local port 26379 to the real Redis, then point the app at localhost:26379
+toxiproxy-cli create --listen localhost:26379 --upstream redis.test.internal:6379 redis
+
+# add 1 second of latency with 200 ms of jitter to responses
+toxiproxy-cli toxic add --type latency --attribute latency=1000 --attribute jitter=200 redis
+
+# simulate an outage: disable the proxy, then enable it again
+toxiproxy-cli toggle redis
+toxiproxy-cli toggle redis
+
+# remove the toxic (default name is &lt;type&gt;_&lt;stream&gt;)
+toxiproxy-cli toxic remove --toxicName latency_downstream redis</code></pre>
+      <p>Other toxics include <code>bandwidth</code>, <code>timeout</code> (stop all data and close after a delay), <code>reset_peer</code>, <code>slow_close</code>, <code>slicer</code> and <code>limit_data</code>. Toxics can apply to a percentage of connections with <code>--toxicity</code>. Check the project's README for the exact CLI flags in your version, and client libraries exist for most languages if you want to drive it from tests.</p>
+
+      <h2 id="fis">AWS Fault Injection Service</h2>
+      <p>AWS FIS runs fault experiments against real AWS resources. You define an experiment template with:</p>
+      <ul>
+        <li><strong>Targets:</strong> resources selected by ID, tag or filter, for example EC2 instances tagged <code>env=perf</code>, a share of ECS tasks or EKS pods.</li>
+        <li><strong>Actions:</strong> for example stopping or terminating EC2 instances, stopping ECS tasks, failing over an RDS or Aurora cluster, disrupting network connectivity in a subnet, injecting API throttling or errors, or running CPU and memory stress and network latency on instances through Systems Manager documents.</li>
+        <li><strong>Stop conditions:</strong> CloudWatch alarms that end the experiment automatically, for example when the error rate passes 5%.</li>
+        <li><strong>An IAM role</strong> that limits what the experiment can touch.</li>
+      </ul>
+      <p>FIS is useful because it exercises the platform itself (load balancer health checks, Auto Scaling replacement, Aurora failover, cross-zone behaviour), which a proxy between two services can't. The list of supported actions grows regularly, so check the current FIS action reference. FIS is charged per action-minute.</p>
+
+      <h2 id="k8s">Kubernetes: Chaos Mesh and LitmusChaos</h2>
+      <p>Both are open-source CNCF projects that define experiments as Kubernetes custom resources.</p>
+      <h3>Chaos Mesh</h3>
+      <p>Covers pod kills and failures (<code>PodChaos</code>), network delay, loss, partition and bandwidth (<code>NetworkChaos</code>), CPU and memory stress, I/O faults, clock skew, HTTP faults and DNS errors, plus workflows to chain them. A latency experiment against one service:</p>
+      <pre class="ex-code"><code>apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: payments-latency
+  namespace: shop
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: [shop]
+    labelSelectors:
+      app: payments
+  delay:
+    latency: '800ms'
+    jitter: '100ms'
+  duration: '10m'</code></pre>
+      <h3>LitmusChaos</h3>
+      <p>Provides a hub of ready-made faults (pod delete, pod network latency, CPU hog, node drain and many more), a web UI called ChaosCenter for scheduling and history, and <em>probes</em> that check steady state automatically during the experiment: an HTTP probe against a health endpoint, a Prometheus probe on a query such as error rate, or a command probe. Probes turn an experiment into a pass or fail result you can put in a pipeline.</p>
+      <p>Pick Chaos Mesh for a broad set of fault types and simple YAML. Pick Litmus if built-in steady-state probes and a shared experiment hub matter more. For faults injected from inside a k6 test, Grafana's <code>xk6-disruptor</code> extension can add latency and errors to Kubernetes pods and services during a load test.</p>
+
+      <h2 id="load">Combine faults with load</h2>
+      <p>A fault in an idle system rarely shows anything. A pod restart at 5 requests per second is invisible. At peak, the same restart moves its traffic to pods that were already at 70% CPU, and their latency climbs. Pool exhaustion, retry amplification and slow failover only happen under concurrency. So the most useful resilience test is a load test with a fault in the middle:</p>
+      <ol>
+        <li>Run steady load at expected peak with an <strong>open workload model</strong> (arrival rate), so the load doesn't drop when the system slows. A closed model quietly reduces pressure during the fault and hides the problem. See <a href="/glossary/open-vs-closed-workload-model/">open vs closed</a>.</li>
+        <li>Hold steady state for 10 to 15 minutes to get a baseline.</li>
+        <li>Inject the fault for a fixed period, for example 5 minutes.</li>
+        <li>Remove it and keep the load running for another 10 to 15 minutes.</li>
+        <li>Measure: error rate and latency during the fault, <strong>time to detect</strong> (did alerts fire?), <strong>time to recover</strong> after removal, and whether it recovered at all. Metastable failures are the dangerous kind: the system stays degraded after the trigger is gone, usually because retries or a cold cache keep it overloaded.</li>
+      </ol>
+      <p>Mark the fault window with an annotation in your dashboards (see the <a href="/guides/monitoring/grafana-stack/">Grafana stack</a>), and agree pass criteria in advance. For example: during the fault, error rate under 1% and p95 under 2 seconds. After it, back to baseline within 2 minutes.</p>
+
+      <h2 id="safety">Running experiments safely</h2>
+      <ul>
+        <li>Start in a test environment that mirrors production topology. Move to production only with small blast radius, stop conditions and the team watching.</li>
+        <li>Tell the people who will be paged. A surprise chaos experiment teaches the wrong lessons.</li>
+        <li>Always have an abort: FIS stop conditions, deleting the Chaos Mesh resource, removing the toxic. Test the abort first.</li>
+        <li>Record each experiment: hypothesis, fault, result, follow-up actions. That record becomes your <a href="/glossary/error-budget/">error budget</a> and reliability evidence for go-live.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want proof the failover works before peak?</h2>
+        <p>Book a free 30-minute call. We'll pick the two or three faults most likely to hurt you and design a load-plus-fault test around them.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-chaos-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/peak-readiness/" data-track="guide-chaos-peak">Peak-readiness load test</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,111 @@
+<!--{"title": "Finding performance bottlenecks: a step-by-step playbook", "og_title": "Finding the bottleneck: a step-by-step playbook for load test results", "description": "A repeatable way to find the bottleneck after a load test: confirm with percentiles, find the knee, USE per resource, RED per service, follow the trace, retest.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Finding bottlenecks</p>
+      <h1>Finding the bottleneck: a step-by-step playbook</h1>
+      <p class="lead">The load test failed. p95 went from 300 ms to 4 seconds at 600 users, and five people have five theories: the database, the garbage collector, the load balancer, "the network", and "just add pods". This playbook replaces the guessing with a fixed order of steps that ends with one proven cause and one change.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#confirm">Confirm the symptom with percentiles</a></li>
+          <li><a href="#knee">Find the saturation point</a></li>
+          <li><a href="#use">USE method, per resource</a></li>
+          <li><a href="#red">RED method, per service</a></li>
+          <li><a href="#trace">Follow the slow trace</a></li>
+          <li><a href="#hypothesis">Write a hypothesis you can disprove</a></li>
+          <li><a href="#change">Change one thing, then retest</a></li>
+          <li><a href="#deep-dives">Deep dives by layer</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="confirm">1. Confirm the symptom with percentiles</h2>
+      <p>Before hunting for a cause, make sure the problem is real and describe it precisely. "It got slow" is not a symptom. "p95 for <code>POST /checkout</code> crossed 800 ms at 450 requests per second, while <code>GET /products</code> stayed under 120 ms" is.</p>
+      <ul>
+        <li><strong>Look at p50, p95 and p99 per transaction</strong>, never only the average. A rising p99 with a flat p50 means a minority of requests is waiting for something (a lock, a pool, a GC pause, a cold cache). Everything rising together means a shared resource is saturated. See <a href="/explain/percentiles/">why averages lie</a>.</li>
+        <li><strong>Plot latency over time, not one number for the whole run.</strong> A test that averages fine can hide a 90-second stall at minute 12.</li>
+        <li><strong>Check the error rate alongside latency.</strong> Fast errors (a 503 in 5 ms) pull percentiles down and make a broken system look quick.</li>
+        <li><strong>Rule out the load generator.</strong> Check the generator's CPU (keep it under about 70 to 80%), network and, for k6, the <code>http_req_blocked</code> and <code>dropped_iterations</code> metrics. If the injector is saturated, every number after that point is about the injector.</li>
+        <li><strong>Check you ran an open model when the question is about arrival rates.</strong> A closed-loop tool slows down with the system and under-reports the tail. That is <a href="/glossary/coordinated-omission/">coordinated omission</a>.</li>
+      </ul>
+      <p>The <a href="/tools/k6-results/">k6 results analyser</a> and <a href="/tools/jtl-analyser/">JTL analyser</a> turn raw results into these per-transaction percentiles quickly. <a href="/tools/compare-runs/">Compare runs</a> shows what moved between a good and a bad run.</p>
+
+      <h2 id="knee">2. Find the saturation point</h2>
+      <p>Plot throughput and latency against load from a stepped or ramping test. The shape tells you a lot before you open a single server metric.</p>
+      <ul>
+        <li><strong>Throughput rises linearly, latency flat:</strong> healthy, below capacity.</li>
+        <li><strong>Throughput flattens, latency climbs:</strong> you have reached the knee. Some resource is at or near 100% busy and requests are queueing in front of it. By <a href="/glossary/littles-law/">Little's Law</a> (concurrency = throughput × response time), once throughput is capped any extra concurrency turns directly into waiting time.</li>
+        <li><strong>Throughput falls as load rises:</strong> retrograde scaling. Something is getting worse with concurrency: lock contention, cache thrashing, connection storms or retries. Gunther's Universal Scalability Law calls this the coherency penalty.</li>
+        <li><strong>Latency jumps in steps or spikes at regular intervals:</strong> look for periodic work: GC, cron jobs, log rotation, cache expiry (<a href="/glossary/cache-stampede/">cache stampede</a>), autoscaling events.</li>
+      </ul>
+      <p>Write down the load level of the knee. Every metric in the next steps should be read at that moment, not averaged over the whole test. The <a href="/explain/queueing/">queueing explainer</a> shows why latency goes vertical as <a href="/glossary/utilisation-law/">utilisation</a> approaches 100%.</p>
+
+      <h2 id="use">3. USE method, per resource</h2>
+      <p>Brendan Gregg's <a href="/glossary/use-method/">USE method</a> checks every resource for three things: <strong>Utilisation</strong> (how busy), <strong>Saturation</strong> (how much work is queued) and <strong>Errors</strong>. It works because it is exhaustive. You go through the list and cannot skip the resource you don't suspect.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Resource</th><th>Utilisation</th><th>Saturation</th><th>Errors</th></tr></thead>
+        <tbody>
+          <tr><td>CPU</td><td><code>mpstat -P ALL 1</code>, per core</td><td>run queue: <code>vmstat 1</code> column <code>r</code> above core count, CFS throttling in containers</td><td>rare (machine check)</td></tr>
+          <tr><td>Memory</td><td><code>free -m</code> "available"</td><td>swapping (<code>vmstat</code> <code>si</code>/<code>so</code>), page scanning, OOM kills</td><td><code>dmesg</code> OOM killer</td></tr>
+          <tr><td>Disk</td><td><code>iostat -x 1</code> <code>%util</code></td><td><code>aqu-sz</code>, <code>r_await</code>/<code>w_await</code> rising</td><td><code>dmesg</code> I/O errors</td></tr>
+          <tr><td>Network</td><td>throughput vs link or instance limit</td><td>TCP retransmits, listen queue overflows</td><td><code>ip -s link</code> drops and errors</td></tr>
+          <tr><td>Thread pool</td><td>busy threads / max</td><td>queued tasks, rejected tasks</td><td>timeouts</td></tr>
+          <tr><td>Connection pool</td><td>active / max</td><td>threads waiting for a connection, wait time</td><td>acquisition timeouts</td></tr>
+          <tr><td>Locks</td><td>hold time</td><td>waiters, blocked threads in dumps</td><td>deadlocks</td></tr>
+        </tbody>
+      </table></div>
+      <p>Software resources (pools, locks, queues, rate limits) are where most bottlenecks in modern services live. A database connection pool of 20 serving 200 threads will cap throughput long before CPU reaches 50%. The commands are explained in the <a href="/guides/bottlenecks/linux-server/">Linux server guide</a>, and the <a href="/guides/cheat-sheets/linux-performance/">Linux cheat sheet</a> has the thresholds on one page.</p>
+
+      <h2 id="red">4. RED method, per service</h2>
+      <p>USE looks at resources. The <a href="/glossary/red-method/">RED method</a> looks at each service from the outside: <strong>Rate</strong> (requests per second), <strong>Errors</strong> and <strong>Duration</strong> (latency percentiles). In a system of ten services, RED tells you which one to apply USE to.</p>
+      <ul>
+        <li>Compare each service's own latency with the latency it reports for its downstream calls. If service A takes 900 ms and 850 ms of it is waiting on service B, A is a victim, not the cause.</li>
+        <li>Watch for <a href="/glossary/fan-out-amplification/">fan-out</a>: one user request that makes 30 downstream calls inherits the tail of all 30.</li>
+        <li>Rising errors in a downstream service often show up upstream as latency (timeouts and retries), not as errors. Read about <a href="/glossary/retry-storm/">retry storms</a>.</li>
+      </ul>
+
+      <h2 id="trace">5. Follow the slow trace</h2>
+      <p>Aggregates tell you where to look. A single slow trace tells you what happened. Filter traces in your APM to the slow transaction at the knee (for example duration above your p99) and open several, not one.</p>
+      <ul>
+        <li>Find the longest span on the critical path, then check whether it was working or waiting. A 2-second database span with a 5 ms query inside it usually means waiting for a connection or a lock.</li>
+        <li>Gaps between spans are time nobody instrumented: queueing in a thread pool, GC pauses, serialisation, or a missing span.</li>
+        <li>Compare a slow trace with a fast trace of the same endpoint. The difference is the bottleneck.</li>
+      </ul>
+      <p>How to read a waterfall properly is covered in <a href="/guides/bottlenecks/apm-and-tracing/">APM and tracing</a>.</p>
+
+      <h2 id="hypothesis">6. Write a hypothesis you can disprove</h2>
+      <p>Write it down in one sentence with a prediction: "Checkout saturates because the order service's connection pool (max 20) is exhausted at 450 req/s. If that is right, pool wait time rises from zero at the knee, the database is under 40% CPU, and raising the pool to 40 moves the knee to about 800 req/s unless the database saturates first."</p>
+      <p>A good hypothesis names the resource, the metric that proves it, and what should happen when you change it. If you can't name the metric, you don't have a hypothesis yet. Go back to step 3.</p>
+      <div class="g-note"><p><strong>Common false leads:</strong> high CPU on a box that is not on the critical path, a slow query that runs once per test, and GC logs that look busy but add up to 1% of wall time. Size every suspect against the latency you are trying to explain.</p></div>
+
+      <h2 id="change">7. Change one thing, then retest</h2>
+      <ul>
+        <li><strong>One change per run.</strong> Two changes in one run means you can't tell which one helped, or whether one helped and the other hurt.</li>
+        <li><strong>Same test, same data, same environment.</strong> Rerun the baseline first if the environment may have drifted.</li>
+        <li><strong>Expect the bottleneck to move.</strong> Fixing the pool will push load onto the database. That is progress, and the next round of the playbook starts there.</li>
+        <li><strong>Keep a log</strong> of hypothesis, change, result. It becomes the most valuable part of the test report (see the <a href="/guides/templates/results-report/">results report template</a>).</li>
+      </ul>
+
+      <h2 id="deep-dives">Deep dives by layer</h2>
+    </section>
+
+    <section class="wrap g-cards" aria-label="Bottleneck guides">
+      <a class="g-card" href="/guides/bottlenecks/linux-server/"><span class="g-tag">Server</span><h3>Linux server</h3><p>vmstat, mpstat, iostat, sar, ss, pidstat and flame graphs: which column matters and the thresholds.</p></a>
+      <a class="g-card" href="/guides/bottlenecks/jvm/"><span class="g-tag">Runtime</span><h3>JVM</h3><p>Heap dumps, thread dumps, GC logs, async-profiler and JFR, and how to read each.</p></a>
+      <a class="g-card" href="/guides/bottlenecks/database/"><span class="g-tag">Database</span><h3>Database</h3><p>Slow query logs, EXPLAIN ANALYZE, pg_stat_statements, locks, pools and N+1 queries.</p></a>
+      <a class="g-card" href="/guides/bottlenecks/apm-and-tracing/"><span class="g-tag">Observability</span><h3>APM and tracing</h3><p>Reading a trace waterfall: critical path, gaps, fan-out and what each tool calls it.</p></a>
+      <a class="g-card" href="/guides/bottlenecks/network-and-cdn/"><span class="g-tag">Network</span><h3>Network and CDN</h3><p>Latency vs bandwidth, TLS handshakes, keep-alive, DNS and CDN hit ratio.</p></a>
+      <a class="g-card" href="/guides/monitoring/"><span class="g-tag">Monitoring</span><h3>Monitoring during tests</h3><p>What to watch while the test runs, plus a ready-made Grafana stack.</p></a>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a bottleneck?</h2>
+        <p>I find bottlenecks for a living. Book a free 30-minute call and walk me through your results. You'll leave with a hypothesis and the next test to prove it.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-bottlenecks-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-bottlenecks-service">Performance testing service</a>
+        </p>
+      </div>
+    </section>

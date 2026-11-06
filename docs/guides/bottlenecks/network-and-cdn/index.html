@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Network and CDN bottlenecks — Pawan Sinha</title>
+  <meta name="description" content="Latency vs bandwidth, TLS handshakes, keep-alive, DNS and CDN cache hit ratio: how each shows up in a load test and how to measure it.">
+  <meta property="og:title" content="Network and CDN bottlenecks: latency, TLS, keep-alive, DNS and cache hit ratio">
+  <meta property="og:description" content="Latency vs bandwidth, TLS handshakes, keep-alive, DNS and CDN cache hit ratio: how each shows up in a load test and how to measure it.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/bottlenecks/network-and-cdn/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/bottlenecks/network-and-cdn/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Network and CDN bottlenecks", "description": "Latency vs bandwidth, TLS handshakes, keep-alive, DNS and CDN cache hit ratio: how each shows up in a load test and how to measure it.", "url": "https://pawansinha.com.au/guides/bottlenecks/network-and-cdn/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/bottlenecks/">Finding bottlenecks</a> · Network and CDN</p>
+      <h1>Network and CDN bottlenecks</h1>
+      <p class="lead">The server says it answered in 40 ms. The user in Perth waited 900 ms. Somewhere between them sat a DNS lookup, a TCP handshake, a TLS handshake, a CDN that missed its cache and went back to the origin in Sydney, and twelve round trips that could have been three. "It's the network" is usually true, and rarely specific enough to fix.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#latency">Latency vs bandwidth</a></li>
+          <li><a href="#phases">Break a request into phases</a></li>
+          <li><a href="#tls">TCP and TLS handshakes</a></li>
+          <li><a href="#keepalive">Keep-alive and connection reuse</a></li>
+          <li><a href="#dns">DNS</a></li>
+          <li><a href="#cdn">CDN hit ratio and origin load</a></li>
+          <li><a href="#loadtest">Network traps in load tests</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="latency">Latency vs bandwidth</h2>
+      <p><strong>Bandwidth</strong> is how much data per second the pipe carries. <strong>Latency</strong> is how long one round trip takes. For typical API calls and web pages, latency dominates: a 20 KB JSON response takes about 0.2 ms to transmit at 1 Gbit/s, but each round trip between Melbourne and Singapore is roughly 80 to 100 ms, and light in fibre can't do much better.</p>
+      <p>That is why the number of round trips matters more than payload size for small requests. A rough cost for a cold HTTPS request:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Step</th><th>Round trips</th><th>At 80 ms RTT</th></tr></thead>
+        <tbody>
+          <tr><td>DNS lookup (uncached)</td><td>1 or more</td><td>about 80 ms or more</td></tr>
+          <tr><td>TCP handshake</td><td>1</td><td>80 ms</td></tr>
+          <tr><td>TLS 1.3 handshake</td><td>1 (TLS 1.2: 2)</td><td>80 ms (160 ms)</td></tr>
+          <tr><td>Request and first byte of response</td><td>1 + server time</td><td>80 ms + server</td></tr>
+          <tr><td>Total before any body arrives</td><td>about 4 to 5</td><td>320 to 400 ms + server</td></tr>
+        </tbody>
+      </table></div>
+      <p>On a reused connection, the same request costs one round trip plus server time. Larger responses add more round trips while TCP's congestion window grows (slow start), which is why the first 14 KB or so of a response is cheap and the next few hundred KB on a fresh connection are not.</p>
+
+      <h2 id="phases">Break a request into phases</h2>
+      <p>Every serious tool can split a request's time into phases. Use them before guessing.</p>
+      <pre class="ex-code"><code>curl -s -o /dev/null -w '
+dns:      %{time_namelookup}s
+connect:  %{time_connect}s
+tls:      %{time_appconnect}s
+ttfb:     %{time_starttransfer}s
+total:    %{time_total}s
+' https://www.example.com/</code></pre>
+      <p>curl's values are cumulative from the start, so TLS time is <code>time_appconnect − time_connect</code>. In k6, the same phases are separate metrics: <code>http_req_blocked</code> (waiting for a free connection slot, and DNS), <code>http_req_connecting</code>, <code>http_req_tls_handshaking</code>, <code>http_req_waiting</code> (time to first byte, see <a href="/glossary/ttfb/">TTFB</a>) and <code>http_req_receiving</code>. In JMeter, <code>Connect</code> and <code>Latency</code> columns in the JTL give a coarser split. In a browser, the Timing tab in DevTools shows the same breakdown per request.</p>
+      <p>Reading them: high <code>waiting</code> with fast connect and TLS means the server (or what is behind it) is slow. Rising <code>connecting</code> under load means the server's accept queue or a load balancer is struggling. Rising <code>blocked</code> means the client has run out of connections or is waiting on DNS.</p>
+
+      <h2 id="tls">TCP and TLS handshakes</h2>
+      <ul>
+        <li><strong>TLS 1.3 needs one round trip</strong> for a full handshake, TLS 1.2 needs two. Both support resumption, which skips certificate exchange and the expensive key agreement on reconnects.</li>
+        <li><strong>Handshakes cost server CPU.</strong> The asymmetric crypto in a full handshake is far more expensive than encrypting the data afterwards. A test that opens a new connection per request can make a load balancer or ingress saturate on handshakes, at traffic levels it would handle easily with reuse.</li>
+        <li><strong>Certificate chain size matters.</strong> A long chain or large certificates can push the server's handshake reply beyond the initial congestion window and add a round trip. Serve the leaf and intermediates only, not the root.</li>
+        <li><strong>OCSP stapling</strong> saves the client a separate lookup to the certificate authority on some clients. Enable it if your server supports it.</li>
+      </ul>
+
+      <h2 id="keepalive">Keep-alive and connection reuse</h2>
+      <p>HTTP/1.1 keeps connections open by default. HTTP/2 multiplexes many requests on one connection. In practice reuse breaks in a few predictable places:</p>
+      <ul>
+        <li><strong>Idle timeout mismatches.</strong> If a load balancer closes idle connections after 60 seconds and the backend's keep-alive timeout is 5 seconds, the backend may close a connection the load balancer is about to reuse. The result is intermittent 502s under moderate load. The usual rule: the backend's idle timeout must be longer than the load balancer's.</li>
+        <li><strong>Client libraries without pooling</strong>, or a new HTTP client created per request. Look for thousands of <code>TIME_WAIT</code> sockets on the calling host (<code>ss -tan state time-wait | wc -l</code>).</li>
+        <li><strong>Pool limits per host.</strong> Many HTTP clients cap connections per destination host, sometimes at a small number. Requests then queue inside the client, and the time appears as latency of the downstream call even though the downstream is idle.</li>
+        <li><strong>Server-side limits</strong> such as <code>keepalive_requests</code> in nginx (the number of requests per connection before it closes) cause periodic reconnects.</li>
+      </ul>
+
+      <h2 id="dns">DNS</h2>
+      <ul>
+        <li><strong>TTL vs failover:</strong> short TTLs (30 to 60 seconds) let you move traffic quickly but increase lookups. Clients and runtimes that cache DNS forever ignore your TTL. The JVM caches successful lookups for 30 seconds by default when no security manager is installed (<code>networkaddress.cache.ttl</code>). Check what your runtime does.</li>
+        <li><strong>Resolver limits:</strong> in Kubernetes, the default <code>ndots:5</code> setting means a lookup of an external name such as <code>api.partner.com</code> can try several cluster search domains first. Under load this multiplies queries to CoreDNS. Use fully qualified names with a trailing dot, or tune <code>ndots</code>. Cloud VPC resolvers also have per-interface query rate limits.</li>
+        <li><strong>Load test DNS behaviour:</strong> k6 caches DNS for 5 minutes by default (the <code>dns</code> option, <code>ttl=5m</code>). If you are testing DNS-based failover or a load balancer that scales by adding IPs, lower the TTL (for example <code>dns: { ttl: '30s', select: 'roundRobin' }</code>) so load spreads across new addresses the way real clients would.</li>
+      </ul>
+
+      <h2 id="cdn">CDN hit ratio and origin load</h2>
+      <p>A CDN helps in two ways: it serves cached content from an edge near the user, and it keeps that traffic off your origin. The <a href="/glossary/cdn-hit-ratio/">cache hit ratio</a> decides both.</p>
+      <ul>
+        <li><strong>Request hit ratio vs byte hit ratio.</strong> A 95% request hit ratio with a 60% byte hit ratio means large files (images, video, downloads) are missing the cache. Check both.</li>
+        <li><strong>Origin load = total requests × (1 − hit ratio).</strong> At 20,000 requests per second, going from 95% to 90% hit ratio doubles origin traffic from 1,000 to 2,000 req/s. Small changes in hit ratio are big changes for the origin.</li>
+        <li><strong>Cache key fragmentation.</strong> Query strings (tracking parameters, cache-busters), cookies or headers in the cache key create a separate cache entry per variant. One stray <code>Vary: User-Agent</code> header can make an object almost uncacheable.</li>
+        <li><strong>Cold cache after a purge or deploy.</strong> Every edge location fetches from the origin at once. That is a <a href="/glossary/thundering-herd/">thundering herd</a>. Request collapsing and an origin shield (a mid-tier cache) reduce it. Test it deliberately.</li>
+        <li><strong>Check the response headers.</strong> CDNs report hits and misses in headers such as <code>X-Cache</code>, <code>CF-Cache-Status</code> or <code>Age</code>. Record them in your load test to measure the hit ratio you actually got.</li>
+      </ul>
+
+      <h2 id="loadtest">Network traps in load tests</h2>
+      <ul>
+        <li><strong>Testing through the CDN from one location</strong> warms one edge and measures cache performance, not your origin. Decide which you want to test. To test the origin, bypass the CDN or send uncacheable requests. To test the CDN, use realistic URL variety.</li>
+        <li><strong>WAFs and DDoS protection</strong> will rate-limit or block a load test from a few IPs. Agree an allow-list with the security team first, or you will be measuring the WAF. See <a href="/glossary/rate-limiting/">rate limiting</a> and <a href="/glossary/http-429/">HTTP 429</a>.</li>
+        <li><strong>Load generator bandwidth.</strong> 2,000 requests per second of 500 KB pages is 8 Gbit/s. Few single generators can push that. Check the generator's network throughput before blaming the server.</li>
+        <li><strong>Unrealistic connection behaviour.</strong> Real browsers open a handful of connections per origin and reuse them. A script that reuses one connection per VU for an hour hides handshake costs. A script that opens a new connection per request exaggerates them. k6's <code>noConnectionReuse</code> and <code>noVUConnectionReuse</code> options and JMeter's keep-alive checkbox control this.</li>
+        <li><strong>Latency from the wrong place.</strong> A generator in the same data centre as the servers shows sub-millisecond network time. Your users don't have that. Either run some load from the regions users are in, or add the measured real-world round-trip time to your analysis.</li>
+      </ul>
+      <p>For front-end and browser-side network effects, see the <a href="/guides/topics/frontend/">frontend performance guide</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Slow for users, fast on the server?</h2>
+        <p>That gap is usually network, TLS or caching. Book a free 30-minute call and we'll find which.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-net-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/site-check/" data-track="guide-net-sitecheck">Free site check</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

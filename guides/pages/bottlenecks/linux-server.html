@@ -1,0 +1,154 @@
+<!--{"title": "Finding bottlenecks on a Linux server", "og_title": "Linux performance analysis during a load test: what each column means", "description": "top, vmstat, mpstat, iostat -x, sar, ss, free, pidstat and perf flame graphs: what each column means during a load test and which thresholds matter.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/bottlenecks/">Finding bottlenecks</a> · Linux server</p>
+      <h1>Reading a Linux server under load</h1>
+      <p class="lead">Your dashboard says CPU is at 45% and the app is still timing out. Averages across 16 cores and 60-second scrapes hide exactly the thing you need: one core pinned at 100%, a disk queue that spikes for two seconds, a listen queue that overflows. These are the commands to run on the box while the test is at its knee, and what to look for in each.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#first-60">The first 60 seconds</a></li>
+          <li><a href="#cpu">CPU: top, mpstat, vmstat</a></li>
+          <li><a href="#memory">Memory: free, vmstat, dmesg</a></li>
+          <li><a href="#disk">Disk: iostat -x</a></li>
+          <li><a href="#network">Network: ss, sar -n</a></li>
+          <li><a href="#process">Per process: pidstat</a></li>
+          <li><a href="#history">History: sar</a></li>
+          <li><a href="#containers">Containers and CPU throttling</a></li>
+          <li><a href="#perf">CPU profiling: perf and flame graphs</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="first-60">The first 60 seconds</h2>
+      <p>Brendan Gregg published a well-known checklist for the first minute on a struggling Linux host. A version of it, tuned for load testing, is below. Run it on each server in the path while the test is at the load level where things go wrong. Most of these come from the <code>procps</code> and <code>sysstat</code> packages (<code>apt install sysstat</code> or <code>dnf install sysstat</code>).</p>
+      <pre class="ex-code"><code>uptime                 # load averages: 1, 5, 15 minutes
+dmesg -T | tail -20    # OOM kills, TCP drops, disk errors
+vmstat 1 10            # run queue, memory, swap, CPU split
+mpstat -P ALL 1 5      # per-core CPU: look for one hot core
+pidstat 1 5            # which processes use the CPU
+iostat -xz 1 5         # per-disk latency and utilisation
+free -m                # memory, look at "available"
+sar -n DEV 1 5         # network throughput per interface
+sar -n TCP,ETCP 1 5    # new connections, retransmits
+ss -s                  # socket summary
+top                    # overall check, press 1 for per-core</code></pre>
+      <p>Use 1-second intervals. A problem that lasts 3 seconds disappears inside a 60-second average, and that is the granularity most monitoring tools give you.</p>
+
+      <h2 id="cpu">CPU: top, mpstat, vmstat</h2>
+      <h3>vmstat 1</h3>
+      <pre class="ex-code"><code>procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+14  0      0 812340  20112 4021388    0    0     0    48 9120 15230 82 12  5  1  0</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Column</th><th>Meaning</th><th>Worry when</th></tr></thead>
+        <tbody>
+          <tr><td><code>r</code></td><td>Runnable tasks: running or waiting for a CPU</td><td>Consistently above the number of cores. That is CPU saturation, work is queueing.</td></tr>
+          <tr><td><code>b</code></td><td>Tasks blocked in uninterruptible sleep, usually disk I/O</td><td>Persistently above 0 under load</td></tr>
+          <tr><td><code>si</code> / <code>so</code></td><td>Swap in / out per second</td><td>Any sustained non-zero value on a latency-sensitive server</td></tr>
+          <tr><td><code>cs</code></td><td>Context switches per second</td><td>A big jump compared with baseline at the same throughput: lock contention or too many threads</td></tr>
+          <tr><td><code>us</code> / <code>sy</code></td><td>User / kernel CPU %</td><td><code>sy</code> above about 20 to 30%: syscall-heavy work, small network writes, lock spinning</td></tr>
+          <tr><td><code>wa</code></td><td>Idle while waiting for I/O</td><td>High <code>wa</code> means CPUs are idle because of I/O. Check <code>iostat</code>.</td></tr>
+          <tr><td><code>st</code></td><td>Steal: time the hypervisor gave to another guest</td><td>Above a few percent on a VM: noisy neighbour or burst credits exhausted</td></tr>
+        </tbody>
+      </table></div>
+      <p>The first <code>vmstat</code> line is an average since boot. Ignore it.</p>
+
+      <h3>mpstat -P ALL 1</h3>
+      <p>Shows each core separately. The pattern to catch is one core at 100% <code>%usr</code> while the others are idle. That is a single-threaded bottleneck (a Node.js event loop, a Redis instance, a single consumer thread, a lock everything funnels through). Average CPU says 7% on a 16-core box. A core at 100% <code>%soft</code> points at network interrupt handling stuck on one CPU. Check that receive-side scaling spreads the NIC queues across cores.</p>
+
+      <h3>top and load average</h3>
+      <p>In <code>top</code>, press <code>1</code> for per-core lines, <code>H</code> for threads and <code>P</code> to sort by CPU. Load average on Linux counts runnable tasks <em>and</em> tasks in uninterruptible sleep, so a high load with idle CPUs usually means disk or NFS waits, not CPU. Compare load with the core count: a 1-minute load of 32 on 8 cores is saturation.</p>
+
+      <h2 id="memory">Memory: free, vmstat, dmesg</h2>
+      <pre class="ex-code"><code>free -m
+               total        used        free      shared  buff/cache   available
+Mem:           15921        9811         412          88        5697        5712</code></pre>
+      <p>Read <code>available</code>, not <code>free</code>. Linux uses spare memory as page cache, so low "free" is normal. Low "available" (under about 10% of total) plus swap activity or OOM kills is the real signal. For the JVM, remember the heap is only part of the process: metaspace, thread stacks, direct buffers and the code cache sit outside it. A container limit sized to <code>-Xmx</code> will get OOM-killed.</p>
+      <pre class="ex-code"><code>dmesg -T | grep -i -E 'killed process|out of memory'</code></pre>
+
+      <h2 id="disk">Disk: iostat -x</h2>
+      <pre class="ex-code"><code>iostat -xz 1
+Device   r/s    w/s   rkB/s   wkB/s  r_await w_await aqu-sz %util
+nvme0n1  820.0 1450.0 13120.0 92800.0   0.21    4.80   7.12  98.4</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Column</th><th>Meaning</th><th>Worry when</th></tr></thead>
+        <tbody>
+          <tr><td><code>r_await</code> / <code>w_await</code></td><td>Average ms per read / write, including queue time</td><td>Well above the device's normal: SSD reads over a few ms, cloud volumes over about 10 ms, or rising with load</td></tr>
+          <tr><td><code>aqu-sz</code></td><td>Average queue length (older sysstat: <code>avgqu-sz</code>)</td><td>Growing steadily with load: saturation</td></tr>
+          <tr><td><code>%util</code></td><td>Percentage of time the device had at least one I/O in flight</td><td>Near 100% on a single spinning disk. On SSD, NVMe and cloud volumes it can show 100% with headroom left, so judge by <code>await</code> and IOPS limits instead.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Cloud block storage has provisioned IOPS and throughput caps, and some volume types use burst credits. When <code>w/s</code> flattens at a round number while <code>await</code> climbs, you have probably hit the volume's limit, not the disk's.</p>
+
+      <h2 id="network">Network: ss, sar -n</h2>
+      <pre class="ex-code"><code>ss -s                         # totals: estab, timewait, orphaned
+ss -ltn                       # listening sockets: Recv-Q vs Send-Q
+ss -tan state time-wait | wc -l
+sar -n DEV 1                  # rxkB/s, txkB/s per interface
+sar -n TCP,ETCP 1             # active/s passive/s, retrans/s
+nstat -az | grep -E 'ListenOverflows|ListenDrops|TCPRetransSegs'</code></pre>
+      <ul>
+        <li><strong>Listen queue:</strong> for a listening socket in <code>ss -ltn</code>, <code>Recv-Q</code> is the current accept queue and <code>Send-Q</code> is its maximum (the backlog). If Recv-Q reaches Send-Q, or <code>ListenOverflows</code> grows, the application isn't calling <code>accept()</code> fast enough and new connections are dropped. Clients see connect timeouts and SYN retries of 1, 3, 7 seconds.</li>
+        <li><strong>Retransmits:</strong> retransmitted segments above about 1% of sent segments under load mean packet loss or congestion somewhere on the path.</li>
+        <li><strong>TIME_WAIT:</strong> tens of thousands of TIME_WAIT sockets on the client side means connections are not being reused. That costs a handshake per request and can exhaust ephemeral ports. Fix keep-alive before touching kernel settings.</li>
+        <li><strong>Bandwidth:</strong> compare <code>txkB/s</code> with the instance's network limit, which on cloud VMs is often lower than the NIC speed and may be a burst figure.</li>
+      </ul>
+
+      <h2 id="process">Per process: pidstat</h2>
+      <pre class="ex-code"><code>pidstat -u 1 -p ALL       # CPU per process (%usr %system %wait)
+pidstat -t -p &lt;PID&gt; 1     # per thread: find the hot thread
+pidstat -w -p &lt;PID&gt; 1     # cswch/s (voluntary) nvcswch/s (involuntary)
+pidstat -d 1              # disk read/write per process</code></pre>
+      <p>High voluntary context switches mean threads keep blocking (I/O, locks). High involuntary switches mean they are being preempted: more runnable threads than cores. <code>%wait</code> in <code>pidstat -u</code> is time the task was runnable but waiting for a CPU, a direct measure of CPU queueing for that process.</p>
+      <p>To map a hot thread to Java code, take the thread ID from <code>pidstat -t</code>, convert it to hex (<code>printf '%x\n' 12345</code>) and find <code>nid=0x3039</code> in a thread dump. See the <a href="/guides/bottlenecks/jvm/">JVM guide</a>.</p>
+
+      <h2 id="history">History: sar</h2>
+      <p>Most tools only show now. <code>sar</code> from sysstat records history if its collector is enabled (<code>systemctl enable --now sysstat</code> on most distributions). Then you can look back at a test that ran overnight:</p>
+      <pre class="ex-code"><code>sar -u -s 02:00:00 -e 02:30:00     # CPU for a time window today
+sar -q                             # run queue and load average
+sar -r                             # memory
+sar -d -p                          # disks, with device names
+sar -n DEV -f /var/log/sysstat/sa15   # a previous day (path varies by distro)</code></pre>
+      <p>The default collection interval is often 10 minutes, too coarse for a load test. Lower it in the sysstat timer or cron entry on test servers, or run <code>sar -o /tmp/test.sar 1</code> for the duration of the test and read it back with <code>sar -f</code>.</p>
+
+      <h2 id="containers">Containers and CPU throttling</h2>
+      <p>In Kubernetes, a CPU <em>limit</em> is enforced by the CFS quota: a container with a limit of 2 CPUs gets 200 ms of CPU time per 100 ms period across all its threads. A multi-threaded app can burn its quota in the first 30 ms of a period and then sit throttled for 70 ms. Latency spikes, while average CPU usage looks well under the limit.</p>
+      <pre class="ex-code"><code># cgroup v2, from inside the container or on the node
+cat /sys/fs/cgroup/cpu.stat
+# nr_periods 120000
+# nr_throttled 18000         &lt;- 15% of periods throttled
+# throttled_usec 950000000</code></pre>
+      <p>In Prometheus with cAdvisor metrics, the share of throttled periods is:</p>
+      <pre class="ex-code"><code>rate(container_cpu_cfs_throttled_periods_total[1m])
+  / rate(container_cpu_cfs_periods_total[1m])</code></pre>
+      <p>Anything above a few percent on a latency-sensitive service is worth fixing, by raising or removing the limit or by reducing thread counts so the runtime doesn't assume it owns every core on the node.</p>
+
+      <h2 id="perf">CPU profiling: perf and flame graphs</h2>
+      <p>When CPU is the bottleneck, the question becomes which code. <code>perf</code> samples stacks across the whole system, and a <a href="/glossary/flame-graph/">flame graph</a> shows where the time goes: width is the share of samples, the y-axis is stack depth. Look for wide plateaus near the top.</p>
+      <pre class="ex-code"><code># sample all CPUs at 99 Hz with call stacks for 30 seconds
+sudo perf record -F 99 -a -g -- sleep 30
+sudo perf report --stdio | head -50
+
+# flame graph with Brendan Gregg's FlameGraph scripts
+git clone https://github.com/brendangregg/FlameGraph
+sudo perf script | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl &gt; cpu.svg</code></pre>
+      <ul>
+        <li>99 Hz rather than 100 avoids sampling in lockstep with periodic timers.</li>
+        <li>JIT-compiled languages (Java, Node.js) need symbol maps, or you'll see hex addresses. For Java, use async-profiler instead (see the <a href="/guides/bottlenecks/jvm/">JVM guide</a>). Node.js has <code>--perf-basic-prof</code>.</li>
+        <li>A CPU flame graph shows on-CPU time only. If latency is high and CPU is low, the time is off-CPU (waiting on locks, I/O, pools), and you need an off-CPU or wall-clock profile, or a thread dump.</li>
+      </ul>
+      <div class="g-note"><p>Keep the one-page version handy: the <a href="/guides/cheat-sheets/linux-performance/">Linux performance cheat sheet</a> lists every command here with its danger threshold, and prints on two sides of A4.</p></div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want a second pair of eyes on the server metrics?</h2>
+        <p>Send me the numbers from your last test. A free 30-minute call is usually enough to say which resource is the real limit.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-linux-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/guides/bottlenecks/" data-track="guide-linux-playbook">Back to the playbook</a>
+        </p>
+      </div>
+    </section>

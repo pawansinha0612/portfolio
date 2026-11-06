@@ -1,0 +1,79 @@
+<!--{"title": "Monitoring during load tests", "og_title": "What to monitor during a load test (and how to set it up)", "description": "What to watch while a load test runs: load generator, system under test, runtimes, databases and dependencies, plus a free Grafana kit.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Monitoring</p>
+      <h1>What to monitor during a load test</h1>
+      <p class="lead">The test failed at 2:14 pm. The load tool shows exactly when. The infrastructure dashboard has 1-minute averages, the APM keeps traces for an hour, the database metrics live with another team, and nobody wrote down which pods were running. Monitoring for a load test has to be set up before the run, or the run tells you only that something broke.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#layers">The five layers to watch</a></li>
+          <li><a href="#resolution">Resolution and retention</a></li>
+          <li><a href="#correlate">Make every graph line up</a></li>
+          <li><a href="#checklist">Pre-test checklist</a></li>
+          <li><a href="#kit">The free Grafana kit</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="layers">The five layers to watch</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Layer</th><th>Watch</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Load generator</td><td>CPU, memory, network, VUs or threads, dropped iterations</td><td>A saturated generator produces fake latency. Check this first, every run.</td></tr>
+          <tr><td>Client view (the test results)</td><td>Request rate, error rate, p50/p95/p99 per transaction, over time</td><td>The user-facing truth, and the <a href="/glossary/sli/">SLIs</a> you report against</td></tr>
+          <tr><td>System under test: hosts and containers</td><td>CPU per core, run queue, memory available, disk await, network, CPU throttling, pod restarts</td><td>The <a href="/glossary/use-method/">USE method</a> per resource</td></tr>
+          <tr><td>Runtimes and middleware</td><td>GC pauses, heap after GC, thread pools, connection pools, queues, cache hit ratios</td><td>Software resources are where most bottlenecks live</td></tr>
+          <tr><td>Data stores and dependencies</td><td>Query latency and top SQL, locks, replication lag, downstream latency and errors, rate limits</td><td>The bottleneck is often one hop away from where it shows up</td></tr>
+        </tbody>
+      </table></div>
+      <p>Add the platform's own events to the timeline: autoscaling, deployments, failovers, cron jobs and backups. A latency spike that lines up with a scale-out event is a very different problem from one that doesn't.</p>
+
+      <h2 id="resolution">Resolution and retention</h2>
+      <ul>
+        <li><strong>Scrape or push at 5 to 15 seconds</strong> during tests. Production defaults of 60 seconds hide anything shorter than a few minutes. 1-second tools like <code>vmstat 1</code> are worth running on key hosts as well.</li>
+        <li><strong>Keep raw data until the report is signed off.</strong> Many platforms downsample after a few days, and APM trace retention can be hours. Export or screenshot what you need while it is still detailed.</li>
+        <li><strong>Percentiles need the right source.</strong> Averaging per-host p95s gives a number that means nothing. Use histograms that can be merged, or compute percentiles from the raw results. The <a href="/explain/percentiles/">percentiles explainer</a> shows why.</li>
+      </ul>
+
+      <h2 id="correlate">Make every graph line up</h2>
+      <ul>
+        <li><strong>One clock.</strong> Use NTP everywhere and show all dashboards in the same time zone. A 3-minute clock skew between the load generator and the servers makes correlation guesswork.</li>
+        <li><strong>One test ID.</strong> Tag every metric from the load tool with a run ID (k6 <code>--tag testid=...</code>, a JMeter <code>application</code> or test title) and record the start and end time in the test log.</li>
+        <li><strong>Annotations.</strong> Mark ramp stages, configuration changes and incidents on the dashboards. Grafana annotations or a simple shared log both work.</li>
+        <li><strong>Same dashboard for every run.</strong> Comparable runs need comparable views. Save the dashboard as code alongside the test scripts.</li>
+      </ul>
+
+      <h2 id="checklist">Pre-test checklist</h2>
+      <ol>
+        <li>The load generator's own CPU, memory and network are visible.</li>
+        <li>Every host and container in the request path reports at 15 seconds or better, including the database and the load balancer.</li>
+        <li>GC logging is on for JVM services. Pool and queue metrics are exposed.</li>
+        <li>APM sampling is high enough to catch slow requests, and trace retention covers the report-writing window.</li>
+        <li>Database statistics are reset or snapshotted at the start (for example <code>pg_stat_statements_reset()</code>).</li>
+        <li>Clocks are in sync and everyone knows the test ID and time window.</li>
+        <li>Someone owns each dashboard during the run and knows the abort criteria.</li>
+      </ol>
+      <p>The <a href="/peak-readiness/checklist/">peak-readiness checklist</a> covers the wider preparation for a big event.</p>
+
+      <h2 id="kit">The free Grafana kit</h2>
+      <p>If you don't have a monitoring stack for test results, the guide below gives you one: Docker Compose with Prometheus, InfluxDB and Grafana, pre-built dashboards for k6 and JMeter, and node-exporter for the servers you are testing.</p>
+    </section>
+
+    <section class="wrap g-cards" aria-label="Monitoring guides">
+      <a class="g-card" href="/guides/monitoring/grafana-stack/"><span class="g-tag">Free kit</span><h3>Grafana stack for load tests</h3><p>k6 to Prometheus, JMeter to InfluxDB, node-exporter, provisioned dashboards. Download and run.</p></a>
+      <a class="g-card" href="/guides/bottlenecks/"><span class="g-tag">Playbook</span><h3>Finding bottlenecks</h3><p>What to do with the data: a step-by-step way from symptom to one proven cause.</p></a>
+      <a class="g-card" href="/guides/cheat-sheets/linux-performance/"><span class="g-tag">Cheat sheet</span><h3>Linux performance</h3><p>Every command worth running on a server under load, with danger thresholds.</p></a>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want monitoring set up before your next big test?</h2>
+        <p>I set up test monitoring and run load tests end to end. Book a free 30-minute call to talk through what you have.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-monitoring-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-monitoring-service">Performance testing service</a>
+        </p>
+      </div>
+    </section>

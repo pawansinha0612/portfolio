@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 with TypeScript and a project structure that scales — Pawan Sinha</title>
+  <meta name="description" content="Run k6 tests in TypeScript with no build step, type-check them in CI, and organise a k6 project into config, API modules and tests that a team can maintain.">
+  <meta property="og:title" content="k6 TypeScript and project structure: from one script to a test suite">
+  <meta property="og:description" content="Run k6 tests in TypeScript with no build step, type-check them in CI, and organise a k6 project into config, API modules and tests that a team can maintain.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/typescript-and-structure/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/typescript-and-structure/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 with TypeScript and a project structure that scales", "description": "Run k6 tests in TypeScript with no build step, type-check them in CI, and organise a k6 project into config, API modules and tests that a team can maintain.", "url": "https://pawansinha.com.au/guides/k6/typescript-and-structure/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · TypeScript and structure</p>
+      <h1>k6 with TypeScript, and a structure that survives a team</h1>
+      <p class="lead">The first load test was one 80-line file. Six months later there are 14 copies of
+        it, each with its own login function, and an API change means editing all of them. Structure is
+        what keeps a load test suite cheap to maintain.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#ts">TypeScript in k6: no build step</a></li>
+          <li><a href="#layout">A project layout</a></li>
+          <li><a href="#code">The code</a></li>
+          <li><a href="#typecheck">Type-checking in CI</a></li>
+          <li><a href="#rules">Rules that keep it maintainable</a></li>
+        </ol>
+      </div>
+
+      <h2 id="ts">TypeScript in k6: no build step</h2>
+      <p>Since k6 v0.57, <code>k6 run script.ts</code> works with no flag and no bundler. k6 uses
+        esbuild internally to strip the types and run the JavaScript. Two things to know:</p>
+      <ul>
+        <li><strong>k6 does not type-check.</strong> It removes the types and runs. A type error that
+          <code>tsc</code> would reject runs fine in k6, until it fails at runtime. Run
+          <code>tsc</code> yourself (below).</li>
+        <li><strong>Imports use the real file name</strong>, including <code>.ts</code>. k6 doesn't do
+          Node-style module resolution, so <code>import { login } from '../lib/api.ts'</code>, not
+          <code>'../lib/api'</code>.</li>
+      </ul>
+      <p>On older versions (v0.52 to v0.56), TypeScript needed
+        <code>--compatibility-mode=experimental_enhanced</code>. Before that, people bundled with
+        webpack or esbuild. If you see those in an old repo, you can remove them after upgrading.</p>
+
+      <h2 id="layout">A project layout</h2>
+      <pre class="ex-code"><code>perf/
+├── config/
+│   └── env.ts          # base URLs and budgets per environment
+├── lib/
+│   └── api.ts          # one function per endpoint: request, tag, checks
+├── data/
+│   └── users.csv       # test data (generated, never real customers)
+├── tests/
+│   ├── smoke.ts        # 1-5 VUs, every pull request
+│   ├── shop.ts         # the main journey under load
+│   └── soak.ts         # same journey, hours long
+├── package.json        # only for @types/k6 and tsc, nothing k6 needs at runtime
+└── tsconfig.json</code></pre>
+      <p>The split that matters: <strong>tests describe load and journeys, lib describes how to call
+        the API.</strong> When an endpoint changes, you change one function in <code>lib/</code> and
+        every test picks it up.</p>
+
+      <h2 id="code">The code</h2>
+      <p><code>config/env.ts</code> picks settings from <code>TARGET_ENV</code>:</p>
+      <pre class="ex-code"><code>// config/env.ts: one place for environment-specific settings
+export interface EnvConfig {
+  baseUrl: string;
+  p95Ms: number;
+}
+
+const envs: Record&lt;string, EnvConfig&gt; = {
+  local: { baseUrl: 'http://localhost:8080', p95Ms: 800 },
+  staging: { baseUrl: 'https://staging.example.com', p95Ms: 500 },
+};
+
+export const env: EnvConfig = envs[__ENV.TARGET_ENV || 'local'];
+if (!env) throw new Error(`unknown TARGET_ENV: ${__ENV.TARGET_ENV}`);</code></pre>
+      <p><code>lib/api.ts</code> wraps each endpoint with its <code>name</code> tag and its checks,
+        so no test can forget them:</p>
+      <pre class="ex-code"><code>// lib/api.ts: one function per endpoint, with the tag and the checks built in
+import http, { RefinedResponse, ResponseType } from 'k6/http';
+import { check } from 'k6';
+import { env } from '../config/env.ts';
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+}
+
+const json = { 'Content-Type': 'application/json' };
+
+export function login(username: string, password: string): string {
+  const res = http.post(`${env.baseUrl}/login`, JSON.stringify({ username, password }), {
+    headers: json,
+    tags: { name: 'POST /login' },
+  });
+  check(res, { 'login 200': (r) =&gt; r.status === 200 });
+  return res.json('access_token') as string;
+}
+
+export function listProducts(): Product[] {
+  const res: RefinedResponse&lt;ResponseType&gt; = http.get(`${env.baseUrl}/products`, {
+    tags: { name: 'GET /products' },
+  });
+  check(res, { 'products 200': (r) =&gt; r.status === 200 });
+  return (res.json('items') as unknown as Product[]) || [];
+}
+
+export function addToCart(token: string, productId: number): void {
+  const res = http.post(`${env.baseUrl}/cart`, JSON.stringify({ productId }), {
+    headers: { ...json, Authorization: `Bearer ${token}` },
+    tags: { name: 'POST /cart' },
+  });
+  check(res, { 'cart 201': (r) =&gt; r.status === 201 });
+}</code></pre>
+      <p><code>tests/shop.ts</code> is just the journey and the load:</p>
+      <pre class="ex-code"><code>// tests/shop.ts: the test only describes the journey and the load
+import { sleep } from 'k6';
+import { Options } from 'k6/options';
+import { env } from '../config/env.ts';
+import { login, listProducts, addToCart } from '../lib/api.ts';
+
+export const options: Options = {
+  vus: 10,
+  duration: '5m',
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: [`p(95)&lt;${env.p95Ms}`],
+  },
+};
+
+export default function (): void {
+  const token = login('user001', 'Passw0rd!');
+  const products = listProducts();
+  sleep(1);
+  if (products.length &gt; 0) addToCart(token, products[0].id);
+  sleep(1);
+}</code></pre>
+      <pre class="ex-code"><code>k6 run tests/shop.ts                           # local
+k6 run -e TARGET_ENV=staging tests/shop.ts     # staging budgets and URL</code></pre>
+
+      <h2 id="typecheck">Type-checking in CI</h2>
+      <p>Install the type definitions and TypeScript as dev dependencies. k6 never reads
+        <code>node_modules</code>, they're only for your editor and <code>tsc</code>.</p>
+      <pre class="ex-code"><code>npm install --save-dev typescript @types/k6</code></pre>
+      <pre class="ex-code"><code>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "types": ["k6"]
+  },
+  "include": ["config", "lib", "tests"]
+}</code></pre>
+      <p><code>allowImportingTsExtensions</code> (which needs <code>noEmit</code>) lets
+        <code>tsc</code> accept the <code>.ts</code> imports that k6 requires. Then run
+        <code>npx tsc -p .</code> in CI before any load test, and run <code>k6 inspect</code> on each
+        test to catch k6-level errors (bad options, missing files) without sending any traffic.</p>
+      <pre class="ex-code"><code>npx tsc -p .                 # types
+k6 inspect tests/shop.ts     # k6 can load the script and its options
+k6 run --vus 1 --iterations 1 tests/shop.ts   # one real pass</code></pre>
+      <p>Keep <code>@types/k6</code> close to your k6 version. The types follow the k6 API, so a
+        mismatch flags functions you don't have, or misses ones you do.</p>
+
+      <h2 id="rules">Rules that keep it maintainable</h2>
+      <ul>
+        <li><strong>No URLs, budgets or credentials in test files.</strong> URLs and budgets live in
+          config, credentials come from <code>__ENV</code>.</li>
+        <li><strong>Every request has a <code>name</code> tag.</strong> Put it in the lib function so
+          it's never forgotten.</li>
+        <li><strong>Checks live with the call.</strong> The lib function knows what a good response
+          looks like.</li>
+        <li><strong>Load shape lives in the test.</strong> The same journey is reused by smoke, load and
+          soak tests with different <code>options</code>.</li>
+        <li><strong>No npm packages at runtime.</strong> k6 can import local files and remote URLs
+          (such as jslib), not packages from <code>node_modules</code>. If you need an npm library,
+          bundle it into a single file first, and check it doesn't use Node APIs that k6 doesn't
+          have.</li>
+      </ul>
+      <p>Next: <a href="/guides/k6/common-mistakes/">common k6 mistakes</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Inherited a messy load test suite?</h2>
+        <p>I restructure k6 and JMeter suites so teams can maintain them, and set them up to run in
+          CI.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-ts-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-ts-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

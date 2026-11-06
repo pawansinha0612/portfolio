@@ -1,0 +1,221 @@
+<!--{"title": "k6 test data: SharedArray, CSV and unique data per VU", "og_title": "k6 test data: SharedArray, CSV files and unique data per VU", "description": "Load JSON and CSV test data in k6 without running out of memory, give every VU its own account, and make each iteration's data unique with k6/execution.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Test data</p>
+      <h1>k6 test data: realistic, unique and cheap on memory</h1>
+      <p class="lead">Your load test logs in as the same user 500 times a second. The cache answers
+        everything, p95 is 12 ms, and production falls over at a tenth of that load. Test data decides
+        whether a load test measures your system or your cache.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#why">Why the data matters</a></li>
+          <li><a href="#sharedarray">SharedArray: load once, share with every VU</a></li>
+          <li><a href="#csv">CSV files: papaparse or the csv module</a></li>
+          <li><a href="#unique">Unique data per VU and per iteration</a></li>
+          <li><a href="#env">Environment variables and secrets</a></li>
+          <li><a href="#rules">Rules for test data</a></li>
+        </ol>
+      </div>
+
+      <h2 id="why">Why the data matters</h2>
+      <p>Repeating the same id, search term or account changes what you're measuring. Caches stay hot,
+        the database reads the same pages from memory, and one user's rows become a lock hot spot.
+        Real traffic spreads across many keys. <a href="/glossary/parameterisation/">Parameterisation</a>
+        means feeding each request realistic, varied data so the system does the same work it does
+        in production.</p>
+
+      <h2 id="sharedarray">SharedArray: load once, share with every VU</h2>
+      <p>Each VU is a separate JavaScript runtime. If you <code>JSON.parse(open(...))</code> a 50 MB
+        file at the top level, every VU parses and holds its own copy: 1,000 VUs means 50 GB. A
+        <code>SharedArray</code> runs the loader function once, stores the result once, and lets every
+        VU read it.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+import { SharedArray } from 'k6/data';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// Runs once in the init context. Every VU then reads the same in-memory copy.
+const products = new SharedArray('products', function () {
+  return JSON.parse(open('./data/products.json')); // must return an array
+});
+
+export const options = { vus: 20, duration: '1m' };
+
+export default function () {
+  const p = products[Math.floor(Math.random() * products.length)];
+  const res = http.get(`${BASE_URL}/products/${p.id}`, { tags: { name: 'GET /products/:id' } });
+  check(res, { 'status 200': (r) =&gt; r.status === 200 });
+}</code></pre>
+      <ul>
+        <li><code>open()</code> only works in init code (top level), and paths are relative to the
+          script file. It can't read files during the test.</li>
+        <li>The function must return an array. The array is read-only.</li>
+        <li>Each element you read is copied out to the VU, so read the element you need, not the
+          whole array in a loop.</li>
+        <li>The first argument is a name. Two SharedArrays with the same name share the same data, so
+          give each data set its own name.</li>
+      </ul>
+
+      <h2 id="csv">CSV files: papaparse or the csv module</h2>
+      <p>k6 has no built-in CSV parser in the core <code>k6/data</code> module. The long-standing way
+        is papaparse from jslib, inside a SharedArray. This script uses each row exactly once:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+import { SharedArray } from 'k6/data';
+import exec from 'k6/execution';
+import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// users.csv:
+// username,password
+// user001,Passw0rd!
+// user002,Passw0rd!
+const users = new SharedArray('users', function () {
+  return papaparse.parse(open('./data/users.csv'), { header: true, skipEmptyLines: true }).data;
+});
+
+export const options = {
+  scenarios: {
+    login: {
+      executor: 'shared-iterations',
+      vus: 10,
+      iterations: users.length, // one login per row, each row used exactly once
+      maxDuration: '5m',
+    },
+  },
+};
+
+export default function () {
+  // iterationInTest is unique across all VUs (0, 1, 2, ...), so no two VUs get the same row
+  const user = users[exec.scenario.iterationInTest];
+  const res = http.post(`${BASE_URL}/login`, JSON.stringify(user), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  check(res, { 'logged in': (r) =&gt; r.status === 200 &amp;&amp; r.json('access_token') !== undefined });
+}</code></pre>
+      <p>The newer <code>k6/experimental/csv</code> module, with <code>k6/experimental/fs</code>,
+        parses in Go rather than JavaScript and is lighter on memory for big files. It's still under
+        <code>experimental</code>, which means its API can change between minor releases. This
+        version picks random rows, with helpers from the k6-utils jslib:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+import { open } from 'k6/experimental/fs';
+import csv from 'k6/experimental/csv';
+import { randomItem, randomIntBetween, uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// Parsed once, held in memory once, shared by every VU (like SharedArray). Top-level await is allowed.
+const users = await csv.parse(await open('./data/users.csv'), { asObjects: true });
+
+export const options = { vus: 10, duration: '1m' };
+
+export default function () {
+  const user = randomItem(users); // random row: fine for read-only journeys
+  const res = http.post(`${BASE_URL}/login`, JSON.stringify(user), {
+    headers: { 'Content-Type': 'application/json', 'X-Request-Id': uuidv4() },
+  });
+  check(res, { 'logged in': (r) =&gt; r.status === 200 });
+  http.get(`${BASE_URL}/products/${randomIntBetween(1, 10)}`, { tags: { name: 'GET /products/:id' } });
+}</code></pre>
+
+      <h2 id="unique">Unique data per VU and per iteration</h2>
+      <p>The <code>k6/execution</code> module tells you where you are in the test. These are the ids
+        you'll use for data:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Property</th><th>Unique across</th><th>Starts at</th><th>Typical use</th></tr></thead>
+        <tbody>
+          <tr><td><code>exec.vu.idInTest</code></td><td>All VUs in the test</td><td>1</td><td>One account per VU for the whole test</td></tr>
+          <tr><td><code>exec.vu.iterationInScenario</code></td><td>This VU's iterations in this scenario</td><td>0</td><td>Combine with the VU id for a unique key</td></tr>
+          <tr><td><code>exec.scenario.iterationInTest</code></td><td>All iterations of this scenario, across all VUs</td><td>0</td><td>Each data row used once, in order</td></tr>
+          <tr><td><code>exec.scenario.name</code></td><td>-</td><td>-</td><td>Branch on the scenario in shared code</td></tr>
+        </tbody>
+      </table></div>
+      <p>The older globals <code>__VU</code> and <code>__ITER</code> still work. <code>__VU</code>
+        matches <code>exec.vu.idInInstance</code>, which is only unique on one machine. Prefer the
+        <code>exec</code> properties, so a test split across several load generators doesn't hand out
+        the same rows twice.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { SharedArray } from 'k6/data';
+import exec from 'k6/execution';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const users = new SharedArray('users', () =&gt; JSON.parse(open('./data/users.json')));
+
+export const options = { vus: 10, duration: '2m' };
+
+export default function () {
+  // One account per VU for the whole test: VU ids start at 1.
+  // Fails loudly if you run more VUs than you have accounts, instead of silently sharing.
+  const idx = exec.vu.idInTest - 1;
+  if (idx &gt;= users.length) {
+    exec.test.abort(`need ${exec.vu.idInTest} users, users.json has ${users.length}`);
+  }
+  const user = users[idx];
+
+  const res = http.post(`${BASE_URL}/login`, JSON.stringify(user), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  check(res, { 'logged in': (r) =&gt; r.status === 200 });
+
+  // Unique per iteration and across VUs: safe for "create" calls with unique keys
+  const orderRef = `load-${exec.vu.idInTest}-${exec.vu.iterationInScenario}`;
+  http.post(`${BASE_URL}/orders`, JSON.stringify({ ref: orderRef }), {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${res.json('access_token')}` },
+  });
+  sleep(1);
+}</code></pre>
+      <p>The abort matters. Without it, 60 VUs with 50 accounts would quietly read
+        <code>undefined</code> and send broken logins, which look like a performance problem. Fail
+        loudly when the data doesn't fit the load.</p>
+      <div class="g-note"><p>Need each row once with no repeats? Use <code>shared-iterations</code>
+        with <code>iterations: rows.length</code> and index by
+        <code>exec.scenario.iterationInTest</code>, as in the papaparse example. With an arrival-rate
+        executor, use modulo (<code>% rows.length</code>) and accept that rows repeat.</p></div>
+
+      <h2 id="env">Environment variables and secrets</h2>
+      <p>Pass settings with <code>-e NAME=value</code> and read them as <code>__ENV.NAME</code>. By
+        default k6 also exposes the real system environment variables through <code>__ENV</code>, so
+        CI secrets set as env vars work without <code>-e</code>.</p>
+      <pre class="ex-code"><code>k6 run -e BASE_URL=https://staging.example.com -e API_USER=loadtest script.js
+
+# or from the environment, which keeps secrets out of shell history and CI logs
+export API_PASSWORD='...'
+k6 run script.js   # __ENV.API_PASSWORD is set</code></pre>
+      <p>Recent k6 versions also have a <code>k6/secrets</code> module with secret sources that
+        redact the values from logs. If you're on k6 v1.0 or later and log request details in CI,
+        it's worth a look.</p>
+
+      <h2 id="rules">Rules for test data</h2>
+      <ul>
+        <li><strong>Size the data to the test.</strong> Enough accounts for the peak VU count, enough
+          ids to match the production spread. 50 products for a catalogue of 2 million tests the
+          cache, not the database.</li>
+        <li><strong>Match the distribution.</strong> Real traffic is skewed: a few products get most
+          views. A uniform random pick is a start. A weighted list from access logs is better.</li>
+        <li><strong>Plan for writes.</strong> Tests that create orders or users change the data for
+          the next run. Use unique references (as above), clean up in <code>teardown()</code> or
+          reset the environment between runs.</li>
+        <li><strong>Never use real customer data</strong> in a test environment. Generate it.</li>
+      </ul>
+      <p>Next: <a href="/guides/k6/auth-and-correlation/">auth and correlation</a>, to log in and
+        carry values from one response into the next request.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Test data is half the work of a good load test</h2>
+        <p>I build data sets and workload models that match production, so the result holds when real
+          traffic arrives.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-data-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-data-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

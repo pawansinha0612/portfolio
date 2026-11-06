@@ -82,6 +82,19 @@
       </ul>
     </section>
 
+    <section class="wrap tool" id="analyse">
+      <p class="eyebrow">Analyse and diagnose</p>
+      <h2>Read the results, find the bottleneck</h2>
+      <div class="grid" style="margin-top:16px">
+        <a class="card project-card" href="/tools/workload-model/" data-track="tools-workload"><div class="icon">🗺️</div><h3>Access logs → workload model</h3><p>Drop nginx, ALB, CloudFront or IIS logs and get peak RPS, the transaction mix, a Little's law user count and a ready k6 script. Nothing is uploaded.</p><span class="project-link">Model my traffic →</span></a>
+        <a class="card project-card" href="/tools/jtl-analyser/" data-track="tools-jtl"><div class="icon">📊</div><h3>JMeter results analyser</h3><p>Drop in a .jtl file (even 2 million rows) and get exact p95/p99, errors, throughput and charts per transaction. Nothing is uploaded.</p><span class="project-link">Analyse my results →</span></a>
+        <a class="card project-card" href="/tools/compare-runs/" data-track="tools-compare-runs"><div class="icon">🆚</div><h3>Compare two test runs</h3><p>Baseline vs candidate for JMeter or k6: which transactions regressed on p95, p99, errors or throughput, ready to paste into your PR.</p><span class="project-link">Compare runs →</span></a>
+        <a class="card project-card" href="/tools/thread-dump/" data-track="tools-tdump"><div class="icon">🧵</div><h3>Java thread dump analyser</h3><p>Paste jstack dumps to find deadlocks, hot locks, exhausted connection pools and threads stuck across dumps. Runs in your browser.</p><span class="project-link">Analyse a dump →</span></a>
+        <a class="card project-card" href="/tools/gc-log/" data-track="tools-gclog"><div class="icon">♻️</div><h3>JVM GC log analyser</h3><p>Drop a gc.log for pause percentiles, throughput, Full GC causes, heap trends and leak hints in plain English. Runs in your browser.</p><span class="project-link">Analyse a GC log →</span></a>
+        <a class="card project-card" href="/guides/" data-track="tools-guides"><div class="icon">📚</div><h3>Step-by-step guides</h3><p>JMeter, k6, Gatling and Locust how-tos, finding bottlenecks, a Grafana monitoring kit, cheat sheets and free templates.</p><span class="project-link">Read the guides →</span></a>
+      </div>
+    </section>
+
     <section class="wrap tool" id="k6-tools">
       <p class="eyebrow">k6 tools</p>
       <h2>Write and read k6 tests faster</h2>
@@ -96,6 +109,7 @@
         <a class="card project-card" href="/tools/llm-load-test/" data-track="tools-llm-test"><div class="icon">🤖</div><h3>LLM load test generator</h3><p>A k6 script for your chatbot, RAG or agent API (OpenAI-compatible, Azure, Anthropic or custom) that measures time to first token, tokens per second, 429s and cost.</p><span class="project-link">Build an LLM test →</span></a>
         <a class="card project-card" href="/tools/llm-capacity/" data-track="tools-llm-capacity"><div class="icon">🧮</div><h3>LLM capacity &amp; cost calculator</h3><p>From users and token sizes to peak requests and tokens per minute, headroom against your RPM and TPM limits, answers in flight and the monthly bill.</p><span class="project-link">Check my limits →</span></a>
         <a class="card project-card" href="/site-check/" data-track="tools-sitecheck"><div class="icon">🛒</div><h3>Is your site ready for Black Friday?</h3><p>Enter a shop's address and get a plain-English speed report for phones: what slows it down, what to fix first, and what only a load test can tell you.</p><span class="project-link">Check a site →</span></a>
+        <a class="card project-card" href="/compare/tool-picker/" data-track="tools-picker"><div class="icon">🧭</div><h3>Which load testing tool?</h3><p>Six questions about your team and system, then a recommended tool and runner-up with the reasons.</p><span class="project-link">Pick a tool →</span></a>
         <a class="card project-card" href="/compare/" data-track="tools-compare"><div class="icon">⚖️</div><h3>Load testing tools compared</h3><p>k6 vs JMeter, Gatling, Locust and LoadRunner: honest verdicts, comparison tables and the same test written in both tools.</p><span class="project-link">Compare tools →</span></a>
         <a class="card project-card" href="/play/" data-track="tools-games"><div class="icon">🎮</div><h3>Performance testing games</h3><p>Hold the Line: survive Black Friday traffic on a budget. Spot the Bottleneck: read a load test in 20 seconds.</p><span class="project-link">Play →</span></a>
         <a class="card project-card" href="/explain/" data-track="tools-explain"><div class="icon">🧪</div><h3>Interactive explainers</h3><p>Percentiles, the queueing hockey stick, load test shapes with a k6 export, and AI prompts for testers.</p><span class="project-link">Explore →</span></a>
@@ -210,6 +224,7 @@
       <div>
         <h2>Free resources</h2>
         <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
         <a href="/tools/">Calculators</a>
         <a href="/interview-prep/practice/">Interview practice</a>
         <a href="/course/k6/">k6 email course</a>

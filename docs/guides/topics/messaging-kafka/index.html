@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance testing Kafka and messaging systems — Pawan Sinha</title>
+  <meta name="description" content="Performance test Kafka properly: producer and consumer throughput, end-to-end latency, consumer lag, partition limits, and the perf-test scripts and xk6-kafka.">
+  <meta property="og:title" content="Kafka performance testing: producer and consumer throughput, lag, partitions and tools">
+  <meta property="og:description" content="Performance test Kafka properly: producer and consumer throughput, end-to-end latency, consumer lag, partition limits, and the perf-test scripts and xk6-kafka.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/topics/messaging-kafka/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/topics/messaging-kafka/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Performance testing Kafka and messaging systems", "description": "Performance test Kafka properly: producer and consumer throughput, end-to-end latency, consumer lag, partition limits, and the perf-test scripts and xk6-kafka.", "url": "https://pawansinha.com.au/guides/topics/messaging-kafka/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Kafka and messaging</p>
+      <h1>Performance testing Kafka and messaging</h1>
+      <p class="lead">The API returns 202 Accepted in 15 ms at three times peak load, and the load test passes. Behind it, the order consumer processes 400 messages a second while 1,100 arrive. Lag grows by 42,000 messages a minute, and customers get their confirmation emails two hours late. With asynchronous systems, the response time of the front door says almost nothing. You have to measure the queue.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#what">What to measure in a messaging system</a></li>
+          <li><a href="#partitions">Partitions set the ceiling</a></li>
+          <li><a href="#producer">Producer throughput and latency</a></li>
+          <li><a href="#consumer">Consumer throughput and lag</a></li>
+          <li><a href="#perf-scripts">Kafka's perf-test scripts</a></li>
+          <li><a href="#xk6">xk6-kafka: messaging inside a k6 test</a></li>
+          <li><a href="#scenarios">Test scenarios worth running</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="what">What to measure in a messaging system</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Metric</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>Producer throughput and send latency</td><td>Can the producers publish at peak rate? Latency depends heavily on <code>acks</code>, batching and replication.</td></tr>
+          <tr><td>Consumer throughput</td><td>Must exceed the arrival rate with headroom, or lag grows forever</td></tr>
+          <tr><td>Consumer lag (messages and time)</td><td>The size of the backlog. Lag in time is what the business feels.</td></tr>
+          <tr><td>End-to-end latency</td><td>Time from produce to processed. The true user-facing number for asynchronous flows.</td></tr>
+          <tr><td>Broker resources</td><td>Disk throughput, network, request handler idle ratio, under-replicated partitions</td></tr>
+          <tr><td>Rebalances</td><td>Consumer group rebalances pause consumption. Frequent ones under load are a problem on their own.</td></tr>
+        </tbody>
+      </table></div>
+      <p>The rule that matters most: <strong>consumer throughput must be higher than the peak arrival rate</strong>, with enough margin to drain a backlog. If consumers can do 1,200 messages per second and peak arrival is 1,100, a 10-minute backlog of 660,000 messages takes 66 minutes to clear (660,000 ÷ the 100/s spare capacity). That is <a href="/glossary/headroom/">headroom</a> in queue form.</p>
+
+      <h2 id="partitions">Partitions set the ceiling</h2>
+      <ul>
+        <li><strong>A partition is consumed by at most one consumer in a group.</strong> A topic with 12 partitions can use at most 12 consumers in parallel. The 13th sits idle. Partition count is the ceiling on consumer parallelism, unless each consumer processes records concurrently itself.</li>
+        <li><strong>Ordering is per partition.</strong> Messages with the same key go to the same partition, which is how per-entity ordering is kept.</li>
+        <li><strong>Key skew creates hot partitions.</strong> If 30% of messages share one key (one big customer, one popular product), one partition and one consumer carry 30% of the load. Total throughput looks fine on paper and that one partition lags. Test with a realistic key distribution, not random keys.</li>
+        <li><strong>More partitions isn't free.</strong> Each adds files, memory and replication work on the brokers, and more partitions per consumer group means longer rebalances. Increasing partitions later also changes which partition a key maps to.</li>
+      </ul>
+
+      <h2 id="producer">Producer throughput and latency</h2>
+      <p>Producer performance is mostly configuration. The settings to vary in a test:</p>
+      <ul>
+        <li><strong><code>acks</code>:</strong> <code>acks=all</code> waits for all in-sync replicas. Safer, slower. It has been the default since Kafka 3.0, along with idempotence. Test with what production uses.</li>
+        <li><strong><code>linger.ms</code> and <code>batch.size</code>:</strong> waiting a few milliseconds to fill bigger batches raises throughput and cuts broker load, at the cost of a little latency.</li>
+        <li><strong><code>compression.type</code>:</strong> lz4 or zstd usually raise throughput by sending fewer bytes, at some CPU cost on producers.</li>
+        <li><strong>Message size:</strong> test with the real size distribution. Throughput in MB/s and in messages/s behave very differently as size changes.</li>
+      </ul>
+
+      <h2 id="consumer">Consumer throughput and lag</h2>
+      <p>In real systems the consumer's processing (database writes, HTTP calls) is almost always slower than Kafka itself. So the useful consumer test exercises your real consumer code against its real dependencies, not just Kafka's fetch speed.</p>
+      <pre class="ex-code"><code># lag per partition for a consumer group: CURRENT-OFFSET, LOG-END-OFFSET, LAG
+kafka-consumer-groups.sh --bootstrap-server broker1:9092 --describe --group order-processor</code></pre>
+      <p>For dashboards, export lag continuously with a lag exporter or your platform's metrics (managed Kafka services publish consumer lag metrics). Watch the trend during the test: lag that rises during the peak and falls back afterwards is acceptable if the maximum lag in time is within your target. Lag that never comes back down means consumers are under capacity.</p>
+      <p>Also watch for rebalances in consumer logs. A consumer that takes longer than <code>max.poll.interval.ms</code> (default 5 minutes) between polls is removed from the group, which triggers a rebalance, which pauses everyone. Slow processing under load can turn into a rebalance loop.</p>
+
+      <h2 id="perf-scripts">Kafka's perf-test scripts</h2>
+      <p>Kafka ships with producer and consumer performance tools in its <code>bin/</code> directory. They measure what the cluster can do with synthetic records, which is the right first test after building or resizing a cluster.</p>
+      <pre class="ex-code"><code># create a test topic like the production one
+kafka-topics.sh --bootstrap-server broker1:9092 --create --topic perf-test \
+  --partitions 12 --replication-factor 3
+
+# produce 5 million 1 KB records as fast as possible (--throughput -1 = no limit)
+kafka-producer-perf-test.sh --topic perf-test --num-records 5000000 --record-size 1024 \
+  --throughput -1 \
+  --producer-props bootstrap.servers=broker1:9092 acks=all linger.ms=10 batch.size=65536 compression.type=lz4
+
+# consume them back
+kafka-consumer-perf-test.sh --bootstrap-server broker1:9092 --topic perf-test \
+  --messages 5000000 --group perf-consumer --timeout 60000</code></pre>
+      <p>The producer tool prints records/sec, MB/sec, average and max latency and the 50th, 95th, 99th and 99.9th percentile latencies. The consumer tool prints MB/sec and messages/sec, plus rebalance and fetch times.</p>
+      <ul>
+        <li><strong>Set <code>--throughput</code> to a target rate</strong> (for example 50000) to measure latency at a given load. With <code>-1</code>, latency is measured with the producer's buffer full, which is a saturation figure.</li>
+        <li><strong>Run several producers in parallel</strong> from separate machines to find the cluster's limit rather than one client's limit.</li>
+        <li><strong>Versions differ.</strong> In Kafka 4.2 some options were renamed: <code>--command-property</code> replaces <code>--producer-props</code> and <code>--num-records</code> replaces the consumer tool's <code>--messages</code>. The old names still work with a deprecation warning. Run each script with <code>--help</code> for your version. On Windows the scripts are <code>.bat</code> files in <code>bin\windows</code>, and some distributions drop the <code>.sh</code> suffix.</li>
+      </ul>
+
+      <h2 id="xk6">xk6-kafka: messaging inside a k6 test</h2>
+      <p>To produce and consume as part of a wider load test, for example HTTP traffic that triggers events plus a direct Kafka load, use <a href="https://github.com/mostafa/xk6-kafka" rel="noopener">xk6-kafka</a>. It is a community k6 extension (not maintained by Grafana), so you build a custom k6 binary with <code>xk6</code>:</p>
+      <pre class="ex-code"><code># xk6-kafka v2.x targets k6 v2. See the project's README for the exact build line for your version.
+go install go.k6.io/xk6/cmd/xk6@latest
+CGO_ENABLED=1 xk6 build --with github.com/mostafa/xk6-kafka/v2@latest
+./k6 run kafka-test.js</code></pre>
+      <p>A minimal script with the v2 API:</p>
+      <pre class="ex-code"><code>import { Producer, Consumer } from 'k6/x/kafka';
+
+const brokers = ['broker1:9092'];
+const producer = new Producer({ brokers, topic: 'orders' });
+const consumer = new Consumer({ brokers, topic: 'orders', groupId: 'k6-check' });
+
+export const options = {
+  vus: 20,
+  duration: '5m',
+  thresholds: { kafka_writer_error_count: ['count == 0'] },
+};
+
+export default function () {
+  producer.produce({
+    messages: [{ key: `customer-${Math.floor(Math.random() * 1000)}`, value: JSON.stringify({ total: 4999 }) }],
+  });
+}
+
+export function teardown() {
+  producer.close();
+  consumer.close();
+}</code></pre>
+      <p>Versions before 2.0 used <code>Writer</code>, <code>Reader</code> and <code>Connection</code>, and serialised keys and values through a <code>SchemaRegistry</code> helper. Those names still work in 2.x as deprecated aliases. The extension reports metrics such as <code>kafka_writer_message_count</code>, <code>kafka_writer_error_count</code>, <code>kafka_reader_message_count</code> and <code>kafka_reader_lag</code>. Check the README for the full list and for Avro and JSON Schema support.</p>
+      <div class="g-note"><p>For end-to-end latency, put a timestamp in each message (or use the record timestamp) and have the real consumer record "now minus timestamp" as a metric when it finishes processing. That is the number the business cares about, and no load tool can measure it from the outside.</p></div>
+
+      <h2 id="scenarios">Test scenarios worth running</h2>
+      <ol>
+        <li><strong>Peak steady state:</strong> produce at peak arrival rate for at least 30 minutes with real consumers. Pass if lag stays bounded and end-to-end latency meets the target.</li>
+        <li><strong>Burst and drain:</strong> produce at 2 to 3 times peak for 10 minutes, then drop to normal. Measure the maximum lag and how long it takes to drain.</li>
+        <li><strong>Consumer outage and catch-up:</strong> stop consumers for 15 minutes while producing, then restart. Catch-up hits downstream databases much harder than normal flow does. That is often where the real bottleneck shows.</li>
+        <li><strong>Broker failure under load:</strong> stop one broker during the peak test. Watch producer errors and latency, leader elections and under-replicated partitions. See <a href="/guides/topics/chaos-and-resilience/">chaos and resilience</a>.</li>
+        <li><strong>Scaling consumers:</strong> add consumers during the test and measure the rebalance pause.</li>
+      </ol>
+      <p>The same ideas apply to RabbitMQ, Amazon SQS, Azure Service Bus and Google Pub/Sub. Each has its own limits (queue depth, in-flight message limits, API rate limits) and its own lag metric, but the principle of arrival rate versus consumer capacity doesn't change. See <a href="/glossary/back-pressure/">back-pressure</a> for what should happen when consumers can't keep up.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Event-driven system going live?</h2>
+        <p>Book a free 30-minute call to plan a test that measures lag and end-to-end latency, not just the front door.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-kafka-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-kafka-service">Performance testing service</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

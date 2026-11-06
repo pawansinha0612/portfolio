@@ -1,0 +1,151 @@
+<!--{"title": "Locust getting started: a first load test in Python", "og_title": "Locust getting started: locustfile, tasks, wait_time and headless runs", "description": "Install Locust, write a locustfile with HttpUser, weighted tasks and wait_time, then run it in the web UI or headless with a fixed user count and duration.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/locust/">Locust</a> · Getting started</p>
+      <h1>Locust getting started: load tests in plain Python</h1>
+      <p class="lead">Your team's test code is all Python, and the load test needs the same signing
+        helper, the same fixtures and the same data generator. With Locust, a load test is a Python
+        file, so it can import any of it.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#first">The first locustfile</a></li>
+          <li><a href="#run">Web UI or headless</a></li>
+          <li><a href="#wait">wait_time: the setting that decides your load</a></li>
+          <li><a href="#config">A config file</a></li>
+          <li><a href="#limits">Know the limits</a></li>
+        </ol>
+      </div>
+
+      <h2 id="install">Install</h2>
+      <pre class="ex-code"><code>python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install locust
+locust --version</code></pre>
+      <p>Use a virtual environment and pin the version in <code>requirements.txt</code>. Current
+        releases need Python 3.11 or newer. This guide was checked against Locust 2.47.</p>
+
+      <h2 id="first">The first locustfile</h2>
+      <p>Save this as <code>locustfile.py</code>:</p>
+      <pre class="ex-code"><code>import random
+
+from locust import HttpUser, task, between
+
+
+class ShopUser(HttpUser):
+    # Each simulated user waits 1-3 s between tasks (think time)
+    wait_time = between(1, 3)
+
+    @task(5)  # weight: browsing is 5x as common as viewing one item
+    def browse(self):
+        self.client.get("/products")
+
+    @task(1)
+    def view_item(self):
+        item_id = random.randint(1, 10)
+        # name= groups every /products/&lt;id&gt; under one row in the stats
+        self.client.get(f"/products/{item_id}", name="/products/[id]")</code></pre>
+      <ul>
+        <li><strong><code>HttpUser</code></strong> is one simulated user with its own HTTP session
+          (<code>self.client</code>, a requests-style client that keeps cookies).</li>
+        <li><strong><code>@task(5)</code></strong> sets a weight. Each time the user picks a task,
+          <code>browse</code> is five times as likely as <code>view_item</code>.</li>
+        <li><strong><code>name=</code></strong> groups dynamic URLs into one row of statistics.
+          Without it, every id gets its own row and the report is unreadable.</li>
+        <li><strong>Any status of 400 or above is a failure</strong> by default. A 200 with an error in
+          the body is a success unless you check it with <code>catch_response</code> (see
+          <a href="/guides/locust/data-and-auth/">data and auth</a>).</li>
+      </ul>
+
+      <h2 id="run">Web UI or headless</h2>
+      <pre class="ex-code"><code># Web UI on http://localhost:8089: set users and spawn rate, start, watch live charts
+locust -f locustfile.py -H https://staging.example.com
+
+# Headless: 100 users, starting 10 per second, for 15 minutes, summary at the end
+locust -f locustfile.py -H https://staging.example.com \
+  --headless -u 100 -r 10 -t 15m --only-summary</code></pre>
+      <p>The web UI is the best way to develop a test: you can change the user count while it runs
+        and watch the effect. Headless is for repeatable runs and CI. <code>-u</code> is the peak
+        number of users, <code>-r</code> how many start per second, <code>-t</code> the run time.
+        Without <code>-t</code>, a headless run goes until you stop it.</p>
+
+      <h2 id="wait">wait_time: the setting that decides your load</h2>
+      <p>Locust users loop: pick a task, run it, wait, repeat. So Locust is a closed model, and the
+        request rate depends on response times. <code>wait_time</code> is how you shape it:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>wait_time</th><th>Behaviour</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><code>between(1, 3)</code></td><td>Random 1-3 s after each task</td><td>Human <a href="/glossary/think-time/">think time</a></td></tr>
+          <tr><td><code>constant(2)</code></td><td>Exactly 2 s after each task</td><td>Simple, predictable pauses</td></tr>
+          <tr><td><code>constant_pacing(5)</code></td><td>Each task cycle takes at least 5 s, including the task</td><td><a href="/glossary/pacing/">Pacing</a>: steady rate per user</td></tr>
+          <tr><td><code>constant_throughput(2)</code></td><td>At most 2 task runs per second per user</td><td>A target request rate: users × throughput</td></tr>
+        </tbody>
+      </table></div>
+      <p>For a throughput target, <code>constant_throughput</code> or <code>constant_pacing</code>
+        gets you close to an open model, as long as each task finishes inside its time slot.</p>
+      <pre class="ex-code"><code>from locust import FastHttpUser, task, constant_throughput
+
+
+class ApiUser(FastHttpUser):
+    # Each user aims for 2 task runs per second, whatever the response time
+    # (as long as a task takes less than 0.5 s). 100 users = about 200 tasks/s.
+    wait_time = constant_throughput(2)
+
+    @task
+    def products(self):
+        with self.client.get("/products", catch_response=True) as res:
+            if res.status_code != 200 or not res.json().get("items"):
+                res.failure("empty or failed product list")</code></pre>
+      <p>Here 100 users give about 200 tasks a second. But if the server slows down so a task takes
+        longer than 0.5 s, the rate drops: users can only wait less, not run faster. Give yourself
+        headroom with more users at a lower per-user rate, and compare the achieved RPS with the
+        target after every run. See <a href="/glossary/open-vs-closed-workload-model/">open vs
+        closed workload model</a> and <a href="/glossary/coordinated-omission/">coordinated
+        omission</a>.</p>
+      <p><code>FastHttpUser</code> uses a faster HTTP client than <code>HttpUser</code>, so one
+        process can generate several times more requests. Its API is close to <code>HttpUser</code>
+        but not identical. Use it when the load generator's CPU is the limit.</p>
+
+      <h2 id="config">A config file</h2>
+      <p>Put settings in <code>locust.conf</code> (read automatically from the current folder) so
+        runs are repeatable and reviewable:</p>
+      <pre class="ex-code"><code># locust.conf: picked up automatically from the current directory
+locustfile = locustfile.py
+host = https://staging.example.com
+headless = true
+users = 50
+spawn-rate = 5
+run-time = 15m
+csv = results/run
+html = results/report.html</code></pre>
+      <p>Command-line flags override the file. Environment variables work too: any option as
+        <code>LOCUST_</code> plus the name in capitals, for example <code>LOCUST_HOST</code>.</p>
+
+      <h2 id="limits">Know the limits</h2>
+      <ul>
+        <li><strong>One Locust process uses one CPU core</strong> (Python's GIL). If it reaches
+          100% CPU, Locust warns you and the response times include its own delay. Use
+          <code>--processes</code> or <a href="/guides/locust/distributed/">master and workers</a>.</li>
+        <li><strong>Percentiles in the console and the report are good enough to compare
+          runs</strong>, but they're calculated from rounded buckets. For precise tail analysis, export
+          the data or use an APM's numbers. See <a href="/explain/percentiles/">why averages
+          lie</a>.</li>
+      </ul>
+      <p>Next: <a href="/guides/locust/load-shapes/">custom load shapes</a>. Choosing a tool? See
+        <a href="/compare/k6-vs-locust/">k6 vs Locust</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need a Locust test built properly?</h2>
+        <p>I build Locust and k6 tests with realistic workload models, and report what breaks first and
+          why.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-start-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-start-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,189 @@
+<!--{"title": "k6 with TypeScript and a project structure that scales", "og_title": "k6 TypeScript and project structure: from one script to a test suite", "description": "Run k6 tests in TypeScript with no build step, type-check them in CI, and organise a k6 project into config, API modules and tests that a team can maintain.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · TypeScript and structure</p>
+      <h1>k6 with TypeScript, and a structure that survives a team</h1>
+      <p class="lead">The first load test was one 80-line file. Six months later there are 14 copies of
+        it, each with its own login function, and an API change means editing all of them. Structure is
+        what keeps a load test suite cheap to maintain.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#ts">TypeScript in k6: no build step</a></li>
+          <li><a href="#layout">A project layout</a></li>
+          <li><a href="#code">The code</a></li>
+          <li><a href="#typecheck">Type-checking in CI</a></li>
+          <li><a href="#rules">Rules that keep it maintainable</a></li>
+        </ol>
+      </div>
+
+      <h2 id="ts">TypeScript in k6: no build step</h2>
+      <p>Since k6 v0.57, <code>k6 run script.ts</code> works with no flag and no bundler. k6 uses
+        esbuild internally to strip the types and run the JavaScript. Two things to know:</p>
+      <ul>
+        <li><strong>k6 does not type-check.</strong> It removes the types and runs. A type error that
+          <code>tsc</code> would reject runs fine in k6, until it fails at runtime. Run
+          <code>tsc</code> yourself (below).</li>
+        <li><strong>Imports use the real file name</strong>, including <code>.ts</code>. k6 doesn't do
+          Node-style module resolution, so <code>import { login } from '../lib/api.ts'</code>, not
+          <code>'../lib/api'</code>.</li>
+      </ul>
+      <p>On older versions (v0.52 to v0.56), TypeScript needed
+        <code>--compatibility-mode=experimental_enhanced</code>. Before that, people bundled with
+        webpack or esbuild. If you see those in an old repo, you can remove them after upgrading.</p>
+
+      <h2 id="layout">A project layout</h2>
+      <pre class="ex-code"><code>perf/
+├── config/
+│   └── env.ts          # base URLs and budgets per environment
+├── lib/
+│   └── api.ts          # one function per endpoint: request, tag, checks
+├── data/
+│   └── users.csv       # test data (generated, never real customers)
+├── tests/
+│   ├── smoke.ts        # 1-5 VUs, every pull request
+│   ├── shop.ts         # the main journey under load
+│   └── soak.ts         # same journey, hours long
+├── package.json        # only for @types/k6 and tsc, nothing k6 needs at runtime
+└── tsconfig.json</code></pre>
+      <p>The split that matters: <strong>tests describe load and journeys, lib describes how to call
+        the API.</strong> When an endpoint changes, you change one function in <code>lib/</code> and
+        every test picks it up.</p>
+
+      <h2 id="code">The code</h2>
+      <p><code>config/env.ts</code> picks settings from <code>TARGET_ENV</code>:</p>
+      <pre class="ex-code"><code>// config/env.ts: one place for environment-specific settings
+export interface EnvConfig {
+  baseUrl: string;
+  p95Ms: number;
+}
+
+const envs: Record&lt;string, EnvConfig&gt; = {
+  local: { baseUrl: 'http://localhost:8080', p95Ms: 800 },
+  staging: { baseUrl: 'https://staging.example.com', p95Ms: 500 },
+};
+
+export const env: EnvConfig = envs[__ENV.TARGET_ENV || 'local'];
+if (!env) throw new Error(`unknown TARGET_ENV: ${__ENV.TARGET_ENV}`);</code></pre>
+      <p><code>lib/api.ts</code> wraps each endpoint with its <code>name</code> tag and its checks,
+        so no test can forget them:</p>
+      <pre class="ex-code"><code>// lib/api.ts: one function per endpoint, with the tag and the checks built in
+import http, { RefinedResponse, ResponseType } from 'k6/http';
+import { check } from 'k6';
+import { env } from '../config/env.ts';
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+}
+
+const json = { 'Content-Type': 'application/json' };
+
+export function login(username: string, password: string): string {
+  const res = http.post(`${env.baseUrl}/login`, JSON.stringify({ username, password }), {
+    headers: json,
+    tags: { name: 'POST /login' },
+  });
+  check(res, { 'login 200': (r) =&gt; r.status === 200 });
+  return res.json('access_token') as string;
+}
+
+export function listProducts(): Product[] {
+  const res: RefinedResponse&lt;ResponseType&gt; = http.get(`${env.baseUrl}/products`, {
+    tags: { name: 'GET /products' },
+  });
+  check(res, { 'products 200': (r) =&gt; r.status === 200 });
+  return (res.json('items') as unknown as Product[]) || [];
+}
+
+export function addToCart(token: string, productId: number): void {
+  const res = http.post(`${env.baseUrl}/cart`, JSON.stringify({ productId }), {
+    headers: { ...json, Authorization: `Bearer ${token}` },
+    tags: { name: 'POST /cart' },
+  });
+  check(res, { 'cart 201': (r) =&gt; r.status === 201 });
+}</code></pre>
+      <p><code>tests/shop.ts</code> is just the journey and the load:</p>
+      <pre class="ex-code"><code>// tests/shop.ts: the test only describes the journey and the load
+import { sleep } from 'k6';
+import { Options } from 'k6/options';
+import { env } from '../config/env.ts';
+import { login, listProducts, addToCart } from '../lib/api.ts';
+
+export const options: Options = {
+  vus: 10,
+  duration: '5m',
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: [`p(95)&lt;${env.p95Ms}`],
+  },
+};
+
+export default function (): void {
+  const token = login('user001', 'Passw0rd!');
+  const products = listProducts();
+  sleep(1);
+  if (products.length &gt; 0) addToCart(token, products[0].id);
+  sleep(1);
+}</code></pre>
+      <pre class="ex-code"><code>k6 run tests/shop.ts                           # local
+k6 run -e TARGET_ENV=staging tests/shop.ts     # staging budgets and URL</code></pre>
+
+      <h2 id="typecheck">Type-checking in CI</h2>
+      <p>Install the type definitions and TypeScript as dev dependencies. k6 never reads
+        <code>node_modules</code>, they're only for your editor and <code>tsc</code>.</p>
+      <pre class="ex-code"><code>npm install --save-dev typescript @types/k6</code></pre>
+      <pre class="ex-code"><code>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "types": ["k6"]
+  },
+  "include": ["config", "lib", "tests"]
+}</code></pre>
+      <p><code>allowImportingTsExtensions</code> (which needs <code>noEmit</code>) lets
+        <code>tsc</code> accept the <code>.ts</code> imports that k6 requires. Then run
+        <code>npx tsc -p .</code> in CI before any load test, and run <code>k6 inspect</code> on each
+        test to catch k6-level errors (bad options, missing files) without sending any traffic.</p>
+      <pre class="ex-code"><code>npx tsc -p .                 # types
+k6 inspect tests/shop.ts     # k6 can load the script and its options
+k6 run --vus 1 --iterations 1 tests/shop.ts   # one real pass</code></pre>
+      <p>Keep <code>@types/k6</code> close to your k6 version. The types follow the k6 API, so a
+        mismatch flags functions you don't have, or misses ones you do.</p>
+
+      <h2 id="rules">Rules that keep it maintainable</h2>
+      <ul>
+        <li><strong>No URLs, budgets or credentials in test files.</strong> URLs and budgets live in
+          config, credentials come from <code>__ENV</code>.</li>
+        <li><strong>Every request has a <code>name</code> tag.</strong> Put it in the lib function so
+          it's never forgotten.</li>
+        <li><strong>Checks live with the call.</strong> The lib function knows what a good response
+          looks like.</li>
+        <li><strong>Load shape lives in the test.</strong> The same journey is reused by smoke, load and
+          soak tests with different <code>options</code>.</li>
+        <li><strong>No npm packages at runtime.</strong> k6 can import local files and remote URLs
+          (such as jslib), not packages from <code>node_modules</code>. If you need an npm library,
+          bundle it into a single file first, and check it doesn't use Node APIs that k6 doesn't
+          have.</li>
+      </ul>
+      <p>Next: <a href="/guides/k6/common-mistakes/">common k6 mistakes</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Inherited a messy load test suite?</h2>
+        <p>I restructure k6 and JMeter suites so teams can maintain them, and set them up to run in
+          CI.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-ts-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-ts-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

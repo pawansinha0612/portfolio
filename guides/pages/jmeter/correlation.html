@@ -1,0 +1,148 @@
+<!--{"title": "JMeter correlation: extract dynamic values", "og_title": "JMeter correlation: Regular Expression, JSON and Boundary Extractors", "description": "Capture session IDs, CSRF tokens and order IDs in JMeter with Regular Expression, JSON and Boundary Extractors, then debug them with the Debug Sampler.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Correlation</p>
+      <h1>JMeter correlation: stop replaying yesterday's token</h1>
+      <p class="lead">Your recorded script passes with one user and fails with ten. Every login returns 200, every "add to basket" returns 403, and the response body says "invalid CSRF token". The script is replaying a value the server issued once, during recording. Correlation fixes that: capture the value from a response, then send it back on the next request.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#find">Find what needs correlating</a></li>
+          <li><a href="#which">Which extractor to use</a></li>
+          <li><a href="#json">JSON Extractor</a></li>
+          <li><a href="#regex">Regular Expression Extractor</a></li>
+          <li><a href="#boundary">Boundary Extractor</a></li>
+          <li><a href="#use">Using the value: ${var}</a></li>
+          <li><a href="#match">Match numbers and "extract all"</a></li>
+          <li><a href="#debug">Debugging extractors</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="find">1. Find what needs correlating</h2>
+      <p><a href="/glossary/correlation/">Correlation</a> means any value the server generates that the client must send back: session IDs, CSRF or anti-forgery tokens, OAuth <code>state</code> and <code>code</code>, order and basket IDs, pagination cursors, ASP.NET <code>__VIEWSTATE</code>, signed URLs. The reliable way to find them:</p>
+      <ol>
+        <li>Record the same flow twice (two logins, two orders).</li>
+        <li>Diff the two recordings. Any request parameter, header or path segment that differs is either dynamic data from the server (correlate it) or data you chose (<a href="/guides/jmeter/parameterisation/">parameterise</a> it).</li>
+        <li>For each dynamic value, search the earlier responses for where it first appears. That response is where the extractor goes.</li>
+      </ol>
+      <p>Cookies are the exception. The HTTP Cookie Manager handles <code>Set-Cookie</code> automatically, so do not extract session cookies by hand unless the app copies them into a header or body.</p>
+
+      <h2 id="which">2. Which extractor to use</h2>
+      <p>All extractors are Post Processors: right-click the sampler whose response contains the value, then <strong>Add → Post Processors</strong>. Put the extractor as a child of that one sampler. Placed higher up, it runs after every sampler in scope and can overwrite a good value with the default.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Response is…</th><th>Use</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>JSON</td><td>JSON Extractor</td><td>Readable JSONPath, survives field reordering and whitespace changes</td></tr>
+          <tr><td>HTML, value between fixed text</td><td>Boundary Extractor</td><td>No regex escaping, and the cheapest on CPU</td></tr>
+          <tr><td>Anything needing a pattern (headers, mixed text)</td><td>Regular Expression Extractor</td><td>Most flexible, several groups at once</td></tr>
+          <tr><td>HTML where structure matters</td><td>CSS Selector Extractor</td><td>Selects by element and attribute, e.g. <code>input[name=csrf]</code></td></tr>
+          <tr><td>XML or SOAP</td><td>XPath2 Extractor</td><td>Proper XML parsing with namespaces</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="json">3. JSON Extractor</h2>
+      <p>Say the login call returns:</p>
+      <pre class="ex-code"><code>{"user":{"id":4182,"name":"Ana"},"accessToken":"eyJhbGciOi...","basket":{"id":"b-77a1","items":[]}}</code></pre>
+      <p>Add <strong>Post Processors → JSON Extractor</strong> under the login request:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Names of created variables</td><td><code>token;basketId</code></td></tr>
+          <tr><td>JSON Path expressions</td><td><code>$.accessToken;$.basket.id</code></td></tr>
+          <tr><td>Match No. (0 for Random)</td><td><code>1;1</code></td></tr>
+          <tr><td>Default Values</td><td><code>TOKEN_NOT_FOUND;BASKET_NOT_FOUND</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Lists are semicolon-separated and must have the same number of entries in every field. Useful JSONPath forms:</p>
+      <pre class="ex-code"><code>$.items[0].sku                         first item's sku
+$.items[*].sku                         every sku (pair with Match No. -1)
+$.items[?(@.stock &gt; 0)].sku            skus that are in stock
+$..orderId                             orderId at any depth (slower on big bodies)</code></pre>
+
+      <h2 id="regex">4. Regular Expression Extractor</h2>
+      <p>For a hidden form field like <code>&lt;input type="hidden" name="csrf" value="9f2c1e..."&gt;</code>:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Apply to</td><td>Main sample only</td></tr>
+          <tr><td>Field to check</td><td>Body (use Response Headers for a header value)</td></tr>
+          <tr><td>Name of created variable</td><td><code>csrf</code></td></tr>
+          <tr><td>Regular Expression</td><td><code>name="csrf" value="([^"]+)"</code></td></tr>
+          <tr><td>Template</td><td><code>$1$</code></td></tr>
+          <tr><td>Match No. (0 for Random)</td><td><code>1</code></td></tr>
+          <tr><td>Default Value</td><td><code>CSRF_NOT_FOUND</code></td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>The regex needs a capture group <code>(...)</code>. The template picks groups: <code>$1$</code> is the first, <code>$1$-$2$</code> joins two.</li>
+        <li>Prefer <code>([^"]+)</code> over <code>(.+?)</code>. A negated character class cannot run past the closing quote, and it backtracks less.</li>
+        <li>Do not wrap the expression in <code>/ /</code>. Add <code>(?s)</code> at the start if the value can span lines, and <code>(?i)</code> to ignore case.</li>
+        <li>Each group is also stored as <code>csrf_g1</code>, <code>csrf_g2</code> and so on, with <code>csrf_g0</code> holding the whole match.</li>
+        <li>For a redirect location or header token, set Field to check to <em>Response Headers</em> and use something like <code>Location: .*[?&amp;]code=([^&amp;\s]+)</code>.</li>
+      </ul>
+
+      <h2 id="boundary">5. Boundary Extractor</h2>
+      <p>When the value sits between two fixed strings, the Boundary Extractor (added in JMeter 4.0) is simpler and cheaper than a regex because it does plain string searches:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Name of created variable</td><td><code>csrf</code></td></tr>
+          <tr><td>Left Boundary</td><td><code>name="csrf" value="</code></td></tr>
+          <tr><td>Right Boundary</td><td><code>"</code></td></tr>
+          <tr><td>Match No. (0 for Random)</td><td><code>1</code></td></tr>
+          <tr><td>Default Value</td><td><code>CSRF_NOT_FOUND</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Boundaries are literal text, so there is nothing to escape. Make the left boundary specific enough to be unique, or you will capture the first match on the page instead of the one you meant.</p>
+
+      <h2 id="use">6. Using the value: ${var}</h2>
+      <p>Reference the variable anywhere later in the same thread: a parameter, a path, a body or a header.</p>
+      <pre class="ex-code"><code>Path:            /api/baskets/${basketId}/items
+Body Data:       {"sku":"${sku}","qty":1}
+Parameter:       csrf = ${csrf}
+Header Manager:  Authorization = Bearer ${token}</code></pre>
+      <p>Two rules that explain most "it doesn't work" moments:</p>
+      <ul>
+        <li><strong>Variables are per thread.</strong> Thread 7's <code>${token}</code> is thread 7's own. To share a value across threads or thread groups you need a property, covered in <a href="/guides/jmeter/auth-tokens/">auth tokens</a>.</li>
+        <li><strong>An unknown variable is sent literally.</strong> JMeter does not raise an error for an undefined <code>${csrf}</code>. It sends the text <code>${csrf}</code> to the server. That is why a distinctive default value matters: <code>CSRF_NOT_FOUND</code> in a request log tells you instantly which extractor failed.</li>
+      </ul>
+      <p>If a value is URL-encoded in one place and raw in another, convert it with <code>${__urlencode(${csrf})}</code> or <code>${__urldecode(${csrf})}</code>. HTML entities such as <code>&amp;amp;</code> can be decoded with <code>${__unescapeHtml(${value})}</code>.</p>
+
+      <h2 id="match">7. Match numbers and "extract all"</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Match No.</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>1</code>, <code>2</code>, …</td><td>The nth match, stored in <code>var</code></td></tr>
+          <tr><td><code>0</code></td><td>A random match. Good for "pick any product from the list"</td></tr>
+          <tr><td><code>-1</code></td><td>All matches: <code>var_1</code> … <code>var_N</code>, plus <code>var_matchNr</code> with the count</td></tr>
+        </tbody>
+      </table></div>
+      <p>With <code>-1</code>, loop over the results with a <strong>ForEach Controller</strong> (input variable prefix <code>var</code>, output variable name <code>item</code>, "Add "_" before number" ticked). The JSON Extractor can also join every match into <code>var_ALL</code> when "Compute concatenation var" is ticked.</p>
+      <div class="g-note">
+        <p>Random choice (<code>0</code>) is realistic but makes runs less repeatable. If an intermittent error only happens for some products, you will want to know which product it was. Log the chosen value in the sampler name or a response assertion message while you investigate.</p>
+      </div>
+
+      <h2 id="debug">8. Debugging extractors</h2>
+      <ol>
+        <li><strong>Test the expression on a real response.</strong> In View Results Tree, select the sample, then change the renderer dropdown (bottom left, "Text" by default) to <em>RegExp Tester</em>, <em>JSON Path Tester</em>, <em>Boundary Extractor Tester</em> or <em>CSS Selector Tester</em>. Type the expression and press Test.</li>
+        <li><strong>See what was actually stored.</strong> Add <strong>Sampler → Debug Sampler</strong> right after the request, with JMeter variables set to true. Its response, shown in View Results Tree, lists every variable in that thread.</li>
+        <li><strong>Check the next request, not just the extractor.</strong> In View Results Tree, open the following sample's <em>Request</em> tab and confirm the real value went out, correctly encoded.</li>
+        <li><strong>Check scope.</strong> An extractor at Thread Group level runs after every sampler, including ones whose response does not contain the value, and resets the variable to its default.</li>
+        <li><strong>Check the right response.</strong> If the value arrives after a redirect, it is in the final sample, or in a sub-sample if "Follow Redirects" is on. Set "Apply to" accordingly.</li>
+      </ol>
+      <p>Remove or disable Debug Samplers before load runs. They add samples to your results and skew throughput.</p>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/parameterisation/">parameterisation</a>, so each virtual user logs in as a different person.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a JMeter script?</h2>
+        <p>Book a free 30-minute call and we'll work through the failing correlation together. If you need a full test built and run, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-corr-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-corr-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

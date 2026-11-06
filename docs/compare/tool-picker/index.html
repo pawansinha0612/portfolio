@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Load Testing Tool Picker: Which Tool Should You Use? — Pawan Sinha</title>
+  <meta name="description" content="Answer six questions about your team, protocols, scale, budget and CI, and get a recommended load testing tool and a runner-up, with the reasons.">
+  <meta property="og:title" content="Load Testing Tool Picker: Which Tool Should You Use? — Pawan Sinha">
+  <meta property="og:description" content="Answer six questions about your team, protocols, scale, budget and CI, and get a recommended load testing tool and a runner-up, with the reasons.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/compare/tool-picker/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/compare/tool-picker/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Load testing tool picker", "url": "https://pawansinha.com.au/compare/tool-picker/", "applicationCategory": "DeveloperApplication", "operatingSystem": "Any", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "AUD"}, "description": "Answer six questions about your team, protocols, scale, budget and CI, and get a recommended load testing tool and a runner-up, with the reasons."}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://pawansinha.com.au/"}, {"@type": "ListItem", "position": 2, "name": "Learn", "item": "https://pawansinha.com.au/learn/"}, {"@type": "ListItem", "position": 3, "name": "Tool comparisons", "item": "https://pawansinha.com.au/compare/"}, {"@type": "ListItem", "position": 4, "name": "Tool picker", "item": "https://pawansinha.com.au/compare/tool-picker/"}]}</script>
+  <style>
+    .tp-form fieldset { border: 0; padding: 0; margin: 0 0 22px; min-width: 0; }
+    .tp-form legend { font-weight: 700; color: var(--text); font-size: 17px; padding: 0; margin: 0 0 10px; }
+    .tp-form legend span { color: var(--muted); font-weight: 600; margin-right: 6px; }
+    .tp-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tp-opts label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--surface); cursor: pointer; font-size: 15px; color: var(--text); max-width: 100%; }
+    .tp-opts label:hover { border-color: var(--accent); }
+    .tp-opts input { accent-color: var(--accent); margin: 0; flex: none; }
+    .tp-opts label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+    .tp-opts input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #tp-result { margin-top: 8px; outline: none; }
+    #tp-result h2 { margin-top: 8px; }
+    .tp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .tp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+    .tp-card.tp-main { border-color: var(--accent); box-shadow: var(--shadow); }
+    .tp-card h3 { margin: 0 0 8px; font-size: 22px; color: var(--text); }
+    .tp-card ul { margin: 0; padding-left: 20px; }
+    .tp-card li { margin: 4px 0; }
+    .tp-card ul.tp-links { list-style: none; padding: 0; margin-top: 12px; }
+    .tp-notes ul.tp-links { list-style: none; padding: 0; margin: 6px 0; }
+    .tp-links a { font-weight: 600; }
+    .tp-notes { margin-top: 16px; padding: 12px 16px; border-radius: 12px; background: var(--alt); max-width: 860px; }
+    .tp-notes p { margin: 6px 0; }
+    .tp-compare { margin: 14px 0 0; font-weight: 600; }
+    .tp-warn { color: var(--warn) !important; background: var(--warn-bg); padding: 10px 14px; border-radius: 10px; font-weight: 600; }
+    .tp-notes p { max-width: 680px; }
+  </style>
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
+    .project-hero > :not(p, ul, ol) { max-width: 868px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .checked { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+    .cmp { max-width: 1000px; padding: 36px 16px 8px; }
+    .cmp h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 10px; line-height: 1.25; }
+    .cmp h3 { font-size: 18px; margin: 22px 0 6px; }
+    .cmp p, .cmp li { color: var(--muted); }
+    .cmp strong { color: var(--text); }
+    .cmp ul, .cmp ol { padding-left: 22px; }
+    .cmp > p, .cmp > ul, .cmp > ol { max-width: 680px; } /* keep running text to ~90 characters a line */
+    .cmp code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--text); }
+    .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px; }
+    .verdict > div { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+    .verdict h3 { margin: 0 0 8px; font-size: 18px; color: var(--text); }
+    .verdict ul { margin: 0; padding-left: 20px; }
+    .verdict li { margin: 4px 0; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-top: 12px; }
+    .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    table.vs { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+    table.vs th, table.vs td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    table.vs thead th { background: var(--alt); color: var(--text); font-size: 14px; }
+    table.vs tbody th { color: var(--text); font-weight: 700; width: 18%; }
+    table.vs td { color: var(--muted); }
+    table.vs tr:last-child th, table.vs tr:last-child td { border-bottom: 0; }
+    .scroll-hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    @media (min-width: 700px) { .scroll-hint { display: none; } }
+    .code-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 12px; }
+    .code-pair > div { min-width: 0; }
+    .code-pair h3 { margin: 0 0 8px; }
+    .code-pair p.note { font-size: 14px; margin: 8px 0 0; }
+    pre.code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; overflow: auto; max-height: 560px; white-space: pre; tab-size: 2; }
+    .faq h3 { color: var(--text); }
+    .pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+    .pick a.card { text-decoration: none; color: inherit; display: block; }
+    .pick .vs-name { font-size: 20px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+    .pick .project-link { display: inline-block; margin-top: 12px; font-weight: 600; color: var(--accent); }
+    .checklist li { margin: 6px 0; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
+    @media (max-width: 600px) { .project-hero { padding-top: 40px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/learn/">Learn</a><span aria-hidden="true">/</span><a href="/compare/">Tool comparisons</a><span aria-hidden="true">/</span><span aria-current="page">Tool picker</span></nav>
+      <p class="eyebrow">Tool picker · Load testing</p>
+      <h1>Which load testing tool should you use?</h1>
+      <p class="lead">Six quick questions. You get a recommended tool, a runner-up and the reasons, with links to the guides and comparisons that go deeper.</p>
+      <p class="checked">Facts checked November 2026. Written by Pawan Sinha, who has used JMeter, LoadRunner, k6 and Gatling on banking, payments and lottery projects.</p>
+    </section>
+
+    <section class="wrap cmp" id="questions">
+      <form class="tp-form" id="tp-form" novalidate>
+        <fieldset data-q="lang">
+          <legend><span>1.</span>Which language does the team that will write the tests use?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="lang" value="js" required> JavaScript or TypeScript</label>
+            <label><input type="radio" name="lang" value="jvm" required> Java, Kotlin or Scala</label>
+            <label><input type="radio" name="lang" value="python" required> Python</label>
+            <label><input type="radio" name="lang" value="nocode" required> We&#x27;d rather not write code (GUI and recording)</label>
+            <label><input type="radio" name="lang" value="other" required> Something else (.NET, Go, ...)</label>
+          </div>
+        </fieldset>
+        <fieldset data-q="proto">
+          <legend><span>2.</span>What do you mainly need to load test?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="proto" value="http" required> Websites and HTTP APIs (REST, GraphQL)</label>
+            <label><input type="radio" name="proto" value="browser" required> Real-browser page performance</label>
+            <label><input type="radio" name="proto" value="grpc" required> gRPC or WebSockets</label>
+            <label><input type="radio" name="proto" value="legacy" required> SAP GUI, Citrix, Oracle Forms or terminal apps</label>
+            <label><input type="radio" name="proto" value="backend" required> Databases, queues or directories directly (JDBC, JMS, LDAP)</label>
+          </div>
+        </fieldset>
+        <fieldset data-q="scale">
+          <legend><span>3.</span>How much load at peak?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="scale" value="small" required> Up to about 1,000 virtual users</label>
+            <label><input type="radio" name="scale" value="medium" required> 1,000 to 10,000</label>
+            <label><input type="radio" name="scale" value="large" required> More than 10,000, or from many regions</label>
+          </div>
+        </fieldset>
+        <fieldset data-q="budget">
+          <legend><span>4.</span>What is the budget for tools?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="budget" value="free" required> Free and open source only</label>
+            <label><input type="radio" name="budget" value="commercial" required> We can pay for licences or a service</label>
+          </div>
+        </fieldset>
+        <fieldset data-q="ci">
+          <legend><span>5.</span>How often will the tests run?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="ci" value="every" required> On every merge or deploy (CI)</label>
+            <label><input type="radio" name="ci" value="scheduled" required> Nightly or before each release</label>
+            <label><input type="radio" name="ci" value="none" required> By hand, when needed</label>
+          </div>
+        </fieldset>
+        <fieldset data-q="skills">
+          <legend><span>6.</span>Which tool does your team already know?</legend>
+          <div class="tp-opts">
+            <label><input type="radio" name="skills" value="none" required> None yet</label>
+            <label><input type="radio" name="skills" value="k6" required> k6</label>
+            <label><input type="radio" name="skills" value="jmeter" required> JMeter</label>
+            <label><input type="radio" name="skills" value="gatling" required> Gatling</label>
+            <label><input type="radio" name="skills" value="locust" required> Locust</label>
+            <label><input type="radio" name="skills" value="loadrunner" required> LoadRunner</label>
+          </div>
+        </fieldset>
+        <button class="btn" type="submit" data-track="tool-picker-submit">Show my tool</button>
+      </form>
+      <noscript><p>The picker needs JavaScript. Without it, the <a href="/compare/#choose">checklist on the comparisons page</a> asks the same questions.</p></noscript>
+      <div id="tp-result" tabindex="-1" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap cmp" id="how">
+      <p class="eyebrow">How it decides</p>
+      <h2>What the picker weighs, and what it can't know</h2>
+      <p>Each answer adds or removes points for k6, JMeter, Gatling, Locust, Artillery, LoadRunner and NeoLoad. Protocols count most: if you must test SAP GUI or Citrix, only a few tools can. Then the team's language, because the people who write the tests have to maintain them. Budget, CI and scale break the ties.</p>
+      <p>It can't see your security rules, your existing contracts or how much your team enjoys a GUI. Treat the answer as a shortlist, then read the comparison and run a one-day trial with your most important journey.</p>
+      <p>Picked a tool? The <a href="/guides/start/">learning path</a> takes you from the first script to analysis and go-live.</p>
+    </section>
+    <script src="/compare/tool-picker/picker.js" defer></script>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/compare/k6-vs-jmeter/">k6 vs JMeter →</a>
+        <a href="/compare/k6-vs-gatling/">k6 vs Gatling →</a>
+        <a href="/compare/k6-vs-locust/">k6 vs Locust →</a>
+        <a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner →</a>
+        <a href="/compare/jmeter-vs-gatling/">JMeter vs Gatling →</a>
+        <a href="/compare/jmeter-vs-neoload/">JMeter vs NeoLoad →</a>
+        <a href="/compare/k6-vs-artillery/">k6 vs Artillery →</a>
+        <a href="/compare/locust-vs-artillery/">Locust vs Artillery →</a>
+        <a href="/compare/blazemeter-vs-grafana-cloud-k6/">BlazeMeter vs Grafana Cloud k6 →</a>
+        <a href="/compare/">All comparisons →</a>
+        <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
+        <a href="/guides/start/">Learning path →</a>
+        <a href="/tools/">Free tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Choosing or switching tools?</p>
+          <h3>Get a second opinion before you commit</h3>
+          <p>In a free 30-minute call I'll look at what you test, who writes the tests and where they run, and tell you which tool fits. If you're moving off an old tool, I can plan the migration and port your most important journeys first.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="compare-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="compare-services">Performance testing services</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

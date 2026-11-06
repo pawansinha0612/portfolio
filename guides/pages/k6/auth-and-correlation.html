@@ -1,0 +1,223 @@
+<!--{"title": "k6 auth and correlation: tokens, logins and dynamic values", "og_title": "k6 auth and correlation: tokens, per-VU logins, JSON, HTML and cookies", "description": "Log in once in setup() or once per VU, refresh tokens, and extract dynamic values from JSON, HTML and cookies in k6, with scripts you can run.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Auth and correlation</p>
+      <h1>k6 auth and correlation: tokens, logins and dynamic values</h1>
+      <p class="lead">You record a journey, replay it under load and every request after login returns
+        401. The recording captured a token that expired an hour ago. Correlation means reading
+        dynamic values from responses and sending them back, the way a real client does.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#choose">Which login pattern?</a></li>
+          <li><a href="#setup">One token for the whole test, in setup()</a></li>
+          <li><a href="#pervu">One login per VU, with refresh</a></li>
+          <li><a href="#extract">Extracting values: JSON, HTML, regex</a></li>
+          <li><a href="#cookies">Cookies and sessions</a></li>
+          <li><a href="#oauth">OAuth, SSO and MFA</a></li>
+        </ol>
+      </div>
+
+      <h2 id="choose">Which login pattern?</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Pattern</th><th>Login load</th><th>Realistic?</th><th>Use when</th></tr></thead>
+        <tbody>
+          <tr><td>Token in <code>setup()</code></td><td>One login in total</td><td>No: every VU is the same user</td><td>Service-to-service APIs with a client-credentials token, or when login is out of scope.</td></tr>
+          <tr><td>Login once per VU</td><td>One per VU, plus refreshes</td><td>Yes, for logged-in sessions</td><td>Most user-facing APIs. Each VU is a different user with their own session.</td></tr>
+          <tr><td>Login every iteration</td><td>One per iteration</td><td>Only if users really log in that often</td><td>Testing the login service itself. Otherwise it overloads auth and skews results.</td></tr>
+        </tbody>
+      </table></div>
+      <p>The trap with one shared token: per-user caches, rate limits and row locks all key on the user.
+        A thousand VUs sharing one identity hit one cache entry and one rate-limit bucket. The result
+        can be far too fast (cache) or far too slow (<a href="/glossary/rate-limiting/">rate
+        limiting</a>, <a href="/glossary/lock-contention/">lock contention</a>).</p>
+
+      <h2 id="setup">One token for the whole test, in setup()</h2>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, fail } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = { vus: 20, duration: '5m' };
+
+// setup() runs once, before any VU starts. Its return value is passed to every VU.
+export function setup() {
+  const res = http.post(`${BASE_URL}/auth/token`, JSON.stringify({
+    username: __ENV.API_USER,
+    password: __ENV.API_PASSWORD,
+  }), { headers: { 'Content-Type': 'application/json' } });
+
+  if (!check(res, { 'got token': (r) =&gt; r.status === 200 &amp;&amp; !!r.json('access_token') })) {
+    fail(`login failed: ${res.status} ${res.body}`); // stops the test before any load is sent
+  }
+  return { token: res.json('access_token') };
+}
+
+export default function (data) {
+  const params = { headers: { Authorization: `Bearer ${data.token}` } };
+  const res = http.get(`${BASE_URL}/me`, params);
+  check(res, { 'authorised': (r) =&gt; r.status === 200 });
+}</code></pre>
+      <p><code>setup()</code> runs once, and its return value is serialised as JSON and handed to
+        every VU. So you can pass strings, numbers and plain objects, not functions or class
+        instances. If the token expires during a long test, use the per-VU pattern instead.</p>
+
+      <h2 id="pervu">One login per VU, with refresh</h2>
+      <p>Module-level variables belong to one VU, so a token stored there is that VU's session. Log in
+        on the first iteration, reuse the token, and log in again before it expires:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { SharedArray } from 'k6/data';
+import exec from 'k6/execution';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const users = new SharedArray('users', () =&gt; JSON.parse(open('./data/users.json')));
+
+export const options = { vus: 10, duration: '10m' };
+
+// Module-level variables are per VU: each VU has its own copy.
+let token = null;
+let tokenExpiresAt = 0;
+
+function login() {
+  const user = users[(exec.vu.idInTest - 1) % users.length];
+  const res = http.post(`${BASE_URL}/login`, JSON.stringify(user), {
+    headers: { 'Content-Type': 'application/json' },
+    tags: { name: 'POST /login' },
+  });
+  check(res, { 'login 200': (r) =&gt; r.status === 200 });
+  token = res.json('access_token');
+  // Refresh a minute early so a token never expires mid-iteration
+  tokenExpiresAt = Date.now() + (res.json('expires_in') - 60) * 1000;
+}
+
+export default function () {
+  if (!token || Date.now() &gt; tokenExpiresAt) login();
+
+  const res = http.post(`${BASE_URL}/cart`, JSON.stringify({ productId: 7 }), {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    tags: { name: 'POST /cart' },
+  });
+  if (res.status === 401) token = null; // force a fresh login next iteration
+  check(res, { 'added to cart': (r) =&gt; r.status === 201 });
+  sleep(1);
+}</code></pre>
+      <p>Tagging the login with <code>name</code> keeps its latency separate, so the slower login calls
+        don't hide inside the cart numbers. With 10 VUs and a one-hour token, you get about 10 logins
+        an hour. If production does 200 logins a second at peak, model that as its own scenario.</p>
+
+      <h2 id="extract">Extracting values: JSON, HTML, regex</h2>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export const options = { vus: 5, duration: '1m' };
+
+export default function () {
+  // 1. JSON: res.json() takes a GJSON path
+  const list = http.get(`${BASE_URL}/products`);
+  const firstId = list.json('items.0.id');            // first item's id
+  const ids = list.json('items.#.id');                // array of every id
+  const cheap = list.json('items.#(price&lt;15)#.id');   // ids where price &lt; 15
+  const productId = ids[Math.floor(Math.random() * ids.length)];
+
+  // 2. Cookies: k6 keeps a cookie jar per VU, so a Set-Cookie from login
+  //    is sent back automatically on later requests to the same domain.
+  http.post(`${BASE_URL}/login`, JSON.stringify({ username: 'u1', password: 'p' }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const me = http.get(`${BASE_URL}/me`); // no Authorization header: the session cookie does it
+  check(me, { 'cookie session works': (r) =&gt; r.status === 200 });
+
+  // 3. HTML: pull a hidden CSRF token out of a form
+  const page = http.get(`${BASE_URL}/checkout`);
+  const csrf = page.html().find('input[name=csrf]').attr('value');
+
+  // 4. Anything else: a regex, as a last resort
+  const csrfAgain = (page.body.match(/name="csrf" value="([^"]+)"/) || [])[1];
+
+  // submitForm() would also do this for you: res.submitForm({ fields: { ... } })
+  const pay = http.post(`${BASE_URL}/checkout`, { csrf: csrf, productId: String(productId) });
+  check(pay, {
+    'csrf extracted': () =&gt; csrf !== undefined &amp;&amp; csrf === csrfAgain,
+    'checkout ok': (r) =&gt; r.status === 200,
+    'ids parsed': () =&gt; firstId === 1 &amp;&amp; cheap.length &gt; 0,
+  });
+}</code></pre>
+      <ul>
+        <li><strong>JSON:</strong> <code>res.json(path)</code> takes a
+          <a href="https://github.com/tidwall/gjson/blob/master/SYNTAX.md" target="_blank" rel="noopener">GJSON
+          path</a>: <code>items.0.id</code>, <code>items.#.id</code> for all ids,
+          <code>items.#(price&lt;15)#.id</code> to filter. Without a path it parses the whole body,
+          which is slower for big responses.</li>
+        <li><strong>HTML:</strong> <code>res.html()</code> gives a jQuery-like selection.
+          <code>.find(selector).attr(name)</code> covers hidden form fields. For a whole form,
+          <code>res.submitForm()</code> reads the fields and posts them for you.</li>
+        <li><strong>Regex:</strong> works on anything, breaks when the markup changes. Use it when
+          there is no structure to parse.</li>
+      </ul>
+      <p>Always check the extraction worked. A missing token becomes the string
+        <code>undefined</code> in the next URL, and the 404s look like a performance problem. See
+        <a href="/glossary/correlation/">correlation</a> in the glossary.</p>
+
+      <h2 id="cookies">Cookies and sessions</h2>
+      <p>Each VU has its own cookie jar. Cookies set by a response go back automatically on later
+        requests to the same domain, so cookie-based sessions usually just work. You only touch the
+        jar to set, read or clear cookies yourself:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+export default function () {
+  const jar = http.cookieJar(); // this VU's jar
+
+  // Set a cookie yourself (for example a feature flag or a consent cookie)
+  jar.set(BASE_URL, 'consent', 'yes');
+
+  // Read what the server set
+  http.post(`${BASE_URL}/login`, JSON.stringify({ username: 'u1', password: 'p' }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const session = jar.cookiesForURL(BASE_URL).session; // array of values
+  console.log(`session cookie: ${session &amp;&amp; session[0]}`);
+
+  // Remove one cookie, or all cookies for a URL, mid-iteration
+  jar.delete(BASE_URL, 'consent');
+  jar.clear(BASE_URL);
+}
+
+// k6 empties every VU's jar at the end of each iteration, so each iteration starts
+// as a new visitor. To keep cookies across iterations (a returning, logged-in user):
+// export const options = { noCookiesReset: true };</code></pre>
+      <div class="g-warn"><p>Cookies are cleared at the end of every iteration by default. If each
+        iteration should continue the same logged-in session, set
+        <code>noCookiesReset: true</code>, or log in at the start of every iteration.</p></div>
+
+      <h2 id="oauth">OAuth, SSO and MFA</h2>
+      <ul>
+        <li><strong>Client credentials</strong> (machine-to-machine): one POST to the token endpoint
+          with <code>grant_type=client_credentials</code>. Fits the <code>setup()</code> pattern.</li>
+        <li><strong>Password grant or a test login API:</strong> fits the per-VU pattern.</li>
+        <li><strong>Browser redirects, SSO and MFA:</strong> don't load test your identity provider
+          unless that's the goal (and you have permission: many IdPs rate-limit or ban it). Ask for a
+          test-only way to mint tokens, or pre-generate tokens for test accounts and load them as
+          data. For TOTP-based MFA in a test environment, there's a <code>totp</code> jslib.</li>
+      </ul>
+      <p>Next: <a href="/guides/k6/grpc-websockets-browser/">gRPC, WebSockets and browser
+        tests</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a login flow that won't script?</h2>
+        <p>SSO, signed requests, CSRF and token chains are routine for me. I can get your journeys
+          scripted and running under load.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-auth-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-auth-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,18 @@
+# Prometheus for load testing. k6 pushes via remote write (no scrape job needed for k6).
+global:
+  scrape_interval: 5s       # short interval: load tests are short and you want detail
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # node-exporter on the system under test. Replace or add targets, e.g. "app-server-1:9100".
+  # With the linux-host profile, node-exporter uses host networking, so Prometheus reaches it
+  # through the Docker host gateway.
+  - job_name: node
+    static_configs:
+      - targets: ["host.docker.internal:9100"]
+        labels:
+          role: sut

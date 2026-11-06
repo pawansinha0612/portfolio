@@ -1,0 +1,125 @@
+<!--{"title": "Load testing database-heavy systems", "og_title": "Database load testing: data volumes, realistic data, pgbench, sysbench and HammerDB", "description": "Load testing database-heavy systems: production-like data volumes and skew, cache effects, and when to use pgbench, sysbench or HammerDB.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/topics/">Specialist topics</a> · Database load testing</p>
+      <h1>Load testing database-heavy systems</h1>
+      <p class="lead">The search page held 300 ms at 1,000 users in the test environment. In production it took 7 seconds on day one. The test database had 40,000 orders. Production had 90 million, and the biggest customer alone had 2 million. Same code, same queries, different plans, different cache behaviour. For database-heavy systems, the data is part of the test.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#volume">Data volume changes everything</a></li>
+          <li><a href="#realistic">Realistic data: distribution and skew</a></li>
+          <li><a href="#cache">Cache state: cold, warm and too warm</a></li>
+          <li><a href="#app-vs-db">App-level test or database benchmark?</a></li>
+          <li><a href="#pgbench">pgbench (PostgreSQL)</a></li>
+          <li><a href="#sysbench">sysbench (MySQL and PostgreSQL)</a></li>
+          <li><a href="#hammerdb">HammerDB</a></li>
+          <li><a href="#measure">What to measure</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="volume">Data volume changes everything</h2>
+      <p>A query plan is chosen from table statistics. On a small table, a sequential scan is the right plan and nobody notices a missing index. At production size, the same query reads gigabytes. Volume also decides whether the working set fits in memory, how long index maintenance takes on writes, and how big sorts and hash joins get.</p>
+      <ul>
+        <li><strong>Test at production volume, or at the volume you expect after the growth period you care about</strong> (for example 18 months from now). Size data from the business forecast, not from what was convenient to load.</li>
+        <li><strong>Grow the volume in the test.</strong> Write-heavy soak tests add rows as they run. A table that grows by 5 million rows over a 12-hour <a href="/glossary/soak-testing/">soak test</a> can change plans mid-test. That is a finding, not noise.</li>
+        <li><strong>Match the infrastructure too:</strong> instance class, storage type and provisioned IOPS, and database parameters such as memory settings. A test database on a different storage tier tells you about that storage tier. See <a href="/glossary/volume-testing/">volume testing</a>.</li>
+      </ul>
+
+      <h2 id="realistic">Realistic data: distribution and skew</h2>
+      <p>Row counts are not enough. Real data is skewed: a few customers have most of the orders, a few products get most of the views, recent rows are read far more than old ones. Uniform random test data hides the hot rows (lock contention) and the heavy parameters (bad plans).</p>
+      <ul>
+        <li><strong>Masked production copies</strong> keep real distributions. Mask or tokenise personal data properly before it leaves production, consistently across tables so joins still work, and agree it with whoever owns privacy.</li>
+        <li><strong>Synthetic data</strong> is safer and needs more care. Generate it with realistic distributions (Zipf-like for popularity, time-weighted for recency) rather than uniform. In PostgreSQL, <code>generate_series</code> with skewed random values goes a long way:</li>
+      </ul>
+      <pre class="ex-code"><code>-- 50 million orders across 1 million customers, heavily skewed towards low customer IDs
+INSERT INTO orders (customer_id, created_at, total_cents)
+SELECT 1 + floor(1000000 * power(random(), 3))::int,       -- power() skews towards small IDs
+       now() - (random() * interval '730 days'),
+       (500 + random() * 50000)::int
+FROM generate_series(1, 50000000);
+ANALYZE orders;</code></pre>
+      <ul>
+        <li><strong>Test parameters must follow the same skew.</strong> If the load script picks customer IDs uniformly, it will almost never ask for the heavy customer. Feed it a parameter file sampled from real access patterns, including the known heavy cases. See <a href="/glossary/parameterisation/">parameterisation</a>.</li>
+        <li><strong>Reset between runs.</strong> Tests that write data change the next run's starting point. Restore from a snapshot, or at least run <code>ANALYZE</code> and record row counts before each run.</li>
+      </ul>
+
+      <h2 id="cache">Cache state: cold, warm and too warm</h2>
+      <p>The database buffer pool, the OS page cache and storage caches all make repeated reads cheap. A test that hits the same 1,000 rows for an hour measures memory, not your database. A test that starts right after a restart measures disk.</p>
+      <ul>
+        <li>Decide which state matches the risk: steady-state peak (warm) or the morning after a failover (cold). Test both if failover is a real event for you.</li>
+        <li>Use a <a href="/glossary/warm-up/">warm-up</a> period and leave it out of the results.</li>
+        <li>Check the buffer cache hit ratio during the test. In PostgreSQL, <code>blks_hit / (blks_hit + blks_read)</code> from <code>pg_stat_database</code>. A test at 99.9% when production runs at 95% is too warm.</li>
+      </ul>
+
+      <h2 id="app-vs-db">App-level test or database benchmark?</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Question</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Will our system handle peak with our queries and our data?</td><td>Application-level load test (k6, JMeter, Gatling) against the real stack</td></tr>
+          <tr><td>Is the new instance class or storage faster than the old one?</td><td>Standard benchmark (pgbench, sysbench, HammerDB) on both, same settings</td></tr>
+          <tr><td>Did the database version upgrade or parameter change regress?</td><td>Benchmark with a custom script of your top queries, before and after</td></tr>
+          <tr><td>How does one specific query behave under concurrency?</td><td>pgbench custom script, or sysbench with a Lua script</td></tr>
+        </tbody>
+      </table></div>
+      <p>Standard benchmark workloads are synthetic. They are excellent for comparing infrastructure and configuration, and say little about your application. Don't quote a TPC-C-like number as your system's capacity.</p>
+
+      <h2 id="pgbench">pgbench (PostgreSQL)</h2>
+      <p>pgbench ships with PostgreSQL. It has a built-in TPC-B-like workload and, more usefully, runs your own SQL scripts with random parameters.</p>
+      <pre class="ex-code"><code># create test tables at scale factor 100 (10 million rows in pgbench_accounts)
+pgbench -i -s 100 benchdb
+
+# 50 clients, 8 worker threads, 10 minutes, progress every 10 s, per-statement latencies
+pgbench -c 50 -j 8 -T 600 -P 10 -r benchdb
+
+# open model: target 2,000 transactions/s, count transactions slower than 50 ms as late
+pgbench -c 50 -j 8 -T 600 -R 2000 -L 50 -P 10 benchdb</code></pre>
+      <p>A custom script with your own query and skewed parameters (<code>random_zipfian</code> needs PostgreSQL 11 or later):</p>
+      <pre class="ex-code"><code>-- top_orders.sql
+\set cid random_zipfian(1, 1000000, 1.1)
+SELECT id, total_cents FROM orders WHERE customer_id = :cid ORDER BY created_at DESC LIMIT 20;</code></pre>
+      <pre class="ex-code"><code>pgbench -n -f top_orders.sql -c 32 -j 8 -T 300 -P 10 benchdb</code></pre>
+      <p><code>-n</code> skips vacuuming the built-in tables, which don't exist for a custom-only run. Without <code>-R</code>, pgbench is a closed model: each client waits for its transaction before sending the next, so it reports how fast the database can go, not how it behaves at your arrival rate. With <code>-R</code>, the latency it reports includes schedule lag, the open-model view (see <a href="/glossary/open-vs-closed-workload-model/">open vs closed models</a>).</p>
+
+      <h2 id="sysbench">sysbench (MySQL and PostgreSQL)</h2>
+      <p>sysbench is the common choice for MySQL and MariaDB, and also has a PostgreSQL driver. Its OLTP workloads are Lua scripts you can copy and adapt.</p>
+      <pre class="ex-code"><code>COMMON="--db-driver=mysql --mysql-host=db.test.internal --mysql-user=sbtest \
+  --mysql-password=$SBPASS --mysql-db=sbtest --tables=16 --table-size=5000000"
+
+sysbench oltp_read_write $COMMON --threads=16 prepare
+sysbench oltp_read_write $COMMON --threads=64 --time=600 --report-interval=10 --percentile=99 run
+sysbench oltp_read_write $COMMON cleanup</code></pre>
+      <p>Other built-in workloads include <code>oltp_read_only</code>, <code>oltp_write_only</code>, <code>oltp_point_select</code> and <code>oltp_update_index</code>. <code>--rate</code> switches to a fixed arrival rate. Run a series at increasing <code>--threads</code> values (8, 16, 32, 64, 128) and plot throughput and p99: the knee is the database's concurrency sweet spot, and a useful input for sizing the application's connection pools.</p>
+
+      <h2 id="hammerdb">HammerDB</h2>
+      <p>HammerDB is an open-source database benchmarking tool hosted by the TPC. It runs workloads derived from TPC-C (called TPROC-C, an OLTP order-processing workload) and TPC-H (TPROC-H, analytic queries) against Oracle, SQL Server, Db2, MySQL, MariaDB and PostgreSQL. That makes it the usual choice for comparing database engines or platforms on the same workload, for example SQL Server on-premises vs a managed cloud offering.</p>
+      <ul>
+        <li>It has a GUI and a command-line interface (<code>hammerdbcli</code>) that runs Tcl or Python scripts, so runs can be automated.</li>
+        <li>TPROC-C reports NOPM (new orders per minute) and TPM (database transactions per minute). NOPM is comparable across databases. TPM depends on how each engine counts transactions.</li>
+        <li>Size the schema with the warehouse count. More warehouses means more data and less contention. Follow the HammerDB documentation's guidance for warehouses per virtual user.</li>
+        <li>Results from HammerDB are not official TPC results and shouldn't be described as such.</li>
+      </ul>
+
+      <h2 id="measure">What to measure</h2>
+      <ul>
+        <li>Throughput and latency percentiles from the test tool, over time.</li>
+        <li>Top queries by total time during the run (<code>pg_stat_statements</code>, performance_schema, Query Store). See the <a href="/guides/bottlenecks/database/">database bottlenecks guide</a>.</li>
+        <li>Waits and locks, sampled during the run.</li>
+        <li>Host metrics: CPU, memory, disk latency and IOPS against the volume's limit, especially for the WAL or redo log volume.</li>
+        <li>Replication lag on replicas. Read replicas that fall behind under write load serve stale data.</li>
+        <li>Background work: autovacuum in PostgreSQL, purge lag in InnoDB, checkpoints. These often explain periodic latency spikes.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Worried about data growth or a database migration?</h2>
+        <p>Book a free 30-minute call. We'll work out what data you need, which benchmark answers your question, and how to compare old and new fairly.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-dbload-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/guides/bottlenecks/database/" data-track="guide-dbload-bottlenecks">Database bottlenecks</a>
+        </p>
+      </div>
+    </section>

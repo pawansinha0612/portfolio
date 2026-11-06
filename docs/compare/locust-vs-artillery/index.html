@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Locust vs Artillery: Which Load Testing Tool Should You Use? — Pawan Sinha</title>
+  <meta name="description" content="Locust vs Artillery compared: Python code vs YAML with Node.js hooks, licence, open and closed load models, web UI, CI/CD and scaling.">
+  <meta property="og:title" content="Locust vs Artillery: Which Load Testing Tool Should You Use? — Pawan Sinha">
+  <meta property="og:description" content="An honest comparison of Locust and Artillery, with the same test in Python and YAML.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/compare/locust-vs-artillery/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/compare/locust-vs-artillery/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Locust vs Artillery: Which Load Testing Tool Should You Use?", "description": "Locust vs Artillery compared: Python code vs YAML with Node.js hooks, licence, open and closed load models, web UI, CI/CD and scaling.", "url": "https://pawansinha.com.au/compare/locust-vs-artillery/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://pawansinha.com.au/"}, {"@type": "ListItem", "position": 2, "name": "Learn", "item": "https://pawansinha.com.au/learn/"}, {"@type": "ListItem", "position": 3, "name": "Tool comparisons", "item": "https://pawansinha.com.au/compare/"}, {"@type": "ListItem", "position": 4, "name": "Locust vs Artillery", "item": "https://pawansinha.com.au/compare/locust-vs-artillery/"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is Locust or Artillery easier?", "acceptedAnswer": {"@type": "Answer", "text": "Whichever matches your language. Python teams usually find Locust easier. JavaScript teams usually find Artillery easier, and simple flows in YAML need very little code at all."}}, {"@type": "Question", "name": "Are both free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Locust is MIT and Artillery is MPL-2.0. Artillery Cloud, a hosted dashboard, is a separate product. Check its current pricing."}}, {"@type": "Question", "name": "Which handles more load per machine?", "acceptedAnswer": {"@type": "Answer", "text": "Both are interpreted, so neither is the most efficient per request. Locust needs one worker process per CPU core. Artillery can push the load out to AWS. Watch the load generator's CPU whichever you use."}}]}</script>
+
+  <style>
+    .project-hero { padding: 64px 16px 8px; max-width: 1000px; }
+    .project-hero > :not(p, ul, ol) { max-width: 868px; }
+    .project-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .checked { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+    .cmp { max-width: 1000px; padding: 36px 16px 8px; }
+    .cmp h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 10px; line-height: 1.25; }
+    .cmp h3 { font-size: 18px; margin: 22px 0 6px; }
+    .cmp p, .cmp li { color: var(--muted); }
+    .cmp strong { color: var(--text); }
+    .cmp ul, .cmp ol { padding-left: 22px; }
+    .cmp > p, .cmp > ul, .cmp > ol { max-width: 680px; } /* keep running text to ~90 characters a line */
+    .cmp code { font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--text); }
+    .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px; }
+    .verdict > div { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+    .verdict h3 { margin: 0 0 8px; font-size: 18px; color: var(--text); }
+    .verdict ul { margin: 0; padding-left: 20px; }
+    .verdict li { margin: 4px 0; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-top: 12px; }
+    .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    table.vs { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+    table.vs th, table.vs td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    table.vs thead th { background: var(--alt); color: var(--text); font-size: 14px; }
+    table.vs tbody th { color: var(--text); font-weight: 700; width: 18%; }
+    table.vs td { color: var(--muted); }
+    table.vs tr:last-child th, table.vs tr:last-child td { border-bottom: 0; }
+    .scroll-hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    @media (min-width: 700px) { .scroll-hint { display: none; } }
+    .code-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 12px; }
+    .code-pair > div { min-width: 0; }
+    .code-pair h3 { margin: 0 0 8px; }
+    .code-pair p.note { font-size: 14px; margin: 8px 0 0; }
+    pre.code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; overflow: auto; max-height: 560px; white-space: pre; tab-size: 2; }
+    .faq h3 { color: var(--text); }
+    .pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+    .pick a.card { text-decoration: none; color: inherit; display: block; }
+    .pick .vs-name { font-size: 20px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+    .pick .project-link { display: inline-block; margin-top: 12px; font-weight: 600; color: var(--accent); }
+    .checklist li { margin: 6px 0; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    .tools-end { max-width: 1000px; padding: 24px 16px 72px; }
+    @media (max-width: 600px) { .project-hero { padding-top: 40px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/learn/">Learn</a><span aria-hidden="true">/</span><a href="/compare/">Tool comparisons</a><span aria-hidden="true">/</span><span aria-current="page">Locust vs Artillery</span></nav>
+      <p class="eyebrow">Tool comparison · Load testing</p>
+      <h1>Locust vs Artillery</h1>
+      <p class="lead">Two light, free tools that suit developers. Locust tests are Python classes and you can steer a run from a web UI. Artillery tests are YAML with JavaScript hooks, built around arrival rates. Your team&#x27;s language usually decides it.</p>
+      <p class="checked">Facts checked November 2026. Written by Pawan Sinha, who has used JMeter, LoadRunner, k6 and Gatling on banking, payments and lottery projects.</p>
+    </section>
+
+    <section class="wrap cmp" id="verdict">
+      <p class="eyebrow">The short answer</p>
+      <h2>Which one should you pick?</h2>
+      <div class="verdict">
+        <div>
+          <h3>Pick Locust if…</h3>
+          <ul>
+          <li>Your team writes Python, or the system has a Python client library you want to reuse.</li>
+          <li>You want to change the number of users during a run from a web UI.</li>
+          <li>You need to test an unusual protocol and are happy to write a small Python client.</li>
+          <li>Your users behave like a fixed population (staff on an internal system), so a closed model fits.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Pick Artillery if…</h3>
+          <ul>
+          <li>Your team writes JavaScript or TypeScript and uses npm.</li>
+          <li>Most tests are simple flows that read well as YAML.</li>
+          <li>You want arrival-rate (open) load, which matches public web traffic, as the default.</li>
+          <li>You run on AWS and want the tool to spread a big test over Lambda or Fargate.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap cmp" id="table">
+      <p class="eyebrow">Side by side</p>
+      <h2>Locust vs Artillery at a glance</h2>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Locust vs Artillery comparison table">
+        <table class="vs">
+          <thead><tr><th scope="col">&nbsp;</th><th scope="col">Locust</th><th scope="col">Artillery</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">How you write tests</th><td>Plain Python classes. Any Python library can be used.</td><td>YAML scenarios, with custom logic in JavaScript functions.</td></tr>
+            <tr><th scope="row">Licence</th><td>Open source, MIT.</td><td>Open source, MPL-2.0.</td></tr>
+            <tr><th scope="row">How load is generated</th><td>Each user is a gevent greenlet. One process uses one CPU core, so you run several worker processes.</td><td>Node.js. Big tests can run from AWS Lambda or Fargate.</td></tr>
+            <tr><th scope="row">Protocols</th><td>HTTP built in (HttpUser and the faster FastHttpUser). Anything else you can call from Python.</td><td>HTTP, WebSocket and Socket.IO built in, Playwright browser tests, more through engines and plugins.</td></tr>
+            <tr><th scope="row">Load models</th><td>Closed: a number of users with wait times. Custom shapes with LoadTestShape.</td><td>Open: phases of new arrivals per second. Loops in the flow make longer sessions.</td></tr>
+            <tr><th scope="row">CI/CD fit</th><td>Good. Headless mode works in CI; failing on response-time goals needs a few lines of Python.</td><td>Strong. ensure checks set the exit code.</td></tr>
+            <tr><th scope="row">Results and reporting</th><td>A live web UI with charts, plus CSV and HTML reports.</td><td>A terminal summary, JSON output, Artillery Cloud dashboards and plugins that publish metrics to other tools.</td></tr>
+            <tr><th scope="row">Running at scale</th><td>Built-in master and worker mode across machines.</td><td>Built-in AWS Lambda and Fargate runners, or several instances yourself.</td></tr>
+            <tr><th scope="row">Learning curve</th><td>Very easy for Python developers.</td><td>Very easy for simple flows; complex logic split across YAML and JavaScript takes more care.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="scroll-hint">Swipe the table sideways to see both tools.</p>
+    </section>
+
+    <section class="wrap cmp" id="code">
+      <p class="eyebrow">Same test, two tools</p>
+      <h2>A 50-user load test in each</h2>
+      <p>The same simple test in both: load the home page, check for a 200 response, ramp up to 50 users over a minute, then hold for three minutes with one second of think time.</p>
+      <div class="code-pair">
+        <div>
+          <h3>Locust (Python)</h3>
+          <pre class="code" tabindex="0"><code>from locust import HttpUser, task, constant
+
+class Visitor(HttpUser):
+    host = &quot;https://test.example.com&quot;
+    wait_time = constant(1)  # think time
+
+    @task
+    def home(self):
+        with self.client.get(&quot;/&quot;, catch_response=True) as r:
+            if r.status_code != 200:
+                r.failure(f&quot;status {r.status_code}&quot;)
+
+# Ramp to 50 users (1 new user a second), run for 4 minutes, no web UI:
+#   locust -f locustfile.py --headless -u 50 -r 1 -t 4m</code></pre>
+          <p class="note">The ramp is set on the command line here. For staged ramps written in code, subclass <code>LoadTestShape</code>. Failing the run on a response-time goal takes a few lines of Python in an event hook.</p>
+        </div>
+        <div>
+          <h3>Artillery (YAML)</h3>
+          <pre class="code" tabindex="0"><code>config:
+  target: &quot;https://test.example.com&quot;
+  phases:
+    - name: Ramp up
+      duration: 60
+      arrivalRate: 1
+      rampTo: 50     # new visitors per second
+    - name: Hold
+      duration: 180
+      arrivalRate: 50
+  plugins:
+    expect: {}
+    ensure: {}
+  ensure:
+    thresholds:
+      - http.response_time.p95: 500  # fail the run if p95 &gt; 500 ms
+
+scenarios:
+  - name: Home page
+    flow:
+      - get:
+          url: &quot;/&quot;
+          expect:
+            - statusCode: 200
+      - think: 1     # think time, in seconds</code></pre>
+          <p class="note">Run it with <code>artillery run test.yml</code>. Artillery uses an open model: <code>arrivalRate</code> is new virtual users per second, and each one runs the flow once and leaves. A visit here lasts about a second, so 50 arrivals a second keeps roughly 50 users busy (Little's Law). A failed <code>ensure</code> check gives a non-zero exit code, so CI fails too.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap cmp" id="switch">
+      <p class="eyebrow">Switching</p>
+      <h2>Moving between Locust and Artillery</h2>
+      <ol>
+          <li>Translate the load model, not just the requests. Locust users are a closed population. Artillery phases are arrival rates. Use Little's Law: arrivals per second × seconds per visit ≈ concurrent users.</li>
+          <li>A Locust <code>@task</code> maps to an Artillery scenario. Task weights map to scenario <code>weight</code>. <code>wait_time</code> maps to <code>think</code>.</li>
+          <li>Python helper code becomes JavaScript processor functions.</li>
+          <li>Compare one run in each tool at the same load before you switch.</li>
+      </ol>
+    </section>
+
+    <section class="wrap cmp faq" id="faq">
+      <p class="eyebrow">FAQ</p>
+      <h2>Common questions</h2>
+      <h3>Is Locust or Artillery easier?</h3>
+      <p>Whichever matches your language. Python teams usually find Locust easier. JavaScript teams usually find Artillery easier, and simple flows in YAML need very little code at all.</p>
+      <h3>Are both free?</h3>
+      <p>Yes. Locust is MIT and Artillery is MPL-2.0. Artillery Cloud, a hosted dashboard, is a separate product. Check its current pricing.</p>
+      <h3>Which handles more load per machine?</h3>
+      <p>Both are interpreted, so neither is the most efficient per request. Locust needs one worker process per CPU core. Artillery can push the load out to AWS. Watch the load generator&#x27;s CPU whichever you use.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/compare/k6-vs-locust/">k6 vs Locust →</a>
+        <a href="/compare/k6-vs-artillery/">k6 vs Artillery →</a>
+        <a href="/compare/tool-picker/">Tool picker →</a>
+        <a href="/compare/">All comparisons →</a>
+        <a href="/tools/jmeter-to-k6/">JMeter → k6 converter →</a>
+        <a href="/guides/start/">Learning path →</a>
+        <a href="/tools/">Free tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Choosing or switching tools?</p>
+          <h3>Get a second opinion before you commit</h3>
+          <p>In a free 30-minute call I'll look at what you test, who writes the tests and where they run, and tell you which tool fits. If you're moving off an old tool, I can plan the migration and port your most important journeys first.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="compare-book">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="compare-services">Performance testing services</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

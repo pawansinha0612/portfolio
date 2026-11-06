@@ -1,0 +1,104 @@
+<!--{"title": "JMeter for WebSockets, gRPC and Kafka", "og_title": "JMeter beyond HTTP: WebSocket, gRPC and Kafka plugins, honestly assessed", "description": "Which JMeter plugins exist for WebSockets, gRPC and Kafka, how to use the WebSocket Samplers, a JSR223 Kafka fallback, and when k6 is the better tool.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · WebSockets, gRPC and Kafka</p>
+      <h1>JMeter beyond HTTP: WebSockets, gRPC and Kafka</h1>
+      <p class="lead">Your new trading screen streams prices over WebSockets, the back end talks gRPC and orders flow through Kafka. The HTTP Request sampler covers none of it. JMeter can still test all three, through community plugins of varying maturity. This guide says which ones exist, how to use the solid one, and when another tool is the better choice.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#core">What core JMeter supports</a></li>
+          <li><a href="#ws">WebSockets: Peter Doornbosch's samplers</a></li>
+          <li><a href="#grpc">gRPC</a></li>
+          <li><a href="#kafka">Kafka</a></li>
+          <li><a href="#k6">When k6 is the better fit</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="core">1. What core JMeter supports</h2>
+      <p>Apache JMeter 5.6 ships samplers for HTTP(S), JDBC, JMS (publish, subscribe, point-to-point), LDAP, FTP, SMTP and mail reading, raw TCP, Java and JUnit classes, and Neo4j Bolt. Anything else needs a plugin or a JSR223 (Groovy) sampler using the protocol's Java client library.</p>
+      <p>The core HTTP Request sampler speaks HTTP/1.1. For HTTP/2 there is a BlazeMeter plugin in the Plugins Manager ("BlazeMeter - HTTP Plugin", id <code>bzm-http2</code>).</p>
+      <div class="g-note">
+        <p><strong>Judging a plugin.</strong> Check when it was last released, whether it works with your JMeter version, and whether its issue tracker is active. A plugin that breaks on the next JMeter upgrade turns into technical debt. Install plugins the same way on every workstation, CI runner and load generator.</p>
+      </div>
+
+      <h2 id="ws">2. WebSockets: Peter Doornbosch's samplers</h2>
+      <p>The established choice is <strong>WebSocket Samplers by Peter Doornbosch</strong> (Plugins Manager id <code>websocket-samplers</code>, version 1.3.x at the time of writing). It is a community plugin, not part of Apache JMeter, but it is mature and widely used. It adds six samplers:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Sampler</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>WebSocket Open Connection</td><td>The upgrade handshake. Server, port, path, TLS, connect and read timeouts</td></tr>
+          <tr><td>WebSocket request-response Sampler</td><td>Send a frame and wait for one response frame. Covers the most common case</td></tr>
+          <tr><td>WebSocket Single Write Sampler</td><td>Send a frame without waiting</td></tr>
+          <tr><td>WebSocket Single Read Sampler</td><td>Wait for the next frame, for server pushes</td></tr>
+          <tr><td>WebSocket Ping/Pong Sampler</td><td>Keep-alive checks</td></tr>
+          <tr><td>WebSocket Close</td><td>Close the connection with a status code</td></tr>
+        </tbody>
+      </table></div>
+      <p>The connection belongs to the JMeter thread. Later samplers in the same thread choose "use existing connection" and reuse it. A typical streaming-prices flow:</p>
+      <pre class="ex-code"><code>Thread Group  (each thread = one connected client)
+├── HTTP Request             POST /auth/login  → JSON Extractor token
+├── WebSocket Open Connection   server prices.example.com, path /stream, TLS on
+│   └── HTTP Header Manager     Authorization: Bearer ${token}
+├── WebSocket request-response  {"action":"subscribe","symbols":["BHP","CBA"]}
+│   └── Response Assertion      Substring: "subscribed"
+├── Loop Controller (${__P(reads,100)})
+│   └── WebSocket Single Read Sampler   use existing connection, read timeout 5000 ms
+│       └── JSON Extractor               price ← $.price
+└── WebSocket Close           status 1000</code></pre>
+      <p>Frame filters (text, binary and ping/pong) let a sampler skip frames you do not care about, such as heartbeats, so they do not get read as "the response". To measure push latency, not just "a frame arrived", have the server include its send timestamp and compute the difference in a JSR223 PostProcessor. The clocks of the server and the load generator must then be in sync.</p>
+      <p>Each open connection is a thread blocked on a socket. 10,000 concurrent WebSocket clients means 10,000 JMeter threads, with the memory that implies. Size the generators for it, or spread the load across several (see <a href="/guides/jmeter/distributed-testing/">distributed testing</a>).</p>
+
+      <h2 id="grpc">3. gRPC</h2>
+      <p>Core JMeter has no gRPC sampler. The best-known plugin is <strong>JMeter gRPC Request</strong> (Plugins Manager id <code>jmeter-grpc-request</code>), originally published by zalopay-oss on GitHub. You point it at your <code>.proto</code> files, choose the full method name, and send the request as JSON. It suits unary calls. Check its documentation and recent release activity for your case, especially if you need streaming RPCs, and test it on your JMeter version before you commit to it.</p>
+      <p>The fallback that always works is a JSR223 Sampler using the generated Java stubs and <code>grpc-java</code>, with the jars in <code>lib/</code>. It is flexible but means maintaining Java build output inside a JMeter project, which few teams enjoy.</p>
+
+      <h2 id="kafka">4. Kafka</h2>
+      <p>The Plugins Manager lists several Kafka plugins, including <strong>DI KafkaMeter</strong> (id <code>di-kafkameter</code>, producer and consumer config elements and samplers) and the older <strong>Kafka Support</strong> (id <code>kafkameter</code>). They are small community projects, so check maintenance before relying on one.</p>
+      <p>The dependable route is a JSR223 Sampler with the official <code>kafka-clients</code> library. Copy <code>kafka-clients-&lt;version&gt;.jar</code> and its compression dependencies (lz4, snappy, zstd) into JMeter's <code>lib/</code> folder and restart. This is a sketch to adapt, not a drop-in script:</p>
+      <pre class="ex-code"><code>// JSR223 Sampler, language groovy. One producer per JMeter thread, created on first use.
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
+
+def producer = vars.getObject('producer')
+if (producer == null) {
+    def cfg = new Properties()
+    cfg.put('bootstrap.servers', props.getProperty('kafkaBrokers', 'localhost:9092'))
+    cfg.put('key.serializer', 'org.apache.kafka.common.serialization.StringSerializer')
+    cfg.put('value.serializer', 'org.apache.kafka.common.serialization.StringSerializer')
+    cfg.put('acks', 'all')
+    producer = new KafkaProducer&lt;String, String&gt;(cfg)
+    vars.putObject('producer', producer)
+}
+
+def key = vars.get('orderId')
+def value = '{"orderId":"' + key + '","amount":42.50}'
+// .get() blocks until the broker acknowledges, so the sample time is the ack latency
+def meta = producer.send(new ProducerRecord&lt;String, String&gt;('orders', key, value)).get()
+SampleResult.setResponseData('partition=' + meta.partition() + ' offset=' + meta.offset(), 'UTF-8')</code></pre>
+      <ul>
+        <li>Never write <code>${...}</code> inside a JSR223 script. JMeter substitutes it before Groovy sees the code, which breaks script caching and can inject data into code. Read values with <code>vars.get()</code> and <code>props.getProperty()</code> as above.</li>
+        <li>Calling <code>.get()</code> on every send measures per-message acknowledgement latency, but limits each thread to one in-flight message. For raw throughput, send asynchronously and measure at batch level, and remember that the sample time then means something different.</li>
+        <li>Close producers at the end, for example from a tearDown Thread Group or a JSR223 Listener, or brokers log abrupt disconnects.</li>
+        <li>End-to-end latency (produce to consume) needs a consumer that matches messages by key and timestamp. That is a small application in itself, and usually worth building outside JMeter.</li>
+      </ul>
+      <p>For MQTT there is also a plugin: <strong>MQTT Protocol Samplers</strong> by XMeter (id <code>mqtt-xmeter</code>), with connect, publish, subscribe and disconnect samplers.</p>
+
+      <h2 id="k6">5. When k6 is the better fit</h2>
+      <p>If most of the system under test is streaming or RPC rather than request-response HTTP, consider k6. It has built-in gRPC (<code>k6/net/grpc</code>) and WebSocket support, with Kafka available through the community <code>xk6-kafka</code> extension. Scripts are JavaScript, which suits developers who already write the services. Its virtual users are lighter than JMeter threads, which matters with tens of thousands of open sockets. The trade-offs are covered in <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a>, and the <a href="/guides/k6/">k6 guides</a> show the code. Existing plans can be moved over with the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a>.</p>
+      <p>Staying on JMeter is reasonable when the team, CI and reporting are already built around it and the non-HTTP part is small. A WebSocket feed alongside a mostly-HTTP journey is a good fit for the Doornbosch samplers.</p>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/results-and-reports/">results and reports</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Testing streaming or event-driven systems?</h2>
+        <p>Book a free 30-minute call and we'll pick the right tool and approach for your WebSocket, gRPC or Kafka workload. More on <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-proto-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-proto-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>

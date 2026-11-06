@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started with JMeter 5.6 — Pawan Sinha</title>
+  <meta name="description" content="Install Apache JMeter 5.6, pick a Java version, build a first test plan in the GUI and run it properly from the command line with an HTML report.">
+  <meta property="og:title" content="Getting started with JMeter 5.6: install, first plan, first CLI run">
+  <meta property="og:description" content="Install Apache JMeter 5.6, pick a Java version, build a first test plan in the GUI and run it properly from the command line with an HTML report.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/getting-started/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/getting-started/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Getting started with JMeter 5.6", "description": "Install Apache JMeter 5.6, pick a Java version, build a first test plan in the GUI and run it properly from the command line with an HTML report.", "url": "https://pawansinha.com.au/guides/jmeter/getting-started/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Getting started</p>
+      <h1>Getting started with JMeter 5.6</h1>
+      <p class="lead">You press the green Start button with 500 threads and the JMeter window freezes. The laptop fans spin up, the graphs stop updating and the numbers you get back describe your laptop, not the server. This guide sets JMeter up the way it is meant to be used: GUI to build, command line to run.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#install">Install Java and JMeter</a></li>
+          <li><a href="#gui-vs-cli">GUI mode vs CLI mode</a></li>
+          <li><a href="#first-plan">Build a first test plan</a></li>
+          <li><a href="#run-cli">Run it from the command line</a></li>
+          <li><a href="#jmx">What a .jmx file looks like</a></li>
+          <li><a href="#layout">A sensible project layout</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="install">1. Install Java and JMeter</h2>
+      <p>JMeter is a Java application. JMeter 5.6.x runs on Java 8 or later, but there is no good reason to use Java 8 today. Install a current long-term support JDK such as 17 or 21 (Eclipse Temurin is a free, common choice) and check it:</p>
+      <pre class="ex-code"><code>java -version
+# openjdk version "21.0.x" ...</code></pre>
+      <p>Then get JMeter itself. The latest 5.x release at the time of writing is 5.6.3. Check <a href="https://jmeter.apache.org/download_jmeter.cgi" rel="noopener">the download page</a> for anything newer.</p>
+      <ul>
+        <li><strong>Any OS:</strong> download the binary <code>apache-jmeter-5.6.3.zip</code> or <code>.tgz</code>, verify the SHA-512 checksum, extract it anywhere (avoid paths with spaces on Windows), then run <code>bin/jmeter</code> on macOS or Linux, or <code>bin\jmeter.bat</code> on Windows.</li>
+        <li><strong>macOS with Homebrew:</strong> <code>brew install jmeter</code> puts <code>jmeter</code> on your PATH.</li>
+      </ul>
+      <pre class="ex-code"><code>curl -sSfLO https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+tar xzf apache-jmeter-5.6.3.tgz
+export PATH="$PWD/apache-jmeter-5.6.3/bin:$PATH"
+jmeter -v</code></pre>
+      <p>If you have several JDKs installed, set <code>JAVA_HOME</code> so the <code>jmeter</code> script picks the one you expect.</p>
+      <h3>Add the Plugins Manager</h3>
+      <p>Most teams end up needing at least one community plugin (custom thread groups, WebSocket samplers). Download <code>jmeter-plugins-manager-&lt;version&gt;.jar</code> from <a href="https://jmeter-plugins.org/install/Install/" rel="noopener">jmeter-plugins.org</a>, drop it into <code>lib/ext/</code> and restart JMeter. It appears under <strong>Options → Plugins Manager</strong>. Install only what the plan uses, and install the same plugins on every machine that will run the plan, including CI runners and <a href="/guides/jmeter/distributed-testing/">remote load generators</a>.</p>
+
+      <h2 id="gui-vs-cli">2. GUI mode vs CLI mode</h2>
+      <p>JMeter prints a warning every time the GUI starts: do not use GUI mode for load testing, only for creating and debugging tests. Take it literally.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th></th><th>GUI mode</th><th>CLI (non-GUI) mode</th></tr></thead>
+        <tbody>
+          <tr><td>Use it for</td><td>Building the plan, recording, debugging with 1–5 threads</td><td>Every real test run, CI, remote runs</td></tr>
+          <tr><td>Start with</td><td><code>jmeter</code></td><td><code>jmeter -n -t plan.jmx -l results.jtl</code></td></tr>
+          <tr><td>Cost</td><td>Swing rendering and live listeners eat CPU and heap on the load generator</td><td>Minimal overhead, results streamed to a file</td></tr>
+          <tr><td>Results</td><td>Listeners such as View Results Tree</td><td>A JTL file plus the HTML dashboard</td></tr>
+        </tbody>
+      </table></div>
+      <p>The rule of thumb: if a number will go in a report, it came from a CLI run.</p>
+
+      <h2 id="first-plan">3. Build a first test plan</h2>
+      <p>A test plan is a tree. Elements apply to their parent and siblings by scope, so where you put something matters as much as what it is. Build this in the GUI:</p>
+      <ol>
+        <li><strong>Thread Group:</strong> right-click <em>Test Plan</em> → <strong>Add → Threads (Users) → Thread Group</strong>. Set Number of Threads (users) to <code>5</code>, Ramp-up period to <code>10</code> and Loop Count to <code>10</code>. Each thread is one <a href="/glossary/virtual-user/">virtual user</a>.</li>
+        <li><strong>HTTP Request Defaults:</strong> on the Thread Group, <strong>Add → Config Element → HTTP Request Defaults</strong>. Set Protocol <code>https</code> and Server Name <code>test.example.com</code>. Every HTTP Request in scope inherits them, so a host change is a one-field edit.</li>
+        <li><strong>HTTP Cookie Manager:</strong> <strong>Add → Config Element → HTTP Cookie Manager</strong>. Without it, session cookies are silently dropped and logged-in flows fail in confusing ways.</li>
+        <li><strong>HTTP Request:</strong> <strong>Add → Sampler → HTTP Request</strong>. Name it after the business step (<code>GET /products</code> or <code>01 Home</code>), leave the server blank and set the Path, for example <code>/api/products</code>. The name becomes the <em>label</em> in every report, so make it meaningful.</li>
+        <li><strong>Response Assertion:</strong> on the HTTP Request, <strong>Add → Assertions → Response Assertion</strong>, Field to Test <em>Response Code</em>, Pattern Matching Rule <em>Equals</em>, pattern <code>200</code>. A load test without assertions counts a friendly error page as a success. See <a href="/guides/jmeter/assertions/">assertions</a>.</li>
+        <li><strong>View Results Tree:</strong> on the Test Plan, <strong>Add → Listener → View Results Tree</strong>. Use it while debugging, then disable it (right-click → Disable) before any load.</li>
+        <li><strong>Save</strong> as <code>plan.jmx</code>.</li>
+      </ol>
+      <p>To check the script, right-click the Thread Group and choose <strong>Validate</strong>. That runs one thread, one iteration, with timers ignored. Open View Results Tree and read the request and response of every sample. Green ticks only mean the assertions passed, so make sure the assertions are meaningful.</p>
+      <h3>Make load settings overridable</h3>
+      <p>Hard-coded thread counts force you to edit the plan for every run. Replace them with property lookups using <code>__P</code>, which reads a property or falls back to a default:</p>
+      <pre class="ex-code"><code>Number of Threads (users):  ${__P(users,5)}
+Ramp-up period (seconds):   ${__P(rampup,10)}
+Loop Count:                 ${__P(loops,10)}
+Server Name or IP:          ${__P(host,test.example.com)}</code></pre>
+      <p>Now <code>-Jusers=200</code> on the command line changes the load without touching the file. More on this in <a href="/guides/jmeter/parameterisation/">parameterisation</a>.</p>
+
+      <h2 id="run-cli">4. Run it from the command line</h2>
+      <pre class="ex-code"><code>jmeter -n -t plan.jmx -l results.jtl -e -o report/</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>-n</code></td><td>Non-GUI (CLI) mode</td></tr>
+          <tr><td><code>-t plan.jmx</code></td><td>The test plan to run</td></tr>
+          <tr><td><code>-l results.jtl</code></td><td>Write one line per sample to this results file (CSV by default)</td></tr>
+          <tr><td><code>-e</code></td><td>Generate the HTML dashboard when the test ends</td></tr>
+          <tr><td><code>-o report/</code></td><td>Dashboard output folder. It must not exist or must be empty</td></tr>
+          <tr><td><code>-f</code></td><td>Delete an existing results file and report folder before starting</td></tr>
+          <tr><td><code>-Jname=value</code></td><td>Set a JMeter property, read in the plan with <code>${__P(name)}</code></td></tr>
+          <tr><td><code>-j jmeter.log</code></td><td>Where to write the run log</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-warn">
+        <p><strong>Two traps on the first run.</strong> If <code>results.jtl</code> already exists, JMeter appends to it, so the new report silently mixes two runs. If <code>report/</code> is not empty, report generation fails with "folder is not empty". Use <code>-f</code>, or give every run its own folder, for example <code>-l runs/$(date +%Y%m%d-%H%M)/results.jtl</code>.</p>
+      </div>
+      <p>While the test runs, JMeter prints a summary line every 30 seconds: samples, throughput, average, min, max and error percentage. It is a sanity check, not a result. When the run ends, open <code>report/index.html</code> in a browser. The <a href="/guides/jmeter/results-and-reports/">results and reports guide</a> explains every chart.</p>
+      <p>You can also rebuild a dashboard from an existing JTL at any time, which is handy after changing report settings:</p>
+      <pre class="ex-code"><code>jmeter -g results.jtl -o report-v2/</code></pre>
+
+      <h2 id="jmx">5. What a .jmx file looks like</h2>
+      <p>A plan is XML. You will rarely edit it by hand, but it belongs in version control, and it helps to recognise the structure in a code review. Each element is followed by a <code>hashTree</code> holding its children. This stripped-down version has one HTTP Request with the server set directly (no defaults, cookie manager, assertion or listener). Save it as <code>first-plan.jmx</code> and it runs as is:</p>
+      <pre class="ex-code"><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3"&gt;
+  &lt;hashTree&gt;
+    &lt;TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="First plan"&gt;
+      &lt;elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments"&gt;
+        &lt;collectionProp name="Arguments.arguments"/&gt;
+      &lt;/elementProp&gt;
+    &lt;/TestPlan&gt;
+    &lt;hashTree&gt;
+      &lt;ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Shoppers"&gt;
+        &lt;stringProp name="ThreadGroup.num_threads"&gt;${__P(users,5)}&lt;/stringProp&gt;
+        &lt;stringProp name="ThreadGroup.ramp_time"&gt;${__P(rampup,10)}&lt;/stringProp&gt;
+        &lt;boolProp name="ThreadGroup.same_user_on_next_iteration"&gt;true&lt;/boolProp&gt;
+        &lt;stringProp name="ThreadGroup.on_sample_error"&gt;continue&lt;/stringProp&gt;
+        &lt;elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController"&gt;
+          &lt;stringProp name="LoopController.loops"&gt;${__P(loops,10)}&lt;/stringProp&gt;
+          &lt;boolProp name="LoopController.continue_forever"&gt;false&lt;/boolProp&gt;
+        &lt;/elementProp&gt;
+      &lt;/ThreadGroup&gt;
+      &lt;hashTree&gt;
+        &lt;HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET home"&gt;
+          &lt;stringProp name="HTTPSampler.protocol"&gt;${__P(protocol,https)}&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.domain"&gt;${__P(host,test.example.com)}&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.port"&gt;${__P(port,443)}&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.path"&gt;/&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.method"&gt;GET&lt;/stringProp&gt;
+          &lt;boolProp name="HTTPSampler.follow_redirects"&gt;true&lt;/boolProp&gt;
+          &lt;boolProp name="HTTPSampler.use_keepalive"&gt;true&lt;/boolProp&gt;
+          &lt;elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments"&gt;
+            &lt;collectionProp name="Arguments.arguments"/&gt;
+          &lt;/elementProp&gt;
+        &lt;/HTTPSamplerProxy&gt;
+        &lt;hashTree/&gt;
+      &lt;/hashTree&gt;
+    &lt;/hashTree&gt;
+  &lt;/hashTree&gt;
+&lt;/jmeterTestPlan&gt;</code></pre>
+      <pre class="ex-code"><code>jmeter -n -t first-plan.jmx -Jhost=staging.example.com -Jusers=20 -Jloops=50 -l results.jtl -f</code></pre>
+      <p>If you are weighing up JMeter against a code-first tool, <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a> compares them honestly, and the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a> turns an existing <code>.jmx</code> into a k6 script.</p>
+
+      <h2 id="layout">6. A sensible project layout</h2>
+      <pre class="ex-code"><code>perf/
+  plan.jmx              # the test plan, in git
+  data/users.csv        # test data, small files in git, large ones generated
+  env/staging.properties   # host, ports, load settings per environment
+  check_jtl.py          # pass/fail thresholds for CI
+runs/                   # results and reports, git-ignored</code></pre>
+      <p>Run with <code>jmeter -n -t perf/plan.jmx -q perf/env/staging.properties -l runs/r1/results.jtl -e -o runs/r1/report</code>. The <code>-q</code> flag loads an extra property file, which keeps environment differences out of the plan.</p>
+      <p><strong>Next:</strong> <a href="/guides/jmeter/correlation/">correlation</a>, the step that makes a recorded script work for more than one user.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Starting a JMeter project from scratch?</h2>
+        <p>Book a free 30-minute call and I'll help you shape the plan, the workload model and the pass/fail criteria before you write a line. Or see how I run <a href="/services/performance-testing/">performance testing engagements</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-start-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-start-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

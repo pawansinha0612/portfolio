@@ -1,0 +1,97 @@
+# Performance Test Strategy: [System or programme name]
+
+| Owner | Version | Date | Status |
+|---|---|---|---|
+| [Name, role] | [0.1] | [DD/MM/YYYY] | [Draft / Reviewed / Approved] |
+
+> A strategy says how performance is tested across a programme or product. It changes rarely. Each release then gets its own short test plan that follows it. Keep this to two or three pages.
+
+## 1. Purpose and scope
+
+- **Why we test performance:** [For example: the platform must handle the end-of-month peak without slowing down checkout.]
+- **In scope:** [Systems, services, APIs and user journeys covered.]
+- **Out of scope:** [For example: third-party payment gateway internals, batch reporting.]
+
+## 2. Business risks this strategy covers
+
+| Risk | Why it matters | How testing covers it |
+|---|---|---|
+| [Checkout slows down at peak] | [Lost sales, complaints] | [Peak load test before every major release] |
+| [Memory leak under long use] | [Outage after days of uptime] | [Soak test each quarter] |
+| [Unknown breaking point] | [No warning before capacity runs out] | [Breakpoint test after big infrastructure changes] |
+
+## 3. Performance requirements (NFRs)
+
+> Write every target as a percentile at a stated load, with an error budget. "Fast" or "an average of 1 second" cannot fail a test.
+
+| Journey or API | Peak load | p95 target | p99 target | Max error rate | Source of the number |
+|---|---|---|---|---|---|
+| [Login] | [5 per second] | [800 ms] | [1.5 s] | [0.5%] | [Product owner, SLA, last year's peak] |
+| [Search] | [] | [] | [] | [] | [] |
+
+## 4. Test types and when they run
+
+| Test type | Question it answers | When it runs | Environment |
+|---|---|---|---|
+| Smoke (1-5 users) | Does the script and environment work? | Every build or before every test | [Test / CI] |
+| Load (expected peak) | Do we meet the NFRs at peak? | Before each major release | [Perf environment] |
+| Stress or breakpoint | Where does it break, and how? | [Quarterly, after infra changes] | [Perf environment] |
+| Soak (4-24 hours) | Does anything leak or degrade over time? | [Quarterly] | [Perf environment] |
+| Spike | Does it survive and recover from a sudden jump? | [Before campaigns or launches] | [Perf environment] |
+| CI performance check | Did this change make a key API slower? | [Every merge to main] | [CI] |
+
+## 5. Workload model approach
+
+- **Source of volumes:** [Production analytics, access logs, APM data for the busiest hour of the last 12 months.]
+- **Growth and headroom:** [For example: peak × 1.5 to cover a year of growth and a safety margin.]
+- **Load model:** [Open (arrival rate) for public traffic, closed (fixed users) for internal staff systems.]
+- **Journey mix:** [Taken from the same peak hour, as a percentage per journey.]
+
+## 6. Environments
+
+- **Performance environment:** [Name, size compared with production, for example 50% of production nodes.]
+- **Known differences from production:** [Smaller database, shared load balancer, stubbed third parties.]
+- **How results are applied to production:** [For example: tests run at 50% of peak on 50% of the nodes. No straight-line scaling is assumed for shared parts such as the database.]
+
+## 7. Tools
+
+| Purpose | Tool |
+|---|---|
+| Load generation | [k6 / JMeter / Gatling / LoadRunner / ...] |
+| Monitoring and APM | [Grafana, Prometheus, Dynatrace, Datadog, ...] |
+| Results storage and dashboards | [] |
+| CI pipeline | [GitHub Actions, GitLab CI, Jenkins, ...] |
+
+## 8. Test data
+
+- **Volumes:** [Database sized to production volumes, or the gap noted.]
+- **Privacy:** [No real customer data. Synthetic or masked data only.]
+- **Refresh:** [How data is reset between runs.]
+
+## 9. Monitoring and analysis
+
+- **Client side:** response-time percentiles, throughput and errors per journey.
+- **Server side:** CPU, memory, garbage collection, thread and connection pools, database waits, queue depths.
+- **Who analyses results:** [Names or roles.]
+
+## 10. Entry and exit criteria
+
+- **Entry:** [Stable build deployed, smoke test passes, monitoring in place, test data loaded.]
+- **Exit:** [All NFRs met at peak, or each miss accepted in writing with a fix date.]
+
+## 11. Roles
+
+| Role | Name | Responsible for |
+|---|---|---|
+| Performance lead | [] | Strategy, test design, analysis, report |
+| Environment owner | [] | Environment, deployments, monitoring access |
+| Development lead | [] | Fixing and retesting defects |
+| Business owner | [] | Agreeing NFRs and accepting risks |
+
+## 12. Reporting and sign-off
+
+- **Reports:** [One results report per test cycle, verdict first.]
+- **Go-live decision:** [Who signs the go/no-go, and which checklist they use.]
+
+---
+Free template from https://pawansinha.com.au/guides/templates/ . The full editable pack (Word and Excel test plan, report, 36-check go-live checklist, risk register and workload calculator) is at https://pawansinha.com.au/templates/

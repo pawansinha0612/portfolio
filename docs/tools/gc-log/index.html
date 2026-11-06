@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JVM GC Log Analyser (free, in-browser) — Pawan Sinha</title>
+  <meta name="description" content="Drop a Java GC log (G1, ZGC, Shenandoah, Parallel; JDK 8 to 25): pause percentiles, throughput, Full GC causes, heap and pause charts, allocation rate and leak hints. Runs in your browser; nothing is uploaded.">
+  <meta property="og:title" content="JVM GC Log Analyser — Pawan Sinha">
+  <meta property="og:description" content="Free tool: GC pause percentiles, throughput, Full GC causes and heap trends from your gc.log, explained in plain English. Runs entirely in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/gc-log/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/gc-log/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"JVM GC log analyser","url":"https://pawansinha.com.au/tools/gc-log/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    /* Every section is a .wrap (shares the header's left edge); children are capped instead of centring narrower boxes. */
+    .dx-hero { padding-top: 56px; padding-bottom: 8px; }
+    .dx-hero > * { max-width: 860px; }
+    .dx-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 14px; }
+    .dx-hero .lead { max-width: 760px; }
+    .private-note { display: block; margin: 18px 0 0; padding: 10px 14px; border-radius: 12px;
+      background: var(--ok-bg); color: var(--ok); font-size: 15px; font-weight: 600; max-width: 680px; }
+    .private-note span { font-weight: 500; color: var(--text); }
+    .dx-tool { padding-top: 24px; padding-bottom: 8px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; max-width: 66ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .drop { position: relative; border-radius: 12px; }
+    .drop.over textarea.code { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--alt)); }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .files { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; }
+    .files li { display: inline-flex; gap: 6px; align-items: center; background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 10px; max-width: 100%; }
+    .files li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .files button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+    .actions button, .actions label { font: inherit; cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .err { margin: 12px 0 0; border-radius: 10px; padding: 10px 14px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 14px; }
+    .err[hidden], #result[hidden] { display: none; }
+    .busy { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+
+    #result { margin-top: 16px; scroll-margin-top: 80px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; align-items: center; font-size: 14px; color: var(--muted); }
+    .verdict { border-radius: 16px; padding: 18px 20px; border: 1px solid var(--border); background: var(--surface); }
+    .verdict.ok { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .verdict.bad { background: color-mix(in srgb, #d6452f 12%, var(--surface)); border-color: color-mix(in srgb, #d6452f 40%, transparent); }
+    .verdict.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+    .verdict h2 { margin: 0 0 6px; font-size: clamp(20px, 3vw, 26px); line-height: 1.25; max-width: 60ch; }
+    .verdict.ok h2 { color: var(--ok); } .verdict.bad h2 { color: var(--bad); } .verdict.warn h2 { color: var(--warn); }
+    .verdict p { margin: 0; color: var(--text); max-width: 80ch; }
+    .verdict .fmt { margin-top: 8px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .dstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; min-width: 0; }
+    .stat b { display: block; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); } .stat.ok b { color: var(--ok); }
+    .block { margin-top: 22px; }
+    .block > h3 { font-size: 18px; margin: 0 0 4px; }
+    .block > .note { margin: 0 0 10px; color: var(--muted); font-size: 14px; max-width: 80ch; }
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; max-width: 80ch; overflow-wrap: anywhere; }
+    .card-x p { margin: 0; color: var(--muted); font-size: 15px; max-width: 84ch; overflow-wrap: anywhere; }
+    .card-x p b { color: var(--text); }
+    .card-x code, .mono { font: 500 12.5px "JetBrains Mono", ui-monospace, monospace; color: var(--text); overflow-wrap: anywhere; }
+    .card-x.ok { border-left-color: var(--ok); } .card-x.warn { border-left-color: var(--warn); } .card-x.bad { border-left-color: var(--bad); } .card-x.info { border-left-color: var(--accent); }
+    .lvl { font-weight: 800; margin-right: 4px; }
+    .card-x.bad .lvl { color: var(--bad); } .card-x.warn .lvl { color: var(--warn); } .card-x.ok .lvl { color: var(--ok); } .card-x.info .lvl { color: var(--accent); }
+    .statebar { display: flex; height: 18px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--surface); max-width: 860px; }
+    .statebar i { display: block; min-width: 3px; }
+    .lgd { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 0; font-size: 13px; color: var(--muted); padding: 0; list-style: none; }
+    .lgd li { display: inline-flex; align-items: center; gap: 6px; }
+    .lgd i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .s-RUNNABLE { background: #2a78d6; } .s-BLOCKED { background: #d6452f; } .s-WAITING { background: #8f96a3; } .s-TIMED_WAITING { background: #eda100; }
+    .s-other { background: #c3c7cf; }
+    .tscroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); max-width: 100%; }
+    table.dt { border-collapse: collapse; width: 100%; font-size: 14px; }
+    table.dt th, table.dt td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.dt th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; background: var(--alt); white-space: nowrap; }
+    table.dt tr:last-child td { border-bottom: 0; }
+    table.dt td.nm { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.dt .mono { font-size: 12px; }
+    .st { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); white-space: nowrap; }
+    .st.BLOCKED, .st.stuck { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+    .st.RUNNABLE { color: #2a78d6; } .st.moving { color: var(--ok); }
+    .groups { display: flex; flex-direction: column; gap: 8px; }
+    details.grp { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+    details.grp summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+    details.grp summary::-webkit-details-marker { display: none; }
+    details.grp summary::before { content: '▸'; color: var(--muted); }
+    details.grp[open] summary::before { content: '▾'; }
+    .grp .cnt { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3ch; }
+    .grp .top { font: 500 12.5px "JetBrains Mono", ui-monospace, monospace; overflow-wrap: anywhere; min-width: 0; flex: 1 1 260px; }
+    .grp .idle { font-size: 12px; color: var(--muted); }
+    .grp .body { padding: 0 14px 12px; }
+    .grp .names { font-size: 13px; color: var(--muted); margin: 0 0 8px; overflow-wrap: anywhere; max-width: 100ch; }
+    pre.stack { margin: 0; font: 500 12px/1.55 "JetBrains Mono", ui-monospace, monospace; background: var(--alt); border-radius: 10px; padding: 10px 12px; overflow-x: auto; max-height: 420px; }
+    pre.stack .lk { color: var(--warn); }
+    .filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 10px; }
+    .filter input[type=search] { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); width: min(100%, 360px); }
+    .filter label { font-size: 14px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+    .more { margin-top: 10px; }
+    .cycle { background: var(--surface); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); border-radius: 12px; padding: 12px 16px; margin: 0 0 10px; }
+    .cycle ol { margin: 0; padding-left: 20px; font-size: 14px; }
+    .cycle li { margin: 0 0 4px; overflow-wrap: anywhere; }
+
+    .guide { padding-top: 40px; padding-bottom: 8px; }
+    .guide > * { max-width: 680px; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 17px; margin: 22px 0 6px; }
+    .guide p, .guide ol, .guide ul { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .guide pre { font: 500 12.5px/1.6 "JetBrains Mono", monospace; background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; overflow-x: auto; color: var(--text); }
+    .tools-end { padding-top: 24px; padding-bottom: 72px; }
+    .tools-end .offer { max-width: 1000px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    :root { --bad: #c2341d; }
+    @media (prefers-color-scheme: dark) { :root { --bad: #ff8a7a; } }
+    @media (max-width: 600px) {
+      .dx-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .verdict { padding: 16px; }
+      .stat b { font-size: 19px; }
+    }
+    .chartwrap { position: relative; width: 100%; min-height: 230px; background: var(--alt); border-radius: 14px; overflow: hidden; touch-action: pan-y; }
+    .gc-chart { display: block; }
+    .gc-chart text { font: 500 12px Inter, system-ui, sans-serif; fill: var(--muted); }
+    .gc-chart .grid { stroke: var(--border); stroke-width: 1; }
+    .gc-chart .axis { stroke: var(--muted); stroke-width: 1; opacity: .6; }
+    .gc-chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+    .gc-chart .cap { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 4; opacity: .8; }
+    .gc-chart .before { stroke: var(--muted); stroke-width: 4; stroke-linecap: round; opacity: .45; }
+    .gc-chart .after { fill: none; stroke: var(--series-1); stroke-width: 2; stroke-linejoin: round; }
+    .gc-chart .pt { stroke-width: 7; stroke-linecap: round; }
+    .gc-chart .pt-young { stroke: var(--series-1); opacity: .75; }
+    .gc-chart .pt-mixed { stroke: var(--series-2); opacity: .9; }
+    .gc-chart .pt-other { stroke: var(--muted); opacity: .6; }
+    .gc-chart .fullmark { fill: var(--bad); stroke: var(--surface); stroke-width: 1.5; }
+    .gc-tip { position: absolute; z-index: 2; max-width: 260px; pointer-events: none; background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.4; box-shadow: var(--shadow); }
+    .gc-tip[hidden] { display: none; }
+    .gc-tip span { color: var(--muted); }
+    .lgd .lg-after { height: 3px; border-radius: 2px; width: 16px; background: var(--series-1); }
+    .lgd .lg-before { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: .6; }
+    .lgd .lg-cap { width: 16px; height: 0; border-top: 2px dashed var(--muted); border-radius: 0; }
+    .lgd .lg-young { width: 9px; height: 9px; border-radius: 50%; background: var(--series-1); }
+    .lgd .lg-mixed { width: 9px; height: 9px; border-radius: 50%; background: var(--series-2); }
+    .lgd .lg-other { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .lgd .lg-full { width: auto; height: auto; font-style: normal; color: var(--bad); font-size: 12px; background: none; }
+    :root { --series-1: #2a78d6; --series-2: #eb6834; }
+    @media (prefers-color-scheme: dark) { :root { --series-1: #3987e5; --series-2: #d95926; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap dx-hero">
+      <p class="eyebrow">Tools · Java diagnostics</p>
+      <h1>JVM GC log analyser</h1>
+      <p class="lead">Drop a garbage collection log and get pause times (p50 to max), throughput, Full GCs and their causes, heap before and after each collection, allocation rate, and plain-English findings such as "heap after GC keeps rising".</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Nothing is uploaded or stored: the log is parsed on this page, so it works for production logs you can't share.</span></p>
+    </section>
+
+    <section class="wrap dx-tool" aria-label="Analyser">
+      <div class="panel">
+        <h2><label for="gc-in">Paste a GC log, or drop the file here</label></h2>
+        <p class="sub">JDK 9+ unified logging (<code>-Xlog:gc*</code>) from G1, Parallel, Serial, ZGC (including generational) and Shenandoah. JDK 8 <code>-XX:+PrintGCDetails</code> logs work best effort. Large files are fine: 100,000 lines take well under a second.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="g1">G1: 40-minute load test</button>
+          <button class="chip-btn" type="button" data-sample="zgc">Generational ZGC</button>
+        </div>
+        <div class="drop" id="drop">
+          <textarea id="gc-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="[2026-11-06T14:00:12.735+1100][12.736s][info][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)&#10;[2026-11-06T14:00:12.750+1100][12.750s][info][gc          ] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 810M->209M(1024M) 14.420ms&#10;..."></textarea>
+        </div>
+        <ul class="files" id="files" aria-label="Loaded file"></ul>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="gc-log-analyse">Analyse</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose file<input type="file" id="file" accept=".log,.txt,.gc,.current,.0,.1,text/plain"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+        </div>
+        <p class="busy" id="busy" hidden>Analysing…</p>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="capture">
+      <p class="eyebrow">How to capture</p>
+      <h2>Turn on GC logging (it is cheap, leave it on)</h2>
+      <p>GC logging costs almost nothing, so production JVMs should always have it. Rotate the files so they don't fill the disk.</p>
+      <h3>JDK 11, 17, 21 and later (unified logging)</h3>
+      <pre>-Xlog:gc*:file=gc.log:time,uptime,level,tags:filecount=5,filesize=20m</pre>
+      <p>In containers, write to a mounted volume, or to stdout with <code>-Xlog:gc*:stdout:time,uptime,level,tags</code> and pull it with <code>kubectl logs</code>. <code>gc</code> alone (instead of <code>gc*</code>) also works here; <code>gc*</code> adds heap and phase detail.</p>
+      <h3>JDK 8</h3>
+      <pre>-Xloggc:gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps
+-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=20M</pre>
+      <p>JDK 8 logs are parsed best effort (Parallel, CMS and G1 pause lines). Multi-line CMS output that interleaves with other events may be partly skipped.</p>
+      <h3>Already running without logging?</h3>
+      <p>On JDK 9+ you can switch it on without a restart: <code>jcmd &lt;pid&gt; VM.log output=gc.log what=gc* decorators=time,uptime,level,tags</code>.</p>
+    </section>
+
+    <section class="wrap guide" id="look">
+      <p class="eyebrow">What to look for</p>
+      <h2>Reading a GC log</h2>
+      <ol>
+        <li><strong>Long pauses, not average pauses.</strong> Every request in flight waits for a stop-the-world <a href="/glossary/garbage-collection-pause/">GC pause</a>. Compare p99 and max with your latency target, and line the longest pauses up with slow-request timestamps.</li>
+        <li><strong>Full GCs and their cause.</strong> On G1, ZGC and Shenandoah a Full GC is a fallback: the collector could not keep up. The cause in brackets (Metadata GC Threshold, System.gc(), Allocation Failure) says where to look.</li>
+        <li><strong>Heap after GC over time.</strong> The low points of the heap chart are your live data. Flat is healthy. A floor that keeps rising across a long run is the classic shape of a <a href="/glossary/memory-leak/">memory leak</a>; a cache filling up looks the same at first, so confirm with heap dumps.</li>
+        <li><strong>Throughput.</strong> The share of time the application was not paused. Under 95% is worth tuning; under 90% users feel it.</li>
+        <li><strong>Allocation rate.</strong> How fast the application creates garbage. High rates mean frequent young collections; reducing allocation often beats tuning flags.</li>
+      </ol>
+      <h3>When the problem is not the GC</h3>
+      <p>Short pauses but slow requests? Look at threads instead: an exhausted <a href="/glossary/connection-pool/">connection pool</a>, a saturated <a href="/glossary/thread-pool/">thread pool</a> or <a href="/glossary/lock-contention/">lock contention</a> show up in thread dumps. Try the <a href="/tools/thread-dump/">thread dump analyser</a>.</p>
+      <h3>What this can't tell you</h3>
+      <p>Findings are hedged on purpose: a log shows symptoms, not causes. A rising heap floor might be a leak or a warming cache; long pauses might be the collector or a CPU-starved container. Confirm with heap dumps, container CPU throttling metrics and load-test results from the same window.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/thread-dump/">Thread dump analyser →</a>
+        <a href="/glossary/garbage-collection-pause/">GC pauses explained →</a>
+        <a href="/explain/percentiles/">Why p99 matters →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Memory trouble under load?</p>
+          <h3>Find out whether it is the heap, the code or the test</h3>
+          <p>I run load and soak tests that surface leaks and GC problems before your users do, and help tune what the logs show. Book a free 30-minute call and bring your GC log.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="gc-log-contact">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/gc-log/gclog.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const G = window.GCLog, esc = G.esc, fmtMs = G.fmtMs, fmtMB = G.fmtMB, fmtDur = G.fmtDur;
+    const input = $('gc-in'), result = $('result'), err = $('err'), busy = $('busy'), filesEl = $('files');
+    let file = null, last = null;
+    const LVL = { bad: '✗', warn: '!', ok: '✓', info: 'i' };
+    const KIND = { young: 'Young', mixed: 'Mixed', remark: 'Remark', cleanup: 'Cleanup', full: 'Full GC', degenerated: 'Degenerated', other: 'Other pauses' };
+    const n = (x) => Number(x).toLocaleString('en-AU');
+    const kb = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    // time axis: seconds since log start, labelled in s / min / h
+    function fmtT(s) {
+      if (s < 120) return Math.round(s) + 's';
+      if (s < 7200) return Math.round(s / 60) + 'm';
+      return (s / 3600).toFixed(s < 36000 ? 1 : 0) + 'h';
+    }
+    function fmtClock(s) {
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
+      return (h ? h + 'h ' : '') + (h || m ? m + 'm ' : '') + x + 's';
+    }
+    function niceTicks(lo, hi, count) {
+      const span = hi - lo || 1;
+      const raw = span / count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => span / s <= count) || 10 * mag;
+      const out = [];
+      for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+      return out;
+    }
+    function timeTicks(span, count) {
+      const steps = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400];
+      const step = steps.find((s) => span / s <= count) || 86400;
+      const out = [];
+      for (let v = 0; v <= span + 1e-9; v += step) out.push(v);
+      return out;
+    }
+
+    function svgEl(tag, attrs, parent) {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      if (parent) parent.appendChild(e);
+      return e;
+    }
+
+    // Generic frame + hover for both charts. pts: [{x, y, html}] in data units; nearest-by-x tooltip.
+    function frame(host, opts) {
+      host.innerHTML = '';
+      const W = Math.max(300, host.clientWidth), H = W < 560 ? 230 : 280;
+      const m = { l: W < 560 ? 52 : 64, r: 12, t: 12, b: 30 };
+      const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'gc-chart', role: 'img', 'aria-label': opts.label });
+      host.appendChild(svg);
+      const iw = W - m.l - m.r, ih = H - m.t - m.b;
+      const X = (v) => m.l + ((v - opts.x0) / (opts.x1 - opts.x0 || 1)) * iw;
+      const Y = opts.log
+        ? (v) => m.t + ih - ((Math.log10(Math.max(v, opts.y0)) - Math.log10(opts.y0)) / (Math.log10(opts.y1) - Math.log10(opts.y0))) * ih
+        : (v) => m.t + ih - ((v - opts.y0) / (opts.y1 - opts.y0 || 1)) * ih;
+      opts.yTicks.forEach((v) => {
+        svgEl('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }, svg);
+        const t = svgEl('text', { x: m.l - 8, y: Y(v) + 4, 'text-anchor': 'end' }, svg); t.textContent = opts.yFmt(v);
+      });
+      const span = opts.x1 - opts.x0;
+      timeTicks(span, W < 560 ? 4 : 8).forEach((v) => {
+        const x = X(opts.x0 + v);
+        svgEl('line', { x1: x, x2: x, y1: m.t + ih, y2: m.t + ih + 5, class: 'axis' }, svg);
+        const t = svgEl('text', { x, y: H - 8, 'text-anchor': 'middle' }, svg); t.textContent = fmtT(v);
+      });
+      svgEl('line', { x1: m.l, x2: W - m.r, y1: m.t + ih, y2: m.t + ih, class: 'axis' }, svg);
+      const g = svgEl('g', {}, svg);
+      const cross = svgEl('line', { x1: 0, x2: 0, y1: m.t, y2: m.t + ih, class: 'cross', visibility: 'hidden' }, svg);
+      const tip = document.createElement('div');
+      tip.className = 'gc-tip'; tip.hidden = true;
+      host.appendChild(tip);
+      const ctx = { svg, g, X, Y, W, H, m, iw, ih };
+      const hover = (pts) => {
+        if (!pts.length) return;
+        const xs = pts.map((p) => X(p.x));
+        const move = (clientX) => {
+          const r = svg.getBoundingClientRect();
+          const px = clientX - r.left;
+          let lo = 0, hi = xs.length - 1;
+          while (lo < hi) { const mid = (lo + hi) >> 1; if (xs[mid] < px) lo = mid + 1; else hi = mid; }
+          const i = lo > 0 && Math.abs(xs[lo - 1] - px) < Math.abs(xs[lo] - px) ? lo - 1 : lo;
+          const p = pts[i];
+          cross.setAttribute('x1', xs[i]); cross.setAttribute('x2', xs[i]); cross.setAttribute('visibility', 'visible');
+          tip.innerHTML = p.html; tip.hidden = false;
+          const tw = tip.offsetWidth;
+          let left = xs[i] + 12;
+          if (left + tw > W) left = Math.max(0, xs[i] - tw - 12);
+          tip.style.left = left + 'px'; tip.style.top = (m.t + 4) + 'px';
+        };
+        svg.addEventListener('pointermove', (e) => move(e.clientX));
+        svg.addEventListener('pointerdown', (e) => move(e.clientX));
+        svg.addEventListener('pointerleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+      };
+      return Object.assign(ctx, { hover });
+    }
+
+    // keep at most ~1 point per 2px: per bucket keep the lowest "after", highest "before", and any Full GC
+    function downsampleHeap(heap, x0, x1, buckets) {
+      if (heap.length <= buckets) return heap;
+      const out = [], bw = (x1 - x0) / buckets || 1;
+      let b = -1, cur = null;
+      heap.forEach((h) => {
+        const k = Math.min(buckets - 1, Math.floor((h.t - x0) / bw));
+        if (k !== b) { if (cur) out.push(cur); cur = Object.assign({}, h, { n: 1 }); b = k; return; }
+        cur.n++;
+        if (h.after != null && (cur.after == null || h.after < cur.after)) { cur.after = h.after; cur.t = h.t; }
+        if (h.before > cur.before) cur.before = h.before;
+        if (h.cap != null) cur.cap = h.cap;
+        if (h.kind === 'full') cur.kind = 'full';
+      });
+      if (cur) out.push(cur);
+      return out;
+    }
+
+    function heapChart(host, s) {
+      const all = s.heap;
+      if (all.length < 2) { host.innerHTML = '<p class="note">Not enough heap data in this log for a chart.</p>'; return; }
+      const x0 = s.firstT != null ? Math.min(s.firstT, all[0].t) : all[0].t, x1 = Math.max(s.lastT || 0, all[all.length - 1].t);
+      const yMax = Math.max(...all.map((h) => Math.max(h.before || 0, h.cap || 0))) * 1.05;
+      const gb = yMax >= 2048;
+      const ticks = niceTicks(0, gb ? yMax / 1024 : yMax, 5).map((v) => (gb ? v * 1024 : v));
+      const c = frame(host, { label: 'Heap used before and after each collection over time', x0, x1, y0: 0, y1: ticks[ticks.length - 1] || yMax, yTicks: ticks, yFmt: (v) => fmtMB(v) });
+      const pts = downsampleHeap(all, x0, x1, Math.floor(c.iw / 2));
+      // capacity (step line)
+      const capPts = pts.filter((p) => p.cap != null);
+      if (capPts.length) {
+        let d = '';
+        capPts.forEach((p, i) => { const x = c.X(p.t), y = c.Y(p.cap); d += i ? `H${x.toFixed(1)}V${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`; });
+        d += `H${c.X(x1).toFixed(1)}`;
+        svgEl('path', { d, class: 'cap' }, c.g);
+      }
+      // before: small dots
+      const bp = svgEl('path', { class: 'before', d: pts.map((p) => `M${c.X(p.t).toFixed(1)},${c.Y(p.before).toFixed(1)}h0`).join('') }, c.g);
+      void bp;
+      // after: line
+      const ap = pts.filter((p) => p.after != null);
+      svgEl('path', { class: 'after', d: ap.map((p, i) => `${i ? 'L' : 'M'}${c.X(p.t).toFixed(1)},${c.Y(p.after).toFixed(1)}`).join('') }, c.g);
+      // Full GCs: triangles on the after value
+      ap.filter((p) => p.kind === 'full').forEach((p) => {
+        const x = c.X(p.t), y = c.Y(p.after);
+        svgEl('path', { d: `M${x},${y - 7}l6,10h-12z`, class: 'fullmark' }, c.g);
+      });
+      c.hover(pts.map((p) => ({ x: p.t, html: `<b>${fmtClock(p.t - x0)}</b> into the log<br>${p.n > 1 ? `${n(p.n)} collections here, lowest after GC:<br>` : ''}Before ${fmtMB(p.before)} → after ${fmtMB(p.after)}${p.cap ? `<br>Capacity ${fmtMB(p.cap)}` : ''}${p.kind === 'full' ? '<br><b>Includes a Full GC</b>' : ''}` })));
+    }
+
+    function pauseGroup(k) { return k === 'full' || k === 'degenerated' ? 'full' : k === 'young' ? 'young' : k === 'mixed' ? 'mixed' : 'other'; }
+
+    function pauseChart(host, s) {
+      const P = s.pauses.filter((p) => p.t != null);
+      if (P.length < 2) { host.innerHTML = '<p class="note">Not enough timed pauses for a chart.</p>'; return; }
+      const x0 = s.firstT != null ? Math.min(s.firstT, P[0].t) : P[0].t, x1 = Math.max(s.lastT || 0, P[P.length - 1].t);
+      const mn = Math.max(0.001, Math.min(...P.map((p) => p.ms))), mx = Math.max(...P.map((p) => p.ms));
+      const y0 = Math.pow(10, Math.floor(Math.log10(mn))), y1 = Math.pow(10, Math.ceil(Math.log10(mx * 1.01)));
+      const ticks = [];
+      for (let v = y0; v <= y1 * 1.0001; v *= 10) ticks.push(v);
+      const c = frame(host, { label: 'Pause duration of every collection over time, log scale', x0, x1, y0, y1, log: true, yTicks: ticks, yFmt: (v) => (v >= 1000 ? v / 1000 + ' s' : (v < 1 ? v : Math.round(v)) + ' ms') });
+      // per pixel bucket keep the longest pause per group
+      const buckets = Math.floor(c.iw / 3), bw = (x1 - x0) / buckets || 1;
+      const keep = new Map();
+      P.forEach((p) => {
+        const k = Math.min(buckets - 1, Math.floor((p.t - x0) / bw)) + '|' + pauseGroup(p.kind);
+        const e = keep.get(k);
+        if (!e) keep.set(k, { p, n: 1 }); else { e.n++; if (p.ms > e.p.ms) e.p = p; }
+      });
+      const shown = [...keep.values()].sort((a, b) => a.p.t - b.p.t);
+      const byGroup = { young: '', mixed: '', other: '' };
+      shown.forEach(({ p }) => {
+        const gk = pauseGroup(p.kind);
+        const x = c.X(p.t), y = c.Y(p.ms);
+        if (gk === 'full') svgEl('path', { d: `M${x.toFixed(1)},${(y - 7).toFixed(1)}l6,10h-12z`, class: 'fullmark' }, c.g);
+        else byGroup[gk] += `M${x.toFixed(1)},${y.toFixed(1)}h0`;
+      });
+      ['other', 'young', 'mixed'].forEach((gk) => { if (byGroup[gk]) svgEl('path', { d: byGroup[gk], class: 'pt pt-' + gk }, c.g); });
+      // hover: the longest pause near the pointer
+      const near = new Map();
+      shown.forEach(({ p, n: cnt }) => {
+        const k = Math.floor((p.t - x0) / bw);
+        const e = near.get(k);
+        if (!e || p.ms > e.p.ms) near.set(k, { p, n: (e ? e.n : 0) + cnt }); else e.n += cnt;
+      });
+      c.hover([...near.values()].sort((a, b) => a.p.t - b.p.t).map(({ p, n: cnt }) => ({ x: p.t,
+        html: `<b>${fmtClock(p.t - x0)}</b> into the log<br>${esc(p.label)}<br>Pause <b>${fmtMs(p.ms)}</b>${p.before != null ? `<br>Heap ${fmtMB(p.before)} → ${fmtMB(p.after)}` : ''}${cnt > 1 ? `<br><span>${n(cnt)} pauses here; longest shown</span>` : ''}` })));
+    }
+
+    function cards(fs) {
+      return '<div class="cards">' + fs.map((h) => `<div class="card-x ${h.level}"><h4><span class="lvl" aria-hidden="true">${LVL[h.level] || ''}</span>${esc(h.title)}</h4><p>${h.text}</p></div>`).join('') + '</div>';
+    }
+
+    function render(s) {
+      const h = [];
+      const bad = s.findings.filter((f) => f.level === 'bad'), warn = s.findings.filter((f) => f.level === 'warn');
+      const lvl = bad.length ? 'bad' : warn.length ? 'warn' : 'ok';
+      const head = bad[0] ? bad[0].title : warn[0] ? warn[0].title : 'GC looks healthy in this log';
+      h.push(`<div class="verdict ${lvl}"><h2>${esc(head)}</h2><p>${n(s.count)} pauses${s.span ? ` over ${fmtDur(s.span)}` : ''} from the ${esc(s.collector || 'unknown')} collector${s.jdk ? ` (JDK ${esc(s.jdk)})` : ''}. ${bad.length + warn.length} findings worth a look below.</p><p class="fmt">Read as: ${esc(s.format)} · ${n(s.lines)} lines${s.maxHeapMB ? ` · max heap ${fmtMB(s.maxHeapMB)}` : ''}</p></div>`);
+      const tp = s.throughput;
+      const fullN = s.fulls.length;
+      const tiles = [
+        [n(s.count), 'pauses', ''],
+        [fmtMs(s.totalMs), 'total pause time', ''],
+        [tp == null ? '–' : (tp * 100).toFixed(tp >= 0.999 ? 2 : 1) + '%', 'throughput', tp == null ? '' : tp < 0.9 ? 'bad' : tp < 0.95 ? 'warn' : 'ok'],
+        [fmtMs(s.p50), 'p50 pause', ''], [fmtMs(s.p95), 'p95 pause', ''], [fmtMs(s.p99), 'p99 pause', ''],
+        [fmtMs(s.max), 'max pause', s.max >= 1000 ? 'bad' : s.max >= 200 ? 'warn' : ''],
+        [String(fullN), 'Full GCs', fullN ? (fullN >= 3 ? 'bad' : 'warn') : 'ok'],
+        [s.allocRate == null ? '–' : fmtMB(s.allocRate) + '/s', 'allocation rate (avg)', ''],
+        [fmtDur(s.span), 'log span', '']
+      ];
+      if (s.stalls.length) tiles.push([n(s.stalls.length), 'allocation stalls', 'bad']);
+      h.push('<div class="dstats">' + tiles.map((x) => `<div class="stat ${x[2]}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('') + '</div>');
+
+      h.push('<div class="block"><h3>Findings</h3><p class="note">Plain-English reading of the numbers. They point at likely causes and what to check; they are not a diagnosis.</p>' + cards(s.findings) + '</div>');
+
+      h.push('<div class="block"><h3>Heap before and after each collection</h3><p class="note">The line is heap used <b>after</b> GC (roughly the live data); dots are heap <b>before</b> GC. A rising line over a long run is the shape to worry about.</p>' +
+        '<ul class="lgd"><li><i class="lg-after"></i>Heap after GC</li><li><i class="lg-before"></i>Heap before GC</li><li><i class="lg-cap"></i>Heap capacity</li><li><i class="lg-full" aria-hidden="true">▲</i>Full GC</li></ul>' +
+        '<div class="chartwrap" id="heapchart"></div></div>');
+      h.push('<div class="block"><h3>Pause times over time</h3><p class="note">Every stop-the-world pause, on a log scale so short and long pauses both show. Where pauses overlap, the longest one is drawn.</p>' +
+        '<ul class="lgd"><li><i class="lg-young"></i>Young</li><li><i class="lg-mixed"></i>Mixed</li><li><i class="lg-other"></i>Remark, cleanup and other short pauses</li><li><i class="lg-full" aria-hidden="true">▲</i>Full / degenerated</li></ul>' +
+        '<div class="chartwrap" id="pausechart"></div></div>');
+
+      // by type
+      const kinds = Object.entries(s.byKind).sort((a, b) => b[1].total - a[1].total);
+      h.push('<div class="block"><h3>Pauses by type</h3><div class="tscroll"><table class="dt"><thead><tr><th>Type</th><th>Count</th><th>Total</th><th>Average</th><th>Max</th><th>Share of pause time</th></tr></thead><tbody>' +
+        kinds.map(([k, v]) => `<tr><td>${esc(KIND[k] || k)}</td><td class="nm">${n(v.count)}</td><td class="nm">${fmtMs(v.total)}</td><td class="nm">${fmtMs(v.total / v.count)}</td><td class="nm">${fmtMs(v.max)}</td><td class="nm">${s.totalMs ? Math.round((v.total / s.totalMs) * 100) : 0}%</td></tr>`).join('') +
+        '</tbody></table></div></div>');
+
+      if (s.fulls.length) {
+        h.push('<div class="block"><h3>Full GC causes</h3><div class="tscroll"><table class="dt"><thead><tr><th>Cause</th><th>Count</th><th>Longest</th></tr></thead><tbody>' +
+          Object.entries(s.fullCauses).sort((a, b) => b[1] - a[1]).map(([c, k]) => `<tr><td>${esc(c)}</td><td class="nm">${n(k)}</td><td class="nm">${fmtMs(Math.max(...s.fulls.filter((p) => (p.cause || 'unspecified') === c).map((p) => p.ms)))}</td></tr>`).join('') +
+          '</tbody></table></div></div>');
+      }
+
+      const t0 = s.firstT || 0;
+      h.push('<div class="block"><h3>Longest pauses</h3><div class="tscroll"><table class="dt"><thead><tr><th>Pause</th><th>When</th><th>Type</th><th>Heap before → after (capacity)</th></tr></thead><tbody>' +
+        s.longest.map((p) => `<tr><td class="nm"><b>${fmtMs(p.ms)}</b></td><td class="nm">${p.t != null ? fmtClock(p.t - t0) + ' in' : '–'}${p.gcId != null && s.format.startsWith('Unified') ? `<br><span class="mono">GC(${p.gcId})</span>` : ''}</td><td>${esc(p.label)}</td><td class="nm">${p.before != null ? `${fmtMB(p.before)} → ${fmtMB(p.after)} (${fmtMB(p.cap)})` : '–'}</td></tr>`).join('') +
+        '</tbody></table></div></div>');
+
+      result.innerHTML = h.join('');
+      result.hidden = false;
+      drawCharts();
+    }
+
+    function drawCharts() {
+      if (!last) return;
+      heapChart($('heapchart'), last);
+      pauseChart($('pausechart'), last);
+    }
+    let rz = null, lastW = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(rz);
+      rz = setTimeout(() => { const w = $('heapchart') && $('heapchart').clientWidth; if (w && w !== lastW) { lastW = w; drawCharts(); } }, 150);
+    });
+
+    function go(scroll) {
+      err.hidden = true;
+      busy.hidden = false;
+      setTimeout(() => {
+        try {
+          const text = file ? file.text : input.value;
+          last = G.analyse(text);
+          render(last);
+          if (scroll) result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'gc-log-analysed', title: 'gc-log-analysed', event: true });
+        } catch (e) {
+          result.hidden = true;
+          err.textContent = e.message;
+          err.hidden = false;
+        } finally { busy.hidden = true; }
+      }, 20);
+    }
+
+    function showFile() {
+      filesEl.innerHTML = file ? `<li><span>${esc(file.name)} · ${kb(file.size)} (analysing the file; the text box is ignored)</span><button type="button" id="rmfile" aria-label="Remove file">×</button></li>` : '';
+      const b = $('rmfile');
+      if (b) b.addEventListener('click', () => { file = null; showFile(); });
+    }
+    async function addFile(f) {
+      // rotated logs: when several files are dropped, join them in name order (gc.log.0, gc.log.1, ...)
+      const arr = [...f].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      const texts = [];
+      for (const x of arr) texts.push(await x.text());
+      file = { name: arr.map((x) => x.name).join(' + '), size: arr.reduce((a, x) => a + x.size, 0), text: texts.join('\n') };
+      input.value = '';
+      showFile();
+      go(true);
+    }
+
+    $('go').addEventListener('click', () => go(true));
+    $('clear').addEventListener('click', () => { input.value = ''; file = null; showFile(); result.hidden = true; err.hidden = true; last = null; input.focus(); });
+    $('file').addEventListener('change', (e) => { if (e.target.files.length) addFile(e.target.files); e.target.value = ''; });
+    input.addEventListener('input', () => { if (file && input.value.trim()) { file = null; showFile(); } });
+    input.addEventListener('paste', () => setTimeout(() => go(true), 0));
+    const drop = $('drop');
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) addFile(e.dataTransfer.files); });
+    document.querySelectorAll('[data-sample]').forEach((b) => b.addEventListener('click', () => {
+      file = null; showFile();
+      input.value = G.sample(b.dataset.sample);
+      go(true);
+    }));
+  })();
+  </script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

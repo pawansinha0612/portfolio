@@ -1,0 +1,205 @@
+<!--{"title": "Locust data and auth: on_start login, catch_response, correlation", "og_title": "Locust test data and auth: logins, tokens, catch_response and correlation", "description": "Log each Locust user in with on_start, feed accounts from CSV, validate responses with catch_response, and carry tokens, ids and CSRF values between requests.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/locust/">Locust</a> · Data and auth</p>
+      <h1>Locust data and auth: real users, real sessions</h1>
+      <p class="lead">The Locust report shows zero failures. The API returned
+        <code>200 {"error": "session expired"}</code> to most requests, and Locust counted every one
+        as a success. Here's how to log users in properly, give them their own data, and fail the
+        responses that are wrong.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#login">Log in once per user with on_start</a></li>
+          <li><a href="#catch">catch_response: decide what a failure is</a></li>
+          <li><a href="#journey">An ordered journey with correlation</a></li>
+          <li><a href="#data">Test data: one account per user</a></li>
+          <li><a href="#tips">Tips</a></li>
+        </ol>
+      </div>
+
+      <h2 id="login">Log in once per user with on_start</h2>
+      <p><code>on_start</code> runs once when each simulated user starts, before its first task.
+        <code>on_stop</code> runs when the user stops. Each user has its own
+        <code>self.client</code> with its own cookies and default headers, so a token set there
+        belongs to that user only.</p>
+      <pre class="ex-code"><code>import csv
+import itertools
+import os
+
+from locust import HttpUser, task, between
+from locust.exception import StopUser
+
+# Load accounts once per process. itertools.cycle hands each new user the next row.
+with open(os.path.join(os.path.dirname(__file__), "users.csv"), newline="") as f:
+    USERS = list(csv.DictReader(f))
+user_rows = itertools.cycle(USERS)
+
+
+class LoggedInUser(HttpUser):
+    wait_time = between(1, 2)
+
+    def on_start(self):
+        # Runs once when each simulated user starts, before its first task
+        creds = next(user_rows)
+        token = None
+        with self.client.post("/login", json=creds, catch_response=True) as res:
+            if res.status_code == 200 and "access_token" in res.text:
+                token = res.json()["access_token"]
+            else:
+                res.failure(f"login failed: {res.status_code}")
+        if token is None:
+            raise StopUser()  # don't let a user with no session hammer the API with 401s
+        # Every later request from this user carries the token
+        self.client.headers.update({"Authorization": f"Bearer {token}"})
+
+    @task
+    def add_to_cart(self):
+        cart_id = None
+        with self.client.post("/cart", json={"productId": 7}, catch_response=True) as res:
+            # Locust only fails 4xx/5xx by default. Check the body too.
+            if res.status_code != 201:
+                res.failure(f"unexpected status {res.status_code}")
+            elif not res.json().get("cartId"):
+                res.failure("no cartId in response")
+            else:
+                cart_id = res.json()["cartId"]
+        if cart_id:
+            # Correlation: reuse the value from the previous response
+            self.client.post("/orders", json={"cartId": cart_id})</code></pre>
+      <ul>
+        <li>The CSV is read once per process at import time and shared by all users in that process.
+          <code>itertools.cycle</code> gives each new user the next account.</li>
+        <li><code>self.client.headers.update(...)</code> adds the token to every later request from
+          this user. For cookie-based sessions you don't need even that: the client keeps cookies
+          per user.</li>
+        <li><code>raise StopUser()</code> stops a user whose login failed. Otherwise it would spend
+          the whole test sending requests that return 401, and those failures would bury the real
+          ones.</li>
+      </ul>
+
+      <h2 id="catch">catch_response: decide what a failure is</h2>
+      <p>By default Locust counts a request as failed only on a connection error or a status of 400
+        or above. With <code>catch_response=True</code> the request becomes a context manager and
+        you decide:</p>
+      <pre class="ex-code"><code>with self.client.get("/search?q=shoes", catch_response=True) as res:
+    if res.status_code != 200:
+        res.failure(f"status {res.status_code}")
+    elif "results" not in res.text:
+        res.failure("no results key")       # 200, but wrong
+    elif res.elapsed.total_seconds() &gt; 2:
+        res.failure("slower than 2 s")      # count slow responses as failures (optional)
+    # otherwise it's a success; res.success() also turns an expected 404 into a success</code></pre>
+      <p>Only call <code>failure()</code> or <code>success()</code> inside the <code>with</code>
+        block, and only on responses requested with <code>catch_response=True</code>. A plain
+        response object doesn't have them.</p>
+
+      <h2 id="journey">An ordered journey with correlation</h2>
+      <p>Tasks on a user are picked at random by weight. For a journey that must happen in order
+        (list, add to cart, pay), use a <code>SequentialTaskSet</code>. Values extracted in one task
+        go on <code>self</code> and are read by the next:</p>
+      <pre class="ex-code"><code>import re
+import uuid
+
+from locust import HttpUser, SequentialTaskSet, task, between
+
+
+class Checkout(SequentialTaskSet):
+    """Tasks run in the order written, then start again from the top."""
+
+    @task
+    def list_products(self):
+        res = self.client.get("/products")
+        items = res.json().get("items", []) if res.ok else []
+        self.product_id = items[0]["id"] if items else 1
+
+    @task
+    def add_to_cart(self):
+        with self.client.post(
+            "/cart",
+            json={"productId": self.product_id, "ref": f"load-{uuid.uuid4()}"},
+            catch_response=True,
+        ) as res:
+            if res.status_code == 201 and "cartId" in res.text:
+                self.cart_id = res.json()["cartId"]
+            else:
+                self.cart_id = None
+                res.failure(f"add to cart: {res.status_code}")
+
+    @task
+    def pay(self):
+        if not self.cart_id:
+            self.interrupt(reschedule=True)  # abandon this journey, start a new one
+        with self.client.get("/checkout", catch_response=True) as page:
+            match = re.search(r'name="csrf" value="([^"]+)"', page.text)
+            if not match:
+                page.failure("no CSRF token on checkout page")
+        if not match:
+            self.interrupt(reschedule=True)
+        self.client.post("/checkout", data={"csrf": match.group(1), "cartId": self.cart_id})
+
+
+class Shopper(HttpUser):
+    wait_time = between(1, 3)
+    tasks = [Checkout]
+
+    def on_start(self):
+        res = self.client.post("/login", json={"username": "user001", "password": "Passw0rd!"})
+        self.client.headers["Authorization"] = f"Bearer {res.json()['access_token']}"
+
+    def on_stop(self):
+        # Runs when the user is stopped: log out or clean up if the system needs it
+        pass</code></pre>
+      <ul>
+        <li><strong>JSON:</strong> <code>res.json()</code> and plain Python.</li>
+        <li><strong>HTML:</strong> a regex for one hidden field, as above. For more, parse with a
+          library you already use, but keep it light: parsing costs CPU on the load generator.</li>
+        <li><strong><code>self.interrupt(reschedule=True)</code></strong> abandons the rest of this
+          journey and starts the next one, so a broken step doesn't cascade into failures in every
+          later step.</li>
+        <li>Unique values, like the order reference here, keep writes from colliding when many
+          users create records at once.</li>
+      </ul>
+      <p>See <a href="/glossary/correlation/">correlation</a> and
+        <a href="/glossary/parameterisation/">parameterisation</a> in the glossary.</p>
+
+      <h2 id="data">Test data: one account per user</h2>
+      <ul>
+        <li><strong>Enough rows for the peak.</strong> 500 users cycling through 50 accounts means ten
+          users per account. Sessions can kick each other out, and per-user rate limits trip. Make
+          sure the account count is at least the peak user count.</li>
+        <li><strong>Distributed runs:</strong> each worker loads its own copy of the file. Split it
+          by worker index so workers don't share accounts. See
+          <a href="/guides/locust/distributed/#data">splitting data between workers</a>.</li>
+        <li><strong>Read-only data</strong> (search terms, product ids) can be random:
+          <code>random.choice(ROWS)</code>.</li>
+        <li><strong>Secrets</strong> go in environment variables (<code>os.environ</code>), never in
+          the locustfile or the CSV committed to git.</li>
+      </ul>
+
+      <h2 id="tips">Tips</h2>
+      <ul>
+        <li><strong>Name dynamic URLs.</strong> <code>name="/orders/[id]"</code> on every request
+          with an id in the path.</li>
+        <li><strong>Debug with one user</strong> in the web UI, with logging, before adding load.
+          Locust also has a <code>run_single_user</code> helper for stepping through a user in a
+          debugger.</li>
+        <li><strong>Don't login every task.</strong> Unless you're testing the login service, it
+          overloads auth and hides the latency of the calls you care about.</li>
+      </ul>
+      <p>Next: <a href="/guides/locust/ci-and-reports/">CI and reports</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Login flow that won't script?</h2>
+        <p>SSO, token chains, CSRF and signed requests are routine for me. I can get your journeys
+          running under load.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-loc-auth-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-loc-auth-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>

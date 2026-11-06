@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter cheat sheet (5.6) — Pawan Sinha</title>
+  <meta name="description" content="A printable one-page JMeter 5.6 reference: CLI flags, functions, extractor syntax, Groovy objects, key properties, JTL columns and load maths.">
+  <meta property="og:title" content="JMeter 5.6 cheat sheet: CLI flags, functions, extractors, properties, JTL columns">
+  <meta property="og:description" content="A printable one-page JMeter 5.6 reference: CLI flags, functions, extractor syntax, Groovy objects, key properties, JTL columns and load maths.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/cheat-sheet/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/cheat-sheet/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "JMeter cheat sheet (5.6)", "description": "A printable one-page JMeter 5.6 reference: CLI flags, functions, extractor syntax, Groovy objects, key properties, JTL columns and load maths.", "url": "https://pawansinha.com.au/guides/jmeter/cheat-sheet/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Cheat sheet</p>
+      <h1>JMeter cheat sheet</h1>
+      <p class="lead">The flags, functions and settings you look up every week, on one page. Written for JMeter 5.6.x. Print it (Ctrl/Cmd + P, the menu and buttons are hidden) or keep the tab open next to the GUI.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="cli">Command line</h2>
+      <pre class="ex-code"><code>jmeter -n -t plan.jmx -l results.jtl -e -o report/          # run + HTML report
+jmeter -n -t plan.jmx -l results.jtl -f -Jusers=50 -q env/staging.properties
+jmeter -g results.jtl -o report/                               # report from an existing JTL
+jmeter -n -t plan.jmx -R host1,host2 -Gusers=100 -l r.jtl -X   # distributed
+HEAP="-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m" jmeter -n -t plan.jmx -l r.jtl</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Flag</th><th>Meaning</th><th>Flag</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>-n</code></td><td>CLI (non-GUI) mode</td><td><code>-Jname=val</code></td><td>Local JMeter property</td></tr>
+          <tr><td><code>-t file</code></td><td>Test plan (.jmx)</td><td><code>-Gname=val</code></td><td>Property sent to all remote servers</td></tr>
+          <tr><td><code>-l file</code></td><td>Results file (JTL), appends if it exists</td><td><code>-Dname=val</code></td><td>Java system property</td></tr>
+          <tr><td><code>-e</code></td><td>Build HTML report after the run</td><td><code>-q file</code></td><td>Extra property file</td></tr>
+          <tr><td><code>-o dir</code></td><td>Report folder, must be empty or absent</td><td><code>-p file</code></td><td>Replace jmeter.properties</td></tr>
+          <tr><td><code>-g file</code></td><td>Report only, from a JTL</td><td><code>-S file</code></td><td>Extra system property file</td></tr>
+          <tr><td><code>-f</code></td><td>Delete existing JTL and report folder first</td><td><code>-Lcat=LEVEL</code></td><td>Log level, e.g. <code>-Ljmeter.engine=DEBUG</code></td></tr>
+          <tr><td><code>-j file</code></td><td>Run log (default jmeter.log)</td><td><code>-H / -P</code></td><td>Proxy host / port</td></tr>
+          <tr><td><code>-R h1,h2</code></td><td>Start these remote servers</td><td><code>-N hosts</code></td><td>Non-proxy hosts</td></tr>
+          <tr><td><code>-r</code></td><td>Start servers in <code>remote_hosts</code></td><td><code>-s</code></td><td>Run as a server</td></tr>
+          <tr><td><code>-X</code></td><td>Exit remote servers at the end</td><td><code>-v</code></td><td>Version</td></tr>
+        </tbody>
+      </table></div>
+      <p>Environment: <code>HEAP</code> (default <code>-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m</code>), <code>GC_ALGO</code>, <code>JVM_ARGS</code>, <code>JAVA_HOME</code>. Stop a CLI run gracefully with <code>bin/shutdown.sh</code> (threads finish their current sample), or at once with <code>bin/stoptest.sh</code> (they talk to port 4445). JMeter exits 0 even when samples fail. Gate on results, see <a href="/guides/jmeter/ci-pipelines/">CI pipelines</a>.</p>
+
+      <h2 id="functions">Functions</h2>
+      <p>Syntax <code>${__name(arg1,arg2)}</code>. Escape commas in arguments as <code>\,</code>. Undefined functions and variables are sent literally.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Function</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>${__P(name,default)}</code></td><td>Property (default <code>1</code> if none given)</td></tr>
+          <tr><td><code>${__property(name,var,default)}</code></td><td>Property, optionally saved in a variable</td></tr>
+          <tr><td><code>${__setProperty(name,value,)}</code></td><td>Sets a property, returns empty</td></tr>
+          <tr><td><code>${__V(var_${n})}</code></td><td>Variable whose name is built at run time</td></tr>
+          <tr><td><code>${__Random(1,100,var)}</code></td><td>Integer in range, inclusive</td></tr>
+          <tr><td><code>${__RandomString(8,abc123,)}</code></td><td>Random string from given characters</td></tr>
+          <tr><td><code>${__RandomDate(yyyy-MM-dd,2026-01-01,2026-12-31,,)}</code></td><td>Random date in range</td></tr>
+          <tr><td><code>${__RandomFromMultipleVars(skus)}</code></td><td>Random value from <code>skus_1..N</code></td></tr>
+          <tr><td><code>${__UUID()}</code></td><td>Random type 4 UUID</td></tr>
+          <tr><td><code>${__time()}</code> / <code>${__time(/1000)}</code></td><td>Epoch ms / epoch s</td></tr>
+          <tr><td><code>${__time(yyyy-MM-dd'T'HH:mm:ss,)}</code></td><td>Formatted now (<code>DateTimeFormatter</code>)</td></tr>
+          <tr><td><code>${__timeShift(yyyy-MM-dd,,P1D,,)}</code></td><td>Now shifted by an ISO-8601 duration</td></tr>
+          <tr><td><code>${__threadNum}</code></td><td>Thread number in its group, from 1</td></tr>
+          <tr><td><code>${__threadGroupName}</code></td><td>Current thread group name</td></tr>
+          <tr><td><code>${__counter(TRUE,)}</code></td><td>Per-thread counter (FALSE = global)</td></tr>
+          <tr><td><code>${__intSum(1,2,)}</code></td><td>Integer sum</td></tr>
+          <tr><td><code>${__urlencode(s)}</code> / <code>${__urldecode(s)}</code></td><td>URL encode / decode</td></tr>
+          <tr><td><code>${__unescapeHtml(s)}</code> / <code>${__escapeHtml(s)}</code></td><td>HTML entities</td></tr>
+          <tr><td><code>${__digest(SHA-256,text,,,)}</code></td><td>Hash of a string</td></tr>
+          <tr><td><code>${__groovy(expr,)}</code></td><td>Evaluate Groovy (use in If Controllers)</td></tr>
+          <tr><td><code>${__jexl3(expr,)}</code></td><td>Evaluate a JEXL expression</td></tr>
+          <tr><td><code>${__machineName}</code> / <code>${__machineIP}</code></td><td>Load generator host name / IP</td></tr>
+          <tr><td><code>${__isVarDefined(v)}</code> / <code>${__isPropDefined(p)}</code></td><td>true or false</td></tr>
+          <tr><td><code>${__log(msg)}</code></td><td>Writes to jmeter.log</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="extractors">Extractors</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Extractor</th><th>Key fields</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Regular Expression</td><td>Field to check, Regular Expression, Template, Match No., Default</td><td><code>name="csrf" value="([^"]+)"</code>, template <code>$1$</code></td></tr>
+          <tr><td>JSON</td><td>Names, JSON Path expressions, Match No., Defaults (all <code>;</code>-separated)</td><td><code>token;id</code> ← <code>$.access_token;$.user.id</code></td></tr>
+          <tr><td>Boundary</td><td>Left Boundary, Right Boundary, Match No., Default</td><td>left <code>name="csrf" value="</code>, right <code>"</code></td></tr>
+          <tr><td>CSS Selector</td><td>CSS selector expression, Attribute, Match No.</td><td><code>input[name=csrf]</code>, attribute <code>value</code></td></tr>
+          <tr><td>XPath2</td><td>XPath query, Match No., Namespaces</td><td><code>//order/id/text()</code></td></tr>
+          <tr><td>JSON JMESPath</td><td>JMESPath expression, Match No.</td><td><code>items[?stock &gt; `0`].sku</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Match No.</th><th>Variables created</th></tr></thead>
+        <tbody>
+          <tr><td><code>n</code> (1, 2, …)</td><td><code>var</code>. Regex also sets <code>var_g0</code> (whole match), <code>var_g1</code>…, <code>var_g</code> (group count)</td></tr>
+          <tr><td><code>0</code></td><td><code>var</code> = a random match</td></tr>
+          <tr><td><code>-1</code></td><td><code>var_1</code> … <code>var_N</code>, <code>var_matchNr</code>. Regex adds <code>var_n_gm</code>. JSON adds <code>var_ALL</code> if "Compute concatenation var" is ticked</td></tr>
+        </tbody>
+      </table></div>
+      <pre class="ex-code"><code>JSONPath:  $.a.b   $.items[0]   $.items[*].sku   $.items[-1:]   $..id   $.items[?(@.qty &gt; 1)]
+Regex:     (?i) ignore case   (?s) dot matches newline   ([^"]+) up to next quote   \d+ digits</code></pre>
+
+      <h2 id="groovy">Groovy (JSR223) objects</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Object</th><th>Common calls</th></tr></thead>
+        <tbody>
+          <tr><td><code>vars</code></td><td><code>vars.get('k')</code>, <code>vars.put('k','v')</code>, <code>vars.putObject('k',obj)</code>, <code>vars.getObject('k')</code></td></tr>
+          <tr><td><code>props</code></td><td><code>props.get('k')</code>, <code>props.getProperty('k','default')</code>, <code>props.put('k','v')</code></td></tr>
+          <tr><td><code>prev</code></td><td>Previous result: <code>prev.getResponseDataAsString()</code>, <code>prev.getResponseCode()</code>, <code>prev.getTime()</code>, <code>prev.setSuccessful(false)</code></td></tr>
+          <tr><td><code>ctx</code></td><td><code>ctx.getThreadNum()</code>, <code>ctx.getThreadGroup()</code></td></tr>
+          <tr><td><code>log</code></td><td><code>log.info('msg')</code>, <code>log.warn(...)</code></td></tr>
+          <tr><td><code>SampleResult</code></td><td>JSR223 Sampler only: <code>setResponseData(...)</code>, <code>setSuccessful(...)</code></td></tr>
+          <tr><td><code>AssertionResult</code></td><td>JSR223 Assertion only: <code>setFailure(true)</code>, <code>setFailureMessage('why')</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Language <code>groovy</code>, "Cache compiled script" on, and never <code>${...}</code> inside the script.</p>
+
+      <h2 id="elements">Elements and order</h2>
+      <pre class="ex-code"><code>Execution order for each sampler:
+  Config elements → Pre-Processors → Timers → Sampler → Post-Processors → Assertions → Listeners
+Scope: an element applies to its parent and to everything under the parent.
+Timers before every sampler in scope, and they add up. Variables: per thread. Properties: global.</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Need</th><th>Element</th></tr></thead>
+        <tbody>
+          <tr><td>Run once per thread</td><td>Once Only Controller</td></tr>
+          <tr><td>Run before or after the test</td><td>setUp / tearDown Thread Group</td></tr>
+          <tr><td>Condition</td><td>If Controller + <code>${__groovy(...)}</code></td></tr>
+          <tr><td>Percentage split</td><td>Throughput Controller (Percent Executions)</td></tr>
+          <tr><td>Group steps into one timing</td><td>Transaction Controller</td></tr>
+          <tr><td>Pause without a sample</td><td>Flow Control Action (Pause)</td></tr>
+          <tr><td>Iterate extracted values</td><td>ForEach Controller</td></tr>
+          <tr><td>Reuse a fragment</td><td>Test Fragment + Module or Include Controller</td></tr>
+          <tr><td>Fixed rate</td><td>Constant Throughput Timer (per minute) or Precise Throughput Timer</td></tr>
+          <tr><td>Open model</td><td>Open Model Thread Group (5.5+, experimental): <code>rate(10/sec) random_arrivals(10 min)</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="properties">Useful properties</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Property</th><th>Default</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td><code>summariser.interval</code></td><td>30</td><td>Seconds between CLI summary lines</td></tr>
+          <tr><td><code>jmeter.save.saveservice.output_format</code></td><td>csv</td><td>JTL format (keep CSV)</td></tr>
+          <tr><td><code>jmeter.save.saveservice.response_data</code></td><td>false</td><td>Keep false under load</td></tr>
+          <tr><td><code>aggregate_rpt_pct1/2/3</code></td><td>90 / 95 / 99</td><td>Percentiles in reports</td></tr>
+          <tr><td><code>jmeter.reportgenerator.overall_granularity</code></td><td>60000</td><td>Over-time graph step (ms), keep &gt; 1000</td></tr>
+          <tr><td><code>jmeter.reportgenerator.apdex_satisfied_threshold</code></td><td>500</td><td>APDEX T (ms)</td></tr>
+          <tr><td><code>jmeter.reportgenerator.apdex_tolerated_threshold</code></td><td>1500</td><td>APDEX F (ms)</td></tr>
+          <tr><td><code>jmeter.reportgenerator.start_date / end_date</code></td><td>empty</td><td>Report time window (<code>yyyyMMddHHmmss</code>)</td></tr>
+          <tr><td><code>jmeter.reportgenerator.exporter.html.series_filter</code></td><td>empty</td><td>Regex of labels to graph</td></tr>
+          <tr><td><code>csvdataset.eofstring</code></td><td>&lt;EOF&gt;</td><td>Value at end of file when not recycling</td></tr>
+          <tr><td><code>CookieManager.save.cookies</code></td><td>false</td><td>Expose cookies as <code>COOKIE_name</code> variables</td></tr>
+          <tr><td><code>remote_hosts</code></td><td>127.0.0.1</td><td>Servers for <code>-r</code></td></tr>
+          <tr><td><code>server.rmi.ssl.disable</code></td><td>false</td><td>Turn off RMI SSL (trusted networks only)</td></tr>
+          <tr><td><code>server.rmi.localport / client.rmi.localport</code></td><td>random</td><td>Fix RMI ports for firewalls</td></tr>
+          <tr><td><code>mode</code></td><td>StrippedBatch</td><td>Remote sample sender</td></tr>
+        </tbody>
+      </table></div>
+      <p>Put your own overrides in <code>bin/user.properties</code> or a file passed with <code>-q</code>. Leave <code>jmeter.properties</code> untouched so upgrades stay easy.</p>
+
+      <h2 id="jtl">JTL columns (CSV, defaults)</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Column</th><th>Meaning</th><th>Column</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>timeStamp</code></td><td>Start, epoch ms</td><td><code>bytes</code></td><td>Received, incl. headers</td></tr>
+          <tr><td><code>elapsed</code></td><td>Response time ms</td><td><code>sentBytes</code></td><td>Sent</td></tr>
+          <tr><td><code>label</code></td><td>Sampler name</td><td><code>grpThreads</code></td><td>Active threads, this group</td></tr>
+          <tr><td><code>responseCode</code></td><td>Status or exception</td><td><code>allThreads</code></td><td>Active threads, all groups</td></tr>
+          <tr><td><code>responseMessage</code></td><td>Reason text</td><td><code>URL</code></td><td>Requested URL</td></tr>
+          <tr><td><code>threadName</code></td><td>Group + thread no.</td><td><code>Latency</code></td><td>Time to first byte ms</td></tr>
+          <tr><td><code>dataType</code></td><td>text / bin</td><td><code>IdleTime</code></td><td>Idle ms (usually 0)</td></tr>
+          <tr><td><code>success</code></td><td>true / false</td><td><code>Connect</code></td><td>Connect + TLS ms</td></tr>
+          <tr><td><code>failureMessage</code></td><td>Assertion message</td><td></td><td></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="maths">Load maths</h2>
+      <pre class="ex-code"><code>Thread k starts at   (k − 1) × ramp-up ÷ threads        10 threads, 100 s → every 10 s
+Little's Law         threads = rate × (response time + think time)
+                     20/s × (2.4 s + 18 s) = 408 threads
+Iteration rate       threads ÷ (response time + think time)
+Pacing               wait = max(0, pacing interval − iteration time)
+Distributed          total threads = threads in plan × number of servers</code></pre>
+      <p>Full explanations: <a href="/guides/jmeter/thinktime-and-pacing/">think time and pacing</a>, <a href="/guides/jmeter/thread-groups-and-load-shapes/">load shapes</a>, <a href="/glossary/littles-law/">Little's Law</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a JMeter script?</h2>
+        <p>Book a free 30-minute call and we'll get it working. See also <a href="/services/performance-testing/">performance testing services</a>, or move a plan to k6 with the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-cheat-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-cheat-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

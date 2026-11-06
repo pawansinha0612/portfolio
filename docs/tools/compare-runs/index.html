@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare Load Test Runs (JMeter &amp; k6) — Pawan Sinha</title>
+  <meta name="description" content="Compare a baseline and a candidate load test run: p95, p99, average, error rate and throughput per transaction, with regression thresholds and a Markdown verdict. JMeter and k6. Runs in your browser.">
+  <meta property="og:title" content="Compare Load Test Runs (JMeter &amp; k6) — Pawan Sinha">
+  <meta property="og:description" content="Free tool: baseline vs candidate. See which transactions regressed on p95, p99, errors or throughput, and paste the verdict into your PR. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/compare-runs/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/compare-runs/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Compare load test runs","url":"https://pawansinha.com.au/tools/compare-runs/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <style>
+    .sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+    .side h3 { font-size: 16px; margin: 0 0 8px; }
+    .side .drop { min-height: 120px; }
+    .run-status { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; min-height: 1.5em; }
+    .run-status.ok { color: var(--ok); font-weight: 600; } .run-status.bad { color: var(--bad); font-weight: 600; }
+    .side details { margin-top: 8px; font-size: 14px; }
+    .side summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+    .side textarea { width: 100%; min-height: 120px; margin-top: 8px; resize: vertical; font: 500 12px/1.5 "JetBrains Mono", monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .rules { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 4px 0 0; }
+    .rules .field input { width: 70px; }
+    fieldset.rules-box { border: 0; padding: 0; margin: 0; min-width: 0; }
+    fieldset.rules-box legend { font-size: 18px; font-weight: 700; padding: 0; margin: 0 0 4px; letter-spacing: -0.02em; }
+    table.cmp td .vals { display: block; }
+    table.cmp td .delta { display: block; font-size: 12px; color: var(--muted); }
+    table.cmp td.worse { color: var(--bad); font-weight: 700; } table.cmp td.worse .delta { color: var(--bad); }
+    table.cmp td.better { color: var(--ok); font-weight: 600; } table.cmp td.better .delta { color: var(--ok); }
+    table.cmp td.na { color: var(--muted); }
+    table.cmp td.l { text-align: left; }
+    table.cmp tr.st-regression td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+    table.cmp tr.st-improvement td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
+    .cmp-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--alt); color: var(--muted); white-space: nowrap; }
+    .cmp-pill.bad { background: var(--bad-bg); color: var(--bad); } .cmp-pill.good { background: var(--ok-bg); color: var(--ok); }
+    .cmp-pill.info { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+    .few { font-size: 11px; font-weight: 600; color: var(--warn); white-space: nowrap; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Compare runs</p>
+      <h1>Compare two load test runs</h1>
+      <p class="lead">Baseline vs candidate: see which transactions got slower, which got faster and whether errors or throughput moved, against thresholds you set. Then paste the verdict into your PR or release ticket.</p>
+      <p class="private-note">🔒 Your files are never uploaded. <span>Both runs are read and compared in your browser. Results files often contain internal URLs, hostnames and error messages, so they never leave your computer.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Compare runs">
+      <div class="panel">
+        <h2>Add the two runs</h2>
+        <p class="sub">JMeter: raw <code>.jtl</code>/<code>.csv</code> or XML results (any size), the dashboard's <code>statistics.json</code>, or an Aggregate Report CSV. k6: <code>--summary-export</code> JSON, <code>handleSummary()</code> JSON or the end-of-test text. Transactions are matched by name.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="jmeter">Two JMeter runs</button>
+          <button class="chip-btn" type="button" data-example="k6">Two k6 summaries</button>
+        </div>
+        <div class="sides">
+          <div class="side">
+            <h3>Baseline (before)</h3>
+            <label class="drop" id="base-drop">
+              <input type="file" id="base-file" accept=".jtl,.csv,.xml,.json,.txt,.gz">
+              <strong>Drop the baseline file, or click</strong>
+              <small>Nothing is uploaded</small>
+            </label>
+            <span class="run-status" id="base-status" aria-live="polite"></span>
+            <details><summary>or paste it</summary>
+              <label class="sr-only" for="base-paste">Baseline results text</label>
+              <textarea id="base-paste" spellcheck="false" placeholder="k6 summary JSON or text, statistics.json, Aggregate Report CSV…"></textarea>
+              <button class="btn btn-ghost btn-small" type="button" id="base-paste-go">Use pasted baseline</button>
+            </details>
+          </div>
+          <div class="side">
+            <h3>Candidate (after)</h3>
+            <label class="drop" id="cand-drop">
+              <input type="file" id="cand-file" accept=".jtl,.csv,.xml,.json,.txt,.gz">
+              <strong>Drop the candidate file, or click</strong>
+              <small>Nothing is uploaded</small>
+            </label>
+            <span class="run-status" id="cand-status" aria-live="polite"></span>
+            <details><summary>or paste it</summary>
+              <label class="sr-only" for="cand-paste">Candidate results text</label>
+              <textarea id="cand-paste" spellcheck="false" placeholder="k6 summary JSON or text, statistics.json, Aggregate Report CSV…"></textarea>
+              <button class="btn btn-ghost btn-small" type="button" id="cand-paste-go">Use pasted candidate</button>
+            </details>
+          </div>
+        </div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div class="panel">
+        <fieldset class="rules-box">
+          <legend>Regression thresholds</legend>
+          <p class="sub">A transaction regresses when any metric gets worse by more than its threshold, and improves when one gets better by more than it. Leave a box empty to ignore that metric.</p>
+          <div class="rules">
+            <label class="field" for="r-p95Pct">p95 +<input type="number" id="r-p95Pct" value="10" min="0" step="1">%</label>
+            <label class="field" for="r-p99Pct">p99 +<input type="number" id="r-p99Pct" value="15" min="0" step="1">%</label>
+            <label class="field" for="r-avgPct">avg +<input type="number" id="r-avgPct" value="10" min="0" step="1">%</label>
+            <label class="field" for="r-errPts">error rate +<input type="number" id="r-errPts" value="1" min="0" step="0.1">pts</label>
+            <label class="field" for="r-tputPct">throughput −<input type="number" id="r-tputPct" value="10" min="0" step="1">%</label>
+            <label class="field" for="r-minDeltaMs">ignore changes under <input type="number" id="r-minDeltaMs" value="5" min="0" step="1">ms</label>
+          </div>
+          <div class="actions"><label class="field"><input type="checkbox" id="only-changes" style="width:auto"> Only show transactions that changed</label></div>
+        </fieldset>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How to get the files</p>
+      <h2>Saving each run so you can compare it</h2>
+      <h3>JMeter</h3>
+      <p>Run in non-GUI mode and keep the results file from every run:</p>
+      <pre><code>jmeter -n -t plan.jmx -l baseline.jtl
+jmeter -n -t plan.jmx -l candidate.jtl -e -o report/</code></pre>
+      <p>Either the raw <code>.jtl</code> files or each run's <code>report/statistics.json</code> work. The raw file gives exact percentiles; see the <a href="/tools/jtl-analyser/">JMeter results analyser</a> for the settings that matter in <code>user.properties</code>.</p>
+      <h3>k6</h3>
+      <pre><code>k6 run --summary-export=baseline.json script.js
+k6 run --summary-export=candidate.json script.js</code></pre>
+      <ul>
+        <li><strong>Want p99?</strong> Add <code>summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)']</code> to <code>options</code>.</li>
+        <li><strong>Want one row per request?</strong> Tag requests with <code>{ tags: { name: 'login' } }</code> and add a threshold such as <code>'http_req_duration{name:login}': ['p(95)&lt;500']</code>. k6 only reports per-tag numbers for metrics with a threshold.</li>
+        <li>JSON from <code>handleSummary(data)</code> (write <code>JSON.stringify(data)</code>) works too, as does the text k6 prints at the end.</li>
+      </ul>
+      <h3>Make the comparison fair</h3>
+      <ul>
+        <li>Same script, same load profile, same test data and the same environment size. Otherwise you are comparing environments, not builds.</li>
+        <li>Run each side more than once if you can. Run-to-run noise of 5–10% on p95 is normal, which is why the default threshold is 10%.</li>
+      </ul>
+
+      <p class="eyebrow" style="margin-top:40px">What the numbers mean</p>
+      <h2>Reading the comparison</h2>
+      <ul>
+        <li><strong>p95 and p99</strong> are the response times 95% and 99% of requests beat. They move before the average does, so they catch regressions first. See <a href="/glossary/percentiles/">percentiles</a> and the <a href="/explain/percentiles/">percentiles explainer</a>.</li>
+        <li><strong>Throughput</strong> is requests per second (<a href="/glossary/throughput/">more</a>). With a fixed number of users, a slower system completes fewer requests, so a throughput drop next to a p95 rise is the same problem seen twice.</li>
+        <li><strong>Error %</strong> is compared in percentage points: 0.5% → 1.6% is +1.1 points.</li>
+        <li><strong>Few samples</strong>: with fewer than 30 samples a percentile is mostly noise. Don't fail a build on it.</li>
+      </ul>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/jtl-analyser/">JMeter results analyser →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/explain/percentiles/">How percentiles work →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Found a regression and not sure where it comes from?</h3>
+          <p>Bring both runs. I'll help you work out whether it is the code, the data or the environment, and how to stop it reaching production. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="compare-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/jtl-analyser/jtl.js"></script>
+  <script src="/tools/k6-results/explain.js"></script>
+  <script src="/tools/compare-runs/compare.js"></script>
+  <script src="/tools/compare-runs/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatling getting started with the Java DSL — Pawan Sinha</title>
+  <meta name="description" content="Set up Gatling 3 with Maven or Gradle, write a first simulation in the Java DSL with checks, think time and assertions, run it and read the HTML report.">
+  <meta property="og:title" content="Gatling getting started: a first simulation in Java with Maven or Gradle">
+  <meta property="og:description" content="Set up Gatling 3 with Maven or Gradle, write a first simulation in the Java DSL with checks, think time and assertions, run it and read the HTML report.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/gatling/getting-started/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/gatling/getting-started/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Gatling getting started with the Java DSL", "description": "Set up Gatling 3 with Maven or Gradle, write a first simulation in the Java DSL with checks, think time and assertions, run it and read the HTML report.", "url": "https://pawansinha.com.au/guides/gatling/getting-started/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/gatling/">Gatling</a> · Getting started</p>
+      <h1>Gatling getting started: a first simulation in Java</h1>
+      <p class="lead">Your team writes Java or Kotlin all day, and the load test lives in a separate tool
+        nobody else can read. Gatling puts the load test in the same language, the same build and the
+        same code review as the service it tests.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#setup">Set up a project</a></li>
+          <li><a href="#first">The first simulation</a></li>
+          <li><a href="#run">Run it</a></li>
+          <li><a href="#report">Read the report</a></li>
+          <li><a href="#concepts">Concepts that trip people up</a></li>
+        </ol>
+      </div>
+
+      <h2 id="setup">Set up a project</h2>
+      <p>Gatling 3 runs on the JVM. You write simulations in Java, Kotlin or Scala (there's also a
+        JavaScript/TypeScript SDK). This guide uses the Java DSL, which is what most teams pick
+        today. You need a JDK (a current LTS such as 17 or 21) and either Maven or Gradle.</p>
+      <p>The quickest start is Gatling's official demo project:
+        <a href="https://github.com/gatling/gatling-maven-plugin-demo-java" target="_blank" rel="noopener">gatling-maven-plugin-demo-java</a>
+        or
+        <a href="https://github.com/gatling/gatling-gradle-plugin-demo-java" target="_blank" rel="noopener">gatling-gradle-plugin-demo-java</a>.
+        Both include a wrapper, so you don't need Maven or Gradle installed. To add Gatling to an
+        existing Maven project, you need the dependency and the plugin:</p>
+      <pre class="ex-code"><code>&lt;!-- pom.xml (the relevant parts) --&gt;
+&lt;properties&gt;
+  &lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;
+  &lt;gatling.version&gt;3.16.0&lt;/gatling.version&gt;
+  &lt;gatling-maven-plugin.version&gt;4.21.12&lt;/gatling-maven-plugin.version&gt;
+&lt;/properties&gt;
+
+&lt;dependencies&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;io.gatling.highcharts&lt;/groupId&gt;
+    &lt;artifactId&gt;gatling-charts-highcharts&lt;/artifactId&gt;
+    &lt;version&gt;${gatling.version}&lt;/version&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+  &lt;/dependency&gt;
+&lt;/dependencies&gt;
+
+&lt;build&gt;
+  &lt;plugins&gt;
+    &lt;plugin&gt;
+      &lt;groupId&gt;io.gatling&lt;/groupId&gt;
+      &lt;artifactId&gt;gatling-maven-plugin&lt;/artifactId&gt;
+      &lt;version&gt;${gatling-maven-plugin.version}&lt;/version&gt;
+    &lt;/plugin&gt;
+  &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+      <p>These were the current versions when this guide was written (Gatling 3.16, Maven plugin
+        4.21). Check Maven Central for newer ones. For Gradle:</p>
+      <pre class="ex-code"><code>// build.gradle
+plugins {
+  id 'java'
+  id 'io.gatling.gradle' version '3.16.0'
+}
+
+repositories {
+  mavenCentral()
+}</code></pre>
+      <p>The layout for Maven:</p>
+      <pre class="ex-code"><code>my-load-tests/
+├── pom.xml
+├── mvnw, .mvn/                     # Maven wrapper: no global Maven needed
+└── src/test/
+    ├── java/example/
+    │   └── BasicSimulation.java    # simulations live with the test sources
+    └── resources/
+        ├── users.csv               # feeders
+        └── logback-test.xml        # logging (set to DEBUG to see requests)</code></pre>
+      <div class="g-note"><p>With the Gradle plugin, simulations go in <code>src/gatling/java</code>
+        and resources in <code>src/gatling/resources</code>, not under <code>src/test</code>. Putting
+        them in the wrong folder is the usual reason Gradle says it found no simulations.</p></div>
+
+      <h2 id="first">The first simulation</h2>
+      <p>A simulation has three parts: the protocol (base URL, common headers), one or more
+        scenarios (the user journey), and <code>setUp</code> (how many users arrive and when, plus
+        the pass/fail assertions).</p>
+      <pre class="ex-code"><code>package example;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+import io.gatling.javaapi.core.*;
+import io.gatling.javaapi.http.*;
+
+public class BasicSimulation extends Simulation {
+
+  // Base URL from a system property, so CI can point it at any environment
+  private static final String BASE_URL = System.getProperty("baseUrl", "http://localhost:8080");
+
+  HttpProtocolBuilder httpProtocol = http
+      .baseUrl(BASE_URL)
+      .acceptHeader("application/json")
+      .userAgentHeader("gatling-load-test");
+
+  ScenarioBuilder browse = scenario("Browse products")
+      .exec(
+          http("List products")
+              .get("/products")
+              .check(status().is(200))
+              .check(jsonPath("$.items[0].id").saveAs("productId")))
+      .pause(1, 3) // think time: random 1 to 3 seconds
+      .exec(
+          http("Get product")
+              .get("/products/#{productId}") // Gatling Expression Language reads the session
+              .check(status().is(200)));
+
+  {
+    setUp(
+        browse.injectOpen(
+            rampUsersPerSec(1).to(20).during(60), // ramp arrivals from 1 to 20 users/s over 60 s
+            constantUsersPerSec(20).during(300))  // then hold 20 new users/s for 5 minutes
+    )
+        .protocols(httpProtocol)
+        .assertions(
+            global().responseTime().percentile(95.0).lt(500),
+            global().failedRequests().percent().lt(1.0));
+  }
+}</code></pre>
+      <ul>
+        <li><strong><code>check(...)</code></strong> validates each response. Unlike k6, a failed
+          check in Gatling marks the request as failed (KO) and, by default, the user's next requests
+          still run. Use <code>exitHereIfFailed()</code> to stop a user whose journey is broken.</li>
+        <li><strong><code>saveAs</code></strong> stores an extracted value in the user's session, and
+          <code>#{productId}</code> reads it back. This is Gatling's Expression Language.</li>
+        <li><strong><code>pause(1, 3)</code></strong> is a random 1-3 second
+          <a href="/glossary/think-time/">think time</a>.</li>
+        <li><strong><code>injectOpen</code></strong> with <code>constantUsersPerSec</code> is an
+          open model: new users arrive at a rate, whatever the response times. More in
+          <a href="/guides/gatling/injection-profiles/">injection profiles</a>.</li>
+        <li><strong><code>assertions</code></strong> fail the build when a budget is missed.</li>
+      </ul>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code># Maven
+./mvnw gatling:test                                         # asks which simulation if there are several
+./mvnw gatling:test -Dgatling.simulationClass=example.BasicSimulation
+./mvnw gatling:test -DbaseUrl=https://staging.example.com   # read with System.getProperty
+
+# Gradle
+./gradlew gatlingRun --simulation example.BasicSimulation
+./gradlew gatlingRun --all                                  # every simulation, one after another
+
+# Record a browser session into a simulation (a starting point, not a finished test)
+./mvnw gatling:recorder</code></pre>
+      <p>Pass test parameters as system properties with <code>-D</code> and read them with
+        <code>System.getProperty</code>, <code>Integer.getInteger</code> or <code>Long.getLong</code>
+        in the simulation. That keeps URLs and user counts out of the code.</p>
+
+      <h2 id="report">Read the report</h2>
+      <p>At the end Gatling prints a text summary and writes an HTML report: with Maven under
+        <code>target/gatling/&lt;simulation&gt;-&lt;timestamp&gt;/index.html</code>, with Gradle under
+        <code>build/reports/gatling/</code>. Open it in a browser. The parts to look at first:</p>
+      <ul>
+        <li><strong>Response time percentiles over time:</strong> is p95 flat during the steady
+          state, or climbing? Climbing under constant load means something is filling up: a queue,
+          a pool, the heap. See <a href="/explain/queueing/">queueing</a>.</li>
+        <li><strong>Active users and requests per second</strong> on the same time axis: in an open
+          model, active users growing while the arrival rate is constant is the first sign of
+          saturation.</li>
+        <li><strong>Errors table:</strong> every KO with its reason. Fix errors before you read any
+          latency number.</li>
+        <li><strong>Per-request stats:</strong> the slowest request names, where to start
+          profiling.</li>
+      </ul>
+      <p>Report percentiles (p95, p99), not the mean. Here's <a href="/explain/percentiles/">why
+        averages lie</a>.</p>
+
+      <h2 id="concepts">Concepts that trip people up</h2>
+      <ul>
+        <li><strong>A Gatling "user" runs the scenario once and leaves</strong>, unless you add a
+          loop. With <code>constantUsersPerSec(20)</code> you get 20 new journeys a second, not 20
+          users looping. That's an open model, and usually what you want for public traffic.</li>
+        <li><strong>Sessions are immutable.</strong> <code>session.set(...)</code> returns a new
+          session. Return it from your function or the change is lost.</li>
+        <li><strong>The DSL builds the test, it doesn't run it.</strong> Code in the class body runs
+          once when the simulation loads. Code that must run per user goes inside
+          <code>exec(session -&gt; ...)</code>.</li>
+      </ul>
+      <p>Next: <a href="/guides/gatling/injection-profiles/">injection profiles</a>. Choosing between
+        tools? See <a href="/compare/k6-vs-gatling/">k6 vs Gatling</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need a Gatling test built or reviewed?</h2>
+        <p>I build Gatling and k6 load tests that match real traffic, and explain the results in plain
+          English.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-gat-start-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-gat-start-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

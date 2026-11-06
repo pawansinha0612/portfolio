@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 scenarios and executors: open vs closed models — Pawan Sinha</title>
+  <meta name="description" content="Every k6 executor, when to use each, open vs closed workload models, how to size preAllocatedVUs with Little&#x27;s Law and what dropped_iterations tells you.">
+  <meta property="og:title" content="k6 scenarios and executors explained, with the arrival-rate maths">
+  <meta property="og:description" content="Every k6 executor, when to use each, open vs closed workload models, how to size preAllocatedVUs with Little&#x27;s Law and what dropped_iterations tells you.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/scenarios-and-executors/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/scenarios-and-executors/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 scenarios and executors: open vs closed models", "description": "Every k6 executor, when to use each, open vs closed workload models, how to size preAllocatedVUs with Little's Law and what dropped_iterations tells you.", "url": "https://pawansinha.com.au/guides/k6/scenarios-and-executors/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Scenarios and executors</p>
+      <h1>k6 scenarios and executors: pick the model before the numbers</h1>
+      <p class="lead">Your test says 200 VUs held p95 under 300 ms. In production, 200 requests a second
+        took the site down. Both can be true, because VUs are not requests per second. The executor
+        you choose decides which question your test answers.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#models">Open vs closed: the one decision that matters</a></li>
+          <li><a href="#executors">Every executor, and when to use it</a></li>
+          <li><a href="#maths">Arrival-rate maths: sizing preAllocatedVUs</a></li>
+          <li><a href="#dropped">dropped_iterations: when k6 can't keep up</a></li>
+          <li><a href="#mixed">A mixed workload with several scenarios</a></li>
+          <li><a href="#options">Scenario options you will need</a></li>
+        </ol>
+      </div>
+
+      <h2 id="models">Open vs closed: the one decision that matters</h2>
+      <p>In a <strong>closed model</strong> a fixed number of users loop: send a request, wait for the
+        response, think, repeat. When the server slows down, every user waits longer, so the request
+        rate falls. The test quietly backs off at the exact moment the system is struggling.</p>
+      <p>In an <strong>open model</strong> new work arrives on a schedule whether or not earlier
+        requests finished, like real visitors on a public site. When the server slows down, requests
+        pile up and queues grow, which is what actually happens in production.</p>
+      <p>The closed model's backing off has a name: <a href="/glossary/coordinated-omission/">coordinated
+        omission</a>. The tool coordinates with the problem and never sends the requests that would
+        have been slow, so your p99 looks better than reality. The
+        <a href="/explain/percentiles/">percentiles explainer</a> shows it happening.</p>
+      <p>My rule: <strong>use an arrival-rate (open) executor when you have a throughput target</strong>,
+        such as "500 checkouts a minute" or "2,000 requests a second at peak". Use a VU-based
+        (closed) executor when the real system has a fixed population, such as 300 call-centre agents,
+        a pool of batch workers, or a mobile app with a known number of logged-in sessions. More in
+        <a href="/glossary/open-vs-closed-workload-model/">open vs closed workload model</a> and
+        the <a href="/explain/load-profiles/">load profiles explainer</a>.</p>
+
+      <h2 id="executors">Every executor, and when to use it</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Executor</th><th>Model</th><th>What it controls</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td><code>shared-iterations</code></td><td>Closed</td><td>A total number of iterations shared by N VUs. Fast VUs do more.</td><td>"Run this 1,000 times as fast as possible": data seeding, one-pass-per-row CSV tests.</td></tr>
+          <tr><td><code>per-vu-iterations</code></td><td>Closed</td><td>Each VU does exactly N iterations.</td><td>Each user must do the journey a fixed number of times.</td></tr>
+          <tr><td><code>constant-vus</code></td><td>Closed</td><td>N VUs looping for a duration. The default with <code>--vus</code> and <code>--duration</code>.</td><td>Smoke tests, soak tests with a known user population.</td></tr>
+          <tr><td><code>ramping-vus</code></td><td>Closed</td><td>VU count follows <code>stages</code>. What the <code>stages</code> shortcut creates.</td><td>Ramp a fixed population up and down.</td></tr>
+          <tr><td><code>constant-arrival-rate</code></td><td>Open</td><td>Starts <code>rate</code> iterations per <code>timeUnit</code>, whatever the latency.</td><td>Steady throughput targets: "hold 300 requests/s for 30 minutes".</td></tr>
+          <tr><td><code>ramping-arrival-rate</code></td><td>Open</td><td>Iteration rate follows <code>stages</code>.</td><td>Load, stress, spike and <a href="/glossary/breakpoint-testing/">breakpoint</a> tests with a rate target.</td></tr>
+          <tr><td><code>externally-controlled</code></td><td>Closed</td><td>VUs changed at runtime through the REST API.</td><td>Removed in k6 v2.0. Don't start new tests with it.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Here is every current executor in one script, staggered with <code>startTime</code>:</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// One scenario per executor, staggered with startTime so they don't overlap.
+export const options = {
+  scenarios: {
+    shared: {
+      executor: 'shared-iterations', // 200 iterations in total, shared by 10 VUs
+      vus: 10, iterations: 200, maxDuration: '1m',
+    },
+    perVu: {
+      executor: 'per-vu-iterations', // every VU does exactly 20 iterations
+      vus: 10, iterations: 20, maxDuration: '1m', startTime: '1m',
+    },
+    constantVus: {
+      executor: 'constant-vus', // 10 VUs looping for 1 minute
+      vus: 10, duration: '1m', startTime: '2m',
+    },
+    rampingVus: {
+      executor: 'ramping-vus', // closed model with stages
+      startVUs: 0,
+      stages: [{ duration: '30s', target: 20 }, { duration: '30s', target: 0 }],
+      startTime: '3m',
+    },
+    constantRate: {
+      executor: 'constant-arrival-rate', // open model: 50 iterations/s, whatever the latency
+      rate: 50, timeUnit: '1s', duration: '1m',
+      preAllocatedVUs: 20, maxVUs: 100, startTime: '4m',
+    },
+    rampingRate: {
+      executor: 'ramping-arrival-rate', // open model with stages of iterations per timeUnit
+      startRate: 10, timeUnit: '1s',
+      preAllocatedVUs: 20, maxVUs: 200,
+      stages: [{ duration: '30s', target: 100 }, { duration: '30s', target: 100 }],
+      startTime: '5m',
+    },
+  },
+};
+
+export default function () {
+  http.get(`${BASE_URL}/health`);
+}</code></pre>
+      <p>Scenarios run in parallel unless you stagger them with <code>startTime</code>. That's how
+        you model "background traffic all day, plus a spike at 9 am".</p>
+
+      <h2 id="maths">Arrival-rate maths: sizing preAllocatedVUs</h2>
+      <p>An arrival-rate executor still needs VUs to run the iterations. A VU is busy for the whole
+        iteration, including any <code>sleep()</code>. <a href="/glossary/littles-law/">Little's Law</a>
+        tells you how many are busy at once:</p>
+      <pre class="ex-code"><code>VUs needed = arrival rate (iterations/s) x iteration duration (s)</code></pre>
+      <p>For example, you want 100 iterations a second. One iteration makes two calls of about
+        150 ms each, so it takes about 0.3 s. You need 100 × 0.3 = 30 VUs busy on average.</p>
+      <p>Now the server degrades and the iteration takes 1.5 s. You need 100 × 1.5 = 150 VUs to keep
+        the same rate. That's the whole point of an open model: it needs more concurrency as latency
+        grows. So size two numbers:</p>
+      <ul>
+        <li><code>preAllocatedVUs</code>: enough for normal latency plus some headroom. k6 creates
+          these before the test starts, so they cost nothing during the run. Here, 50.</li>
+        <li><code>maxVUs</code>: the ceiling for when latency grows. k6 creates extra VUs mid-test if
+          it needs them, which costs CPU and memory on the load generator. If you leave
+          <code>maxVUs</code> out, it equals <code>preAllocatedVUs</code>. Here, 300 gives room for
+          iterations to get 10 times slower.</li>
+      </ul>
+      <p>Two consequences people miss. First, a <code>sleep()</code> at the end of an arrival-rate
+        iteration does not slow the rate down. It only holds a VU longer, so you need more VUs. In an
+        open model, pacing comes from the rate, not from sleep. Second, <code>rate</code> counts
+        iterations, not requests. An iteration with five requests at 100 iterations/s sends 500
+        requests a second.</p>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+// Open model: requests arrive at a fixed rate, like real traffic.
+// Peak target: 100 browse iterations/s. One iteration takes about 0.3 s at normal latency.
+// Little's Law: VUs busy = rate x iteration time = 100 x 0.3 = 30. Pre-allocate with headroom.
+export const options = {
+  scenarios: {
+    browse: {
+      executor: 'ramping-arrival-rate',
+      exec: 'browse',
+      startRate: 0,
+      timeUnit: '1s',
+      preAllocatedVUs: 50,
+      maxVUs: 300, // room for iterations to get 10x slower before k6 drops any
+      stages: [
+        { duration: '2m', target: 100 }, // ramp to 100 browse/s
+        { duration: '10m', target: 100 },
+        { duration: '1m', target: 0 },
+      ],
+    },
+    buy: {
+      executor: 'constant-arrival-rate',
+      exec: 'buy',
+      rate: 20, // 20 purchases per minute
+      timeUnit: '1m',
+      duration: '13m',
+      preAllocatedVUs: 5,
+      maxVUs: 30,
+    },
+  },
+  thresholds: {
+    'http_req_duration{scenario:browse}': ['p(95)&lt;400'],
+    'http_req_duration{scenario:buy}': ['p(95)&lt;800'],
+    dropped_iterations: ['count&lt;10'], // the generator itself kept up
+  },
+};
+
+export function browse() {
+  const res = http.get(`${BASE_URL}/products`);
+  check(res, { 'browse 200': (r) =&gt; r.status === 200 });
+}
+
+export function buy() {
+  const login = http.post(`${BASE_URL}/login`, JSON.stringify({ username: 'buyer', password: 'secret' }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const token = login.json('access_token');
+  const order = http.post(`${BASE_URL}/orders`, JSON.stringify({ productId: 3 }), {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  check(order, { 'order created': (r) =&gt; r.status === 201 });
+}</code></pre>
+
+      <h2 id="dropped">dropped_iterations: when k6 can't keep up</h2>
+      <p>If every VU up to <code>maxVUs</code> is busy when the next iteration is due, k6 can't start
+        it. It skips it and counts it in <code>dropped_iterations</code>, with a warning in the
+        console. Read that metric as:</p>
+      <ul>
+        <li><strong>A few dropped at the start:</strong> <code>preAllocatedVUs</code> too low for
+          the ramp. Raise it.</li>
+        <li><strong>Many dropped as load rises:</strong> the system under test is slowing down and
+          concurrency has hit <code>maxVUs</code>. This is a finding, not a tool problem: latency
+          grew until the offered load could not be served. Raise <code>maxVUs</code> to see how far
+          it degrades, or report the rate where drops began.</li>
+        <li><strong>Dropped while the load generator's CPU is near 100%:</strong> the generator is the
+          bottleneck. Your results are invalid. Use a bigger machine or split the load.</li>
+      </ul>
+      <p>Put a threshold on it, as in the script above, so a test where k6 failed to send the planned
+        load cannot pass.</p>
+
+      <h2 id="mixed">A mixed workload with several scenarios</h2>
+      <p>Real traffic is a mix: lots of browsing, fewer searches, a few purchases. Model each journey
+        as its own scenario with its own rate and its own <code>exec</code> function, as in
+        <code>open-model.js</code> above. Then:</p>
+      <ul>
+        <li>Each scenario's metrics carry a <code>scenario</code> tag, so you can set thresholds per
+          journey: <code>'http_req_duration{scenario:buy}': ['p(95)&lt;800']</code>.</li>
+        <li>Get the ratios from production analytics or access logs, not guesses. A
+          <a href="/glossary/workload-model/">workload model</a> built from real data is what makes
+          a load test credible.</li>
+        <li>Check the arithmetic with the <a href="/tools/capacity-calculator/">capacity
+          calculator</a> before the run.</li>
+      </ul>
+
+      <h2 id="options">Scenario options you will need</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Option</th><th>Default</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>exec</code></td><td><code>"default"</code></td><td>Name of the exported function this scenario runs.</td></tr>
+          <tr><td><code>startTime</code></td><td><code>"0s"</code></td><td>Delay before the scenario starts.</td></tr>
+          <tr><td><code>gracefulStop</code></td><td><code>"30s"</code></td><td>How long running iterations may finish after the scenario ends, before they're interrupted.</td></tr>
+          <tr><td><code>gracefulRampDown</code></td><td><code>"30s"</code></td><td>Same, for VUs removed during a ramp-down (<code>ramping-vus</code> only).</td></tr>
+          <tr><td><code>env</code></td><td>none</td><td>Extra <code>__ENV</code> variables for this scenario only.</td></tr>
+          <tr><td><code>tags</code></td><td>none</td><td>Tags added to every metric from this scenario.</td></tr>
+          <tr><td><code>options</code></td><td>none</td><td>Per-scenario options, for example <code>{ browser: { type: 'chromium' } }</code>.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-note"><p>CLI flags like <code>--vus</code>, <code>--duration</code> and
+        <code>--iterations</code> replace your whole <code>scenarios</code> block with one simple
+        scenario. Handy for a quick debug run, confusing if you forget you passed them.</p></div>
+      <p>Next: <a href="/guides/k6/thresholds-and-checks/">thresholds and checks</a>, so the test
+        can fail.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure which load model fits your system?</h2>
+        <p>I build workload models from your production data, so the test answers the question your
+          launch actually depends on.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-exec-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-exec-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

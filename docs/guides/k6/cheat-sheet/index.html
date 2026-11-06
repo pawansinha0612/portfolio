@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k6 cheat sheet: CLI, options, executors, metrics — Pawan Sinha</title>
+  <meta name="description" content="A printable k6 cheat sheet: CLI commands and flags, options, all executors, built-in metrics, check and threshold syntax, environment variables and outputs.">
+  <meta property="og:title" content="k6 cheat sheet (printable): CLI flags, options, executors, metrics, thresholds">
+  <meta property="og:description" content="A printable k6 cheat sheet: CLI commands and flags, options, all executors, built-in metrics, check and threshold syntax, environment variables and outputs.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/k6/cheat-sheet/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/k6/cheat-sheet/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "k6 cheat sheet: CLI, options, executors, metrics", "description": "A printable k6 cheat sheet: CLI commands and flags, options, all executors, built-in metrics, check and threshold syntax, environment variables and outputs.", "url": "https://pawansinha.com.au/guides/k6/cheat-sheet/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/k6/">k6</a> · Cheat sheet</p>
+      <h1>k6 cheat sheet</h1>
+      <p class="lead">Everything you look up twice, on one page. Written for k6 v1.x and v2.x. Print it
+        with Ctrl+P or Cmd+P: the site menu and footer are hidden on paper.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>Sections</p>
+        <ol>
+          <li><a href="#cli">Commands and run flags</a></li>
+          <li><a href="#lifecycle">Script lifecycle</a></li>
+          <li><a href="#options">Options</a></li>
+          <li><a href="#executors">Executors</a></li>
+          <li><a href="#metrics">Built-in metrics</a></li>
+          <li><a href="#checks">Checks, thresholds, custom metrics</a></li>
+          <li><a href="#http">HTTP requests</a></li>
+          <li><a href="#exec">Execution context and data</a></li>
+          <li><a href="#env">Environment variables and outputs</a></li>
+          <li><a href="#skeleton">Script skeleton</a></li>
+        </ol>
+      </div>
+
+      <h2 id="cli">Commands and run flags</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Command</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>k6 run script.js</code></td><td>Run a test (<code>.js</code> or <code>.ts</code>)</td></tr>
+          <tr><td><code>k6 inspect script.js</code></td><td>Load the script and print the resolved options. No traffic. Good CI lint.</td></tr>
+          <tr><td><code>k6 new script.js</code></td><td>Create a starter script</td></tr>
+          <tr><td><code>k6 archive script.js</code></td><td>Bundle script, imports and files into a <code>.tar</code></td></tr>
+          <tr><td><code>k6 cloud run script.js</code></td><td>Run in Grafana Cloud k6 (<code>--local-execution</code> runs here, streams results there)</td></tr>
+          <tr><td><code>k6 version</code></td><td>Print the version. Check it first when an import fails.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th><code>k6 run</code> flag</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>-u, --vus 10</code></td><td>Number of VUs</td></tr>
+          <tr><td><code>-d, --duration 5m</code></td><td>Duration. With <code>--vus</code>: a <code>constant-vus</code> scenario.</td></tr>
+          <tr><td><code>-i, --iterations 100</code></td><td>Total iterations, shared across VUs (<code>shared-iterations</code>)</td></tr>
+          <tr><td><code>-s, --stage 1m:50</code></td><td>Add a stage (repeatable): ramp to 50 VUs over 1 m</td></tr>
+          <tr><td><code>-e, --env KEY=value</code></td><td>Set <code>__ENV.KEY</code></td></tr>
+          <tr><td><code>-o, --out json=file.json</code></td><td>Send metrics to an output (repeatable)</td></tr>
+          <tr><td><code>--tag testid=run42</code></td><td>Tag every metric in the run</td></tr>
+          <tr><td><code>--http-debug</code> / <code>=full</code></td><td>Log request and response headers / and bodies</td></tr>
+          <tr><td><code>--summary-mode full</code></td><td>Per-group and per-scenario summary (v1.0+)</td></tr>
+          <tr><td><code>--summary-trend-stats "avg,p(95),p(99),max"</code></td><td>Which stats the summary shows for trends</td></tr>
+          <tr><td><code>--no-thresholds</code></td><td>Ignore thresholds (debug only)</td></tr>
+          <tr><td><code>-q, --quiet</code></td><td>No progress bar (CI logs)</td></tr>
+          <tr><td><code>--insecure-skip-tls-verify</code></td><td>Accept self-signed certificates</td></tr>
+        </tbody>
+      </table></div>
+      <p>CLI flags like <code>--vus</code>, <code>--duration</code> and <code>--iterations</code>
+        replace the script's <code>scenarios</code>. Precedence, highest first: CLI flags, then
+        <code>K6_*</code> environment variables, then <code>options</code> in the script.</p>
+
+      <h2 id="lifecycle">Script lifecycle</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Stage</th><th>Runs</th><th>Allowed</th></tr></thead>
+        <tbody>
+          <tr><td>Init (top level)</td><td>Per VU (plus once for options)</td><td><code>import</code>, <code>open()</code>, <code>SharedArray</code>, <code>options</code>. No HTTP.</td></tr>
+          <tr><td><code>setup()</code></td><td>Once, before load</td><td>HTTP, returns data (JSON-serialisable) to every VU</td></tr>
+          <tr><td><code>default(data)</code> / <code>exec</code> fn</td><td>Every iteration</td><td>The journey</td></tr>
+          <tr><td><code>teardown(data)</code></td><td>Once, after load</td><td>Clean-up</td></tr>
+          <tr><td><code>handleSummary(data)</code></td><td>Once, at the end</td><td>Return <code>{ 'file': content, stdout: text }</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="options">Options</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Option</th><th>Example</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td><code>scenarios</code></td><td><code>{ name: { executor, ... } }</code></td><td>See executors below</td></tr>
+          <tr><td><code>thresholds</code></td><td><code>{ http_req_failed: ['rate&lt;0.01'] }</code></td><td>Fail = exit code 99</td></tr>
+          <tr><td><code>vus</code>, <code>duration</code>, <code>iterations</code>, <code>stages</code></td><td><code>stages: [{ duration: '1m', target: 50 }]</code></td><td>Shortcuts that create one scenario</td></tr>
+          <tr><td><code>discardResponseBodies</code></td><td><code>true</code></td><td>Saves memory. Per request: <code>{ responseType: 'text' }</code></td></tr>
+          <tr><td><code>noCookiesReset</code></td><td><code>true</code></td><td>Keep cookies across iterations</td></tr>
+          <tr><td><code>noConnectionReuse</code></td><td><code>true</code></td><td>New connection per request (no keep-alive)</td></tr>
+          <tr><td><code>noVUConnectionReuse</code></td><td><code>true</code></td><td>New connections each iteration</td></tr>
+          <tr><td><code>insecureSkipTLSVerify</code></td><td><code>true</code></td><td>Self-signed certs</td></tr>
+          <tr><td><code>userAgent</code></td><td><code>'my-load-test'</code></td><td>Lets the server team filter your traffic</td></tr>
+          <tr><td><code>hosts</code></td><td><code>{ 'api.example.com': '10.0.0.5' }</code></td><td>DNS override</td></tr>
+          <tr><td><code>summaryTrendStats</code></td><td><code>['avg', 'p(95)', 'p(99)', 'max']</code></td><td>Summary columns</td></tr>
+          <tr><td><code>setupTimeout</code>, <code>teardownTimeout</code></td><td><code>'2m'</code></td><td>Default 60 s</td></tr>
+          <tr><td><code>tags</code></td><td><code>{ testid: 'run42' }</code></td><td>Tags on every metric</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="executors">Executors</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Executor</th><th>Model</th><th>Key settings</th></tr></thead>
+        <tbody>
+          <tr><td><code>shared-iterations</code></td><td>Closed</td><td><code>vus</code>, <code>iterations</code> (total), <code>maxDuration</code></td></tr>
+          <tr><td><code>per-vu-iterations</code></td><td>Closed</td><td><code>vus</code>, <code>iterations</code> (each), <code>maxDuration</code></td></tr>
+          <tr><td><code>constant-vus</code></td><td>Closed</td><td><code>vus</code>, <code>duration</code></td></tr>
+          <tr><td><code>ramping-vus</code></td><td>Closed</td><td><code>startVUs</code>, <code>stages[{duration, target}]</code>, <code>gracefulRampDown</code></td></tr>
+          <tr><td><code>constant-arrival-rate</code></td><td>Open</td><td><code>rate</code>, <code>timeUnit</code>, <code>duration</code>, <code>preAllocatedVUs</code>, <code>maxVUs</code></td></tr>
+          <tr><td><code>ramping-arrival-rate</code></td><td>Open</td><td><code>startRate</code>, <code>timeUnit</code>, <code>stages[{duration, target}]</code>, <code>preAllocatedVUs</code>, <code>maxVUs</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Every scenario also takes <code>exec</code>, <code>startTime</code>, <code>gracefulStop</code>
+        (30 s), <code>env</code>, <code>tags</code> and <code>options</code>. VUs for arrival-rate:
+        rate × iteration time (<a href="/glossary/littles-law/">Little's Law</a>). Missed starts go to
+        <code>dropped_iterations</code>. <code>externally-controlled</code> was removed in v2.0.</p>
+
+      <h2 id="metrics">Built-in metrics</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Metric</th><th>Type</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>http_req_duration</code></td><td>Trend</td><td>sending + waiting + receiving (no DNS/connect/TLS)</td></tr>
+          <tr><td><code>http_req_waiting</code></td><td>Trend</td><td>Time to first byte after sending</td></tr>
+          <tr><td><code>http_req_blocked</code></td><td>Trend</td><td>Blocked waiting for a free TCP connection slot before the request starts</td></tr>
+          <tr><td><code>http_req_connecting</code>, <code>http_req_tls_handshaking</code></td><td>Trend</td><td>TCP connect and TLS time (0 on reused connections)</td></tr>
+          <tr><td><code>http_req_sending</code>, <code>http_req_receiving</code></td><td>Trend</td><td>Upload and download time</td></tr>
+          <tr><td><code>http_req_failed</code></td><td>Rate</td><td>Share of requests with an unexpected status (default: not 200-399) or a network error</td></tr>
+          <tr><td><code>http_reqs</code></td><td>Counter</td><td>Requests sent</td></tr>
+          <tr><td><code>iterations</code>, <code>iteration_duration</code></td><td>Counter, Trend</td><td>Completed iterations and their length</td></tr>
+          <tr><td><code>dropped_iterations</code></td><td>Counter</td><td>Arrival-rate starts skipped: no free VU</td></tr>
+          <tr><td><code>vus</code>, <code>vus_max</code></td><td>Gauge</td><td>Active and allocated VUs</td></tr>
+          <tr><td><code>checks</code></td><td>Rate</td><td>Share of checks that passed</td></tr>
+          <tr><td><code>group_duration</code></td><td>Trend</td><td>Time per <code>group()</code></td></tr>
+          <tr><td><code>data_sent</code>, <code>data_received</code></td><td>Counter</td><td>Bytes</td></tr>
+          <tr><td><code>grpc_req_duration</code></td><td>Trend</td><td>gRPC unary call time</td></tr>
+          <tr><td><code>ws_connecting</code>, <code>ws_session_duration</code>, <code>ws_msgs_sent</code>, <code>ws_msgs_received</code></td><td>Trend, Counter</td><td>WebSockets</td></tr>
+          <tr><td><code>browser_web_vital_lcp</code>, <code>_inp</code>, <code>_cls</code>, <code>_fcp</code>, <code>_ttfb</code></td><td>Trend</td><td>Browser module</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="checks">Checks, thresholds, custom metrics</h2>
+      <pre class="ex-code"><code>check(res, {
+  'status 200': (r) =&gt; r.status === 200,
+  'has token': (r) =&gt; r.json('access_token') !== undefined,
+});                                    // returns true if all passed; never stops the test
+
+thresholds: {
+  http_req_duration: ['p(95)&lt;500', 'p(99)&lt;1500'],        // Trend: avg min max med p(N)
+  http_req_failed: ['rate&lt;0.01',                          // Rate: rate
+    { threshold: 'rate&lt;0.1', abortOnFail: true, delayAbortEval: '30s' }], // stop early
+  http_reqs: ['count&gt;1000'],                              // Counter: count, rate
+  vus: ['value&lt;=200'],                                    // Gauge: value
+  checks: ['rate&gt;0.99'],
+  'http_req_duration{name:GET /products}': ['p(95)&lt;300'], // by tag
+  'http_req_duration{scenario:buy}': ['p(95)&lt;800'],       // by scenario
+  'group_duration{group:::checkout}': ['p(95)&lt;2000'],     // group tag starts with ::
+  'checks{check:status 200}': ['rate&gt;0.999'],
+}
+
+import { Trend, Counter, Rate, Gauge } from 'k6/metrics';
+const t = new Trend('checkout_time', true); t.add(ms);    // true = time values
+const c = new Counter('orders');            c.add(1);
+const r = new Rate('bad_body');             r.add(isBad);  // true/false
+const g = new Gauge('queue_depth');         g.add(n);</code></pre>
+      <p>Exit codes: <code>0</code> pass, <code>99</code> threshold failed, <code>104</code> invalid
+        config, <code>107</code> script error, <code>108</code> <code>exec.test.abort()</code>.
+        Note: a JavaScript object can't have the same key twice. Put several thresholds for one
+        metric in one array.</p>
+
+      <h2 id="http">HTTP requests</h2>
+      <pre class="ex-code"><code>http.get(url, params)
+http.post(url, body, params)            // also put, patch, del, head, options, request(method, ...)
+http.batch([['GET', url1], ['GET', url2]])  // parallel requests, like a browser
+
+params = {
+  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  tags: { name: 'GET /products/:id' },  // group dynamic URLs
+  timeout: '30s',                       // default 60s
+  responseType: 'text',                 // 'none' | 'binary'
+  responseCallback: http.expectedStatuses(200, 404),
+}
+
+res.status   res.body   res.headers['Content-Type']   res.timings.duration
+res.json('items.0.id')                  // GJSON path
+res.html().find('input[name=csrf]').attr('value')
+res.cookies.session[0].value
+http.cookieJar().set(url, 'name', 'value')</code></pre>
+
+      <h2 id="exec">Execution context and data</h2>
+      <pre class="ex-code"><code>import exec from 'k6/execution';
+exec.vu.idInTest                  // 1..N, unique in the whole test
+exec.vu.iterationInScenario       // 0.. for this VU in this scenario
+exec.scenario.iterationInTest     // 0.. unique across VUs: one data row each
+exec.scenario.name
+exec.test.abort('reason')         // stop now, exit code 108
+__VU  __ITER  __ENV.NAME          // older globals
+
+import { SharedArray } from 'k6/data';
+const users = new SharedArray('users', () =&gt; JSON.parse(open('./users.json')));
+
+import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
+const rows = new SharedArray('rows', () =&gt;
+  papaparse.parse(open('./users.csv'), { header: true, skipEmptyLines: true }).data);</code></pre>
+
+      <h2 id="env">Environment variables and outputs</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Variable</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>K6_VUS</code>, <code>K6_DURATION</code>, <code>K6_ITERATIONS</code></td><td>Same as the flags</td></tr>
+          <tr><td><code>K6_OUT</code></td><td>Same as <code>--out</code></td></tr>
+          <tr><td><code>K6_WEB_DASHBOARD=true</code></td><td>Live dashboard on port 5665</td></tr>
+          <tr><td><code>K6_WEB_DASHBOARD_EXPORT=report.html</code></td><td>Save an HTML report (run must be longer than 3 × period)</td></tr>
+          <tr><td><code>K6_WEB_DASHBOARD_PORT=-1</code></td><td>No dashboard server (CI)</td></tr>
+          <tr><td><code>K6_PROMETHEUS_RW_SERVER_URL</code></td><td>Prometheus remote write endpoint</td></tr>
+          <tr><td><code>K6_PROMETHEUS_RW_TREND_STATS</code></td><td>e.g. <code>p(95),p(99),max</code> (default p(99))</td></tr>
+          <tr><td><code>K6_BROWSER_HEADLESS=false</code></td><td>Show the browser</td></tr>
+          <tr><td><code>K6_BROWSER_EXECUTABLE_PATH</code></td><td>Which Chrome/Chromium to use</td></tr>
+        </tbody>
+      </table></div>
+      <pre class="ex-code"><code>--out json=results.json        --out csv=results.csv.gz
+--out experimental-prometheus-rw
+--out influxdb=http://localhost:8086/k6     # InfluxDB 1.x
+--out opentelemetry                         # experimental-opentelemetry on k6 v1.0</code></pre>
+
+      <h2 id="skeleton">Script skeleton</h2>
+      <pre class="ex-code"><code>import http from 'k6/http';
+import { check, group } from 'k6';
+import { SharedArray } from 'k6/data';
+import { Trend, Counter, Rate } from 'k6/metrics';
+import exec from 'k6/execution';
+
+const BASE = __ENV.BASE_URL || 'http://localhost:8080';
+const users = new SharedArray('users', () =&gt; JSON.parse(open('./data/users.json')));
+const cartTime = new Trend('cart_time', true);
+const orders = new Counter('orders');
+const badBody = new Rate('bad_body');
+
+export const options = {
+  scenarios: {
+    load: {
+      executor: 'ramping-arrival-rate',
+      startRate: 0, timeUnit: '1s', preAllocatedVUs: 50, maxVUs: 300,
+      stages: [{ duration: '5m', target: 100 }, { duration: '20m', target: 100 }, { duration: '2m', target: 0 }],
+    },
+  },
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(95)&lt;500', 'p(99)&lt;1500'],
+    'http_req_duration{name:POST /cart}': ['p(95)&lt;800'],
+    checks: ['rate&gt;0.99'],
+    dropped_iterations: ['count&lt;10'],
+  },
+  discardResponseBodies: false,
+  userAgent: 'k6-load-test',
+};
+
+export function setup() {
+  const res = http.post(`${BASE}/login`, JSON.stringify({ username: 'svc', password: __ENV.PASSWORD }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return { token: res.json('access_token'), startedAt: Date.now() };
+}
+
+export default function (data) {
+  const user = users[exec.scenario.iterationInTest % users.length];
+  group('cart', () =&gt; {
+    const res = http.post(`${BASE}/cart`, JSON.stringify({ productId: 7, user: user.username }), {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
+      tags: { name: 'POST /cart' },
+    });
+    const ok = check(res, { 'status 201': (r) =&gt; r.status === 201 });
+    badBody.add(!ok);
+    cartTime.add(res.timings.duration);
+    if (ok) orders.add(1);
+  });
+  // no sleep() at the end: in an arrival-rate scenario the rate sets the pacing
+}
+
+export function teardown(data) {
+  console.log(`ran for ${(Date.now() - data.startedAt) / 1000}s`);
+}</code></pre>
+      <p>Full explanations: the <a href="/guides/k6/">k6 guides</a>. Practice with the free
+        <a href="/course/k6/">k6 email course</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want a second pair of eyes on your k6 tests?</h2>
+        <p>I review and build k6 suites, workload models and CI gates for teams of any size.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-k6-cheat-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-k6-cheat-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

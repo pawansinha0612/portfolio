@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JMeter guides: practical how-tos for JMeter 5.6 — Pawan Sinha</title>
+  <meta name="description" content="Practical Apache JMeter 5.6 how-tos: correlation, data, auth tokens, assertions, pacing, load shapes, distributed runs, CI, reports and a cheat sheet.">
+  <meta property="og:title" content="JMeter guides: from first test plan to CI gates and distributed runs">
+  <meta property="og:description" content="Practical Apache JMeter 5.6 how-tos: correlation, data, auth tokens, assertions, pacing, load shapes, distributed runs, CI, reports and a cheat sheet.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/jmeter/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/jmeter/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · JMeter</p>
+      <h1>JMeter guides</h1>
+      <p class="lead">Practical, complete how-tos for Apache JMeter 5.6, written for people who need a test that tells the truth rather than a test that runs. Each guide uses real element names, menu paths and settings from JMeter 5.6.3, and the runnable plans, functions and scripts were tested on it. Start at the top if you are new, or jump to the problem in front of you.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>Build the script</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/jmeter/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>Install Java and JMeter, GUI vs CLI, a first test plan and your first proper command-line run with an HTML report.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/correlation/">
+        <span class="g-tag">Scripting</span>
+        <h3>Correlation</h3>
+        <p>Capture tokens and IDs with Regular Expression, JSON and Boundary Extractors, and debug them when they fail.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/parameterisation/">
+        <span class="g-tag">Scripting</span>
+        <h3>Parameterisation</h3>
+        <p>CSV Data Set Config sharing and EOF options, __Random, __UUID, __time, and -J properties read with __P.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/auth-tokens/">
+        <span class="g-tag">Scripting</span>
+        <h3>Auth tokens</h3>
+        <p>Log in once per user, share an OAuth2 token across threads, send Bearer headers and refresh before expiry.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/assertions/">
+        <span class="g-tag">Scripting</span>
+        <h3>Assertions</h3>
+        <p>Response, JSON, Duration and Size assertions that catch 200-OK error pages without eating generator CPU.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/websockets-grpc-kafka/">
+        <span class="g-tag">Protocols</span>
+        <h3>WebSockets, gRPC and Kafka</h3>
+        <p>Which plugins exist, how to use the WebSocket Samplers, a Groovy Kafka fallback, and when k6 fits better.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Shape and run the load</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/jmeter/thinktime-and-pacing/">
+        <span class="g-tag">Workload</span>
+        <h3>Think time and pacing</h3>
+        <p>Constant, Uniform and Gaussian timers, iteration pacing, throughput timers and the open vs closed model.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/thread-groups-and-load-shapes/">
+        <span class="g-tag">Workload</span>
+        <h3>Thread groups and load shapes</h3>
+        <p>Ramp-up maths, Concurrency, Ultimate and Arrivals thread groups (plugin), and the core Open Model Thread Group.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/distributed-testing/">
+        <span class="g-tag">Scale</span>
+        <h3>Distributed testing</h3>
+        <p>Remote servers, the RMI SSL keystore, -R and -G, data per node, firewalls, and when cloud is simpler.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/ci-pipelines/">
+        <span class="g-tag">Automation</span>
+        <h3>CI pipelines</h3>
+        <p>Working GitHub Actions and GitLab CI jobs, plus a small script that fails the build on p95 and error rate.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Read the results</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/jmeter/results-and-reports/">
+        <span class="g-tag">Analysis</span>
+        <h3>Results and reports</h3>
+        <p>JTL columns, Elapsed vs Latency vs Connect, every HTML dashboard graph, percentiles and report settings.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/common-mistakes/">
+        <span class="g-tag">Checklist</span>
+        <h3>Common mistakes</h3>
+        <p>Twelve mistakes that quietly invalidate a test, from GUI mode and default heap to coordinated omission.</p>
+      </a>
+      <a class="g-card" href="/guides/jmeter/cheat-sheet/">
+        <span class="g-tag">Reference</span>
+        <h3>Cheat sheet</h3>
+        <p>One printable page: CLI flags, functions, extractor syntax, Groovy objects, properties, JTL columns and load maths.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Related</h2>
+      <ul>
+        <li><a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a>: an honest comparison if you are choosing a tool.</li>
+        <li><a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a>: turn a <code>.jmx</code> into a k6 script in the browser.</li>
+        <li><a href="/tools/jtl-analyser/">JTL analyser</a>: percentiles, errors and timelines from a results file.</li>
+        <li><a href="/explain/percentiles/">Why averages lie</a> and <a href="/explain/load-profiles/">load profiles</a>: interactive explainers.</li>
+        <li><a href="/glossary/">Performance testing glossary</a>: the terms used across these guides.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a JMeter script?</h2>
+        <p>Book a free 30-minute call and we'll work through it together. If you need a test designed, built and run end to end, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-hub-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/" data-track="guide-jmeter-hub-guides">All guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

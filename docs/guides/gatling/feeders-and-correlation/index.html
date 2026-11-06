@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatling feeders, checks and correlation — Pawan Sinha</title>
+  <meta name="description" content="Feed Gatling simulations from CSV files and generators, extract values with jsonPath, css and regex checks, save them in the session and reuse them, in the Java DSL.">
+  <meta property="og:title" content="Gatling feeders and correlation: CSV data, checks, saveAs and the session">
+  <meta property="og:description" content="Feed Gatling simulations from CSV files and generators, extract values with jsonPath, css and regex checks, save them in the session and reuse them, in the Java DSL.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/gatling/feeders-and-correlation/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/gatling/feeders-and-correlation/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Gatling feeders, checks and correlation", "description": "Feed Gatling simulations from CSV files and generators, extract values with jsonPath, css and regex checks, save them in the session and reuse them, in the Java DSL.", "url": "https://pawansinha.com.au/guides/gatling/feeders-and-correlation/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/gatling/">Gatling</a> · Feeders and correlation</p>
+      <h1>Gatling feeders and correlation: real data, real sessions</h1>
+      <p class="lead">Every virtual user logs in as <code>test1</code>, adds product 42 to the cart and
+        checks out. The database serves one hot row from memory and the test passes beautifully.
+        Feeders give each user different data. Checks with <code>saveAs</code> carry server-generated
+        values from one request to the next.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-toc">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#session">The session, in one paragraph</a></li>
+          <li><a href="#feeders">Feeders and their strategies</a></li>
+          <li><a href="#flow">A full journey: login, extract, reuse</a></li>
+          <li><a href="#checks">Check cookbook</a></li>
+          <li><a href="#debug">Debugging correlation</a></li>
+        </ol>
+      </div>
+
+      <h2 id="session">The session, in one paragraph</h2>
+      <p>Each virtual user has a session: a map of key to value that lives for the user's journey.
+        Feeders put values into it. Checks with <code>saveAs("key")</code> put extracted values into
+        it. <code>#{key}</code> in any string reads from it. Sessions are immutable, so in Java code
+        you call <code>session.set(...)</code> and return the new session. Cookies are kept per user
+        automatically, so cookie-based sessions need no work. See
+        <a href="/glossary/correlation/">correlation</a> and
+        <a href="/glossary/parameterisation/">parameterisation</a> in the glossary.</p>
+
+      <h2 id="feeders">Feeders and their strategies</h2>
+      <p>Put CSV files in <code>src/test/resources</code> (Maven) or
+        <code>src/gatling/resources</code> (Gradle). The header row gives the session keys.</p>
+      <pre class="ex-code"><code>username,password
+user001,Passw0rd!
+user002,Passw0rd!</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Strategy</th><th>Behaviour</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><code>csv("f.csv")</code> (queue)</td><td>Each row once, in order. The test stops with an error when rows run out.</td><td>Data that must not be reused: one-time codes, unique accounts</td></tr>
+          <tr><td><code>.circular()</code></td><td>Back to the top when it reaches the end</td><td>Accounts that can be reused</td></tr>
+          <tr><td><code>.random()</code></td><td>A random row each time, repeats allowed</td><td>Search terms, product ids</td></tr>
+          <tr><td><code>.shuffle()</code></td><td>Shuffled once, then each row once</td><td>Unique data in random order</td></tr>
+        </tbody>
+      </table></div>
+      <p>Keep data files to the size the test needs, and zip big ones (<code>.unzip()</code> reads
+        them). For values you can generate, such as unique order
+        references, use an iterator feeder (shown below) instead of a giant CSV.</p>
+
+      <h2 id="flow">A full journey: login, extract, reuse</h2>
+      <pre class="ex-code"><code>package example;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+import io.gatling.javaapi.core.*;
+import io.gatling.javaapi.http.*;
+import java.util.UUID;
+
+public class CheckoutSimulation extends Simulation {
+
+  HttpProtocolBuilder httpProtocol = http
+      .baseUrl(System.getProperty("baseUrl", "http://localhost:8080"))
+      .contentTypeHeader("application/json");
+
+  // src/test/resources/users.csv with a header row: username,password
+  FeederBuilder&lt;String&gt; users = csv("users.csv").circular();
+
+  ScenarioBuilder checkout = scenario("Checkout")
+      .feed(users) // puts #{username} and #{password} into this user's session
+      .exec(
+          http("Login")
+              .post("/login")
+              .body(StringBody("{\"username\":\"#{username}\",\"password\":\"#{password}\"}"))
+              .check(status().is(200))
+              .check(jsonPath("$.access_token").saveAs("token")))
+      .exitHereIfFailed() // no token, no point continuing
+      .exec(
+          http("List products")
+              .get("/products")
+              .header("Authorization", "Bearer #{token}")
+              .check(jsonPath("$.items[*].id").findRandom().saveAs("productId")))
+      .exec(session -&gt; session.set("orderRef", "load-" + UUID.randomUUID()))
+      .exec(
+          http("Add to cart")
+              .post("/cart")
+              .header("Authorization", "Bearer #{token}")
+              .body(StringBody("{\"productId\":#{productId},\"ref\":\"#{orderRef}\"}"))
+              .check(status().is(201))
+              .check(jsonPath("$.cartId").saveAs("cartId")))
+      .exec(
+          http("Checkout page")
+              .get("/checkout")
+              .check(css("input[name='csrf']", "value").saveAs("csrf")))
+      .exec(
+          http("Pay")
+              .post("/checkout")
+              .header("Content-Type", "application/x-www-form-urlencoded")
+              .formParam("csrf", "#{csrf}")
+              .formParam("cartId", "#{cartId}")
+              .check(status().is(200)))
+      .exec(session -&gt; {
+        // Plain Java for debugging: print what this user extracted
+        System.out.println("cart " + session.getString("cartId") + " for " + session.getString("username"));
+        return session;
+      });
+
+  {
+    setUp(checkout.injectOpen(constantUsersPerSec(5).during(60)))
+        .protocols(httpProtocol)
+        .assertions(
+            global().failedRequests().percent().lt(1.0),
+            details("Pay").responseTime().percentile(95.0).lt(800),
+            forAll().responseTime().percentile(99.0).lt(2000));
+  }
+}</code></pre>
+      <ul>
+        <li><code>jsonPath("$.access_token").saveAs("token")</code> extracts the token, and every
+          later request sends <code>Bearer #{token}</code>.</li>
+        <li><code>findRandom()</code> picks one of the ids, so users don't all buy the same
+          product.</li>
+        <li><code>css("input[name='csrf']", "value")</code> reads a hidden form field from HTML.</li>
+        <li><code>exitHereIfFailed()</code> stops a user whose login failed, instead of sending a
+          string of 401s that pollute the results.</li>
+        <li>The <code>System.out.println</code> is for debugging only. Remove it before a real
+          run: printing from thousands of users costs CPU on the load generator.</li>
+      </ul>
+
+      <h2 id="checks">Check cookbook</h2>
+      <pre class="ex-code"><code>package example;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+import io.gatling.javaapi.core.*;
+import io.gatling.javaapi.http.*;
+import java.time.Duration;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+public class ChecksSimulation extends Simulation {
+  HttpProtocolBuilder httpProtocol = http.baseUrl("http://localhost:8080");
+
+  FeederBuilder&lt;String&gt; q = csv("users.csv");             // queue (default): fails when rows run out
+  FeederBuilder&lt;String&gt; c = csv("users.csv").circular();  // start again at the top
+  FeederBuilder&lt;String&gt; r = csv("users.csv").random();    // random row each time
+  FeederBuilder&lt;String&gt; s = csv("users.csv").shuffle();   // shuffled once, then a queue
+
+  // Generated data: a fresh unique value for every user that feeds from it
+  Iterator&lt;Map&lt;String, Object&gt;&gt; orderRefs = Stream.generate(
+      (Supplier&lt;Map&lt;String, Object&gt;&gt;) () -&gt; Map.of("orderRef", "load-" + UUID.randomUUID())
+  ).iterator();
+
+  ScenarioBuilder scn = scenario("Checks and flow")
+      .feed(c)
+      .feed(orderRefs)
+      .exec(http("Search")
+          .get("/products")
+          .queryParam("q", "shoes")
+          .check(status().in(200, 304))
+          .check(jmesPath("items[0].name").saveAs("firstName"))
+          .check(jsonPath("$.items[*].id").findAll().saveAs("allIds"))
+          .check(regex("\"price\":(\\d+)").find().saveAs("price"))
+          .check(header("Content-Type").is("application/json"))
+          .check(jsonPath("$.nextPage").optional().saveAs("nextPage")))
+      .doIf(session -&gt; session.contains("nextPage")).then(
+          exec(http("Next page").get("#{nextPage}")))
+      .foreach("#{allIds}", "id").on(
+          exec(http("Item").get("/products/#{id}")))
+      .repeat(3).on(
+          pace(Duration.ofSeconds(5))   // each loop takes at least 5 s, including the request
+              .exec(http("Poll").get("/health")))
+      .exec(session -&gt; {
+        int price = session.getInt("price");
+        return session.set("discounted", price * 0.9);  // sessions are immutable: return the new one
+      });
+
+  {
+    setUp(scn.injectOpen(atOnceUsers(1))).protocols(httpProtocol);
+  }
+}</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Check</th><th>Extracts from</th></tr></thead>
+        <tbody>
+          <tr><td><code>jsonPath("$.a.b")</code></td><td>JSON, JSONPath syntax</td></tr>
+          <tr><td><code>jmesPath("a.b")</code></td><td>JSON, JMESPath syntax (faster, stricter)</td></tr>
+          <tr><td><code>css("selector", "attr")</code></td><td>HTML</td></tr>
+          <tr><td><code>xpath("//a/@href")</code></td><td>XML</td></tr>
+          <tr><td><code>regex("...(group)...")</code></td><td>Anything, as text</td></tr>
+          <tr><td><code>header("Name")</code></td><td>Response headers</td></tr>
+          <tr><td><code>status()</code>, <code>bodyString()</code>, <code>responseTimeInMillis()</code></td><td>The response itself</td></tr>
+        </tbody>
+      </table></div>
+      <p>After the extractor: <code>find()</code> (the default, first match), <code>find(n)</code>,
+        <code>findAll()</code>, <code>findRandom()</code> or <code>count()</code>. Then a validation
+        (<code>is</code>, <code>in</code>, <code>exists</code>, <code>notExists</code>), and/or
+        <code>saveAs</code>. If you add no validation, Gatling checks that the value exists. That
+        means a missing value fails the request, unless you mark it <code>optional()</code>.</p>
+
+      <h2 id="debug">Debugging correlation</h2>
+      <ul>
+        <li>Run one user (<code>atOnceUsers(1)</code>) until the journey works. Then add load.</li>
+        <li>Print the session with <code>exec(session -&gt; { System.out.println(session); return session; })</code>.</li>
+        <li>Turn on request logging in <code>logback-test.xml</code>. The demo projects ship with
+          commented-out loggers for failed and all HTTP requests.</li>
+        <li>Compare a failing request with the same request from the browser's developer tools. The
+          missing value is usually a header, a cookie set by JavaScript, or a token in a redirect.</li>
+      </ul>
+      <p>Next: <a href="/guides/gatling/ci-and-reports/">Gatling in CI, assertions and reports</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Complex login or token chain?</h2>
+        <p>I script the awkward journeys: SSO, signed requests, CSRF and multi-step checkouts.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-gat-feed-call">Book a free call</a>
+          <a class="btn btn-ghost" href="/services/performance-testing/" data-track="guide-gat-feed-svc">Performance testing services</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

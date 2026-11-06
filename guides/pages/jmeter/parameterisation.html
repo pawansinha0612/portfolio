@@ -1,0 +1,136 @@
+<!--{"title": "JMeter parameterisation: CSV data, functions, properties", "og_title": "JMeter parameterisation: CSV Data Set Config, __Random, __UUID, __time and -J properties", "description": "Feed JMeter realistic test data: CSV Data Set Config sharing and EOF options, __Random, __UUID and __time functions, variables and -J properties with __P.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/jmeter/">JMeter</a> · Parameterisation</p>
+      <h1>JMeter parameterisation: 500 users, not one user 500 times</h1>
+      <p class="lead">Your test logs in as the same account from 500 threads and searches for the same product every time. The database serves everything from cache, the account lock-out kicks in at minute three, and the report says the system is fast. Parameterisation gives each virtual user its own data so the server does real work.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#csv">CSV Data Set Config</a></li>
+          <li><a href="#sharing">Sharing mode and EOF behaviour</a></li>
+          <li><a href="#functions">Generated data: __Random, __UUID, __time</a></li>
+          <li><a href="#udv">User Defined Variables</a></li>
+          <li><a href="#props">Properties: -J and __P</a></li>
+          <li><a href="#rules">Data design rules</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="csv">1. CSV Data Set Config</h2>
+      <p>The workhorse. Prepare a file such as <code>data/users.csv</code>:</p>
+      <pre class="ex-code"><code>username,password,postcode
+ana.k@example.test,Pa55-0001,3000
+ben.t@example.test,Pa55-0002,3121
+chloe.w@example.test,Pa55-0003,3056</code></pre>
+      <p>Add it with <strong>Thread Group → Add → Config Element → CSV Data Set Config</strong>:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Setting</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Filename</td><td><code>data/users.csv</code></td><td>Relative paths resolve from the <code>.jmx</code> file's folder. Avoid absolute paths, they break on CI and remote nodes</td></tr>
+          <tr><td>File encoding</td><td><code>UTF-8</code></td><td>Set it explicitly, the platform default differs between Windows and Linux</td></tr>
+          <tr><td>Variable Names</td><td><em>(empty)</em></td><td>Empty means "read names from the header line". Or list them: <code>username,password,postcode</code></td></tr>
+          <tr><td>Ignore first line</td><td>False</td><td>Only applies when Variable Names is filled in. Set True then, so the header is not used as data</td></tr>
+          <tr><td>Delimiter</td><td><code>,</code></td><td>Use <code>\t</code> for tab-separated files</td></tr>
+          <tr><td>Allow quoted data?</td><td>False</td><td>Set True if values contain the delimiter: <code>"Smith, Jo"</code></td></tr>
+          <tr><td>Recycle on EOF?</td><td>See below</td><td></td></tr>
+          <tr><td>Stop thread on EOF?</td><td>See below</td><td></td></tr>
+          <tr><td>Sharing mode</td><td>All threads</td><td>See below</td></tr>
+        </tbody>
+      </table></div>
+      <p>Then use <code>${username}</code>, <code>${password}</code> and <code>${postcode}</code> in samplers. A new line is read at the start of each thread iteration, not on each request. So one iteration of the scenario sees one consistent row.</p>
+
+      <h2 id="sharing">2. Sharing mode and EOF behaviour</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Sharing mode</th><th>Behaviour</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>All threads (default)</td><td>One file pointer for the whole test. Each iteration of any thread takes the next line</td><td>Unique data across the test, e.g. one account per login</td></tr>
+          <tr><td>Current thread group</td><td>One pointer per thread group that contains the element</td><td>Two groups reading the same file independently</td></tr>
+          <tr><td>Current thread</td><td>Every thread reads the file from the top</td><td>Per-thread files, e.g. <code>user${__threadNum}.csv</code></td></tr>
+          <tr><td>Identifier (type any text)</td><td>Elements with the same identifier share a pointer</td><td>Sharing one pointer across selected thread groups</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Recycle on EOF</th><th>Stop thread on EOF</th><th>At the end of the file</th></tr></thead>
+        <tbody>
+          <tr><td>True (default)</td><td>ignored</td><td>Start again from line 1. Data is reused</td></tr>
+          <tr><td>False</td><td>True</td><td>The thread stops. Use for "each row exactly once", such as single-use vouchers</td></tr>
+          <tr><td>False</td><td>False (default)</td><td>Every variable becomes <code>&lt;EOF&gt;</code> and requests carry that text. Almost never what you want</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-warn">
+        <p><strong>Size the file for the test, not the smoke run.</strong> A 1-hour test at 50 iterations per second needs 180,000 rows if every iteration must be unique. With "Stop thread on EOF", a short file quietly ends the test early and the report shows a throughput drop that looks like a server problem.</p>
+      </div>
+      <p>For <a href="/guides/jmeter/distributed-testing/">distributed tests</a>, each remote node reads its own local copy of the file. Give every node a different slice, or all nodes will log in as the same users.</p>
+
+      <h2 id="functions">3. Generated data: __Random, __UUID, __time</h2>
+      <p>Functions are written as <code>${__name(arg1,arg2)}</code> and are evaluated each time the field is used. Escape a literal comma inside an argument as <code>\,</code>.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Function</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>${__Random(1,500)}</code></td><td>Integer from 1 to 500 inclusive</td></tr>
+          <tr><td><code>${__Random(1,500,qty)}</code></td><td>Same, and stores it in <code>${qty}</code> for reuse</td></tr>
+          <tr><td><code>${__RandomString(8,abcdef0123456789)}</code></td><td>8 characters from the given set</td></tr>
+          <tr><td><code>${__UUID()}</code></td><td>A random type 4 UUID, e.g. for idempotency keys or correlation IDs</td></tr>
+          <tr><td><code>${__time()}</code></td><td>Current time in epoch milliseconds</td></tr>
+          <tr><td><code>${__time(/1000)}</code></td><td>Epoch seconds</td></tr>
+          <tr><td><code>${__time(yyyy-MM-dd'T'HH:mm:ss)}</code></td><td>Formatted with Java <code>DateTimeFormatter</code> patterns</td></tr>
+          <tr><td><code>${__timeShift(yyyy-MM-dd,,P7D,,)}</code></td><td>Today plus 7 days, e.g. a booking date</td></tr>
+          <tr><td><code>${__RandomDate(yyyy-MM-dd,2026-01-01,2026-12-31,,)}</code></td><td>Random date in a range</td></tr>
+          <tr><td><code>${__threadNum}</code></td><td>Thread number within its thread group, from 1</td></tr>
+          <tr><td><code>${__counter(FALSE,)}</code></td><td>Global counter shared by all threads (TRUE gives one per thread)</td></tr>
+          <tr><td><code>${__RandomFromMultipleVars(skus)}</code></td><td>Random value from an extractor's <code>skus_1..N</code> results</td></tr>
+        </tbody>
+      </table></div>
+      <p>Generating unique values at run time costs CPU on the load generator. For large volumes, prepare data in advance and combine it with a cheap run-time element, for example <code>order-${__time()}-${__threadNum}</code>.</p>
+      <div class="g-note">
+        <p><strong>Random is not the same as realistic.</strong> Real traffic is skewed: a small share of products gets most of the views. A uniform <code>__Random</code> over 50,000 products defeats every cache, so it often tests worse than production. Build the CSV from real access patterns where you can, with popular items appearing more often.</p>
+      </div>
+
+      <h2 id="udv">4. User Defined Variables</h2>
+      <p>For constants used across the plan (base path, API version, tenant), use the table on the Test Plan element or <strong>Add → Config Element → User Defined Variables</strong>.</p>
+      <pre class="ex-code"><code>Name          Value
+apiBase       /api/v2
+tenant        ${__P(tenant,demo)}
+thinkMs       ${__P(think,3000)}</code></pre>
+      <p>These are evaluated once at the start, so they are cheap but not dynamic. Do not put <code>__Random</code> in a User Defined Variable expecting a new number per request. Put the function directly in the sampler field instead.</p>
+
+      <h2 id="props">5. Properties: -J and __P</h2>
+      <p>Variables belong to a thread. Properties belong to the JMeter process and are the way to pass settings in from outside. Set them on the command line or in a file:</p>
+      <pre class="ex-code"><code>jmeter -n -t plan.jmx -Jusers=200 -Jrampup=300 -Jhost=staging.example.com -l results.jtl
+
+# or keep environments in files and load one with -q
+jmeter -n -t plan.jmx -q env/staging.properties -l results.jtl</code></pre>
+      <pre class="ex-code"><code># env/staging.properties
+host=staging.example.com
+users=200
+rampup=300
+duration=1800</code></pre>
+      <p>Read them in the plan:</p>
+      <pre class="ex-code"><code>${__P(users,10)}                  value of "users", or 10 if not set
+${__P(host)}                      no default: returns 1 if unset (rarely what you want)
+${__property(host,,localhost)}    long form: name, variable to save in, default</code></pre>
+      <p>Always give <code>__P</code> a default. Without one it returns <code>1</code>, which is handy for a thread count but sends requests to a host called "1" if you forget <code>-Jhost</code>. On remote nodes use <code>-G</code> instead of <code>-J</code> so the property is sent to every server.</p>
+
+      <h2 id="rules">6. Data design rules</h2>
+      <ul>
+        <li><strong>One row per iteration, consistent within it.</strong> Username, password and the account's own order ID belong on the same row.</li>
+        <li><strong>Single-use data needs a plan.</strong> Vouchers, one-time passwords and "register new user" consume data. Use Stop thread on EOF, size the file, and have a reset script for the environment.</li>
+        <li><strong>Match the production mix.</strong> If 70% of real searches return results, a CSV where every search term hits is optimistic.</li>
+        <li><strong>Keep secrets out of git.</strong> Pass passwords and client secrets with <code>-J</code> from a CI secret, not in the CSV or <code>.jmx</code>.</li>
+        <li><strong>Watch the test, not just the server.</strong> A <code>&lt;EOF&gt;</code> or <code>${username}</code> in a request body means the data broke, not the system.</li>
+      </ul>
+      <p>The glossary entry on <a href="/glossary/parameterisation/">parameterisation</a> covers the concept in tool-neutral terms. <strong>Next:</strong> <a href="/guides/jmeter/auth-tokens/">handling auth tokens</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need test data that behaves like production?</h2>
+        <p>Book a free 30-minute call to talk through data volumes, skew and single-use records for your system. More on how I work in <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-jmeter-param-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/jmeter/" data-track="guide-jmeter-param-hub">All JMeter guides</a>
+        </p>
+      </div>
+    </section>
