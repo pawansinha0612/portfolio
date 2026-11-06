@@ -41,7 +41,10 @@
     }
   }
   </script>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <script type="application/ld+json">
+  {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much does a load test cost?", "acceptedAnswer": {"@type": "Answer", "text": "Most of my work is fixed-price, quoted after a free 30-minute call once I understand what you need tested. Ongoing work is billed hourly or by the day. You'll always have the price in writing before any work starts."}}, {"@type": "Question", "name": "How long does it take?", "acceptedAnswer": {"@type": "Answer", "text": "A go-live load test usually takes 1 to 2 weeks, a peak-readiness test about a week, and a functional test pass with a bug report a few days. The quote includes a timeline, and I'll tell you on the first call if your deadline is too tight."}}, {"@type": "Question", "name": "What do you need from us?", "acceptedAnswer": {"@type": "Answer", "text": "A test environment that's close to production, any traffic numbers or analytics you have, access to your monitoring (APM, logs, dashboards) if you use it, and one person who can answer questions. Someone who can watch the servers during the test runs helps a lot."}}, {"@type": "Question", "name": "Will you load test our production system?", "acceptedAnswer": {"@type": "Answer", "text": "Usually I test a production-like environment instead. If production is the only realistic option, we agree a low-traffic window, ramp up gradually, set a clear stop condition, and you let your hosting provider and any third-party services know beforehand."}}, {"@type": "Question", "name": "Which tool will you use?", "acceptedAnswer": {"@type": "Answer", "text": "Whichever fits. For new work I usually choose k6, because the scripts live in your code repository and run in your CI pipeline. If you already use JMeter, LoadRunner, Gatling or NeoLoad, I'll work with that. Either way, you keep the scripts."}}, {"@type": "Question", "name": "Will you sign an NDA?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. I'm happy to sign yours before we discuss any details, and I never name a client or share results without permission."}}, {"@type": "Question", "name": "Do you work remotely?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, with teams anywhere in Australia and overseas. In Melbourne I can also work hybrid or on-site."}}, {"@type": "Question", "name": "How do I pay?", "acceptedAnswer": {"@type": "Answer", "text": "I invoice through my ABN and you pay by bank transfer. Fixed-price work is usually 50% to start and 50% on delivery. If you hire through Upwork or an agency, their payment process applies. The details are in my terms of engagement."}}]}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -279,6 +282,28 @@
       </div>
     </section>
 
+    <section id="about" class="wrap section">
+      <div class="why about">
+        <div>
+          <p class="eyebrow">About me</p>
+          <h2>Hi, I'm Pawan.</h2>
+          <!-- PHOTO: save a square headshot as docs/me.jpg (about 600x600) and it replaces the initials automatically. -->
+          <figure class="about-photo">
+            <img src="/me.jpg" alt="Pawan Sinha" width="220" height="220" loading="lazy" onerror="this.remove()">
+            <span aria-hidden="true">PS</span>
+          </figure>
+          <p class="muted about-meta">Melbourne, Australia · ABN 43 627 514 346</p>
+        </div>
+        <div class="about-text">
+          <p>I ran my first load test in 2013 at IMS Health, and twelve years later it's still the part of software I find most interesting: the moment a system that works perfectly for one user falls over for ten thousand.</p>
+          <p>Since then I've load tested credit card and loan onboarding at ANZ, online banking at NAB, card transaction processing at Visa, and draw-night traffic for Powerball, Oz Lotto and Keno at The Lottery Corporation. I've used every major tool (LoadRunner, JMeter, Gatling and k6), and learned that the tool matters far less than a realistic workload model and careful analysis of the results.</p>
+          <p>Now I give smaller teams the same rigour without hiring a full-time performance engineer: a clear plan, realistic load, bottlenecks traced to the root cause, and a plain-English go/no-go before your big day.</p>
+          <p>You deal with me directly, not an account manager. I work Australian hours and contract through my ABN, Upwork or your agency, whichever suits you.</p>
+          <p><a href="#contact" class="btn btn-ghost" data-track="about-contact">Say hello</a></p>
+        </div>
+      </div>
+    </section>
+
     <section id="engage" class="wrap section">
       <p class="eyebrow">Ways to work together</p>
       <h2>Pick the engagement that fits</h2>
@@ -480,6 +505,45 @@
       </div>
     </section>
 
+    <section id="faq" class="wrap section">
+      <p class="eyebrow">FAQ</p>
+      <h2>Questions clients usually ask</h2>
+      <div class="faq">
+        <details>
+          <summary>How much does a load test cost?</summary>
+          <p>Most of my work is fixed-price, quoted after a free 30-minute call once I understand what you need tested. Ongoing work is billed hourly or by the day. You'll always have the price in writing before any work starts.</p>
+        </details>
+        <details>
+          <summary>How long does it take?</summary>
+          <p>A go-live load test usually takes 1 to 2 weeks, a peak-readiness test about a week, and a functional test pass with a bug report a few days. The quote includes a timeline, and I'll tell you on the first call if your deadline is too tight.</p>
+        </details>
+        <details>
+          <summary>What do you need from us?</summary>
+          <p>A test environment that's close to production, any traffic numbers or analytics you have, access to your monitoring (APM, logs, dashboards) if you use it, and one person who can answer questions. Someone who can watch the servers during the test runs helps a lot.</p>
+        </details>
+        <details>
+          <summary>Will you load test our production system?</summary>
+          <p>Usually I test a production-like environment instead. If production is the only realistic option, we agree a low-traffic window, ramp up gradually, set a clear stop condition, and you let your hosting provider and any third-party services know beforehand.</p>
+        </details>
+        <details>
+          <summary>Which tool will you use?</summary>
+          <p>Whichever fits. For new work I usually choose k6, because the scripts live in your code repository and run in your CI pipeline. If you already use JMeter, LoadRunner, Gatling or NeoLoad, I'll work with that. Either way, you keep the scripts.</p>
+        </details>
+        <details>
+          <summary>Will you sign an NDA?</summary>
+          <p>Yes. I'm happy to sign yours before we discuss any details, and I never name a client or share results without permission.</p>
+        </details>
+        <details>
+          <summary>Do you work remotely?</summary>
+          <p>Yes, with teams anywhere in Australia and overseas. In Melbourne I can also work hybrid or on-site.</p>
+        </details>
+        <details>
+          <summary>How do I pay?</summary>
+          <p>I invoice through my ABN and you pay by bank transfer. Fixed-price work is usually 50% to start and 50% on delivery. If you hire through Upwork or an agency, their payment process applies. The details are in my <a href="/terms/">terms of engagement</a>.</p>
+        </details>
+      </div>
+    </section>
+
     <section id="contact" class="contact">
       <div class="wrap contact-inner">
         <h2>Launching soon, shipping bugs, or stuck on manual regression?</h2>
@@ -580,7 +644,7 @@
     </div>
     <div class="wrap footer-bottom">
       <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
-      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
     </div>
   </footer>
 
