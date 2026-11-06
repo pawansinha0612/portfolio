@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-06T11:14:52+00:00",
+ "updated": "2026-11-06T11:46:26+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -217,6 +217,19 @@
    "region": "remote",
    "score": 40,
    "first_seen": "2026-10-20T14:23:39+00:00"
+  },
+  {
+   "title": "Software Development Engineer in Test - Agentic Automation (Remote, CAN)",
+   "company": "Crowdstrike",
+   "location": "Canada",
+   "url": "https://himalayas.app/companies/crowdstrike/jobs/software-development-engineer-in-test-agentic-automation-remote-can?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/crowdstrike/jobs/software-development-engineer-in-test-agentic-automation-remote-can",
+   "posted": "2026-11-06T09:41:57+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 39,
+   "first_seen": "2026-11-06T11:46:26+00:00"
   },
   {
    "title": "QA ANALISTA DE PRUEBAS DE RENDIMIENTO",
@@ -518,6 +531,19 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "QA Automation Engineer (Banking)",
+   "company": "Qualysoft",
+   "location": "Romania",
+   "url": "https://himalayas.app/companies/qualysoft/jobs/qa-automation-engineer-banking?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/qualysoft/jobs/qa-automation-engineer-banking",
+   "posted": "2026-11-06T10:26:03+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 29,
+   "first_seen": "2026-11-06T11:46:26+00:00"
+  },
+  {
    "title": "Senior QA Engineer - US Remote",
    "company": "PerfectServe",
    "location": "United States",
@@ -802,6 +828,19 @@
    "region": "remote",
    "score": 25,
    "first_seen": "2026-11-03T05:23:40+00:00"
+  },
+  {
+   "title": "Senior Software Development Engineer in Test (Manual 70%, Automation 30%)",
+   "company": "Abstra",
+   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
+   "url": "https://himalayas.app/companies/abstra-co/jobs/senior-software-development-engineer-in-test-manual-70-automation-30?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/abstra-co/jobs/senior-software-development-engineer-in-test-manual-70-automation-30",
+   "posted": "2026-11-06T10:04:56+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 24,
+   "first_seen": "2026-11-06T11:46:26+00:00"
   },
   {
    "title": "Senior Software Development Engineer in Test (SSDET)",
@@ -1920,45 +1959,6 @@
    "region": "remote",
    "score": 13,
    "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Communications Test Engineer I",
-   "company": "CesiumAstro",
-   "location": "Milton Keynes, United Kingdom",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/cesiumastro/communications-test-engineer-i-milton-keynes-united-kingdom-169688",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:communications-test-engineer-i-milton-keynes-united-kingdom-169688",
-   "posted": "2026-11-05T03:08:37+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 13,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Software Engineer, Quality Engineering",
-   "company": "sonyinteractiveentertainmentglobal",
-   "location": "Bristol",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/sonyinteractiveentertainmentglobal/software-engineer-quality-engineering-bristol-102422",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:software-engineer-quality-engineering-bristol-102422",
-   "posted": "2026-11-04T21:55:20+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 13,
-   "first_seen": "2026-11-05T01:07:09+00:00"
-  },
-  {
-   "title": "Professional ICT Test Manager (m/w/d) - SIP / VISO / Test Automation (60-80%) (Ref.Nr.: 47713)",
-   "company": "Wavestone Germany AG",
-   "location": "Bern",
-   "url": "https://www.arbeitnow.ch/jobs/companies/wavestone-germany-ag/professional-ict-test-manager-sip-viso-test-automation-60-80-refnr-47713-bern-391249",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:professional-ict-test-manager-sip-viso-test-automation-60-80-refnr-47713-bern-391249",
-   "posted": "2026-11-02T15:01:06+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 13,
-   "first_seen": "2026-11-02T15:01:06+00:00"
   }
  ]
 }
