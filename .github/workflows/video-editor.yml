@@ -1,0 +1,71 @@
+# Builds the browser video editor (source in video-editor/, output in docs/projects/video-editor/)
+# whenever its source changes, so it can be edited on GitHub in the browser with no local Node setup.
+name: Video editor
+
+on:
+  push:
+    branches: [main]
+    paths: ['video-editor/**', '.github/workflows/video-editor.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: video-editor
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: video-editor
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: video-editor/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test and lint
+        run: |
+          npm test
+          npm run lint
+
+      - name: Build into docs/projects/video-editor
+        run: npm run build
+
+      - name: Commit and publish
+        working-directory: .
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A docs/projects/video-editor
+          if git diff --cached --quiet; then
+            echo 'Build output unchanged.'
+            exit 0
+          fi
+          git commit -m 'Video editor: rebuild'
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs origin main && git push origin HEAD:main; then
+              pushed=1
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$pushed" ]; then
+            echo '::error::Could not push the video editor build after 3 tries.'
+            exit 1
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer ${{ github.token }}" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || echo 'Pages build request failed; it will publish on the next build.'
