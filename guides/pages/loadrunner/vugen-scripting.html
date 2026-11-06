@@ -1,0 +1,158 @@
+<!--{"title": "VuGen scripting: protocols, structure and transactions", "og_title": "VuGen scripting: recording, protocols, vuser_init/Action/vuser_end and transactions", "description": "Write LoadRunner VuGen scripts that hold up: pick the right protocol, record cleanly, structure vuser_init/Action/vuser_end, transactions and text checks.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · VuGen scripting</p>
+      <h1>VuGen scripting: a recording is not a script</h1>
+      <p class="lead">You record the login journey, press Replay and it goes green. You run it with 200 vusers and every one of them passes, at 40 milliseconds per transaction. Then someone opens the response bodies and finds 200 copies of "Your session has expired". A recording captures one user's traffic at one moment. Turning it into a script means choosing the right protocol, giving it structure and making it check what came back.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#protocol">Choosing a protocol</a></li>
+          <li><a href="#record">Recording cleanly</a></li>
+          <li><a href="#structure">Script structure: vuser_init, Action, vuser_end</a></li>
+          <li><a href="#transactions">Transactions</a></li>
+          <li><a href="#checks">Text checks: catching soft failures</a></li>
+          <li><a href="#rest">REST and JSON APIs</a></li>
+          <li><a href="#debug">Debugging a replay</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="protocol">1. Choosing a protocol</h2>
+      <p>The protocol decides what VuGen records and what a vuser sends. Pick the lowest level that still exercises the server the way users do. Lower level means more vusers per generator and more control, but more correlation work.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Protocol</th><th>Records</th><th>Use it for</th><th>Cost per vuser</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Web - HTTP/HTML</strong></td><td>HTTP requests as <code>web_url</code>, <code>web_submit_data</code>, <code>web_custom_request</code></td><td>Most websites and HTTP APIs. The default choice</td><td>Low</td></tr>
+          <tr><td><strong>TruClient - Web</strong></td><td>User actions in a real browser (Chromium-based)</td><td>Heavy single-page apps where scripting the HTTP layer is impractical, or when you need browser timings</td><td>High: a browser per vuser</td></tr>
+          <tr><td><strong>Citrix ICA</strong></td><td>Mouse, keyboard and screen events in a Citrix session</td><td>Thick-client apps published through Citrix, common in banks and insurers</td><td>High</td></tr>
+          <tr><td><strong>SAP GUI</strong></td><td>SAP GUI scripting events</td><td>SAP ERP transactions through the desktop client</td><td>Medium to high</td></tr>
+          <tr><td><strong>SAP - Web</strong></td><td>HTTP traffic with SAP-specific correlation rules</td><td>SAP Fiori / web front ends</td><td>Low</td></tr>
+          <tr><td><strong>Web Services</strong></td><td>SOAP and REST calls, often generated from a WSDL or by import</td><td>SOAP services and contract-first APIs</td><td>Low</td></tr>
+          <tr><td><strong>DevWeb</strong></td><td>HTTP in JavaScript, also runs outside VuGen</td><td>Teams that want scripts developers can read, and CI. See <a href="/guides/loadrunner/ci-and-devops/#devweb">DevWeb</a></td><td>Low</td></tr>
+        </tbody>
+      </table></div>
+      <p>There are many more (Oracle NCA, RTE terminal, Java, .NET, Kafka, MQTT, gRPC, and an LLM protocol in recent releases). The protocol list in <strong>File → New Script and Solution</strong> shows what your install supports, and your licence bundle decides what you can run at scale.</p>
+      <div class="g-note">
+        <p><strong>My default:</strong> start with Web - HTTP/HTML for anything browser-based. Reach for TruClient only when the HTTP layer is genuinely unscriptable, such as heavy client-side crypto or a protocol buried in a framework, or when the requirement is browser-side timing. A TruClient test that needs 1,000 vusers needs a lot of generator hardware.</p>
+      </div>
+
+      <h2 id="record">2. Recording cleanly</h2>
+      <ul>
+        <li><strong>Recording mode.</strong> In <strong>Recording Options → Recording</strong>, an HTML-based script groups page resources under one <code>web_url</code> step and is easier to read. A URL-based script records every request as its own step, which suits non-browser clients. HTML-based with "a script containing explicit URLs only" is a sensible default for web apps.</li>
+        <li><strong>Filter third parties.</strong> Analytics, ad, chat and font hosts are not your system. Exclude them in the recording options (or delete them after) so you do not load-test someone else's CDN.</li>
+        <li><strong>Record each business step on purpose.</strong> Pause, type a meaningful step name in the floating toolbar or use the transaction buttons while recording. You will thank yourself when reading the script.</li>
+        <li><strong>Record twice.</strong> Record the same journey twice with different users and compare the scripts (<strong>Tools → Compare with Script</strong> in many versions). Every value that differs is a correlation or parameterisation candidate.</li>
+        <li><strong>Check recording options before you blame correlation.</strong> Proxy settings, SSL interception and the browser used for recording cause most "nothing was recorded" problems.</li>
+      </ul>
+
+      <h2 id="structure">3. Script structure: vuser_init, Action, vuser_end</h2>
+      <p>A C-based VuGen script has three sections by default. The runtime settings decide how often each runs.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Section</th><th>Runs</th><th>Put here</th></tr></thead>
+        <tbody>
+          <tr><td><code>vuser_init</code></td><td>Once per vuser, at start</td><td>Log in, if real users stay logged in across many actions</td></tr>
+          <tr><td><code>Action</code> (and any extra actions)</td><td>Every iteration</td><td>The business journey you are measuring</td></tr>
+          <tr><td><code>vuser_end</code></td><td>Once per vuser, at stop</td><td>Log out, clean up</td></tr>
+        </tbody>
+      </table></div>
+      <p>Where the login goes is a workload decision, not a style choice. If real users log in once and do 20 searches, log in during <code>vuser_init</code>. If each real session is "log in, check balance, log out", put all of it in <code>Action</code>, otherwise you never test the authentication service at its real rate. Split long journeys into several actions (right-click in the Solution Explorer → Create New Action) and set their order and weights in <a href="/guides/loadrunner/runtime-settings-and-pacing/#runlogic">Run Logic</a>.</p>
+      <pre class="ex-code"><code>Action()
+{
+    lr_start_transaction("01_Home");
+
+    web_reg_find("Text=Sign in", "Fail=NotFound", LAST);
+    web_url("home",
+        "URL=https://{BaseUrl}/",
+        "Resource=0",
+        "Mode=HTML",
+        LAST);
+
+    lr_end_transaction("01_Home", LR_AUTO);
+
+    lr_think_time(5);
+
+    lr_start_transaction("02_Login");
+
+    web_reg_find("Text=Welcome back", "Fail=NotFound", LAST);
+    web_submit_data("login",
+        "Action=https://{BaseUrl}/login",
+        "Method=POST",
+        "Mode=HTML",
+        ITEMDATA,
+        "Name=username", "Value={Username}", ENDITEM,
+        "Name=password", "Value={Password}", ENDITEM,
+        LAST);
+
+    lr_end_transaction("02_Login", LR_AUTO);
+
+    lr_think_time(8);
+
+    return 0;
+}</code></pre>
+      <p><code>{BaseUrl}</code>, <code>{Username}</code> and <code>{Password}</code> are parameters, see <a href="/guides/loadrunner/parameterisation/">parameterisation</a>. Every argument list ends with <code>LAST</code>. That is a VuGen convention, and forgetting it is a classic compile error.</p>
+
+      <h2 id="transactions">4. Transactions</h2>
+      <p>A transaction is the timer you will report on. Name them so they sort in journey order and survive being read by a manager: <code>01_Home</code>, <code>02_Login</code>, <code>03_Search</code>.</p>
+      <ul>
+        <li><code>lr_start_transaction("name")</code> starts the timer. <code>lr_end_transaction("name", LR_AUTO)</code> stops it. The name must match exactly.</li>
+        <li><strong>Status.</strong> <code>LR_AUTO</code> lets LoadRunner set pass or fail from the step results (a failed <code>web_reg_find</code> fails the transaction). <code>LR_PASS</code>, <code>LR_FAIL</code> and <code>LR_STOP</code> set it yourself.</li>
+        <li><strong>Keep think time outside transactions.</strong> If <code>lr_think_time</code> sits inside a transaction, the reported time includes it. Analysis can exclude think time, but it is cleaner not to include it in the first place.</li>
+        <li><strong>One transaction per user-visible step.</strong> Do not wrap the whole journey in one transaction. A slow login hides inside a 30-second "journey" total.</li>
+        <li><strong>Sub-transactions</strong> (<code>lr_start_sub_transaction</code>) break a step into parts, for example the API calls behind one page. Use them sparingly, every transaction adds rows to the results.</li>
+      </ul>
+
+      <h2 id="checks">5. Text checks: catching soft failures</h2>
+      <p>HTTP 200 does not mean success. Error pages, maintenance pages, "session expired" and empty search results all come back as 200. <code>web_reg_find</code> registers a check on the <em>next</em> request, so place it before the step:</p>
+      <pre class="ex-code"><code>// fail the step if the text is missing
+web_reg_find("Text=Account summary", "Fail=NotFound", LAST);
+
+// fail the step if an error message appears
+web_reg_find("Text=Something went wrong", "Fail=Found", LAST);
+
+// count matches instead of failing, then decide yourself
+web_reg_find("Text=result-item", "SaveCount=ResultCount", LAST);
+web_url("search", "URL=https://{BaseUrl}/search?q={Term}", "Mode=HTML", LAST);
+if (atoi(lr_eval_string("{ResultCount}")) == 0) {
+    lr_error_message("No results for %s", lr_eval_string("{Term}"));
+}</code></pre>
+      <p>Pick check text that appears only on the success page: the account holder's name, a specific heading, a JSON field name. A word like "Welcome" that is also in the footer of the error page proves nothing.</p>
+
+      <h2 id="rest">6. REST and JSON APIs</h2>
+      <p>For HTTP APIs inside a Web - HTTP/HTML script, <code>web_custom_request</code> sends any method with any body:</p>
+      <pre class="ex-code"><code>web_add_header("Authorization", "Bearer {AccessToken}");
+
+web_reg_save_param_json("ParamName=OrderId", "QueryString=$.orderId",
+    SEARCH_FILTERS, "Scope=Body", LAST);
+
+lr_start_transaction("05_CreateOrder");
+web_custom_request("create_order",
+    "URL=https://{ApiHost}/v1/orders",
+    "Method=POST",
+    "EncType=application/json",
+    "Body={\"sku\":\"{Sku}\",\"qty\":{Qty}}",
+    LAST);
+lr_end_transaction("05_CreateOrder", LR_AUTO);</code></pre>
+      <p><code>web_add_header</code> applies to the next request only. Use <code>web_add_auto_header</code> for a header that every following request needs, and <code>web_remove_auto_header</code> to stop it. Newer releases also offer REST-specific steps and import from OpenAPI or Postman in some protocols. Check what your version offers before hand-writing dozens of calls.</p>
+
+      <h2 id="debug">7. Debugging a replay</h2>
+      <ul>
+        <li><strong>Turn on extended logging while debugging</strong> (<strong>Runtime Settings → Log → Extended log</strong>, with parameter substitution and data returned by server). Turn it off again before a load test, see <a href="/guides/loadrunner/runtime-settings-and-pacing/#logs">log settings</a>.</li>
+        <li><strong>Read the Replay Log and Snapshot views together.</strong> The first failing step is rarely the step that broke. Usually a value captured three steps earlier was wrong.</li>
+        <li><strong>Use <code>lr_output_message</code> and <code>lr_eval_string</code></strong> to print parameter values: <code>lr_output_message("token=%s", lr_eval_string("{Token}"));</code></li>
+        <li><strong>Replay twice in a row.</strong> If the second replay fails, you have an uncorrelated value or single-use data.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/loadrunner/correlation/">correlation</a>, the step that makes or breaks most scripts. The tool-neutral idea is in the glossary under <a href="/glossary/correlation/">correlation</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Script that replays but doesn't feel right?</h2>
+        <p>Book a free 30-minute call and we'll review it together. For end-to-end test design and delivery, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-vugen-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-vugen-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,164 @@
+<!--{"title": "LoadRunner correlation: web_reg_save_param_ex and rules", "og_title": "LoadRunner correlation: web_reg_save_param_ex, boundaries, ordinals, rules and Design Studio", "description": "Correlate LoadRunner scripts properly: web_reg_save_param_ex boundaries and ordinals, JSON and regex variants, correlation rules and Design Studio scans.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Correlation</p>
+      <h1>LoadRunner correlation: stop replaying yesterday's session</h1>
+      <p class="lead">Your script replays fine at 4 pm. At 9 am the next day every vuser fails at step three with "invalid request". Nothing in the application changed. The script is sending a session token, a CSRF value and a basket ID that were valid yesterday. Correlation means capturing those server-generated values at run time and sending back the fresh ones.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#find">Find what needs correlating</a></li>
+          <li><a href="#ex">web_reg_save_param_ex</a></li>
+          <li><a href="#boundaries">Choosing boundaries</a></li>
+          <li><a href="#ordinal">Ordinal, arrays and NotFound</a></li>
+          <li><a href="#json">JSON, regex and other variants</a></li>
+          <li><a href="#auto">Correlation rules and Design Studio</a></li>
+          <li><a href="#debug">When a correlation fails</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="find">1. Find what needs correlating</h2>
+      <p>A value needs correlating when the server generates it and the client sends it back later. Typical suspects:</p>
+      <ul>
+        <li>Session IDs in URLs or form fields (cookies are handled automatically by the Web protocol, as long as you don't clear them mid-journey)</li>
+        <li>CSRF and anti-forgery tokens, <code>__VIEWSTATE</code> and <code>__EVENTVALIDATION</code> in ASP.NET Web Forms</li>
+        <li>OAuth access tokens, refresh tokens and authorisation codes</li>
+        <li>IDs created during the journey: order, basket, quote, policy, payment intent</li>
+        <li>Timestamps and nonces the server echoes and validates</li>
+      </ul>
+      <p>The quickest way to find them: record the same journey twice, compare the two scripts, and look at every long or random-looking value that differs. Then search each value in the earlier server responses (the Snapshot view or the recording log) to find where it first appears. That response is where the capture goes.</p>
+
+      <h2 id="ex">2. web_reg_save_param_ex</h2>
+      <p>The workhorse. Like all <code>web_reg_*</code> functions, it <em>registers</em> a capture for the <strong>next</strong> request, so it goes immediately before the step whose response contains the value:</p>
+      <pre class="ex-code"><code>web_reg_save_param_ex(
+    "ParamName=CsrfToken",
+    "LB=name=\"csrf_token\" value=\"",
+    "RB=\"",
+    "Ordinal=1",
+    SEARCH_FILTERS,
+        "Scope=Body",
+    LAST);
+
+web_url("login_page",
+    "URL=https://{BaseUrl}/login",
+    "Mode=HTML",
+    LAST);
+
+// later: send it back
+web_submit_data("login",
+    "Action=https://{BaseUrl}/login",
+    "Method=POST",
+    "Mode=HTML",
+    ITEMDATA,
+    "Name=csrf_token", "Value={CsrfToken}", ENDITEM,
+    "Name=username",   "Value={Username}",  ENDITEM,
+    "Name=password",   "Value={Password}",  ENDITEM,
+    LAST);</code></pre>
+      <p>The OpenText function reference describes <code>web_reg_save_param_ex</code> as the replacement for the older, deprecated <code>web_reg_save_param</code>. You will still see the old one in legacy scripts. It works, but write new captures with the <code>_ex</code> form.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Argument</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>ParamName</code></td><td>Parameter to save into. Use it later as <code>{CsrfToken}</code></td></tr>
+          <tr><td><code>LB</code> / <code>RB</code></td><td>Left and right boundaries. Text immediately before and after the value. Add <code>/IC</code> to ignore case: <code>LB/IC=...</code></td></tr>
+          <tr><td><code>Ordinal</code></td><td>Which match: <code>1</code> (default), <code>2</code>, <code>ALL</code> or <code>RANDOM</code></td></tr>
+          <tr><td><code>NotFound</code></td><td><code>ERROR</code> (default, fails the step) or <code>WARNING</code></td></tr>
+          <tr><td><code>SaveLen</code> / <code>SaveOffset</code></td><td>Save only part of the match: length and starting offset</td></tr>
+          <tr><td><code>SEARCH_FILTERS</code></td><td>Marker, followed by filters such as <code>Scope=Body</code>, <code>Scope=Headers</code> or <code>Scope=All</code>, and <code>HeaderNames=...</code> with <code>Scope=Headers</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="boundaries">3. Choosing boundaries</h2>
+      <p>Most broken correlations are bad boundaries. Rules that keep them stable:</p>
+      <ul>
+        <li><strong>Make the left boundary unique.</strong> <code>LB=value="</code> matches every input on the page. <code>LB=name="csrf_token" value="</code> matches one. Check uniqueness by searching the response in the Snapshot view.</li>
+        <li><strong>Keep the right boundary short.</strong> Usually just the closing quote, ampersand or angle bracket. Long right boundaries break when the markup changes.</li>
+        <li><strong>Escape quotes in C strings</strong> with <code>\"</code>. Backslashes in the response need <code>\\</code>.</li>
+        <li><strong>Watch for encoding.</strong> The same token can appear URL-encoded in one place (<code>%2B</code>) and raw in another (<code>+</code>). Capture from the place whose encoding matches how you send it back, or convert with <code>web_convert_param</code>.</li>
+        <li><strong>Narrow the scope.</strong> <code>Scope=Body</code> or <code>Scope=Headers</code> avoids accidental matches and saves generator CPU on large responses.</li>
+      </ul>
+      <div class="g-warn">
+        <p><strong>Large values get truncated silently in older scripts.</strong> Values such as <code>__VIEWSTATE</code> can be tens of kilobytes. If a captured value is cut short, raise the limit with <code>web_set_max_html_param_len("100000");</code> at the start of the script and check whether your version still needs it.</p>
+      </div>
+
+      <h2 id="ordinal">4. Ordinal, arrays and NotFound</h2>
+      <p><code>Ordinal=ALL</code> saves every match into an array: <code>{ProductId_1}</code>, <code>{ProductId_2}</code>... and the count in <code>{ProductId_count}</code>. Pick one at random to spread load across the catalogue:</p>
+      <pre class="ex-code"><code>web_reg_save_param_ex(
+    "ParamName=ProductId",
+    "LB=data-product-id=\"",
+    "RB=\"",
+    "Ordinal=ALL",
+    "NotFound=WARNING",
+    SEARCH_FILTERS, "Scope=Body",
+    LAST);
+
+web_url("category", "URL=https://{BaseUrl}/c/shoes", "Mode=HTML", LAST);
+
+if (atoi(lr_eval_string("{ProductId_count}")) &gt; 0) {
+    lr_save_string(lr_paramarr_random("ProductId"), "PickedProduct");
+    web_url("product",
+        "URL=https://{BaseUrl}/p/{PickedProduct}",
+        "Mode=HTML",
+        LAST);
+} else {
+    lr_error_message("No products on category page");
+}</code></pre>
+      <p><code>NotFound=WARNING</code> is correct here because an empty category is a valid outcome you handle in code. For a session token, leave the default <code>ERROR</code>: if the token is missing, the vuser should fail at that step, not five steps later with a confusing error.</p>
+
+      <h2 id="json">5. JSON, regex and other variants</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Function</th><th>Captures by</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><code>web_reg_save_param_ex</code></td><td>Left and right boundaries</td><td>HTML, headers, anything textual. The default</td></tr>
+          <tr><td><code>web_reg_save_param_json</code></td><td>JSONPath query</td><td>JSON APIs. More robust than boundaries when field order changes</td></tr>
+          <tr><td><code>web_reg_save_param_regexp</code></td><td>Regular expression with a capture group</td><td>Values without stable boundaries</td></tr>
+          <tr><td><code>web_reg_save_param_xpath</code></td><td>XPath</td><td>XML and SOAP responses</td></tr>
+          <tr><td><code>web_reg_save_param_attrib</code></td><td>HTML tag and attribute</td><td>Form fields and links by attribute</td></tr>
+        </tbody>
+      </table></div>
+      <pre class="ex-code"><code>web_reg_save_param_json(
+    "ParamName=AccessToken",
+    "QueryString=$.access_token",
+    SEARCH_FILTERS, "Scope=Body",
+    LAST);
+
+web_reg_save_param_regexp(
+    "ParamName=QuoteRef",
+    "RegExp=quoteRef\":\"(Q-[0-9]+)\"",
+    SEARCH_FILTERS, "Scope=Body",
+    LAST);</code></pre>
+      <p>Check the argument names against your version's function reference (<strong>F1</strong> on the function name in VuGen). The capture functions have gained arguments over the years, and older releases may not support every one.</p>
+
+      <h2 id="auto">6. Correlation rules and Design Studio</h2>
+      <p>VuGen can find many dynamic values for you:</p>
+      <ul>
+        <li><strong>Correlation rules</strong> (<strong>Recording Options → Correlations → Rules</strong>) are patterns applied while the script is generated. VuGen ships rules for common frameworks (ASP.NET, Java application servers, SAP and others). Add your own when an application repeats the same token pattern on every page, then export them for the team.</li>
+        <li><strong>Design Studio</strong> scans a recording for dynamic values and proposes correlations. In current versions it scans by rules and by comparing recorded data. Older versions also scan by replay. Review every proposal before accepting it. It is good at finding candidates and less good at choosing stable boundaries.</li>
+        <li><strong>Configuration options</strong> (<strong>Recording Options → Correlations → Configuration</strong>) control whether rules are applied automatically during a scan and how deep the scan goes.</li>
+      </ul>
+      <div class="g-note">
+        <p><strong>Auto-correlation is a starting point.</strong> It sometimes correlates values that should be parameters (your username) or misses values that only appear in the second response of a redirect chain. Read the generated <code>web_reg_save_param_*</code> calls as if a junior wrote them: check boundaries, ordinals and scope, and rename parameters to say what they hold.</p>
+      </div>
+
+      <h2 id="debug">7. When a correlation fails</h2>
+      <ol>
+        <li>Turn on <strong>Extended log</strong> with <strong>Parameter substitution</strong> and <strong>Data returned by server</strong> and replay once.</li>
+        <li>Find the first failing step in the Replay Log, then scroll up to the capture that should have fed it. Was it registered before the right request? Was the value found?</li>
+        <li>Open the response in the Snapshot view and search for the left boundary. Different markup (A/B tests, a different locale, a logged-in variant) is common.</li>
+        <li>Check redirects. A value often sits in the response to the second or third request of a redirect chain.</li>
+        <li>If the value is generated in the browser by JavaScript (a client-side nonce or hash), there is nothing to capture. Reproduce the logic in C, use a DevWeb or TruClient script, or ask the developers for a test-only bypass.</li>
+      </ol>
+      <p><strong>Next:</strong> <a href="/guides/loadrunner/parameterisation/">parameterisation</a>, for the values you control. The concept in tool-neutral terms is in the glossary under <a href="/glossary/correlation/">correlation</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Correlation that refuses to work?</h2>
+        <p>Book a free 30-minute call and we'll trace it through your recording together. For full script build and test delivery, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-corr-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-corr-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

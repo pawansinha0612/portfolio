@@ -1,0 +1,94 @@
+<!--{"title": "LoadRunner getting started: VuGen, Controller, Analysis", "og_title": "Getting started with LoadRunner in 2026: products, components and the free Community licence", "description": "LoadRunner in 2026: the OpenText product names, what VuGen, Controller, Analysis and load generators do, the 50-vuser Community licence and a first test.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Getting started</p>
+      <h1>LoadRunner in 2026: what you are actually installing</h1>
+      <p class="lead">You join a bank's performance team and the handover note says "scripts are in VuGen, run them from the Controller, results in Analysis, LGs are in the DMZ". Then you search for LoadRunner downloads and find products called "Professional Performance Engineering" and "Core Performance Engineering". This guide maps the names to the pieces, so you know what each one does before you open it.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#family">The product family today</a></li>
+          <li><a href="#components">The four components</a></li>
+          <li><a href="#licence">Licensing and the Community licence</a></li>
+          <li><a href="#install">Installing a learning setup</a></li>
+          <li><a href="#first">Your first test, end to end</a></li>
+          <li><a href="#habits">Habits worth having from day one</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="family">1. The product family today</h2>
+      <p>LoadRunner has changed owners several times: Mercury Interactive built it, HP bought Mercury in 2006, Micro Focus took over HP's software business in 2017, and OpenText bought Micro Focus in 2023. In 2025 OpenText renamed the products. Your organisation may still call them by the old names, and older documentation, forum answers and job ads certainly do.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Current name</th><th>Former name</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td>OpenText Professional Performance Engineering</td><td>LoadRunner Professional</td><td>The classic Windows install: VuGen, Controller, Analysis and load generators. What most people mean by "LoadRunner"</td></tr>
+          <tr><td>OpenText Enterprise Performance Engineering</td><td>LoadRunner Enterprise (earlier Performance Center)</td><td>A shared, web-based server for many teams: projects, scheduling, a pool of load generators, timeslots and trending. Uses the same VuGen scripts</td></tr>
+          <tr><td>OpenText Core Performance Engineering</td><td>LoadRunner Cloud (earlier StormRunner Load)</td><td>SaaS: run tests from OpenText-hosted cloud generators or your own on-premises ones, with a web UI for results</td></tr>
+          <tr><td>OpenText Performance Engineering for Developers</td><td>LoadRunner Developer</td><td>Lightweight, scriptable DevWeb engine (JavaScript) aimed at developers and pipelines</td></tr>
+        </tbody>
+      </table></div>
+      <p>At the time of writing the help centre covers releases 26.1 to 26.3. Recent releases added AI assistance (Aviator) in VuGen and Analysis, an LLM protocol and a Controller Service CLI. If you are on an older release such as 24.x or 2023, everything in these guides about scripts, parameters and Controller still applies, but some screens look different.</p>
+
+      <h2 id="components">2. The four components</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Component</th><th>Job</th><th>Runs on</th></tr></thead>
+        <tbody>
+          <tr><td><strong>VuGen</strong> (Virtual User Generator)</td><td>Record, edit and debug scripts. One script models one business journey for one <a href="/glossary/virtual-user/">virtual user</a></td><td>Windows workstation</td></tr>
+          <tr><td><strong>Controller</strong></td><td>Build a scenario from scripts, decide how many vusers, how they ramp and which generators run them. Drives the run and collects live monitors</td><td>Windows</td></tr>
+          <tr><td><strong>Load generators</strong></td><td>Execute vusers. Install the Load Generator component on as many machines as you need</td><td>Windows or Linux (Linux supports fewer protocols, check the support matrix)</td></tr>
+          <tr><td><strong>Analysis</strong></td><td>Open the collated results, build graphs, apply SLAs and percentiles, produce reports</td><td>Windows</td></tr>
+        </tbody>
+      </table></div>
+      <p>The flow is always the same: script in VuGen, run in Controller on generators, open the result in Analysis. Enterprise Performance Engineering replaces the desktop Controller with a web UI and a server, but the scripts and Analysis are the same.</p>
+      <div class="g-note">
+        <p><strong>The Controller is not a load generator.</strong> It can host vusers ("localhost" generator) and that is fine for a smoke run. For a real test, keep vusers off the Controller machine so its CPU stays free for collating monitor data. A busy Controller produces gaps in the live graphs that look like application problems.</p>
+      </div>
+
+      <h2 id="licence">3. Licensing and the Community licence</h2>
+      <p>LoadRunner is licensed by vusers, by protocol bundle and by duration, and the details depend on your contract. I won't quote prices, they are negotiated and change. What matters for day-to-day work:</p>
+      <ul>
+        <li><strong>The Community licence.</strong> A fresh Professional Performance Engineering install includes a free Community licence. The current help centre (26.x) states it covers <strong>50 vusers for all protocols, including Gatling and JMeter</strong>, except the COM/DCOM, Templates and GUI bundles. That is plenty to learn on, build scripts and run a small smoke test. Check the licence page in your version's help, as allowances have changed before.</li>
+        <li><strong>Protocol bundles matter.</strong> A licence for Web HTTP/HTML vusers does not let you run Citrix or SAP GUI vusers. Before you promise a 500-user Citrix test, check the bundle in the License Utility (<strong>Start → License Utility</strong>, or from Controller's Help menu, depending on version).</li>
+        <li><strong>Heavy protocols cost more generator capacity.</strong> TruClient and Citrix vusers run a real browser or client, so a generator holds far fewer of them than Web HTTP/HTML vusers. Plan generator count per protocol, not per test.</li>
+      </ul>
+
+      <h2 id="install">4. Installing a learning setup</h2>
+      <ol>
+        <li>Download Professional Performance Engineering from OpenText's software download portal. You need an OpenText account, and the download includes the Community licence.</li>
+        <li>Install the full setup on a Windows machine with admin rights. This gives you VuGen, Controller, Analysis and a local load generator in one go.</li>
+        <li>Open VuGen once to let it finish first-run setup, then open Controller and confirm that <code>localhost</code> appears as a load generator.</li>
+        <li>For a second generator, install only the Load Generator component (Windows or Linux) on another machine and add it in Controller under <strong>Scenario → Load Generators</strong>.</li>
+      </ol>
+      <p>Check the system requirements page for your release before installing on a corporate laptop. Endpoint protection, proxy settings and missing admin rights cause most install and recording failures.</p>
+
+      <h2 id="first">5. Your first test, end to end</h2>
+      <ol>
+        <li><strong>Record.</strong> In VuGen, <strong>File → New Script and Solution</strong>, choose <strong>Web - HTTP/HTML</strong>, then record a short journey: home page, log in, one search, log out. See <a href="/guides/loadrunner/vugen-scripting/">VuGen scripting</a>.</li>
+        <li><strong>Make it replay.</strong> Wrap steps in transactions, correlate session IDs and tokens (<a href="/guides/loadrunner/correlation/">correlation</a>), and give it data (<a href="/guides/loadrunner/parameterisation/">parameterisation</a>). Replay with extended logging until it passes cleanly twice in a row.</li>
+        <li><strong>Set runtime settings.</strong> Think time and pacing turn a script into a realistic user. See <a href="/guides/loadrunner/runtime-settings-and-pacing/">runtime settings and pacing</a>.</li>
+        <li><strong>Build a scenario.</strong> In Controller, add the script, set a small number of vusers and a gentle ramp. See <a href="/guides/loadrunner/controller-scenarios/">Controller scenarios</a>.</li>
+        <li><strong>Run and analyse.</strong> Let the scenario collate, open the results in Analysis and look at transaction response time percentiles, not averages. See <a href="/guides/loadrunner/analysis/">Analysis</a>.</li>
+      </ol>
+
+      <h2 id="habits">6. Habits worth having from day one</h2>
+      <ul>
+        <li><strong>Put scripts in version control.</strong> A VuGen script is a folder of text files (<code>.c</code>, <code>.usr</code>, <code>.prm</code>, <code>default.cfg</code>, data files). Commit the folder, ignore the replay result and <code>data</code> snapshot folders.</li>
+        <li><strong>Every transaction gets a text check.</strong> A 200 response with an error page is still a pass unless you check for content. See <a href="/guides/loadrunner/vugen-scripting/#checks">text checks</a>.</li>
+        <li><strong>Agree the workload first.</strong> Vuser count is an output of the <a href="/glossary/workload-model/">workload model</a>, not an input. Work out target throughput, then derive vusers with <a href="/glossary/littles-law/">Little's Law</a>.</li>
+        <li><strong>Monitor the servers, not just the response times.</strong> The run tells you something is slow. Server metrics tell you why. See <a href="/guides/monitoring/">monitoring during a test</a>.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/loadrunner/vugen-scripting/">VuGen scripting</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Inheriting a LoadRunner setup?</h2>
+        <p>Book a free 30-minute call and we'll look at what you have and what to fix first. For a full test designed and run for you, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-start-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-start-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoLoad populations and scenarios: load policies — Pawan Sinha</title>
+  <meta name="description" content="Design NeoLoad scenarios: populations and mixes, constant, ramp-up, peaks and custom load policies, duration, start and stop policies, pacing and generators.">
+  <meta property="og:title" content="NeoLoad populations and scenarios: constant, ramp-up, peaks and custom load policies">
+  <meta property="og:description" content="Design NeoLoad scenarios: populations and mixes, constant, ramp-up, peaks and custom load policies, duration, start and stop policies, pacing and generators.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/neoload/populations-and-scenarios/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/neoload/populations-and-scenarios/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "NeoLoad populations and scenarios: load policies", "description": "Design NeoLoad scenarios: populations and mixes, constant, ramp-up, peaks and custom load policies, duration, start and stop policies, pacing and generators.", "url": "https://pawansinha.com.au/guides/neoload/populations-and-scenarios/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · Populations and scenarios</p>
+      <h1>NeoLoad scenarios: from "500 users" to a workload</h1>
+      <p class="lead">The brief says "test with 500 users". You put one User Path in a population, set a constant load of 500 for an hour, and press Run. Every user starts in the first second, logs in at once, and the authentication service falls over in a way it never does in production. A scenario is where you turn a headline number into a mix of journeys, a rate and a shape over time.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#populations">Populations: the mix</a></li>
+          <li><a href="#policies">Load policies</a></li>
+          <li><a href="#duration">Duration, start and stop</a></li>
+          <li><a href="#rate">Getting the rate right</a></li>
+          <li><a href="#generators">Load generators and zones</a></li>
+          <li><a href="#rendezvous">Rendezvous policies</a></li>
+          <li><a href="#checklist">Pre-run checklist</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="populations">1. Populations: the mix</h2>
+      <p>A <strong>population</strong> is a group of User Paths with a percentage each, adding up to 100%. For example, a "Retail banking" population might be 60% Check balance, 25% Transfer and 15% Pay bill. Build the percentages from production analytics, not guesses. See <a href="/glossary/workload-model/">workload model</a>.</p>
+      <pre class="ex-code"><code>populations:
+- name: RetailBanking
+  user_paths:
+  - name: CheckBalance
+    distribution: 60%
+  - name: Transfer
+    distribution: 25%
+  - name: PayBill
+    distribution: 15%</code></pre>
+      <p>Use separate populations when journeys need different load shapes: steady browsing traffic in one, a batch-like burst of statement downloads in another. Each population in a scenario gets its own load policy.</p>
+
+      <h2 id="policies">2. Load policies</h2>
+      <p>In the Runtime section, a <strong>scenario</strong> lists populations, each with one load policy:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Policy</th><th>Shape</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Constant</strong></td><td>A fixed number of users, optionally started gradually with a ramp-up delay</td><td>Steady-state load and <a href="/glossary/soak-testing/">soak</a> tests</td></tr>
+          <tr><td><strong>Ramp-up</strong></td><td>Start with N users and add M every interval, up to an optional maximum</td><td>Finding where response times bend, step tests, <a href="/glossary/breakpoint-testing/">breakpoint</a> tests</td></tr>
+          <tr><td><strong>Peaks</strong></td><td>Alternate between a minimum and maximum phase</td><td>Checking the system recovers after peaks, see <a href="/glossary/spike-testing/">spike testing</a></td></tr>
+          <tr><td><strong>Custom</strong></td><td>A list of points: user count at given times or iterations</td><td>Reproducing a real day's curve or any shape the others can't express</td></tr>
+        </tbody>
+      </table></div>
+      <p>The same policies in as-code, using the setting names from the neoload-models reference:</p>
+      <pre class="ex-code"><code>scenarios:
+- name: PeakHour
+  populations:
+  - name: RetailBanking
+    rampup_load:
+      min_users: 50
+      max_users: 500
+      increment_users: 50
+      increment_every: 2m
+      increment_rampup: 30s
+      duration: 60m
+  - name: StatementDownloads
+    constant_load:
+      users: 40
+      duration: 45m
+      start_after: 15m
+      rampup: 60s
+      stop_after: current_iteration</code></pre>
+      <p>Here the main population ramps from 50 to 500 users over 18 minutes in steps of 50, spreading each step's new users over 30 seconds, then holds until 60 minutes. A second population of 40 users starts 15 minutes in. A peaks policy uses <code>minimum</code> and <code>maximum</code> phases (each with <code>users</code> and <code>duration</code>) and a <code>start</code> phase, and a custom policy uses a list of <code>steps</code> with <code>when</code> and <code>users</code>. This is a sketch built from the reference: run <code>neoload validate</code> before you rely on it.</p>
+
+      <h2 id="duration">3. Duration, start and stop</h2>
+      <ul>
+        <li><strong>Duration</strong> can be unlimited, a time or a number of iterations. Time-based is the usual choice for load tests. Iteration-based suits data-driven runs where each row must be used once.</li>
+        <li><strong>Start policy</strong>: start with the test, after a delay, or after another population finishes. Useful for "batch job starts at minute 20 while online traffic continues".</li>
+        <li><strong>Ramp-up delay</strong>: start new users simultaneously or spread over a delay. Never start hundreds of users in the same second unless that is the scenario you are testing.</li>
+        <li><strong>Stop policy</strong>: stop immediately, give users a set time to finish, or let each finish its current iteration. Letting iterations finish avoids a burst of half-done journeys and false errors at the end.</li>
+        <li><strong>Monitoring before and after</strong>: scenarios can keep monitors running before and after the load, so you see the system's baseline and its recovery.</li>
+      </ul>
+      <p>Report on the <a href="/glossary/steady-state/">steady state</a>, after the ramp and before the stop, and filter the results to that window.</p>
+
+      <h2 id="rate">4. Getting the rate right</h2>
+      <p>Users are a closed workload: each user waits for a response before going on. The rate you generate depends on response time, think time and <a href="/glossary/pacing/">pacing</a>. Set pacing on the Actions container so each user runs at a known rate, then size users with <a href="/glossary/littles-law/">Little's Law</a>:</p>
+      <p>Target 3,600 transfers per hour = 1 per second. With pacing of 90 seconds per Transfer iteration, you need 1 × 90 = <strong>90 users</strong> on the Transfer path. If Transfer is 25% of the population, the population needs 360 users in total, and the other paths' pacing should be set so they hit their own targets.</p>
+      <p>Check in the results that achieved throughput matched the target. If iterations take longer than the pacing, users fall behind and the test ran a lighter load than you planned. The <a href="/tools/workload-model/">workload model tool</a> does this arithmetic for several journeys at once. For why closed models can understate trouble, see <a href="/glossary/open-vs-closed-workload-model/">open vs closed workload models</a>.</p>
+
+      <h2 id="generators">5. Load generators and zones</h2>
+      <ul>
+        <li><strong>From the GUI</strong>, assign generators to each population in the scenario. A local generator is fine for checks. For real load use remote generators.</li>
+        <li><strong>From NeoLoad Web or the CLI</strong>, choose a zone and a generator count in the test settings. Dynamic zones start generator containers on demand.</li>
+        <li><strong>Watch generator CPU and memory.</strong> NeoLoad monitors its generators. Keep CPU well under saturation, a generator at 100% adds its own delay to every response time.</li>
+        <li><strong>Size by protocol.</strong> HTTP users are cheap. Browser-based and packaged-application users (Citrix, SAP GUI) are far heavier. Calibrate with a small run per generator.</li>
+        <li><strong>Place generators deliberately.</strong> Inside the data centre tests the backend. Outside, through the WAN and CDN, tests what users experience. Both are valid, but decide which question you are answering.</li>
+      </ul>
+
+      <h2 id="rendezvous">6. Rendezvous policies</h2>
+      <p>A Rendezvous action in a User Path makes users wait until a share of them arrive, and the scenario's rendezvous policy decides when to release them (for example when 50% have arrived, with a timeout). It looks like the way to test "everyone clicks Pay at once", but real users don't synchronise to the millisecond, and waiting users distort the rest of the workload. For bursts, use a peaks or custom load policy, or a short population with a steep ramp. Keep rendezvous for genuine concurrency tests, such as two users updating the same record to test locking.</p>
+
+      <h2 id="checklist">7. Pre-run checklist</h2>
+      <ul>
+        <li>Every User Path passes Check User Path with several different data rows.</li>
+        <li>Variables use the right scope (Unique for owned data) and files are sized for the run.</li>
+        <li>Pacing set, think times realistic, ramp-up spread out.</li>
+        <li>SLA profiles attached, so the run produces a pass or fail. See <a href="/guides/neoload/analysis-and-sla/">analysis and SLAs</a>.</li>
+        <li>Server monitors or APM integration ready, clocks aligned. See <a href="/guides/monitoring/">monitoring during a test</a>.</li>
+        <li>A short smoke run of the full scenario before the real one.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/neoload/as-code-and-ci/">as-code and CI</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure your scenario models production?</h2>
+        <p>Book a free 30-minute call and we'll check your mix, pacing and user numbers against your traffic. For full test design, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-scen-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-scen-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

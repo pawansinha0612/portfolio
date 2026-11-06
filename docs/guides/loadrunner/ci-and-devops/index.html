@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LoadRunner in CI: Jenkins, Azure DevOps, CLI and DevWeb — Pawan Sinha</title>
+  <meta name="description" content="Run LoadRunner from pipelines: wlrun and CLIControllerApp command lines, the Jenkins and Azure DevOps plugins, Enterprise runs and DevWeb JavaScript scripts.">
+  <meta property="og:title" content="LoadRunner in CI/CD: command-line runs, Jenkins and Azure DevOps plugins, and DevWeb JavaScript">
+  <meta property="og:description" content="Run LoadRunner from pipelines: wlrun and CLIControllerApp command lines, the Jenkins and Azure DevOps plugins, Enterprise runs and DevWeb JavaScript scripts.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/loadrunner/ci-and-devops/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/loadrunner/ci-and-devops/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "LoadRunner in CI: Jenkins, Azure DevOps, CLI and DevWeb", "description": "Run LoadRunner from pipelines: wlrun and CLIControllerApp command lines, the Jenkins and Azure DevOps plugins, Enterprise runs and DevWeb JavaScript scripts.", "url": "https://pawansinha.com.au/guides/loadrunner/ci-and-devops/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · CI and DevOps</p>
+      <h1>LoadRunner in CI: a performance gate, not a quarterly event</h1>
+      <p class="lead">The release is on Friday. The performance test window is Wednesday night. On Thursday morning you find the login slowed by 40% three sprints ago, and nobody can say which change did it. Running a small LoadRunner test on every build turns that into a failed pipeline on the day the change went in. Here are the ways to do it, from a plain command line to DevWeb scripts a developer can read.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#options">Which route fits</a></li>
+          <li><a href="#cli">Command-line runs: wlrun and CLIControllerApp</a></li>
+          <li><a href="#jenkins">Jenkins</a></li>
+          <li><a href="#azure">Azure DevOps</a></li>
+          <li><a href="#lre">Enterprise and Core Performance Engineering</a></li>
+          <li><a href="#devweb">DevWeb: LoadRunner in JavaScript</a></li>
+          <li><a href="#gates">Designing the gate</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="options">1. Which route fits</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>You have</th><th>Route</th></tr></thead>
+        <tbody>
+          <tr><td>Professional Performance Engineering on a Windows box</td><td>A Windows CI agent with Controller installed, running scenarios by command line or plugin</td></tr>
+          <tr><td>Enterprise Performance Engineering (a shared server)</td><td>Its Jenkins or Azure DevOps plugin, which asks the server to run a test in a timeslot</td></tr>
+          <tr><td>Core Performance Engineering (SaaS)</td><td>Its own CI integrations and API</td></tr>
+          <tr><td>Developers who want to own API tests</td><td>DevWeb scripts in JavaScript, run by the DevWeb engine on Windows, Linux or macOS</td></tr>
+        </tbody>
+      </table></div>
+      <p>OpenText documents each integration separately per product, and the plugins differ. Check you are reading the page for your product and release.</p>
+
+      <h2 id="cli">2. Command-line runs: wlrun and CLIControllerApp</h2>
+      <p>The classic route is <code>wlrun.exe</code>, the Controller itself, started with arguments:</p>
+      <pre class="ex-code"><code>"%LR_PATH%\bin\wlrun.exe" -TestPath "C:\perf\scenarios\checkout_smoke.lrs" ^
+    -Run -ResultName "C:\perf\results\checkout_%BUILD_NUMBER%" -InvokeAnalysis</code></pre>
+      <p>Per the 26.x help: <code>-Run</code> runs the scenario, writes messages to <code>output.txt</code> in the results folder and closes Controller. Dialogs that would normally need a click are suppressed. <code>-ResultName</code> is the full results path (or use <code>-ResultLocation</code> and <code>-ResultCleanName</code>), and <code>-InvokeAnalysis</code> opens Analysis at the end. Arguments are case sensitive, only one Controller can run at a time, and results are overwritten, so put the build number in the result name. <code>%LR_PATH%</code> is a placeholder for your install folder.</p>
+      <p>Releases from 2021 onward also ship <code>CLIControllerApp.exe</code> in the <code>bin</code> folder, designed for headless runs:</p>
+      <pre class="ex-code"><code>"%LR_PATH%\bin\CLIControllerApp.exe" -TestPath C:\perf\scenarios\checkout_smoke.lrs ^
+    -CollateAndAnalyze -ResultName C:\perf\results\Res_%BUILD_NUMBER%</code></pre>
+      <p>It takes either <code>-TestPath</code> (an <code>.lrs</code> scenario) or <code>-InputFile</code> (an XML description of the run), a post-run action (<code>-Run</code>, <code>-Collate</code> or <code>-CollateAndAnalyze</code>), and optionally <code>-OverrideLgs</code> to swap load generators per environment and <code>-SilentMode</code>. Release 26.1 added a separate <strong>Controller Service CLI</strong> that runs <code>.lrs</code> files or YAML scenario definitions. At the time of writing the help describes it as a private beta, installed separately. Watch it if you want scenarios as code.</p>
+
+      <h2 id="jenkins">3. Jenkins</h2>
+      <p>Install the <strong>OpenText Application Automation Tools</strong> plugin (plugin ID <code>hp-application-automation-tools-plugin</code>, a reminder of its history). Put the Controller on a Windows agent, not on the Jenkins controller. The plugin adds a freestyle build step for running tests from the file system and a pipeline step called <code>loadRunnerTest</code>.</p>
+      <pre class="ex-code"><code>// Jenkinsfile (sketch: generate the exact step with Pipeline Syntax → loadRunnerTest)
+pipeline {
+  agent { label 'lr-controller' }
+  stages {
+    stage('Performance smoke') {
+      steps {
+        loadRunnerTest(
+          testPaths: 'C:\\perf\\scenarios\\checkout_smoke.lrs',
+          archiveTestResultsMode: 'PUBLISH_HTML_REPORT',
+          analysisTemplate: 'C:\\perf\\templates\\ci.tem',
+          perScenarioTimeOut: '30',
+          controllerPollingInterval: '30',
+          ignoreErrorStrings: ''
+        )
+      }
+    }
+  }
+}</code></pre>
+      <p>The parameter names above come from the plugin's published step reference. The allowed values of <code>archiveTestResultsMode</code> are easiest to take from the Pipeline Syntax snippet generator in your Jenkins, so treat this as a sketch. The plugin reads the scenario's SLA results to pass or fail the build, so define SLAs in the scenario or Analysis template. Otherwise the build only fails on errors.</p>
+
+      <h2 id="azure">4. Azure DevOps</h2>
+      <p>For Professional Performance Engineering, the 26.1 help points to an Azure DevOps Marketplace extension listed as <strong>LoadRunner Professional Tests Automation</strong>. It runs Controller scenarios on a self-hosted Windows agent where Controller is installed, with settings for the scenario path, results folder, task and scenario timeouts, an Analysis template and whether to treat failures as errors.</p>
+      <p>For Enterprise Performance Engineering there is a separate extension (installed from a <code>.vsix</code> file) that connects to the Enterprise server, runs a test, and can collate and analyse. Its task does not publish the results folder as a build artifact, so add a Publish Pipeline Artifact step after it.</p>
+      <p>If the extensions don't fit, a script step that calls <code>CLIControllerApp.exe</code> on a self-hosted Windows agent works in any CI system, including GitLab and GitHub Actions.</p>
+
+      <h2 id="lre">5. Enterprise and Core Performance Engineering</h2>
+      <p>With Enterprise Performance Engineering, the CI job does not need Controller locally. The plugin (Jenkins or Azure DevOps) asks the server to run a named test in a project, reserves a timeslot and generators from the shared pool, waits, and pulls back results and trend data. That suits banks with a central performance team: pipelines run tests without anyone installing Controller on a build agent. Core Performance Engineering (SaaS) has its own plugins and a REST API. Check the integration pages for your release, as both products move faster than the desktop tools.</p>
+
+      <h2 id="devweb">6. DevWeb: LoadRunner in JavaScript</h2>
+      <p>DevWeb is a protocol and engine for HTTP-based scripts written in JavaScript. A DevWeb script is a folder with <code>main.js</code>, <code>scenario.yml</code> and optionally <code>rts.yml</code> for runtime settings. The same script runs in VuGen and Controller, in Enterprise and Core, and from the command line with the standalone engine (Performance Engineering for Developers). That makes it the natural format for developer-owned API tests.</p>
+      <pre class="ex-code"><code>// main.js (sketch, based on the DevWeb JavaScript SDK reference for 26.x)
+load.initialize(async function () {
+    // runs once per vuser, like vuser_init
+});
+
+load.action("Action", async function () {
+    const tLogin = new load.Transaction("02_Login");
+    tLogin.start();
+
+    const login = new load.WebRequest({
+        id: 1,
+        url: "https://staging.example.com/api/login",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: { username: load.params.Username, password: load.params.Password },
+        extractors: [
+            new load.JsonPathExtractor("token", "$.access_token")
+        ]
+    }).sendSync();
+
+    tLogin.stop(login.status === 200 ? load.TransactionStatus.Passed
+                                     : load.TransactionStatus.Failed);
+
+    const tAccounts = new load.Transaction("03_Accounts");
+    tAccounts.start();
+    const accounts = new load.WebRequest({
+        id: 2,
+        url: "https://staging.example.com/api/accounts",
+        headers: { "Authorization": `Bearer ${login.extractors.token}` }
+    }).sendSync();
+    tAccounts.stop(accounts.status === 200 ? load.TransactionStatus.Passed
+                                           : load.TransactionStatus.Failed);
+
+    load.log(`accounts returned ${accounts.status}`, load.LogLevel.info);
+});
+
+load.finalize(async function () {
+});</code></pre>
+      <p>Key parts of the SDK: <code>load.initialize</code>, <code>load.action</code> and <code>load.finalize</code> blocks (equivalent to <code>vuser_init</code>, <code>Action</code> and <code>vuser_end</code>), <code>load.WebRequest</code> with <code>sendSync()</code> or async <code>send()</code>, extractors (<code>BoundaryExtractor</code>, <code>RegexpExtractor</code>, <code>JsonPathExtractor</code>, <code>XpathExtractor</code>, <code>TextCheckExtractor</code>, <code>HtmlExtractor</code>, <code>CookieExtractor</code>) read from <code>response.extractors.&lt;name&gt;</code>, parameters from <code>load.params.&lt;name&gt;</code>, and <code>load.log</code> instead of <code>console.log</code>. A JavaScript object passed as <code>body</code> is serialised according to the Content-Type header. I wrote the sample from the 26.x SDK reference and could not run it here, so treat it as a sketch and check request options against your version's SDK page.</p>
+      <p>Run it locally from the command line:</p>
+      <pre class="ex-code"><code># single vuser, a few iterations (Windows: DevWeb.exe)
+DevWeb -mode=single -iterations=3 ./checkout_api
+
+# load mode, using scenario.yml in the script folder
+DevWeb -mode=load ./checkout_api</code></pre>
+      <p>DevWeb only speaks HTTP-family protocols (HTTP/1.1, HTTP/2, WebSockets, gRPC and some others, depending on release). Citrix, SAP GUI and TruClient journeys stay in their own protocols. Recent releases also add an MCP server for DevWeb, so AI coding tools can record and edit scripts.</p>
+
+      <h2 id="gates">7. Designing the gate</h2>
+      <ul>
+        <li><strong>Small and fast in the pipeline.</strong> A 10 to 15-minute run at a fraction of peak, on every merge to main or nightly. Save full-scale tests for a scheduled window.</li>
+        <li><strong>Fixed environment, fixed data.</strong> A gate is only as stable as the environment. Noisy shared test environments produce flaky gates, and flaky gates get switched off.</li>
+        <li><strong>Gate on percentiles and error rate</strong>, per key transaction, with thresholds a little above the current baseline. See <a href="/glossary/thresholds/">thresholds</a> and <a href="/glossary/baseline/">baselines</a>.</li>
+        <li><strong>Keep the history.</strong> Archive the Analysis report per build so you can see the trend, not just pass or fail.</li>
+        <li><strong>Treat licence capacity as a resource.</strong> Pipeline runs consume vusers from the same licence or pool as the big tests. Agree a budget.</li>
+      </ul>
+      <p>For the open-source side of the same idea, see the <a href="/guides/jmeter/ci-pipelines/">JMeter CI pipelines guide</a>. <strong>Next:</strong> <a href="/guides/loadrunner/migrating-to-open-source/">migrating to open source</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance checks in your pipeline?</h2>
+        <p>Book a free 30-minute call and we'll sketch a gate that fits your tools and environments. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-ci-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-ci-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

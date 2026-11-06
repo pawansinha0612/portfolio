@@ -373,7 +373,7 @@ You can't learn load testing from reading about it. You need something safe to b
 I've put together free hands-on exercises, from your first test to finding a real bottleneck:
 → run a small practice app on your own laptop, so you're never load testing someone else's site
 → each exercise has a goal, a script, what you should see, and the answer
-→ finish by finding an injected slowdown yourself
+→ track down a hidden slowdown yourself, the way you would on a real project
 
 Work through the first exercise this week and tell me how far you got:
 https://pawansinha.com.au/guides/practice/

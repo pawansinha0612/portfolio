@@ -1,0 +1,146 @@
+<!--{"title": "Practice 7: find the hidden slow dependency", "og_title": "Practice exercise 7: a hidden fault, found with tags and server metrics", "description": "Hands-on exercise: a one-liner hides a delay inside QuickPizza. Find it with k6 tags and per-request thresholds, then confirm it from the server's metrics.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 7 of 10</p>
+      <h1>Exercise 7: find the hidden slow dependency</h1>
+      <p class="lead">"Pizza is slow." That is the whole bug report. The pizza endpoint calls a catalog service and a copy service, several times each, and any of them could be the problem, or none of them. Guessing gets you a week of tuning the wrong thing. This exercise hides a delay somewhere in QuickPizza without telling you where, and you find it with evidence.</p>
+      <ul class="pr-meta"><li>30 minutes</li><li>3 virtual users, 45 seconds</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Break a slow user journey down into its parts with request tags, find the slow part, confirm it from the server side using QuickPizza's own Prometheus metrics, and then see how a small dependency failure rate turns into a large user-facing one.</p>
+
+      <h2 id="setup">Setup: hide the fault</h2>
+      <p>This picks one of three delay switches at random and starts QuickPizza with it, without printing which. Don't peek.</p>
+      <pre class="ex-code"><code>SLOW=$(printf '%s\n' QUICKPIZZA_DELAY_COPY_API_NAMES QUICKPIZZA_DELAY_COPY_API_ADJECTIVES \
+  QUICKPIZZA_DELAY_RECOMMENDATIONS_API_PIZZA_POST |
+  awk 'BEGIN { srand() } { a[NR] = $0 } END { print a[int(rand() * NR) + 1] }')
+docker run --rm --name quickpizza -p 3333:3333 -e "$SLOW=300ms" ghcr.io/grafana/quickpizza-local:latest</code></pre>
+      <p>Better still, ask a friend to pick one and start the container for you.</p>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>07-slow-dependency.js</code>. Each iteration runs the user journey (create a pizza), then probes each dependency directly, one request each, every request tagged with a <code>name</code>:</p>
+      <pre class="ex-code"><code>// Exercise 7: the user journey plus a probe of each dependency, tagged by name,
+// so you can see which part is slow. Run locally only.
+// Optional fault injection on the journey: -e FAIL_PCT=10
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const FAIL_PCT = __ENV.FAIL_PCT || '';
+const AUTH = { 'Content-Type': 'application/json', Authorization: 'token abcdef0123456789' };
+
+const probes = ['names', 'adjectives', 'quotes', 'doughs', 'tools', 'ingredients'];
+const paths = {
+  names: '/api/names',
+  adjectives: '/api/adjectives',
+  quotes: '/api/quotes',
+  doughs: '/api/doughs',
+  tools: '/api/tools',
+  ingredients: '/api/ingredients/tomato',
+};
+
+// k6 only prints per-tag numbers for metrics that have a threshold, so give each tag a loose one.
+const thresholds = { 'http_req_duration{name:pizza}': ['p(95)&lt;5000'] };
+for (const p of probes) thresholds[`http_req_duration{name:${p}}`] = ['p(95)&lt;5000'];
+
+export const options = {
+  vus: 3,
+  duration: __ENV.DURATION || '45s',
+  thresholds,
+  summaryTrendStats: ['avg', 'med', 'p(95)', 'max'],
+};
+
+export default function () {
+  const journeyHeaders = { ...AUTH };
+  if (FAIL_PCT) {
+    journeyHeaders['x-error-get-ingredients'] = 'practice-fault';
+    journeyHeaders['x-error-get-ingredients-percentage'] = String(FAIL_PCT);
+  }
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), {
+    headers: journeyHeaders,
+    tags: { name: 'pizza' },
+  });
+  check(res, { 'pizza status is 200': (r) =&gt; r.status === 200 });
+
+  // Probe every dependency directly, one request each
+  const batch = probes.map((p) =&gt; ['GET', `${BASE_URL}${paths[p]}`, null, { headers: AUTH, tags: { name: p } }]);
+  http.batch(batch);
+
+  sleep(1);
+}</code></pre>
+      <p>The loose thresholds are a k6 trick: k6 prints numbers for a tagged sub-metric only when a threshold refers to it. <code>p(95)&lt;5000</code> will never fail here. It is there to make the per-name rows appear.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code>k6 run 07-slow-dependency.js</code></pre>
+      <p>Then ask the server. QuickPizza exposes Prometheus metrics at <code>/metrics</code>, including a request duration histogram labelled by route. This prints the average time per route since the container started:</p>
+      <pre class="ex-code"><code>curl -s http://localhost:3333/metrics | awk '
+  /^quickpizza_server_http_request_duration_seconds_sum\{/   { k = $1; sub(/^[^{]*/, "", k); s[k] = $2 }
+  /^quickpizza_server_http_request_duration_seconds_count\{/ { k = $1; sub(/^[^{]*/, "", k); c[k] = $2 }
+  END { for (k in s) if (c[k] &gt; 0) printf "%8.1f ms  %s\n", 1000 * s[k] / c[k], k }' | sort -rn</code></pre>
+      <p>When you have an answer, check it:</p>
+      <pre class="ex-code"><code>docker inspect quickpizza --format '{{range .Config.Env}}{{println .}}{{end}}' | grep DELAY</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <p>In the THRESHOLDS block, one row per name. One of the three patterns below, with illustrative numbers:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>pizza p95</th><th>names p95</th><th>adjectives p95</th><th>Everything else</th></tr></thead>
+        <tbody>
+          <tr><td>≈ 400 ms</td><td>≈ 330 ms</td><td>≈ 30 ms</td><td>≈ 30 ms</td></tr>
+          <tr><td>≈ 400 ms</td><td>≈ 30 ms</td><td>≈ 330 ms</td><td>≈ 30 ms</td></tr>
+          <tr><td>≈ 400 ms</td><td>≈ 30 ms</td><td>≈ 30 ms</td><td>≈ 30 ms</td></tr>
+        </tbody>
+      </table></div>
+      <p>The server-side averages should tell the same story, with route patterns such as <code>path="/api/names"</code> and <code>path="/api/ingredients/{type}"</code>. They include the calls QuickPizza makes to itself while building each pizza, not only your probes. Label names can change between QuickPizza versions, so if the awk prints nothing, look at the raw <code>/metrics</code> output.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Which switch was it? Write the evidence in two sentences, as you would in a defect.</li>
+        <li>In the third pattern, no dependency is slow, yet pizza is. What does that tell you, and what would you look at next on a real system?</li>
+        <li>The direct probes and the server metrics are two kinds of evidence. Why is it worth having both?</li>
+        <li>Restart QuickPizza <em>without</em> a delay and run <code>k6 run -e FAIL_PCT=10 07-slow-dependency.js</code>. Compare the pizza check's pass rate with <code>http_req_failed</code>. Why is the overall error rate so misleading here?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>The slow probe names it. For example: "POST /api/pizza p95 rose from about 100 ms to about 400 ms. GET /api/adjectives on its own has p95 of about 330 ms against about 30 ms for every other dependency, and the server's own metrics show the same 300 ms extra on /api/adjectives, so the copy service's adjectives endpoint is the cause."</li>
+            <li>The time is spent inside the pizza handler itself (here, the <code>…_API_PIZZA_POST</code> delay). On a real system, the next step is inside the service: a profiler, traces with spans around the handler's own work, thread dumps, or logs with timings. "Not a dependency" is a useful result, because it tells you where not to look.</li>
+            <li>Direct probes show how a dependency performs on its own. Server metrics show how it performs for the real callers, under the real mix. They can differ: a dependency can be fast when called alone and slow when the main service calls it, because of connection pool limits, retries or timeouts on the caller's side. When both agree, you have a strong case.</li>
+            <li>Roughly a third of pizzas fail (the fan-out from <a href="/guides/practice/thresholds/">Exercise 2</a>: four ingredient lookups, each failing 10% of the time). But <code>http_req_failed</code> shows only a few percent, because the six probes per iteration all succeed and dilute it. The probe requests outnumber the pizza requests six to one. Always look at errors per request name. A global error-rate threshold can pass while the one journey customers care about fails a third of the time.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/grafana/">Exercise 8: watch it live in Grafana</a>. Background: <a href="/guides/bottlenecks/">finding bottlenecks</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="slow-dependency"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Got a "it's slow" ticket nobody can pin down?</h2>
+        <p>I find bottlenecks with evidence across services, databases and infrastructure. Book a free 30-minute call and tell me what you are seeing.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-7-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-7-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

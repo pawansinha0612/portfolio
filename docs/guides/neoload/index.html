@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoLoad guides: User Paths, scenarios, as-code and CI — Pawan Sinha</title>
+  <meta name="description" content="Practical Tricentis NeoLoad how-tos: User Paths and recording, correlation and variables, populations and scenarios, as-code YAML and CLI, analysis and SLAs.">
+  <meta property="og:title" content="NeoLoad guides: practical how-tos for Tricentis NeoLoad">
+  <meta property="og:description" content="Practical Tricentis NeoLoad how-tos: User Paths and recording, correlation and variables, populations and scenarios, as-code YAML and CLI, analysis and SLAs.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/neoload/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/neoload/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · NeoLoad</p>
+      <h1>NeoLoad guides</h1>
+      <p class="lead">Practical how-tos for Tricentis NeoLoad, the commercial load testing tool many Australian banks, insurers and retailers run alongside or instead of LoadRunner. These guides follow the NeoLoad 2026.x documentation and the as-code reference. Menus and features move between releases, so check your version's docs when a screen looks different.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2>Build the test</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/neoload/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>NeoLoad GUI, NeoLoad Web, controllers, load generators and zones, how licensing works, and a first test.</p>
+      </a>
+      <a class="g-card" href="/guides/neoload/user-paths-and-recording/">
+        <span class="g-tag">Design</span>
+        <h3>User Paths and recording</h3>
+        <p>Init, Actions and End containers, transactions, logical actions, recording, and the post-recording wizard.</p>
+      </a>
+      <a class="g-card" href="/guides/neoload/correlation-and-variables/">
+        <span class="g-tag">Design</span>
+        <h3>Correlation and variables</h3>
+        <p>Variable extractors, framework parameters, dynamic parameter search, and variable change policy and scope.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Run it</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/neoload/populations-and-scenarios/">
+        <span class="g-tag">Workload</span>
+        <h3>Populations and scenarios</h3>
+        <p>Populations, constant, ramp-up, peaks and custom load policies, duration, start and stop policies, pacing.</p>
+      </a>
+      <a class="g-card" href="/guides/neoload/as-code-and-ci/">
+        <span class="g-tag">Automation</span>
+        <h3>As-code and CI</h3>
+        <p>NeoLoad as-code YAML, the <code>neoload</code> CLI, NeoLoadCmd, and Jenkins, GitLab and Azure DevOps pipelines.</p>
+      </a>
+      <a class="g-card" href="/guides/neoload/analysis-and-sla/">
+        <span class="g-tag">Analysis</span>
+        <h3>Analysis and SLAs</h3>
+        <p>Reading results in the GUI and NeoLoad Web, SLA profiles per test and per interval, and comparing runs.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Related</h2>
+      <ul>
+        <li><a href="/compare/jmeter-vs-neoload/">JMeter vs NeoLoad</a>: licensing, protocols, design and analysis compared.</li>
+        <li><a href="/compare/tool-picker/">Load testing tool picker</a>: answer a few questions, get a shortlist.</li>
+        <li><a href="/guides/loadrunner/">LoadRunner guides</a>: the other enterprise tool common in Australian banks.</li>
+        <li><a href="/guides/bottlenecks/">Finding bottlenecks</a> and <a href="/guides/monitoring/">monitoring during a test</a>: what to do once the load is running.</li>
+        <li><a href="/glossary/">Performance testing glossary</a>: the terms used across these guides.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a NeoLoad project?</h2>
+        <p>Book a free 30-minute call and we'll work through it together. If you need a test designed, built and run end to end, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-hub-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/" data-track="guide-nl-hub-guides">All guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

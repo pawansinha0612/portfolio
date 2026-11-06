@@ -1,0 +1,170 @@
+<!--{"title": "Practice 5: test data and correlation in k6", "og_title": "Practice exercise 5: CSV users, login tokens and correlation", "description": "Hands-on exercise: load users from a CSV file, log in once per virtual user, and pass the token and a new pizza id from one response to the next.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 5 of 10</p>
+      <h1>Exercise 5: test data and correlation</h1>
+      <p class="lead">Your test logs in 500 virtual users as the same account, gets the same cached page 500 times and reports a beautiful p95. Production has 500 different customers, each with their own session, their own data and their own cache misses. A test only resembles real traffic once each virtual user is someone, and carries what the server gave it from one step to the next.</p>
+      <ul class="pr-meta"><li>30 minutes</li><li>5 virtual users, 30 seconds</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Read users from a CSV file, give each VU its own user, log in once per VU and reuse the token, and use a value from one response (the new pizza's id) in the next request. That last part is <a href="/glossary/correlation/">correlation</a>: capturing dynamic values instead of hard-coding them.</p>
+
+      <h2 id="setup">Setup</h2>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+      <p>Save this as <code>users.csv</code> next to the script. These are throwaway practice accounts: the script registers them on your local QuickPizza in <code>setup()</code>.</p>
+      <pre class="ex-code"><code>username,password
+practice-user-1,practice-pass-1
+practice-user-2,practice-pass-2
+practice-user-3,practice-pass-3
+practice-user-4,practice-pass-4
+practice-user-5,practice-pass-5</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>05-login-correlation.js</code>:</p>
+      <pre class="ex-code"><code>// Exercise 5: test data from a CSV file, a login per virtual user, and correlation
+// (the token and the pizza id come from earlier responses). Run locally only.
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { SharedArray } from 'k6/data';
+import exec from 'k6/execution';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+// Read users.csv once and share it between VUs (columns: username,password)
+const users = new SharedArray('users', function () {
+  const lines = open('./users.csv').trim().split(/\r?\n/).slice(1);
+  return lines.map((line) =&gt; {
+    const [username, password] = line.split(',');
+    return { username, password };
+  });
+});
+
+export const options = {
+  vus: 5,
+  duration: '30s',
+  thresholds: {
+    checks: ['rate&gt;0.99'],
+    http_req_failed: ['rate&lt;0.01'],
+  },
+};
+
+// Practice data only: a fresh QuickPizza container has no practice users, so register them.
+// 201 = created, 400 = already exists from an earlier run. Both are fine here.
+export function setup() {
+  for (const u of users) {
+    http.post(`${BASE_URL}/api/users`, JSON.stringify(u), {
+      headers: JSON_HEADERS,
+      tags: { name: 'setup-register' },
+      responseCallback: http.expectedStatuses(201, 400),
+    });
+  }
+}
+
+// Module scope is per VU in k6, so each VU keeps its own token.
+let token = '';
+
+export default function () {
+  // VU 1 uses row 1, VU 2 uses row 2, and so on (wrapping round if there are more VUs than rows)
+  const user = users[(exec.vu.idInTest - 1) % users.length];
+
+  if (!token) {
+    const login = http.post(`${BASE_URL}/api/users/token/login`, JSON.stringify(user), {
+      headers: JSON_HEADERS,
+      tags: { name: 'login' },
+    });
+    const ok = check(login, {
+      'login status is 200': (r) =&gt; r.status === 200,
+      'login returned a token': (r) =&gt; r.status === 200 &amp;&amp; typeof r.json('token') === 'string',
+    });
+    if (!ok) {
+      sleep(1);
+      return;
+    }
+    token = login.json('token'); // correlation 1: capture the token
+  }
+
+  const auth = { ...JSON_HEADERS, Authorization: `token ${token}` };
+
+  const pizza = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), {
+    headers: auth,
+    tags: { name: 'pizza' },
+  });
+  if (!check(pizza, { 'pizza status is 200': (r) =&gt; r.status === 200 })) {
+    sleep(1);
+    return;
+  }
+  const pizzaId = pizza.json('pizza.id'); // correlation 2: capture the new pizza's id
+
+  const rating = http.post(`${BASE_URL}/api/ratings`, JSON.stringify({ pizza_id: pizzaId, stars: 5 }), {
+    headers: auth,
+    tags: { name: 'rate' },
+  });
+  check(rating, { 'rating status is 201': (r) =&gt; r.status === 201 });
+
+  sleep(1);
+}</code></pre>
+      <p>Three k6 details carry this script. <code>SharedArray</code> parses the file once and shares one read-only copy between VUs, instead of one copy per VU. Code at the top level of the file runs once per VU, so <code>let token</code> is a separate variable in every VU. And <code>setup()</code> runs once before any VU starts. Its <code>responseCallback</code> marks 400 as expected, so a second run (when the users already exist) doesn't count as errors.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code>k6 run 05-login-correlation.js</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <pre class="ex-code"><code>    ✓ login status is 200
+    ✓ login returned a token
+    ✓ pizza status is 200
+    ✓ rating status is 201</code></pre>
+      <p>Both thresholds pass. Count the requests: 5 registrations in setup, 5 logins (one per VU, not one per iteration), and then pairs of pizza and rating requests. The exact count depends on how fast your machine is.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Run the test with <code>--http-debug=full</code> for a few seconds (stop with <kbd>Ctrl+C</kbd>). Find the login response and the token in it. Now copy that token into the script as a fixed string, remove the login, restart QuickPizza and run again. What happens, and why?</li>
+        <li>Change <code>vus: 5</code> to <code>vus: 8</code>. Which users do VUs 6, 7 and 8 get? When would that be a problem in a real system?</li>
+        <li>The script logs in once per VU. When would you log in on every iteration instead?</li>
+        <li>Replace the captured <code>pizzaId</code> with a fixed <code>1</code>. Does the rating request still succeed? What does that tell you about checking only status codes?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Every pizza and rating request fails with 401. Each new QuickPizza container starts with an empty in-memory database, so the practice users are created again with new random tokens. A recorded token is stale the moment the session behind it ends. That is the whole case for correlation: tokens, session ids, CSRF values and new record ids must come from the response, every run.</li>
+            <li>VU 6 gets row 1 again, VU 7 row 2, VU 8 row 3, because of the modulo. Two VUs then share one account. In real systems that can mean one login invalidating the other's session, lock contention on the same records, or artificially warm caches. Have at least as many test users as VUs, or design the sharing on purpose.</li>
+            <li>When the thing you are testing is the login itself (an identity provider, a session store), or when real users mostly arrive, log in, do one thing and leave. Logging in every iteration when real users stay logged in for an hour overloads the auth service and under-loads everything else.</li>
+            <li>It succeeds, because QuickPizza ships with a seeded pizza whose id is 1. Every VU now writes ratings against one row. Real traffic never does that, and in a real database a hot row like this can create lock contention that exists only in your test. The checks stay green throughout. Status checks can't catch a correlation mistake that still produces valid requests. Reviewing the requests with <code>--http-debug=full</code>, and checking that captured values actually change between iterations, can.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/find-the-knee/">Exercise 6: find the knee</a>. Background: <a href="/guides/k6/data-and-parameterisation/">data and parameterisation in k6</a> and, for JMeter users, <a href="/guides/jmeter/correlation/">correlation in JMeter</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="data"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Fighting tokens, SSO or test data?</h2>
+        <p>Login flows and test data are where most load-testing projects lose their first week. Book a free 30-minute call and I'll help you get past it.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-5-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-5-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

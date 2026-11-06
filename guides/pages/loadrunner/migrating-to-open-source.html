@@ -1,0 +1,103 @@
+<!--{"title": "Migrating from LoadRunner to JMeter or k6", "og_title": "Migrating from LoadRunner to JMeter or k6: when it pays, what translates and what doesn't", "description": "Moving from LoadRunner to JMeter or k6: when it makes sense, what translates (HTTP, correlation, data) and what doesn't (Citrix, SAP GUI), and a phased plan.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Migrating to open source</p>
+      <h1>Leaving LoadRunner: what moves, what stays, what breaks</h1>
+      <p class="lead">The licence renewal lands on the CIO's desk and someone asks, "Can't we just use JMeter?" Six months later the web scripts are in k6, the team is happy, and the quarter-end Citrix test of the claims system has nowhere to run. Moving off LoadRunner can be a good decision. It goes wrong when it is treated as a tool swap instead of an inventory of what you actually test.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#when">When moving makes sense</a></li>
+          <li><a href="#inventory">Start with an inventory</a></li>
+          <li><a href="#translates">What translates</a></li>
+          <li><a href="#doesnt">What doesn't translate</a></li>
+          <li><a href="#which">JMeter or k6?</a></li>
+          <li><a href="#plan">A phased plan</a></li>
+          <li><a href="#baseline">Re-baseline, don't compare</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="when">1. When moving makes sense</h2>
+      <p>Moving tends to pay off when:</p>
+      <ul>
+        <li>Most of what you test is HTTP: websites, REST and GraphQL APIs, microservices.</li>
+        <li>Developers or SREs want to own performance tests in the same repos and pipelines as their code.</li>
+        <li>You want to run tests from containers or Kubernetes, scale generators on demand, and avoid Windows-only infrastructure.</li>
+        <li>Your team's skills are moving to JavaScript, Groovy or Python and away from C.</li>
+      </ul>
+      <p>Staying, or keeping LoadRunner for part of the estate, makes sense when:</p>
+      <ul>
+        <li>Critical journeys run through Citrix, SAP GUI, Oracle Forms, terminal emulation (RTE) or other thick-client protocols.</li>
+        <li>You depend on Enterprise Performance Engineering for shared scheduling, trending and audit across many teams, and would have to rebuild that.</li>
+        <li>You have hundreds of stable, maintained scripts and the licence is already paid for the next term. Migration is effort. Spend it where it buys something.</li>
+      </ul>
+      <p>The <a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner comparison</a> and the <a href="/compare/tool-picker/">tool picker</a> go through the trade-offs in more detail.</p>
+
+      <h2 id="inventory">2. Start with an inventory</h2>
+      <p>Before anyone rewrites a script, list every script and scenario you actually run, with:</p>
+      <ul>
+        <li>Protocol (Web HTTP/HTML, TruClient, Citrix, SAP GUI, Web Services, DevWeb...)</li>
+        <li>How often it runs and who relies on the results (release gate, quarterly peak test, regulatory evidence)</li>
+        <li>Complexity: number of steps, correlations, custom C code, external DLLs</li>
+        <li>Data and environment dependencies</li>
+      </ul>
+      <p>Typically a minority of scripts carry most of the value, and some scripts have not run in years. Retire those instead of migrating them.</p>
+
+      <h2 id="translates">3. What translates</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>LoadRunner</th><th>JMeter</th><th>k6</th></tr></thead>
+        <tbody>
+          <tr><td><code>web_url</code>, <code>web_submit_data</code>, <code>web_custom_request</code></td><td>HTTP Request sampler</td><td><code>http.get</code>, <code>http.post</code>, <code>http.request</code></td></tr>
+          <tr><td><code>lr_start_transaction</code> / <code>lr_end_transaction</code></td><td>Transaction Controller</td><td><code>group()</code> or tags plus a custom <code>Trend</code></td></tr>
+          <tr><td><code>web_reg_save_param_ex</code> / <code>_json</code> / <code>_regexp</code></td><td>Boundary, JSON and Regular Expression Extractors</td><td>Parse the response in JavaScript: <code>res.json()</code>, regex</td></tr>
+          <tr><td><code>web_reg_find</code></td><td>Response Assertion</td><td><code>check()</code></td></tr>
+          <tr><td>File parameter, unique / random</td><td>CSV Data Set Config (sharing modes)</td><td><code>SharedArray</code> plus scenario index for uniqueness</td></tr>
+          <tr><td><code>lr_think_time</code> and pacing</td><td>Timers and pacing patterns</td><td><code>sleep()</code>, or arrival-rate executors</td></tr>
+          <tr><td>Controller schedule</td><td>Thread Groups and plugins</td><td>Scenarios and executors</td></tr>
+          <tr><td>SLAs in Analysis</td><td>Assertions plus a CI script</td><td><code>thresholds</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>There is no reliable automatic converter from VuGen C scripts to JMeter or k6. The practical route is to re-record each journey (JMeter's HTTP(S) Test Script Recorder, or a browser HAR file converted to k6), then rebuild correlation and data using the LoadRunner script as the specification. The old script tells you exactly which values were correlated and where they came from, which is the hard part. If your team already moved some tests to JMeter, the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a> gives you a first draft of a k6 script.</p>
+      <div class="g-note">
+        <p><strong>Custom C code is the hidden cost.</strong> Scripts with hand-written encryption, hashing, signature or date logic in C need that logic rewritten in Groovy or JavaScript and tested. Count those scripts separately in the inventory.</p>
+      </div>
+
+      <h2 id="doesnt">4. What doesn't translate</h2>
+      <ul>
+        <li><strong>Citrix ICA.</strong> Neither JMeter nor k6 drives a Citrix session. Options are to keep LoadRunner (or NeoLoad) for Citrix, or test the services behind the Citrix-published app at the HTTP or database layer instead, which is a different test.</li>
+        <li><strong>SAP GUI.</strong> Same story. SAP Fiori and other web front ends are HTTP and migrate fine. The desktop SAP GUI protocol does not.</li>
+        <li><strong>Oracle Forms (NCA), RTE terminal, proprietary binary protocols.</strong> Usually no practical open-source equivalent.</li>
+        <li><strong>TruClient browser tests.</strong> Partly: k6 has a browser module and Playwright can measure browser timings, but browser-level load is expensive in any tool. Often a handful of browser vusers on top of protocol-level load answers the real question.</li>
+        <li><strong>Analysis-style reporting.</strong> JMeter's HTML dashboard and Grafana dashboards for k6 are good, but cross-run comparisons, SLA reports and templates need building. Budget for it.</li>
+        <li><strong>Central governance.</strong> If Enterprise Performance Engineering is your system of record for test evidence, you need a replacement: results in a time-series store, reports archived per release.</li>
+      </ul>
+
+      <h2 id="which">5. JMeter or k6?</h2>
+      <p>For LoadRunner teams, JMeter feels familiar: a GUI, recorders, many protocol plugins, and a large community. k6 suits teams that live in code review and want tests next to the application, with thresholds that fail a pipeline out of the box. I'd pick JMeter when testers own the tests and need breadth of protocols, and k6 when developers own them and most traffic is HTTP or gRPC. See <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a> for the full comparison, and the <a href="/guides/jmeter/">JMeter guides</a> or <a href="/guides/k6/">k6 guides</a> to get started.</p>
+
+      <h2 id="plan">6. A phased plan</h2>
+      <ol>
+        <li><strong>Pilot one journey.</strong> Pick a valuable, HTTP-only journey with real correlation. Rebuild it, run it alongside the LoadRunner version in the same window, and compare.</li>
+        <li><strong>Build the platform once.</strong> Generators (containers or VMs), results storage, dashboards, CI integration and a report template. This is most of the effort and it is shared by every script after.</li>
+        <li><strong>Migrate by value.</strong> Release-gate journeys first, then peak-test journeys. Retire what nobody uses.</li>
+        <li><strong>Use the bridge if it helps.</strong> Professional Performance Engineering can run JMeter and Gatling tests alongside VuGen scripts (the licence page lists both). During the transition, that lets one scenario mix old and new scripts.</li>
+        <li><strong>Keep LoadRunner for what can't move</strong>, and right-size the licence to those protocols and vuser counts at the next renewal.</li>
+        <li><strong>Train the team.</strong> Correlation, workload modelling and analysis skills transfer. Tool habits don't.</li>
+      </ol>
+
+      <h2 id="baseline">7. Re-baseline, don't compare</h2>
+      <p>The same journey measured by two tools will not report identical numbers. Tools differ in what a transaction includes (embedded resources, redirects, think time), in connection reuse and in how they time requests. Run both side by side in the same environment, understand the differences, then set a new <a href="/glossary/baseline/">baseline</a> in the new tool. Don't fail a release because k6 reports 8% higher than last quarter's LoadRunner run.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Weighing up a migration?</h2>
+        <p>Book a free 30-minute call and we'll look at your script inventory and what's worth moving. For a migration delivered end to end, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-migrate-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-migrate-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

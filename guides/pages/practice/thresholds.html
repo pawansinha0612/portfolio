@@ -1,0 +1,139 @@
+<!--{"title": "Practice 2: k6 thresholds that fail the run", "og_title": "Practice exercise 2: make a k6 test able to fail", "description": "Hands-on exercise: k6 thresholds on p95 and error rate, exit code 99, abortOnFail, and QuickPizza fault injection to make the run fail for real.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 2 of 10</p>
+      <h1>Exercise 2: thresholds that fail the run</h1>
+      <p class="lead">Your nightly load test has been green for three months. Someone finally opens the report and finds p95 went from 200 ms to 1.4 seconds in week six. Nothing failed because nothing was allowed to. A test without thresholds is a measurement. A test with thresholds is a decision.</p>
+      <ul class="pr-meta"><li>20 minutes</li><li>2 virtual users, 30 seconds per run</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Write pass/fail criteria as k6 <a href="/glossary/thresholds/">thresholds</a>, see the exit code change when one is crossed, stop a broken run early with <code>abortOnFail</code>, and use QuickPizza's fault injection to fail the error-rate threshold for real.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>Start QuickPizza locally (<a href="/guides/practice/#setup">setup</a>). The error injection in step 3 sends special headers to the server, which is one more reason this belongs on your own machine.</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>02-thresholds.js</code>:</p>
+      <pre class="ex-code"><code>// Exercise 2: thresholds that pass or fail the run (exit code 99 on failure).
+// Run locally only. Try: -e P95_MS=50   or   -e FAIL_PCT=10
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const P95_MS = __ENV.P95_MS || 800;
+const FAIL_PCT = __ENV.FAIL_PCT || '';
+
+export const options = {
+  vus: 2,
+  duration: '30s',
+  thresholds: {
+    // Fewer than 1% of requests may fail
+    http_req_failed: ['rate&lt;0.01'],
+    // 95% of pizza requests must finish within P95_MS milliseconds
+    'http_req_duration{name:pizza}': [`p(95)&lt;${P95_MS}`],
+    // Stop early if checks are clearly broken (evaluated after the first 10s)
+    checks: [{ threshold: 'rate&gt;0.95', abortOnFail: true, delayAbortEval: '10s' }],
+  },
+};
+
+const headers = {
+  'Content-Type': 'application/json',
+  Authorization: 'token abcdef0123456789',
+};
+if (FAIL_PCT) {
+  // QuickPizza fault injection: make the ingredients lookup fail FAIL_PCT% of the time
+  headers['x-error-get-ingredients'] = 'practice-fault';
+  headers['x-error-get-ingredients-percentage'] = String(FAIL_PCT);
+}
+
+export default function () {
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), {
+    headers,
+    tags: { name: 'pizza' },
+  });
+  check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+  sleep(1);
+}</code></pre>
+      <p>The <code>name</code> tag matters. <code>http_req_duration{name:pizza}</code> is a sub-metric: the threshold applies only to requests tagged <code>name: pizza</code>. In a real script, each request gets its own threshold, because a fast health check averaged in with a slow checkout hides the checkout.</p>
+
+      <h2 id="run">Run it three ways</h2>
+      <pre class="ex-code"><code># 1. Healthy: should pass
+k6 run 02-thresholds.js; echo "exit code: $?"
+
+# 2. An impossible latency target: should fail
+k6 run -e P95_MS=50 02-thresholds.js; echo "exit code: $?"
+
+# 3. Inject errors into 10% of ingredient lookups: should fail and stop early
+k6 run -e FAIL_PCT=10 02-thresholds.js; echo "exit code: $?"</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <p>Run 1 ends with a green THRESHOLDS block and <code>exit code: 0</code>. Run 2 marks the p95 threshold with a cross, prints <code>thresholds on metrics 'http_req_duration{name:pizza}' have been crossed</code> and exits with <code>99</code>. Run 3 looks something like this (illustrative):</p>
+      <pre class="ex-code"><code>  █ THRESHOLDS
+
+    checks
+    ✗ 'rate&gt;0.95' rate=70.00%
+
+    http_req_duration{name:pizza}
+    ✓ 'p(95)&lt;800' p(95)=50.74ms
+
+    http_req_failed
+    ✗ 'rate&lt;0.01' rate=30.00%
+
+ERRO[0010] thresholds on metrics 'checks, http_req_failed' were crossed; at least one has
+           abortOnFail enabled, stopping test prematurely
+exit code: 99</code></pre>
+      <p>Run 3 stops after about 10 seconds instead of 30. That is <code>delayAbortEval: '10s'</code> at work.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>In run 3 you asked for 10% of ingredient lookups to fail. Why did roughly a third of pizza requests fail instead of 10%?</li>
+        <li>Why does the abort wait 10 seconds (<code>delayAbortEval</code>) instead of stopping on the first failed check?</li>
+        <li>Run 2 failed on latency. Should a latency threshold use <code>abortOnFail</code>? When would you use it and when not?</li>
+        <li>In run 3, p95 still passed. Is that good news?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Fan-out. To build one pizza, QuickPizza's recommendations service looks up four kinds of ingredient (olive oil, tomato, mozzarella, toppings), and the fault applies to each lookup. A pizza succeeds only if all four succeed: 0.9<sup>4</sup> ≈ 0.66, so about 34% of pizzas fail. One flaky dependency called several times per request multiplies its failure rate. The same maths applies to latency, which is why tail latency gets worse as fan-out grows.</li>
+            <li>A rate needs enough samples to mean anything. One failure in the first two requests is a 50% failure rate. The delay stops a single unlucky request from killing a two-hour soak test.</li>
+            <li>Usually not. A latency breach still produces useful data about how the system behaves when slow. Abort when carrying on is pointless or harmful: errors that show the script or environment is broken, or a test against a shared environment that is hurting other people.</li>
+            <li>No. Failed requests are often fast (an error is cheap to return), so they can pull percentiles <em>down</em>. Always read latency together with the error rate. Thresholds on <code>http_req_duration{expected_response:true}</code> measure successful requests only, if that is what your target means.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/ramp-up/">Exercise 3: ramp up and read the summary</a>. Background: <a href="/guides/k6/thresholds-and-checks/">thresholds and checks in k6</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="thresholds"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure what your pass/fail numbers should be?</h2>
+        <p>Good thresholds come from real traffic and real business targets, not round numbers. Book a free 30-minute call and we can work them out for your system.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-2-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-2-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LoadRunner parameterisation: file params and unique data — Pawan Sinha</title>
+  <meta name="description" content="LoadRunner parameters done right: types, file parameters, select next row, update value on, when out of values and unique block allocation across vusers.">
+  <meta property="og:title" content="LoadRunner parameterisation: select next row, update value on and unique blocks per vuser">
+  <meta property="og:description" content="LoadRunner parameters done right: types, file parameters, select next row, update value on, when out of values and unique block allocation across vusers.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/loadrunner/parameterisation/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/loadrunner/parameterisation/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "LoadRunner parameterisation: file params and unique data", "description": "LoadRunner parameters done right: types, file parameters, select next row, update value on, when out of values and unique block allocation across vusers.", "url": "https://pawansinha.com.au/guides/loadrunner/parameterisation/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Parameterisation</p>
+      <h1>LoadRunner parameterisation: why vuser 37 keeps getting locked out</h1>
+      <p class="lead">Your test runs 300 vusers across six load generators. Around minute ten, a handful of accounts start failing with "account locked", and they are always the same accounts. Two vusers on different generators are logging in as the same customer at the same time, and the second login kills the first session. The data file was fine. The parameter settings were not.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#types">Parameter types</a></li>
+          <li><a href="#file">File parameters</a></li>
+          <li><a href="#select">Select next row and update value on</a></li>
+          <li><a href="#combos">The combinations that matter</a></li>
+          <li><a href="#unique">Unique data across vusers: block size</a></li>
+          <li><a href="#code">Parameters in code</a></li>
+          <li><a href="#rules">Data rules for real tests</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="types">1. Parameter types</h2>
+      <p>Select a value in the script, right-click, <strong>Replace with Parameter</strong>, then open the <strong>Parameter List</strong> (<strong>Ctrl+L</strong>, or from the Design menu) to set its type and properties. In the script it appears as <code>{ParamName}</code>. Braces are the default delimiters and can be changed in the general options.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Type</th><th>Gives you</th><th>Typical use</th></tr></thead>
+        <tbody>
+          <tr><td>File</td><td>Rows from a <code>.dat</code> (CSV-style) file</td><td>Usernames, passwords, account numbers, search terms</td></tr>
+          <tr><td>Table</td><td>Several columns from one row at once, in table-style APIs</td><td>Mainly non-web protocols</td></tr>
+          <tr><td>Random Number</td><td>Integer in a range, with a format</td><td>Quantities, page numbers</td></tr>
+          <tr><td>Unique Number</td><td>A block of numbers per vuser that never overlap</td><td>Unique references without a data file</td></tr>
+          <tr><td>Date/Time</td><td>Current or offset date and time in a format</td><td>Booking dates, timestamps</td></tr>
+          <tr><td>Group Name, Load Generator Name, Iteration Number, Vuser ID</td><td>Run-time context</td><td>Building unique values, debugging, per-generator data</td></tr>
+          <tr><td>User Defined Function</td><td>The return value of a function in a DLL</td><td>Custom generation, used rarely</td></tr>
+          <tr><td>XML</td><td>Structured values for Web Services scripts</td><td>SOAP payloads</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="file">2. File parameters</h2>
+      <p>A file parameter reads from a <code>.dat</code> file in the script folder. The first line is the column header. Several parameters can share one file, each bound to a column:</p>
+      <pre class="ex-code"><code>Username,Password,AccountNo
+ana.k@example.test,Pa55-0001,40001001
+ben.t@example.test,Pa55-0002,40001002
+chloe.w@example.test,Pa55-0003,40001003</code></pre>
+      <p>Create <code>Username</code> as the file parameter with <strong>Select next row = Unique</strong>, then create <code>Password</code> and <code>AccountNo</code> on the same file with <strong>Select next row = Same line as Username</strong>. Now one row always stays together. If each parameter picks its own row, you will log in with Ana's username and Ben's password.</p>
+
+      <h2 id="select">3. Select next row and update value on</h2>
+      <p>Two settings decide which value a vuser gets and when it changes.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Select next row</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sequential</strong></td><td>Every vuser starts at the top of the file and walks down it. Vuser 1 and vuser 2 both get row 1 first</td></tr>
+          <tr><td><strong>Random</strong></td><td>A random row each time the value updates. Different vusers can get the same row</td></tr>
+          <tr><td><strong>Unique</strong></td><td>Each vuser gets its own rows. No two vusers share a row at the same time</td></tr>
+          <tr><td><strong>Same line as &lt;param&gt;</strong></td><td>Follows another parameter on the same file</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Update value on</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Each iteration</strong></td><td>New value at the start of each iteration, the same value for every use within it</td></tr>
+          <tr><td><strong>Each occurrence</strong></td><td>New value every time the parameter appears in the script</td></tr>
+          <tr><td><strong>Once</strong></td><td>One value for the vuser's whole life</td></tr>
+        </tbody>
+      </table></div>
+      <p>With <strong>Unique</strong>, a third setting appears: <strong>When out of values</strong>, with <em>Abort Vuser</em>, <em>Continue in a cyclic manner</em> or <em>Continue with last value</em>.</p>
+
+      <h2 id="combos">4. The combinations that matter</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Need</th><th>Select next row</th><th>Update value on</th><th>Out of values</th></tr></thead>
+        <tbody>
+          <tr><td>Each vuser is one customer for the whole test (logged in once in <code>vuser_init</code>)</td><td>Unique</td><td>Once</td><td>Abort Vuser</td></tr>
+          <tr><td>Each iteration is a new customer journey, no two vusers ever share a customer</td><td>Unique</td><td>Each iteration</td><td>Abort Vuser, or cyclic if reuse after the file ends is safe</td></tr>
+          <tr><td>Search terms, product IDs, anything shareable</td><td>Random</td><td>Each iteration</td><td>n/a</td></tr>
+          <tr><td>Single-use data: vouchers, new registrations, one-time payments</td><td>Unique</td><td>Each iteration</td><td>Abort Vuser, and size the file for the whole test</td></tr>
+          <tr><td>Debugging one known record in VuGen</td><td>Sequential</td><td>Once</td><td>n/a</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-warn">
+        <p><strong>Sequential is not unique.</strong> With Sequential, every vuser walks the same file from the top, so 300 vusers all log in as row 1 in their first iteration. That is the locked-account scenario in the opening. Use Unique for anything a real user would own.</p>
+      </div>
+
+      <h2 id="unique">5. Unique data across vusers: block size</h2>
+      <p>With Unique, the Controller splits the file into blocks and hands one block to each vuser. The setting is <strong>Allocate Vuser values in the Controller</strong>, enabled only when Unique is selected:</p>
+      <ul>
+        <li><strong>Automatically allocate block size</strong>: the Controller works out a block per vuser from the number of iterations. Good when the iteration count is fixed.</li>
+        <li><strong>Allocate X values for each Vuser</strong>: you set the block size. Use this for duration-based scenarios, where the Controller cannot know how many iterations each vuser will run.</li>
+      </ul>
+      <p>Worked example: a 60-minute test, 200 vusers, pacing of 90 seconds per iteration. Each vuser runs at most 3600 / 90 = 40 iterations, so allocate 40 values per vuser, plus a margin, call it 45. You need 200 × 45 = 9,000 unique rows. If the file has 5,000 rows, either the late vusers abort or, with cyclic, they reuse rows that earlier vusers already consumed. The VuGen help also notes that when values run out, a warning goes to the vuser log if extended logging with parameter substitution is on.</p>
+      <p>The <strong>Simulate Parameter</strong> button in the parameter properties shows which rows each vuser would get for a given vuser count and iteration count. Use it before a big run.</p>
+      <div class="g-note">
+        <p><strong>Unique allocation works across generators</strong> because the Controller hands out the blocks. If you run scripts outside the Controller (standalone, or split across separate Controllers), uniqueness is no longer guaranteed. Give each run its own slice of data.</p>
+      </div>
+
+      <h2 id="code">6. Parameters in code</h2>
+      <pre class="ex-code"><code>// read a parameter's current value as a C string
+char *user = lr_eval_string("{Username}");
+
+// save a string into a parameter (creates it if needed)
+lr_save_string("GOLD", "Tier");
+
+// save an integer
+lr_save_int(atoi(lr_eval_string("{Qty}")) * 2, "DoubleQty");
+
+// build a unique reference: generator name + vuser id + iteration
+lr_param_sprintf("OrderRef", "PT-%s-%s-%s",
+    lr_eval_string("{LGName}"),
+    lr_eval_string("{VuserId}"),
+    lr_eval_string("{Iteration}"));
+
+// force the next value of a file parameter mid-iteration
+lr_advance_param("SearchTerm");</code></pre>
+      <p>Here <code>LGName</code>, <code>VuserId</code> and <code>Iteration</code> are parameters you create with the Load Generator Name, Vuser ID and Iteration Number types. The <a href="/guides/loadrunner/cheat-sheet/#params">cheat sheet</a> lists the rest of the <code>lr_*</code> parameter functions.</p>
+
+      <h2 id="rules">7. Data rules for real tests</h2>
+      <ul>
+        <li><strong>Size data for the test, not the smoke run.</strong> Work it out from duration, pacing and vuser count before the run, as in the example above.</li>
+        <li><strong>Match production skew.</strong> Real traffic hits a few products and accounts far more than others. Uniform random data across 50,000 products defeats every cache and tests a worse case than production. Build data files from real access patterns where you can.</li>
+        <li><strong>Give each load generator its own data when uniqueness matters outside the Controller.</strong></li>
+        <li><strong>Keep secrets out of the script folder.</strong> Passwords in <code>.dat</code> files end up in source control. Use test accounts with test-only passwords, or inject them at run time.</li>
+        <li><strong>Plan the environment reset.</strong> Single-use data is consumed. Agree how the test database is restored between runs before the first run, not after.</li>
+      </ul>
+      <p>The glossary entry on <a href="/glossary/parameterisation/">parameterisation</a> covers the idea in tool-neutral terms. <strong>Next:</strong> <a href="/guides/loadrunner/runtime-settings-and-pacing/">runtime settings and pacing</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need test data that behaves like production?</h2>
+        <p>Book a free 30-minute call to talk through data volumes, skew and single-use records for your system. More on how I work in <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-param-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-param-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

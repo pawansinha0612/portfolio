@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoLoad analysis and SLAs: results, profiles, comparison — Pawan Sinha</title>
+  <meta name="description" content="Read NeoLoad results properly: what to check first, percentiles, SLA profiles per test and per interval, NeoLoad Web dashboards, trends and comparing runs.">
+  <meta property="og:title" content="NeoLoad analysis and SLAs: reading results, SLA profiles per test and per interval, comparing runs">
+  <meta property="og:description" content="Read NeoLoad results properly: what to check first, percentiles, SLA profiles per test and per interval, NeoLoad Web dashboards, trends and comparing runs.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/neoload/analysis-and-sla/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/neoload/analysis-and-sla/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "NeoLoad analysis and SLAs: results, profiles, comparison", "description": "Read NeoLoad results properly: what to check first, percentiles, SLA profiles per test and per interval, NeoLoad Web dashboards, trends and comparing runs.", "url": "https://pawansinha.com.au/guides/neoload/analysis-and-sla/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · Analysis and SLAs</p>
+      <h1>NeoLoad results: green is not the same as good</h1>
+      <p class="lead">The run finishes, the quality status says Passed and the summary shows an average transfer time of 900 ms. Two weeks later production users complain about 6-second transfers at lunchtime. The SLA was an average over the whole test, including the ramp-up, and the slow minutes were averaged away. NeoLoad gives you per-interval SLAs, percentiles and comparisons. Use them, and decide what "pass" means before the run.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#order">What to check first</a></li>
+          <li><a href="#gui">Results in the GUI</a></li>
+          <li><a href="#web">Results in NeoLoad Web</a></li>
+          <li><a href="#percentiles">Percentiles and the steady state</a></li>
+          <li><a href="#sla">SLA profiles</a></li>
+          <li><a href="#compare">Comparing runs</a></li>
+          <li><a href="#report">Writing it up</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="order">1. What to check first</h2>
+      <ol>
+        <li><strong>Did the load run as designed?</strong> Users over time matched the scenario, and throughput (transactions or requests per second) reached the target. If throughput flattened while users kept rising, that is your first finding.</li>
+        <li><strong>Did it work?</strong> Error count and rate, which requests failed and with what. A run with 8% errors has different response times from the one you planned.</li>
+        <li><strong>Were the generators healthy?</strong> Check the load generators' CPU and memory in the monitors. A saturated generator adds its own delay.</li>
+        <li><strong>Only then: how fast?</strong> Percentiles per transaction in the steady state.</li>
+      </ol>
+
+      <h2 id="gui">2. Results in the GUI</h2>
+      <p>The Results section of the desktop app holds every run of the project. The main views:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>View</th><th>Answers</th></tr></thead>
+        <tbody>
+          <tr><td>Test summary</td><td>Headline statistics, SLA status, hot spots, errors and alerts</td></tr>
+          <tr><td>Values</td><td>A table of statistics per transaction, page and request: average, min, max, percentiles, counts, errors</td></tr>
+          <tr><td>Graphs</td><td>Drag any statistic or monitor counter onto a chart to plot it against time, several on one chart</td></tr>
+          <tr><td>Errors</td><td>Each error with the request and response that caused it</td></tr>
+          <tr><td>Alerts</td><td>SLA and monitor threshold breaches during the run</td></tr>
+        </tbody>
+      </table></div>
+      <p>The useful view is usually two lines on one chart: users with transaction response time, or throughput with server CPU. If response time climbs while throughput flattens and CPU sits at 60%, the bottleneck is not CPU. Look at pools, locks and downstream calls. See <a href="/guides/bottlenecks/">finding bottlenecks</a> and <a href="/glossary/saturation/">saturation</a>.</p>
+
+      <h2 id="web">3. Results in NeoLoad Web</h2>
+      <p>When the GUI or CLI sends results to NeoLoad Web, the team sees them live and afterwards, without access to the tester's machine. NeoLoad Web adds:</p>
+      <ul>
+        <li><strong>Live view</strong> during the run, including (from 2026.2) adding or stopping virtual users on a running test.</li>
+        <li><strong>Dashboards</strong> you build from results and monitors, shareable across the team.</li>
+        <li><strong>Trends</strong> across many runs of the same test, the view that catches gradual regressions.</li>
+        <li><strong>Comparison</strong>: 2026.2 added comparison dashboards for up to four results and a scatter plot of durations.</li>
+        <li><strong>Augmented analysis</strong> (from 2025.1): an AI-assisted view, starting with RED statistics (rate, errors, duration), that points out which parts of a result deserve a closer look. Treat its findings as leads to check, not conclusions. See the <a href="/glossary/red-method/">RED method</a>.</li>
+        <li><strong>APM integrations</strong>, such as Dynatrace, so server-side data sits next to load data. See <a href="/guides/monitoring/">monitoring during a test</a>.</li>
+      </ul>
+
+      <h2 id="percentiles">4. Percentiles and the steady state</h2>
+      <p>Averages hide the users having a bad time. If 95% of transfers take 1 second and 5% take 20 seconds, the average is 1.95 seconds and describes nobody. Report the 90th or 95th <a href="/glossary/percentiles/">percentile</a> per transaction and say which one.</p>
+      <ul>
+        <li><strong>Filter to the steady state.</strong> Exclude the ramp-up and ramp-down by filtering the result to a time range before reading statistics. See <a href="/glossary/steady-state/">steady state</a>.</li>
+        <li><strong>Separate failed transactions.</strong> Fast failures pull percentiles down. Report error rate on its own line.</li>
+        <li><strong>Look at the distribution over time</strong>, not just one number. A 5-second stall every two minutes, from a cache refresh or garbage collection, disappears in a whole-run percentile and shows clearly on a graph. See <a href="/glossary/tail-latency/">tail latency</a> and the <a href="/explain/percentiles/">percentiles explainer</a>.</li>
+      </ul>
+
+      <h2 id="sla">5. SLA profiles</h2>
+      <p>An SLA profile is a named set of thresholds you attach to transactions, pages, requests or containers (and in as-code, to a whole scenario). Each threshold has a warning and a failure level, and is evaluated either <strong>per test</strong> (over the whole run) or <strong>per interval</strong> (continuously during the run). In as-code:</p>
+      <pre class="ex-code"><code>sla_profiles:
+- name: payments_sla
+  thresholds:
+  - perc-transaction-resp-time (p95) warn &gt;= 1s fail &gt;= 2s per test
+  - error-rate warn &gt;= 1% fail &gt;= 2% per test
+  - avg-resp-time warn &gt;= 1500ms fail &gt;= 3s per interval
+  - error-rate warn &gt;= 2% fail &gt;= 5% per interval</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Scope</th><th>Indicators (as-code names)</th><th>Good for</th></tr></thead>
+        <tbody>
+          <tr><td>Per test</td><td><code>avg-request-resp-time</code>, <code>avg-page-resp-time</code>, <code>avg-transaction-resp-time</code>, <code>perc-transaction-resp-time (pNN)</code>, <code>avg-request-per-sec</code>, <code>avg-throughput-per-sec</code>, <code>errors-count</code>, <code>count</code>, <code>throughput</code>, <code>error-rate</code></td><td>The release decision: did the run meet its targets?</td></tr>
+          <tr><td>Per interval</td><td><code>avg-resp-time</code>, <code>avg-elt-per-sec</code>, <code>avg-throughput-per-sec</code>, <code>errors-per-sec</code>, <code>error-rate</code></td><td>Catching bad minutes, live alerts and stopping a broken run early</td></tr>
+        </tbody>
+      </table></div>
+      <p>The percentile threshold applies to transactions and defaults to p90 if you don't specify one. Which indicator applies to which element type is listed in the as-code SLA reference. Check it, because not every indicator applies to every element.</p>
+      <ul>
+        <li><strong>Per-transaction targets.</strong> Login, search and payment do not share a target. Create a profile per class of transaction.</li>
+        <li><strong>Percentile for the decision, per-interval for safety.</strong> A per-test percentile answers "did we meet the target". A per-interval error rule catches a 5-minute outage the whole-run numbers hide, and lets the CLI's fast-fail stop a broken run.</li>
+        <li><strong>Agree numbers before the run.</strong> An SLA set after seeing the results is a description, not a test. See <a href="/glossary/sla/">SLA</a>, <a href="/glossary/slo/">SLO</a> and the <a href="/tools/slo-calculator/">SLO calculator</a>.</li>
+      </ul>
+      <p>SLA results drive the run's quality status in NeoLoad Web, the CLI's exit code and the JUnit export for CI. See <a href="/guides/neoload/as-code-and-ci/">as-code and CI</a>.</p>
+
+      <h2 id="compare">6. Comparing runs</h2>
+      <ul>
+        <li><strong>Compare like with like.</strong> Same scenario, same data volumes, same environment size. Otherwise you are comparing environments, not builds.</li>
+        <li><strong>Use a baseline.</strong> Mark a known-good run as the <a href="/glossary/baseline/">baseline</a> and compare each new build against it, in the GUI's comparison mode or NeoLoad Web's comparison dashboards.</li>
+        <li><strong>Look for direction and size together.</strong> A 3% change in p95 is usually noise between runs. A 30% change in one transaction with the rest flat is a finding. Run the baseline twice to learn your noise level.</li>
+        <li><strong>Use trends for the long view.</strong> Many small regressions add up. The trend across 20 nightly runs shows what no single comparison does.</li>
+      </ul>
+
+      <h2 id="report">7. Writing it up</h2>
+      <p>NeoLoad generates reports from a result (and comparison reports from two), in formats that vary by version. Use them as appendices. The report people read should lead with the answer: did it meet the targets, at what load did it stop scaling, what is the bottleneck, and what do you recommend. Put the scenario, environment and data assumptions on the first page, because a result without them cannot be compared later.</p>
+      <p>For tool-neutral analysis practice, see <a href="/guides/bottlenecks/">finding bottlenecks</a>. For comparing NeoLoad with open-source tools, see <a href="/compare/jmeter-vs-neoload/">JMeter vs NeoLoad</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Results you can't explain?</h2>
+        <p>Book a free 30-minute call and we'll read your NeoLoad results together and find where the time goes. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-analysis-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-analysis-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

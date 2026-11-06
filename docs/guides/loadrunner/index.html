@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LoadRunner guides: VuGen, Controller and Analysis how-tos — Pawan Sinha</title>
+  <meta name="description" content="Practical LoadRunner how-tos: VuGen scripting, correlation, parameters, pacing, Controller scenarios, Analysis, CI and moving to open source.">
+  <meta property="og:title" content="LoadRunner guides: practical how-tos for OpenText Professional Performance Engineering">
+  <meta property="og:description" content="Practical LoadRunner how-tos: VuGen scripting, correlation, parameters, pacing, Controller scenarios, Analysis, CI and moving to open source.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/loadrunner/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/loadrunner/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · LoadRunner</p>
+      <h1>LoadRunner guides</h1>
+      <p class="lead">Practical how-tos for LoadRunner, the tool many Australian banks, insurers and government agencies still run their release tests on. OpenText now sells it as Professional Performance Engineering (formerly LoadRunner Professional), with VuGen, Controller and Analysis inside. These guides follow the 26.x documentation. Menu labels move between releases, so check your version's help when a screen looks different.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <div class="g-note">
+        <p><strong>A note on names.</strong> In 2025 OpenText renamed the family: LoadRunner Professional became <em>OpenText Professional Performance Engineering</em>, LoadRunner Enterprise became <em>Enterprise Performance Engineering</em>, LoadRunner Cloud became <em>Core Performance Engineering</em> and LoadRunner Developer became <em>Performance Engineering for Developers</em>. Teams, job ads and these guides still say "LoadRunner", and the components keep their names: VuGen, Controller, Analysis and load generators.</p>
+      </div>
+      <h2>Build the script</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/loadrunner/getting-started/">
+        <span class="g-tag">Start here</span>
+        <h3>Getting started</h3>
+        <p>The product family today, what VuGen, Controller, Analysis and load generators each do, and the free 50-vuser Community licence.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/vugen-scripting/">
+        <span class="g-tag">Scripting</span>
+        <h3>VuGen scripting</h3>
+        <p>Recording, choosing a protocol, vuser_init / Action / vuser_end, transactions and text checks that catch soft failures.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/correlation/">
+        <span class="g-tag">Scripting</span>
+        <h3>Correlation</h3>
+        <p>web_reg_save_param_ex boundaries, ordinals, JSON and regex variants, correlation rules and Design Studio scans.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/parameterisation/">
+        <span class="g-tag">Scripting</span>
+        <h3>Parameterisation</h3>
+        <p>Parameter types, file parameters, select next row, update value on, unique blocks per vuser and running out of data.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Shape and run the load</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/loadrunner/runtime-settings-and-pacing/">
+        <span class="g-tag">Workload</span>
+        <h3>Runtime settings and pacing</h3>
+        <p>Pacing maths, think time replay options, run logic, iterations and log levels that do not flood the generators.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/controller-scenarios/">
+        <span class="g-tag">Workload</span>
+        <h3>Controller scenarios</h3>
+        <p>Manual vs goal-oriented, schedules and ramps, load generators, and why rendezvous points usually mislead.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/ci-and-devops/">
+        <span class="g-tag">Automation</span>
+        <h3>CI and DevOps</h3>
+        <p>Command-line runs with wlrun and CLIControllerApp, the Jenkins and Azure DevOps plugins, and DevWeb JavaScript scripts.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Read the results and decide what next</h2>
+    </section>
+    <div class="wrap g-cards">
+      <a class="g-card" href="/guides/loadrunner/analysis/">
+        <span class="g-tag">Analysis</span>
+        <h3>Analysis</h3>
+        <p>The graphs that matter, merging and correlating graphs, percentiles, granularity, SLAs and reports people read.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/migrating-to-open-source/">
+        <span class="g-tag">Strategy</span>
+        <h3>Migrating to open source</h3>
+        <p>When moving to JMeter or k6 makes sense, what translates, what does not (Citrix, SAP GUI) and how to run both.</p>
+      </a>
+      <a class="g-card" href="/guides/loadrunner/cheat-sheet/">
+        <span class="g-tag">Reference</span>
+        <h3>Cheat sheet</h3>
+        <p>lr_* and web_* functions, {Param} syntax, correlation calls, runtime settings and command lines on one page.</p>
+      </a>
+    </div>
+
+    <section class="wrap ex-prose">
+      <h2>Related</h2>
+      <ul>
+        <li><a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner</a>: licensing, protocols, scripting and scale compared.</li>
+        <li><a href="/compare/tool-picker/">Load testing tool picker</a>: answer a few questions, get a shortlist.</li>
+        <li><a href="/guides/neoload/">NeoLoad guides</a>: the other enterprise tool common in Australian banks.</li>
+        <li><a href="/guides/bottlenecks/">Finding bottlenecks</a> and <a href="/guides/monitoring/">monitoring during a test</a>: what to do once the load is running.</li>
+        <li><a href="/glossary/">Performance testing glossary</a>: the terms used across these guides.</li>
+      </ul>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Stuck on a LoadRunner script or scenario?</h2>
+        <p>Book a free 30-minute call and we'll work through it together. If you need a test designed, built and run end to end, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-hub-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/" data-track="guide-lr-hub-guides">All guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

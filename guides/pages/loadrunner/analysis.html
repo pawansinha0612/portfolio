@@ -1,0 +1,101 @@
+<!--{"title": "LoadRunner Analysis: graphs, percentiles, SLAs, reports", "og_title": "LoadRunner Analysis: the graphs that matter, merging, percentiles, SLAs and reports", "description": "Read LoadRunner Analysis results properly: key graphs, filtering to steady state, merging and correlating graphs, percentiles, granularity, SLAs and reports.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Analysis</p>
+      <h1>LoadRunner Analysis: the summary page is not the answer</h1>
+      <p class="lead">The summary says average login time was 1.2 seconds against a 3-second target. Green, ship it. But the average includes the ramp-up when the system was idle, and the 95th percentile during the busy hour was 7 seconds. The number you report depends on which window, which statistic and which graph you look at. Analysis gives you all of them. Choosing the right ones is the job.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#open">Opening results</a></li>
+          <li><a href="#graphs">The graphs that matter</a></li>
+          <li><a href="#filter">Filter to the steady state</a></li>
+          <li><a href="#percentiles">Percentiles, not averages</a></li>
+          <li><a href="#merge">Merging and correlating graphs</a></li>
+          <li><a href="#granularity">Granularity</a></li>
+          <li><a href="#sla">SLAs</a></li>
+          <li><a href="#reports">Reports and comparing runs</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="open">1. Opening results</h2>
+      <p>At the end of a run the Controller collates results from the generators into the results folder (a <code>.lrr</code> file plus data). Analysis opens it and builds an Analysis session (<code>.lra</code>). Save the session: it keeps your filters, graphs and notes. If collation fails, for example a generator went offline, use <strong>Results → Collate Results</strong> in Controller before opening.</p>
+      <p>For very long runs, Analysis can load summary data only, which is faster but limits filtering. Check the data import options in <strong>Tools → Options</strong> before opening a 12-hour soak test.</p>
+
+      <h2 id="graphs">2. The graphs that matter</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Graph</th><th>Answers</th></tr></thead>
+        <tbody>
+          <tr><td>Running Vusers</td><td>Did the load profile run as designed? Did vusers drop out?</td></tr>
+          <tr><td>Transaction Summary</td><td>Passed, failed and stopped counts per transaction. Check failures first</td></tr>
+          <tr><td>Transaction Response Time (Percentile)</td><td>The distribution per transaction. The one to report from</td></tr>
+          <tr><td>Average Transaction Response Time</td><td>Trend over time. Good for spotting when things changed, poor as a headline number</td></tr>
+          <tr><td>Transactions per Second</td><td>Did you reach the target throughput? Flat TPS with rising vusers means a bottleneck</td></tr>
+          <tr><td>Hits per Second and Throughput</td><td>HTTP requests and bytes per second from the server side</td></tr>
+          <tr><td>Errors per Second and Error Statistics</td><td>When errors started and which messages dominate</td></tr>
+          <tr><td>System resource graphs (if monitored)</td><td>CPU, memory, disk on servers and generators, on the same timeline</td></tr>
+        </tbody>
+      </table></div>
+      <p>Start every analysis with three questions, in order: did the load run as designed (Running Vusers, TPS against target), did it work (errors, failed transactions), and only then how fast was it (percentiles). Response times from a run that missed its throughput target or failed 10% of transactions describe a different test from the one you planned.</p>
+
+      <h2 id="filter">3. Filter to the steady state</h2>
+      <p>Right-click a graph and choose <strong>Set Filter/Group By</strong>, or set a global filter for the session. Filter on <strong>Scenario Elapsed Time</strong> to exclude the ramp-up and ramp-down. For a 10-minute ramp, 60-minute hold and 5-minute ramp-down, report on minutes 10 to 70.</p>
+      <p>Also filter out failed transactions when reporting response times. A transaction that failed fast at 50 ms drags the percentiles down and makes a broken system look quick. Report error rate separately.</p>
+
+      <h2 id="percentiles">4. Percentiles, not averages</h2>
+      <p>Averages hide the users having a bad time. A transaction with 95% of responses at 1 second and 5% at 20 seconds has an average of 1.95 seconds, which looks fine and describes nobody. Report the 90th or 95th <a href="/glossary/percentiles/">percentile</a>, and say which.</p>
+      <ul>
+        <li>The summary report shows a percentile column. Its value is set in Analysis options (<strong>Tools → Options</strong>, the transaction percentile setting). Many teams leave the default without knowing what it is. Check it, and set it to the percentile in your <a href="/glossary/sla/">SLA</a>.</li>
+        <li>The Transaction Response Time (Percentile) graph shows the full curve. A curve with a sharp rise at the top end usually means a queue or timeout somewhere, see <a href="/glossary/tail-latency/">tail latency</a>.</li>
+        <li>Check whether think time is included in transaction times. Analysis has an option for it. Keep think time out of transactions in the script and the question goes away.</li>
+      </ul>
+      <p>The <a href="/explain/percentiles/">interactive percentiles explainer</a> shows why averages mislead with real distributions.</p>
+
+      <h2 id="merge">5. Merging and correlating graphs</h2>
+      <p>The useful insight is usually in the relationship between two graphs. Right-click a graph and choose <strong>Merge Graphs</strong>:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Merge type</th><th>Shows</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Overlay</td><td>Both graphs on one chart sharing the x-axis, with two y-axes</td><td>Running vusers against response time over time</td></tr>
+          <tr><td>Tile</td><td>One above the other, same x-axis</td><td>Comparing shapes with very different scales</td></tr>
+          <tr><td>Correlate</td><td>One graph's y-axis against the other's y-axis</td><td>Response time as a function of vusers or TPS: where the knee is</td></tr>
+        </tbody>
+      </table></div>
+      <p>The standard pair: overlay Running Vusers with Transaction Response Time, then overlay TPS with server CPU. If response time climbs while TPS flattens and CPU sits at 60%, the bottleneck is not CPU. Look at pools, locks and downstream calls. See <a href="/guides/bottlenecks/">finding bottlenecks</a> and <a href="/glossary/saturation/">saturation</a>.</p>
+
+      <h2 id="granularity">6. Granularity</h2>
+      <p>Granularity is the bucket size for time-based graphs. Right-click → <strong>Set Granularity</strong>. A coarse granularity (60 seconds) smooths spikes away, a fine one (1 to 5 seconds) shows them but looks noisy. Look at both. A 5-second stall every 2 minutes, from a cache refresh or garbage collection, is invisible at 60-second granularity. Use the same granularity on every graph you overlay.</p>
+
+      <h2 id="sla">7. SLAs</h2>
+      <p>Analysis can evaluate SLAs against the results (<strong>Tools → Configure SLA Rules</strong> in most versions, or from the SLA section of the Summary Report). You can set goals such as a transaction response time percentile or average per transaction, and run-level goals such as errors per second or hits per second, checked over the whole run or in time intervals. The Summary Report then shows pass or fail per rule.</p>
+      <ul>
+        <li>Define SLAs per transaction. Login and search do not share a target.</li>
+        <li>Prefer percentile SLAs to average ones.</li>
+        <li>Time-interval SLAs catch a bad 5 minutes that a whole-run SLA hides.</li>
+        <li>Agree the SLA numbers with the business before the run. An SLA set after seeing the results is a description, not a test. See <a href="/glossary/slo/">SLOs</a> and <a href="/tools/slo-calculator/">the SLO calculator</a>.</li>
+      </ul>
+
+      <h2 id="reports">8. Reports and comparing runs</h2>
+      <ul>
+        <li><strong>Built-in reports.</strong> Analysis generates HTML and document reports from templates. Build a template once with your graphs, filters and SLA section, then apply it to every run so reports are comparable.</li>
+        <li><strong>Templates in CI.</strong> The Jenkins and Azure DevOps plugins can apply an Analysis template after the run. See <a href="/guides/loadrunner/ci-and-devops/">CI and DevOps</a>.</li>
+        <li><strong>Cross-result graphs.</strong> Open two or more result sets in one session to compare builds on the same graph. Keep the scenario identical between runs, or the comparison means nothing.</li>
+        <li><strong>Export raw data</strong> (right-click a graph → export, or the graph data view) when you want your own charts or a statistical comparison.</li>
+        <li><strong>Write the conclusion yourself.</strong> A report of 40 graphs is not an analysis. Lead with the answer: did it meet the targets, where is the limit, what is the bottleneck, what do you recommend.</li>
+      </ul>
+      <p>Recent releases add Aviator, an AI assistant in Analysis that summarises results and builds widgets from prompts. Treat its summaries like a junior analyst's first draft and check every claim against the graphs.</p>
+      <p><strong>Next:</strong> <a href="/guides/loadrunner/ci-and-devops/">CI and DevOps</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Results you can't explain?</h2>
+        <p>Book a free 30-minute call and we'll read your Analysis graphs together and find where the time goes. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-analysis-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-analysis-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

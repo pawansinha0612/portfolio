@@ -1,0 +1,116 @@
+<!--{"title": "NeoLoad User Paths: containers, transactions, recording", "og_title": "NeoLoad User Paths: Init/Actions/End containers, transactions, logical actions and recording", "description": "Build NeoLoad User Paths that model real users: Init, Actions and End containers, transactions, pages, logical actions, recording and error handling.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · User Paths and recording</p>
+      <h1>NeoLoad User Paths: structure before speed</h1>
+      <p class="lead">NeoLoad records a journey in two minutes and the post-recording wizard correlates most of it for you. That speed is the tool's selling point, and also the trap. A recorded User Path with the login in the wrong container, no transactions and no content checks will run beautifully and tell you very little. Here is how to structure one so the results mean something.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#containers">Init, Actions and End containers</a></li>
+          <li><a href="#record">Recording</a></li>
+          <li><a href="#pages">Pages, requests and transactions</a></li>
+          <li><a href="#logic">Logical actions</a></li>
+          <li><a href="#think">Think time and pacing in the User Path</a></li>
+          <li><a href="#errors">Validations and error behaviour</a></li>
+          <li><a href="#check">Check the User Path</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="containers">1. Init, Actions and End containers</h2>
+      <p>Every User Path has three top-level containers:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Container</th><th>Runs</th><th>Put here</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Init</strong></td><td>Once per virtual user, at start</td><td>Log in, if real users stay logged in across many actions</td></tr>
+          <tr><td><strong>Actions</strong></td><td>Repeatedly, once per iteration</td><td>The journey you are measuring</td></tr>
+          <tr><td><strong>End</strong></td><td>Once per virtual user, at stop</td><td>Log out, clean up</td></tr>
+        </tbody>
+      </table></div>
+      <p>Where the login goes is a workload decision. If each real session is "log in, check balance, log out", record all of it into Actions, otherwise the authentication service is barely tested. LoadRunner users will recognise the pattern: it maps directly to <code>vuser_init</code>, <code>Action</code> and <code>vuser_end</code>.</p>
+      <p>Each User Path also has a user session setting (reset cookies and cache between iterations or not). Match it to how real users behave: a new session per iteration for "log in, do one thing, leave" journeys, a kept session when one virtual user is one long-lived user.</p>
+
+      <h2 id="record">2. Recording</h2>
+      <ul>
+        <li><strong>Start recording</strong> from the toolbar, choose the User Path and the container to record into, and NeoLoad opens a browser routed through its recording proxy. Mobile apps and non-browser clients can record through the same proxy if you point them at it.</li>
+        <li><strong>Name steps as you go.</strong> The recording bar lets you type a transaction name before each step. Doing it during recording saves an hour of renaming later.</li>
+        <li><strong>Exclude third parties.</strong> Analytics, ads, chat widgets and fonts are not your system. Filter them out in recording preferences or delete them after, so the test does not load someone else's servers.</li>
+        <li><strong>Post-recording wizard.</strong> When you stop, NeoLoad offers to process the recording: searching for dynamic parameters, configuring push or WebSocket messages and similar steps, depending on what it detected. Let it run, then review what it changed. See <a href="/guides/neoload/correlation-and-variables/">correlation and variables</a>.</li>
+        <li><strong>Record twice with different users</strong> if a journey is complex. Values that differ between the two recordings are correlation or data candidates.</li>
+      </ul>
+
+      <h2 id="pages">3. Pages, requests and transactions</h2>
+      <p>NeoLoad groups recorded HTTP requests into <strong>pages</strong>: the main request plus its embedded resources, timed together like a browser page load. API calls usually appear as single-request pages.</p>
+      <p>A <strong>transaction</strong> groups one or more pages into a business step, and it is what you report on. Name transactions so they sort in journey order and read well in a report: <code>01_Home</code>, <code>02_Login</code>, <code>03_Search</code>. One transaction per user-visible step. A single transaction around the whole journey hides a slow login in a long total.</p>
+      <p>In NeoLoad as-code, the same structure looks like this (a fragment, see <a href="/guides/neoload/as-code-and-ci/">as-code</a> for a whole project):</p>
+      <pre class="ex-code"><code>user_paths:
+- name: Checkout
+  actions:
+    steps:
+    - transaction:
+        name: 01_Home
+        steps:
+        - request:
+            url: /
+            server: shop
+    - think_time: 5s
+    - transaction:
+        name: 02_Login
+        steps:
+        - request:
+            url: /login
+            server: shop
+            method: POST
+            headers:
+            - Content-Type: application/x-www-form-urlencoded
+            body: |
+              username=${users.username}&amp;password=${users.password}
+    - think_time: 8s</code></pre>
+
+      <h2 id="logic">4. Logical actions</h2>
+      <p>Drag logical actions from the actions panel into the User Path to add control flow:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Action</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Transaction</td><td>Group pages into a timed business step</td></tr>
+          <tr><td>Delay / Think time</td><td>Pauses. Keep them outside transactions so they don't inflate the timings</td></tr>
+          <tr><td>Loop, While</td><td>Repeat steps, for example add three items to a basket</td></tr>
+          <tr><td>If...Then...Else, Switch</td><td>Branch on a variable, such as an extracted value</td></tr>
+          <tr><td>Fork</td><td>Run steps in parallel within one virtual user, like a browser's concurrent API calls</td></tr>
+          <tr><td>Try...Catch</td><td>Handle a failure in part of the path without ending the iteration</td></tr>
+          <tr><td>JavaScript</td><td>Compute values or custom logic. Keep it small, it runs on the generators for every user</td></tr>
+          <tr><td>Rendezvous</td><td>Make users wait for each other. Rarely realistic, see <a href="/guides/neoload/populations-and-scenarios/#rendezvous">populations and scenarios</a></td></tr>
+          <tr><td>Wait Until, Stop Virtual User, Go to next iteration</td><td>Flow control on conditions and errors</td></tr>
+          <tr><td>Shared containers</td><td>Reuse a block such as login across several User Paths</td></tr>
+        </tbody>
+      </table></div>
+      <p>Prefer a weighted mix of User Paths in the population over a random branch inside one giant User Path. It is easier to read, and the mix is visible in the scenario.</p>
+
+      <h2 id="think">5. Think time and pacing in the User Path</h2>
+      <p>Recorded think times reflect how fast you clicked during recording. Replace them with values based on analytics where you can. At the User Path level you can override all think times (for example 5 seconds ± 10%) or scale them by a factor (150%), without editing each one.</p>
+      <p><a href="/glossary/pacing/">Pacing</a> is set on a container, typically Actions, either fixed or as a random range. It sets the time from the start of one iteration to the start of the next, so each virtual user runs at a known rate. That turns a virtual user count into a throughput you can defend with <a href="/glossary/littles-law/">Little's Law</a>: users = iterations per second × pacing.</p>
+
+      <h2 id="errors">6. Validations and error behaviour</h2>
+      <ul>
+        <li><strong>Add content validations</strong> to key requests: text that appears only on the success page, or a JSON field that must exist. HTTP 200 with an error page is still a 200.</li>
+        <li><strong>Add duration and size checks</strong> where a response that is suspiciously fast or small means something is wrong.</li>
+        <li><strong>Choose what happens on error</strong>: the User Path settings let a virtual user go to the next iteration or stop and start a new virtual user when an error or failed assertion occurs. Going to the next iteration avoids the rest of the journey running with a broken session and inflating error counts.</li>
+      </ul>
+
+      <h2 id="check">7. Check the User Path</h2>
+      <p><strong>Check User Path</strong> runs a single virtual user through the path and shows every request and response, with errors and warnings and suggested fixes in a sanity-check dialog. Fix and re-run until it is clean. Then run it twice more with different data rows. A path that passes once but fails on the second user usually has an uncorrelated value or single-use data.</p>
+      <p><strong>Next:</strong> <a href="/guides/neoload/correlation-and-variables/">correlation and variables</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>User Path that passes but doesn't feel right?</h2>
+        <p>Book a free 30-minute call and we'll review it together. For end-to-end test design and delivery, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-up-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-up-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>

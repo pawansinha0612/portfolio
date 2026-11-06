@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoLoad getting started: GUI, NeoLoad Web, generators — Pawan Sinha</title>
+  <meta name="description" content="NeoLoad in 2026: what the desktop GUI, NeoLoad Web, controllers, load generators and zones do, how licence leasing and VUH work, and a first test.">
+  <meta property="og:title" content="Getting started with Tricentis NeoLoad: GUI, NeoLoad Web, controllers, load generators and licensing">
+  <meta property="og:description" content="NeoLoad in 2026: what the desktop GUI, NeoLoad Web, controllers, load generators and zones do, how licence leasing and VUH work, and a first test.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/neoload/getting-started/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/neoload/getting-started/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "NeoLoad getting started: GUI, NeoLoad Web, generators", "description": "NeoLoad in 2026: what the desktop GUI, NeoLoad Web, controllers, load generators and zones do, how licence leasing and VUH work, and a first test.", "url": "https://pawansinha.com.au/guides/neoload/getting-started/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · Getting started</p>
+      <h1>NeoLoad in 2026: the pieces and how they fit</h1>
+      <p class="lead">You are handed a NeoLoad project folder, a NeoLoad Web URL and a note that says "run it on the dynamic zone". You open the desktop app and find Design, Runtime and Results tabs, and the web UI shows tests, results and workspaces that don't obviously match. This guide maps the components, so you know which one does what before you press Run.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#what">What NeoLoad is today</a></li>
+          <li><a href="#components">The components</a></li>
+          <li><a href="#gui">The desktop GUI: Design, Runtime, Results</a></li>
+          <li><a href="#licence">Licensing</a></li>
+          <li><a href="#first">Your first test, end to end</a></li>
+          <li><a href="#habits">Habits worth having from day one</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="what">1. What NeoLoad is today</h2>
+      <p>NeoLoad was built by Neotys and bought by Tricentis in 2021. Releases are numbered by year: at the time of writing the documentation's latest release is 2026.2, and the as-code reference already lists additions for 2026.3. Recent releases added a new NeoLoad Web front end (also on-premises from 2026.1), Azure Service Bus testing, MCP server testing, a SAP Fiori correlation framework, secrets from external vaults, and the ability to run JMeter tests from NeoLoad Web.</p>
+      <p>Its strengths compared with open-source tools are fast GUI design with strong automatic correlation, packaged-application protocols (SAP, Citrix, Oracle Forms and others, depending on licence) and a shared web platform for results. See <a href="/compare/jmeter-vs-neoload/">JMeter vs NeoLoad</a> for the trade-offs.</p>
+
+      <h2 id="components">2. The components</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Component</th><th>Job</th></tr></thead>
+        <tbody>
+          <tr><td><strong>NeoLoad GUI</strong> (desktop, often just called "NeoLoad")</td><td>Design User Paths, record, correlate, build scenarios, run tests and analyse results. Projects are folders with an <code>.nlp</code> file</td></tr>
+          <tr><td><strong>NeoLoad Web</strong></td><td>The web platform: test settings, launching tests, live and historical results, dashboards, trends, comparison, workspaces, users and licence server. Available as SaaS or installed on-premises</td></tr>
+          <tr><td><strong>Controller</strong></td><td>Orchestrates a test run and collects results. The GUI acts as controller when you run from the desktop. Headless controllers run tests launched from NeoLoad Web or the CLI</td></tr>
+          <tr><td><strong>Load generators</strong></td><td>Execute virtual users. Installed on Windows or Linux machines, or run as containers</td></tr>
+          <tr><td><strong>Zones</strong> (NeoLoad Web)</td><td>Named pools of controllers and generators. Static zones are machines you registered. Dynamic zones start containers on demand on a configured infrastructure provider such as Kubernetes or OpenShift</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-note">
+        <p><strong>Two ways to run.</strong> From the GUI, your workstation is the controller and you pick generators. From NeoLoad Web or the CLI, you choose a zone and a number of generators, and a controller in that zone runs the project you uploaded. CI uses the second way. See <a href="/guides/neoload/as-code-and-ci/">as-code and CI</a>.</p>
+      </div>
+
+      <h2 id="gui">3. The desktop GUI: Design, Runtime, Results</h2>
+      <ul>
+        <li><strong>Design</strong>: User Paths (what a virtual user does), populations (mixes of User Paths), monitors, variables, servers and SLA profiles. See <a href="/guides/neoload/user-paths-and-recording/">User Paths and recording</a>.</li>
+        <li><strong>Runtime</strong>: scenarios, which combine populations with load policies and durations, plus the generators to use. Run and watch the test here. See <a href="/guides/neoload/populations-and-scenarios/">populations and scenarios</a>.</li>
+        <li><strong>Results</strong>: summaries, values, graphs, errors and alerts for each run, plus comparison. See <a href="/guides/neoload/analysis-and-sla/">analysis and SLAs</a>.</li>
+      </ul>
+      <p>Results can also be sent to NeoLoad Web as the test runs, which is where most teams share them.</p>
+
+      <h2 id="licence">4. Licensing</h2>
+      <p>NeoLoad is commercial, and pricing depends on your agreement, so I won't quote numbers. The current docs describe three ways to get virtual users:</p>
+      <ul>
+        <li><strong>Licence file</strong> on a workstation, permanent or temporary. A rental licence lasts 24 hours from first launch.</li>
+        <li><strong>Licence server</strong>: NeoLoad Web holds a pool of virtual users. You lease what a test needs and release it afterwards. This suits teams sharing capacity.</li>
+        <li><strong>Virtual User Hours (VUH)</strong>: run cloud tests without a fixed licence, or top up when a licence is not enough.</li>
+      </ul>
+      <p>Protocols are licensed too. SAP tests, for example, need SAP virtual users in the licence. Without a licence, NeoLoad can run in "no key mode", which lets you design and analyse but not launch tests. Tricentis has offered free editions and trials in the past, but the current licensing page does not describe a free tier. Check the Tricentis site for what is available now.</p>
+
+      <h2 id="first">5. Your first test, end to end</h2>
+      <ol>
+        <li><strong>Create a project</strong> in the GUI and record a User Path: home page, log in, one search, log out.</li>
+        <li><strong>Let the post-recording wizard</strong> search for dynamic parameters, then <strong>Check the User Path</strong> (a single-user validation run) and fix what fails. See <a href="/guides/neoload/correlation-and-variables/">correlation and variables</a>.</li>
+        <li><strong>Add data</strong>: a file variable for users, so each virtual user logs in as someone different.</li>
+        <li><strong>Create a population</strong> containing the User Path, then a scenario with a ramp-up load policy and a duration.</li>
+        <li><strong>Run</strong> with a small number of users on a local or remote generator. Watch errors first, then response times.</li>
+        <li><strong>Analyse</strong> the result in the Results tab or NeoLoad Web, with an SLA profile attached so pass or fail is explicit.</li>
+      </ol>
+
+      <h2 id="habits">6. Habits worth having from day one</h2>
+      <ul>
+        <li><strong>Version-control the project.</strong> A NeoLoad project is a folder. Commit it (or its as-code YAML), and keep results out of the repository.</li>
+        <li><strong>Agree the workload first.</strong> Virtual user count is an output of the <a href="/glossary/workload-model/">workload model</a>, not an input. Use target throughput and <a href="/glossary/littles-law/">Little's Law</a> to size it.</li>
+        <li><strong>Check every request's content, not just its status.</strong> Add validations so a 200 error page fails. NeoLoad calls these assertions or validations, depending on where you look.</li>
+        <li><strong>Watch the generators.</strong> NeoLoad monitors its own generators' CPU and memory. A saturated generator makes the system look slow.</li>
+        <li><strong>Monitor the servers.</strong> Response times tell you something is slow. Server and APM metrics tell you why. See <a href="/guides/monitoring/">monitoring during a test</a>.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/neoload/user-paths-and-recording/">User Paths and recording</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Inheriting a NeoLoad setup?</h2>
+        <p>Book a free 30-minute call and we'll look at what you have and what to fix first. For a full test designed and run for you, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-start-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-start-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

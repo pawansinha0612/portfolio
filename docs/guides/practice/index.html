@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance testing practice: 10 hands-on exercises — Pawan Sinha</title>
+  <meta name="description" content="Ten guided k6 exercises on a local QuickPizza app: smoke test, thresholds, ramp-up, open model, correlation, the knee, a hidden slow dependency, Grafana.">
+  <meta property="og:title" content="Performance testing practice: run real tests, find a real bottleneck">
+  <meta property="og:description" content="Ten guided k6 exercises on a local QuickPizza app: smoke test, thresholds, ramp-up, open model, correlation, the knee, a hidden slow dependency, Grafana.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/practice/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/practice/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Performance testing practice: 10 hands-on exercises", "description": "Ten guided k6 exercises on a local QuickPizza app: smoke test, thresholds, ramp-up, open model, correlation, the knee, a hidden slow dependency, Grafana.", "url": "https://pawansinha.com.au/guides/practice/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <style>
+      .pr-progress { margin-top: 20px; max-width: 720px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
+      .pr-progress p { margin: 0; color: var(--muted); }
+      .pr-progress .pr-total { color: var(--text); font-weight: 700; }
+      .pr-bar { height: 10px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); overflow: hidden; margin: 10px 0; }
+      .pr-bar span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .25s; }
+      .pr-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+      .pr-next { font-weight: 600; }
+      .pr-list { list-style: none; padding-left: 0 !important; margin: 12px 0 0; max-width: 680px; }
+      .pr-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+      .pr-item:last-child { border-bottom: 1px solid var(--border); }
+      .pr-item input { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-item a { font-weight: 600; }
+      .pr-item p { margin: 2px 0 0; font-size: 15px; }
+      .pr-item.is-done a { color: var(--muted); }
+      .pr-kind { display: inline-block; margin-left: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · Practice</p>
+      <h1>Performance testing practice: 10 hands-on exercises</h1>
+      <p class="lead">You can explain p95, the hockey stick and the open workload model. Then an interviewer asks, "Tell me about a bottleneck you found," and you realise you have never watched latency bend on a server you started yourself. These exercises fix that. You run every test, on a small app on your own machine, and finish by finding a slow dependency that someone hid from you.</p>
+      <div class="pr-progress">
+        <div class="pr-row">
+          <p><span class="pr-total" id="pr-total">Tick exercises as you finish them.</span></p>
+          <button class="xbtn" type="button" id="pr-reset" hidden>Reset progress</button>
+        </div>
+        <div class="pr-bar" role="progressbar" aria-label="Practice progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="pr-bar"></span></div>
+        <p id="pr-next" class="pr-next" aria-live="polite"></p>
+        <p id="pr-saved">Your progress is saved in this browser only. Nothing is sent anywhere.</p>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose" id="rules">
+      <h2>Rules of the playground</h2>
+      <div class="g-warn">
+        <p><strong>Only put load on systems you own or have written permission to test.</strong> A load test against someone else's site looks exactly like a denial-of-service attack. It can breach their terms of service and computer misuse laws, and it can hurt real users. These exercises never need it.</p>
+      </div>
+      <ul>
+        <li><strong>Every load exercise runs locally,</strong> against a QuickPizza container on your own machine. Each page says so at the top.</li>
+        <li><strong>The public demo at <code>quickpizza.grafana.com</code></strong> is run by Grafana for small k6 demos. Only <a href="/guides/practice/smoke-test/">Exercise 1</a> may use it, and only as written: 1 virtual user, 5 requests. Don't raise the numbers.</li>
+        <li><strong>Don't use <code>test.k6.io</code>.</strong> It is deprecated. Its pages now live inside QuickPizza.</li>
+        <li><strong>Don't swap in a "demo" site you found online.</strong> If you didn't start it and nobody invited you, it is not a practice target.</li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose" id="setup">
+      <h2>One-time setup (10 minutes)</h2>
+      <p>You need three things: k6, Docker and a folder to keep your scripts in.</p>
+      <h3>1. Install k6</h3>
+      <pre class="ex-code"><code># macOS
+brew install k6
+# Windows
+winget install k6 --source winget
+# Linux: see https://grafana.com/docs/k6/latest/set-up/install-k6/
+k6 version</code></pre>
+      <p>The scripts were checked with k6 v1.0. Anything newer should work.</p>
+      <h3>2. Start QuickPizza locally</h3>
+      <p><a href="https://github.com/grafana/quickpizza" rel="noopener">QuickPizza</a> is Grafana's open-source demo app for k6 workshops. It generates pizza recommendations through a small set of internal services (catalog, copy, recommendations) that call each other over HTTP, which is exactly what makes it useful for finding bottlenecks. Install <a href="https://docs.docker.com/get-docker/" rel="noopener">Docker</a>, then:</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+      <p>Leave that terminal open. In a second terminal, check it answers:</p>
+      <pre class="ex-code"><code>curl -s -X POST http://localhost:3333/api/pizza \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: token abcdef0123456789' \
+  -d '{}'</code></pre>
+      <p>You should get JSON with a <code>pizza</code> object. <code>abcdef0123456789</code> is the token of a demo user QuickPizza creates on start-up. Stop the container with <kbd>Ctrl+C</kbd>. It keeps everything in memory, so every restart is a clean slate.</p>
+      <h3>3. Make a practice folder</h3>
+      <pre class="ex-code"><code>mkdir perf-practice &amp;&amp; cd perf-practice</code></pre>
+      <p>Save each exercise's script here with the file name shown on its page.</p>
+
+      <h3>The fault switches you will use</h3>
+      <p>QuickPizza can slow itself down or fail on purpose. Delays are environment variables on the container (Go durations such as <code>300ms</code> or <code>2s</code>). Errors on the ingredients lookup are request headers.</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Switch</th><th>Effect</th><th>Used in</th></tr></thead>
+        <tbody>
+          <tr><td><code>QUICKPIZZA_DELAY_RECOMMENDATIONS_API_PIZZA_POST</code></td><td>Adds a delay to every <code>POST /api/pizza</code></td><td>4, 7</td></tr>
+          <tr><td><code>QUICKPIZZA_DELAY_COPY_API_NAMES</code>, <code>…_ADJECTIVES</code>, <code>…_QUOTES</code></td><td>Slows one endpoint of the internal copy service</td><td>7, 8, 9</td></tr>
+          <tr><td><code>QUICKPIZZA_FAIL_RATE_RECOMMENDATIONS_API_PIZZA_POST</code></td><td>Fails that percentage (0–100) of pizza requests with a 503</td><td>Try it yourself</td></tr>
+          <tr><td>Headers <code>x-error-get-ingredients</code> + <code>x-error-get-ingredients-percentage</code></td><td>Makes the internal ingredients lookup fail for that request, some percentage of the time</td><td>2, 7</td></tr>
+          <tr><td>Headers <code>x-delay-get-ingredients</code> + <code>…-percentage</code></td><td>Delays the internal ingredients lookup</td><td>Try it yourself</td></tr>
+        </tbody>
+      </table></div>
+      <p>Pass an environment variable with <code>-e</code>, for example <code>docker run --rm --name quickpizza -p 3333:3333 -e QUICKPIZZA_DELAY_COPY_API_NAMES=300ms ghcr.io/grafana/quickpizza-local:latest</code>. These come from QuickPizza's source and can change between versions. If one seems to do nothing, check the <a href="https://github.com/grafana/quickpizza" rel="noopener">repository</a>.</p>
+      <div class="g-note">
+        <p><strong>Numbers on these pages are illustrative.</strong> Your laptop, Docker settings and QuickPizza version all change them. What should match is the <em>shape</em>: which number moves, in which direction, and roughly by how much.</p>
+      </div>
+    </section>
+
+    <section class="wrap ex-prose" id="exercises">
+      <h2>The exercises</h2>
+      <p>Do them in order. Each one is 15 to 40 minutes and ends with questions and a hidden answer.</p>
+      <h3>Foundations</h3>
+      <ul class="pr-list">
+        <li class="pr-item"><input type="checkbox" data-practice="smoke" aria-label="Done: exercise 1">
+          <div><a href="/guides/practice/smoke-test/">1. Your first smoke test</a><span class="pr-kind">15 min</span>
+          <p>One user, five requests, checks that prove the response is real. Why 100% failures can still exit with code 0.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="thresholds" aria-label="Done: exercise 2">
+          <div><a href="/guides/practice/thresholds/">2. Thresholds that fail the run</a><span class="pr-kind">20 min</span>
+          <p>Pass/fail on p95 and error rate, exit code 99, and stopping early with <code>abortOnFail</code>. Inject errors and watch it fail.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="ramp" aria-label="Done: exercise 3">
+          <div><a href="/guides/practice/ramp-up/">3. Ramp up and read the summary</a><span class="pr-kind">20 min</span>
+          <p>Stages, percentiles vs the average, and checking the summary with Little's Law.</p></div></li>
+      </ul>
+      <h3>Realistic load</h3>
+      <ul class="pr-list">
+        <li class="pr-item"><input type="checkbox" data-practice="open-closed" aria-label="Done: exercise 4">
+          <div><a href="/guides/practice/open-vs-closed/">4. Open vs closed workload model</a><span class="pr-kind">30 min</span>
+          <p>Slow the server down and watch a fixed-user test quietly send less traffic, while an arrival-rate test keeps the pressure on.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="data" aria-label="Done: exercise 5">
+          <div><a href="/guides/practice/test-data-and-correlation/">5. Test data and correlation</a><span class="pr-kind">30 min</span>
+          <p>Users from a CSV file, one login per virtual user, and values captured from one response to use in the next.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="knee" aria-label="Done: exercise 6">
+          <div><a href="/guides/practice/find-the-knee/">6. Find the knee</a><span class="pr-kind">40 min</span>
+          <p>Step the arrival rate up on a CPU-limited container until latency bends. Your first capacity number.</p></div></li>
+      </ul>
+      <h3>Diagnosis</h3>
+      <ul class="pr-list">
+        <li class="pr-item"><input type="checkbox" data-practice="slow-dependency" aria-label="Done: exercise 7">
+          <div><a href="/guides/practice/slow-dependency/">7. Find the hidden slow dependency</a><span class="pr-kind">30 min</span>
+          <p>A shell one-liner hides a delay in one internal service. Find it with tags, then confirm it with the server's own metrics.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="grafana" aria-label="Done: exercise 8">
+          <div><a href="/guides/practice/grafana/">8. Watch it live in Grafana</a><span class="pr-kind">40 min</span>
+          <p>Stream k6 metrics into Prometheus and Grafana with the free monitoring kit, and scrape QuickPizza's server-side metrics next to them.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="compare" aria-label="Done: exercise 9">
+          <div><a href="/guides/practice/compare-runs/">9. Compare two runs</a><span class="pr-kind">25 min</span>
+          <p>Measure run-to-run noise first, then ship a "release" with a small regression and prove it is real.</p></div></li>
+        <li class="pr-item"><input type="checkbox" data-practice="jmeter" aria-label="Done: exercise 10">
+          <div><a href="/guides/practice/jmeter/">10. The same test in JMeter</a><span class="pr-kind">Optional · 30 min</span>
+          <p>The pizza journey as a JMeter plan with an assertion and an extractor, run from the command line, and compared with k6.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="wrap ex-prose" id="no-docker">
+      <h2>Questions people ask</h2>
+      <div class="faq">
+        <details>
+          <summary>Can I do this without Docker?</summary>
+          <p>Exercise 1 works against the public demo. For the rest you need your own QuickPizza. Without Docker you can build it from source (it is a Go app, see the repository's README), but Docker is far less effort.</p>
+        </details>
+        <details>
+          <summary>Why does my laptop matter? Isn't the server the thing under test?</summary>
+          <p>Here k6 and QuickPizza share one machine, so they compete for CPU. That is fine for learning, and Exercise 6 limits the container's CPU so the server saturates long before k6 does. In real work the load generator runs on separate machines and you watch its CPU too. A busy load generator makes the server look slower than it is.</p>
+        </details>
+        <details>
+          <summary>I have done these. What next?</summary>
+          <p>Write up Exercise 7 as if it were a real finding, using the <a href="/guides/templates/results-report/">results report template</a>: the symptom, the evidence, the cause and the fix. Then work through <a href="/guides/bottlenecks/">finding bottlenecks</a> and the rest of the <a href="/guides/start/">learning path</a>.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need this done on your real system?</h2>
+        <p>Practice apps are forgiving. Production systems have third-party limits, shared databases and a release date. Book a free 30-minute call and I'll help you plan a load test that answers the question your team is actually asking.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-hub-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/smoke-test/" data-track="guide-practice-hub-start">Start Exercise 1</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/guides/js/practice.js"></script>
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

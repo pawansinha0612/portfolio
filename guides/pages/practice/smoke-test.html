@@ -1,0 +1,136 @@
+<!--{"title": "Practice 1: your first k6 smoke test", "og_title": "Practice exercise 1: a k6 smoke test with checks", "description": "Hands-on exercise: a one-user k6 smoke test against QuickPizza with checks, and why a run with 100% failed requests can still exit with code 0.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 1 of 10</p>
+      <h1>Exercise 1: your first smoke test</h1>
+      <p class="lead">You write a 300-user test, press run and go for coffee. Every request failed in the first second because the auth header had a typo, and the next 20 minutes of "results" measure how fast the server says no. A smoke test catches that in ten seconds: one user, a handful of requests, and checks that prove each response is real.</p>
+      <ul class="pr-meta"><li>15 minutes</li><li>1 virtual user, 5 requests</li><li>Local QuickPizza, or the public demo for this exercise only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Run a k6 script end to end, add <a href="/glossary/checks-and-assertions/">checks</a> that validate the response body as well as the status, and learn to read the end-of-test summary. Then break the script on purpose and see what k6 does, and does not, do about it.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>Do the <a href="/guides/practice/#setup">one-time setup</a>: install k6 and, ideally, start QuickPizza locally. This is the only exercise where the public demo at <code>quickpizza.grafana.com</code> is fine, because it sends five requests in about seven seconds. Keep it that way.</p>
+
+      <h2 id="script">The script</h2>
+      <p>Save this as <code>01-smoke.js</code> in your practice folder:</p>
+      <pre class="ex-code"><code>// Exercise 1: a first smoke test. One virtual user, five iterations.
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+
+export const options = {
+  vus: 1,
+  iterations: 5,
+};
+
+const params = {
+  headers: {
+    'Content-Type': 'application/json',
+    // Token of the demo user that QuickPizza creates on start-up
+    Authorization: 'token abcdef0123456789',
+  },
+};
+
+export default function () {
+  const restrictions = {
+    maxCaloriesPerSlice: 1000,
+    mustBeVegetarian: false,
+    minNumberOfToppings: 2,
+    maxNumberOfToppings: 5,
+  };
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify(restrictions), params);
+
+  const ok = check(res, {
+    'status is 200': (r) =&gt; r.status === 200,
+    'has a pizza name': (r) =&gt; r.status === 200 &amp;&amp; !!r.json('pizza.name'),
+    'has ingredients': (r) =&gt; r.status === 200 &amp;&amp; r.json('pizza.ingredients').length &gt; 0,
+  });
+  if (ok) console.log(`Got pizza: ${res.json('pizza.name')}`);
+
+  sleep(1);
+}</code></pre>
+      <p>Three things to notice. <code>iterations: 5</code> with one VU means "run the default function five times, then stop". <code>BASE_URL</code> comes from <code>-e BASE_URL=...</code> so the same script runs anywhere. And each check that reads the body first confirms the status is 200, because calling <code>r.json()</code> on an error page throws an exception and ends the iteration.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code># Against your local QuickPizza (recommended)
+k6 run 01-smoke.js
+
+# Or against the public demo, exactly as written: 1 VU, 5 iterations
+k6 run -e BASE_URL=https://quickpizza.grafana.com 01-smoke.js</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <p>Five log lines with pizza names, then a summary shaped like this (numbers are illustrative, from a run against the public demo from Melbourne):</p>
+      <pre class="ex-code"><code>  █ TOTAL RESULTS
+
+    checks_total.......................: 15      2.14/s
+    checks_succeeded...................: 100.00% 15 out of 15
+    checks_failed......................: 0.00%   0 out of 15
+
+    ✓ status is 200
+    ✓ has a pizza name
+    ✓ has ingredients
+
+    HTTP
+    http_req_duration..............: avg=283.01ms min=252.72ms med=268.31ms max=356.71ms p(90)=327.34ms p(95)=342.03ms
+    http_req_failed................: 0.00%  0 out of 5
+    http_reqs......................: 5      0.71/s
+
+    EXECUTION
+    iteration_duration.............: avg=1.39s    min=1.25s    med=1.28s    max=1.84s    p(90)=1.64s    p(95)=1.74s
+    iterations.....................: 5      0.71/s</code></pre>
+      <p>Locally, <code>http_req_duration</code> will be lower because there is no internet round trip. Most of what remains is QuickPizza's own work: several internal HTTP calls per pizza, plus a deliberate random pause while it "measures how funny the name is".</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Why is <code>iteration_duration</code> about one second longer than <code>http_req_duration</code>?</li>
+        <li>The slowest iteration is usually the first one. Run again with <code>--summary-mode=full</code>. Which extra metric explains it, and why isn't that time inside <code>http_req_duration</code>?</li>
+        <li>Change the token in the script to <code>wrongtoken000000</code> and run again (locally). What happens to the checks and to <code>http_req_failed</code>? Then run <code>echo $?</code>. What exit code did k6 return, and why is that a problem in a CI pipeline?</li>
+        <li>Put the token back. How many checks ran in total, and why is it 15 and not 5?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>The <code>sleep(1)</code> at the end of each iteration. An iteration is everything in the default function: the request, the checks and the think time. <code>http_req_duration</code> is only the request.</li>
+            <li><code>http_req_blocked</code>, <code>http_req_connecting</code> and, on HTTPS, <code>http_req_tls_handshaking</code>. The first request has to open a TCP connection (and do a TLS handshake on the public demo), later ones reuse it through keep-alive. k6 defines <code>http_req_duration</code> as sending + waiting + receiving, so connection setup is reported separately. That is useful: a slow handshake and a slow server are different problems.</li>
+            <li>Every check fails and <code>http_req_failed</code> is 100%, because a 401 is outside k6's default "expected" statuses (200–399). But the exit code is <strong>0</strong>. Checks record results, they don't fail the run. A CI job would go green on a test where nothing worked. Thresholds fix that, which is the next exercise.</li>
+            <li>Three checks per iteration times five iterations. <code>checks_total</code> counts each check evaluation, not each request.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/thresholds/">Exercise 2: thresholds that fail the run</a>. Background reading: <a href="/guides/k6/getting-started/">getting started with k6</a> and <a href="/glossary/smoke-testing/">smoke testing</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="smoke"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Starting performance testing on a real project?</h2>
+        <p>Book a free 30-minute call and I'll help you pick the first test that is worth running, and what it should prove.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-1-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-1-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

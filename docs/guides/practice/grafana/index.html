@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice 8: watch a k6 test live in Grafana — Pawan Sinha</title>
+  <meta name="description" content="Hands-on exercise: stream k6 metrics to Prometheus with the free monitoring kit, scrape QuickPizza&#x27;s server metrics, and line both up in Grafana.">
+  <meta property="og:title" content="Practice exercise 8: k6, Prometheus and Grafana on your laptop">
+  <meta property="og:description" content="Hands-on exercise: stream k6 metrics to Prometheus with the free monitoring kit, scrape QuickPizza&#x27;s server metrics, and line both up in Grafana.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/practice/grafana/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/practice/grafana/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Practice 8: watch a k6 test live in Grafana", "description": "Hands-on exercise: stream k6 metrics to Prometheus with the free monitoring kit, scrape QuickPizza's server metrics, and line both up in Grafana.", "url": "https://pawansinha.com.au/guides/practice/grafana/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 8 of 10</p>
+      <h1>Exercise 8: watch it live in Grafana</h1>
+      <p class="lead">The end-of-test summary says p95 was 400 ms. It doesn't say whether that was 400 ms all along, or 100 ms for 25 minutes and two seconds for the last five. Averages over a whole run hide when things went wrong, and the client's view alone can't tell you why. A dashboard with the load generator and the server on the same time axis can.</p>
+      <ul class="pr-meta"><li>40 minutes</li><li>3 virtual users, 3 minutes</li><li>Run locally only, needs Docker Compose</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Run Prometheus and Grafana locally with the free <a href="/guides/monitoring/grafana-stack/">monitoring kit</a>, stream k6 results into it while a test runs, add QuickPizza's own metrics as a scrape target, and read client-side and server-side latency side by side.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>1. Download and start the kit (Prometheus on port 9090, Grafana on port 3000):</p>
+      <pre class="ex-code"><code>curl -sSfLO https://pawansinha.com.au/guides/monitoring/kit.zip
+unzip kit.zip &amp;&amp; cd loadtest-monitoring-kit
+docker compose up -d</code></pre>
+      <p>2. Tell Prometheus to scrape QuickPizza too. Add this job at the end of <code>prometheus/prometheus.yml</code> in the kit, keeping the indentation of the other jobs:</p>
+      <pre class="ex-code"><code>  - job_name: quickpizza
+    static_configs:
+      - targets: ["host.docker.internal:3333"]</code></pre>
+      <pre class="ex-code"><code>docker compose restart prometheus</code></pre>
+      <p>The kit already maps <code>host.docker.internal</code> to your machine, on Linux as well as Docker Desktop.</p>
+      <p>3. Start QuickPizza with the hidden fault from <a href="/guides/practice/slow-dependency/">Exercise 7</a> (or a known one, such as <code>-e QUICKPIZZA_DELAY_COPY_API_NAMES=300ms</code>).</p>
+      <p>4. Open <a href="http://localhost:9090/targets" rel="nofollow">localhost:9090/targets</a> and check the <code>quickpizza</code> target is up. Then log in to Grafana at <a href="http://localhost:3000" rel="nofollow">localhost:3000</a> (admin / admin, then change the password).</p>
+
+      <h2 id="script">The script</h2>
+      <p>No new script. Reuse <code>07-slow-dependency.js</code> from Exercise 7, run for three minutes so there is something to watch.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code>K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
+K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true \
+k6 run -o experimental-prometheus-rw --tag testid=practice-08 \
+  -e DURATION=3m 07-slow-dependency.js</code></pre>
+      <p>Open the <strong>k6 load test + system under test</strong> dashboard and pick <code>practice-08</code> in the Test ID dropdown. Then go to <strong>Explore</strong>, choose the Prometheus data source and run this query for QuickPizza's own view:</p>
+      <pre class="ex-code"><code>histogram_quantile(0.95,
+  sum by (le, path) (rate(quickpizza_server_http_request_duration_seconds_bucket[1m])))</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <ul>
+        <li><strong>Load: VUs and request rate</strong> flat at 3 VUs and a steady request rate.</li>
+        <li><strong>p95 by request name</strong>: one line per k6 <code>name</code> tag. <code>pizza</code> and the slow dependency sit well above the rest, flat for the whole run.</li>
+        <li>The Explore query: one line per server route, with the same route standing out.</li>
+        <li>The <strong>System under test</strong> row is empty unless you run node-exporter. On a Mac or Windows it would only show Docker's Linux VM anyway, so skip it here.</li>
+      </ul>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Halfway through a run, stop the container and start it again <em>without</em> the delay (it takes a few seconds). What does the dashboard show that the end-of-test summary can't?</li>
+        <li>Client-side p95 for <code>names</code> (from k6) and server-side p95 for <code>/api/names</code> (from QuickPizza) are close but not equal. Which is bigger, and what is in the difference?</li>
+        <li>Why does the kit send k6 trends as native histograms instead of k6's default p95/p99 gauges?</li>
+        <li>On a real project, what would you add to this dashboard before trusting it during a go-live test?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>A step: p95 for the slow names drops to the baseline at the moment of the restart, with a short burst of errors while the container was down. The summary would only show one blended p95 and an error count, with no hint that there were two different systems in one run. Time series are how you see warm-up, degradation over time, a deploy in the middle of a test, or the minute a cache filled up.</li>
+            <li>Client-side is bigger. It includes everything outside the server's timer: the network, Docker's port forwarding, reading and parsing the request before the metrics middleware starts its clock, and writing the response. On a real network, the gap is where you find load balancers, TLS termination, proxies and queueing in front of the app. A big gap means "look between the client and the code", not in the code.</li>
+            <li>k6's default Prometheus output sends percentiles as gauges computed over the whole test so far, so a spike late in a long test barely moves them. Native histograms let Prometheus compute a real percentile over any window with <code>histogram_quantile()</code>. Read the <a href="/guides/monitoring/grafana-stack/">monitoring kit guide</a> for the details.</li>
+            <li>Server metrics from every tier (CPU, memory, GC, connection pools, database), the load generator's own CPU, annotations for deploys and test start, and the business transactions your targets are written in. Then check the dashboard against the summary of one known run before anyone makes a decision from it.</li>
+          </ol>
+        </details>
+      </div>
+      <p>When you are done: <code>docker compose down -v</code> in the kit folder stops the stack and deletes its data.</p>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/compare-runs/">Exercise 9: compare two runs</a>. Background: <a href="/guides/monitoring/">monitoring during load tests</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="grafana"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Load tests but no observability?</h2>
+        <p>Without server-side metrics, a load test tells you <em>that</em> it is slow but not <em>why</em>. Book a free 30-minute call and I'll help you decide what to monitor.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-8-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-8-hub">All exercises</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/guides/js/practice.js"></script>
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

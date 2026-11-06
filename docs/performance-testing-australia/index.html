@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Performance Testing Australia: Load Testing and CPS 230 | Pawan Sinha</title>
+  <meta name="description" content="Performance and load testing in Australia: peak readiness, capacity planning and APRA CPS 230 resilience evidence. Melbourne-based, remote or on-site.">
+  <meta property="og:title" content="Performance testing in Australia: load testing, capacity and CPS 230">
+  <meta property="og:description" content="Performance and load testing in Australia: peak readiness, capacity planning and APRA CPS 230 resilience evidence. Melbourne-based, remote or on-site.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/performance-testing-australia/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Pawan Sinha">
+  <meta property="og:locale" content="en_AU">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/performance-testing-australia/">
+  <meta name="theme-color" content="#2557d6">
+  <script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [
+  {"@type": "ProfessionalService",
+   "@id": "https://pawansinha.com.au/performance-testing-australia/#service",
+   "name": "Pawan Sinha",
+   "description": "Performance and load testing, capacity planning and resilience testing for Australian banks, insurers, super funds, retailers, government, health and gaming organisations.",
+   "url": "https://pawansinha.com.au/performance-testing-australia/",
+   "email": "hello@pawansinha.com.au",
+   "image": "https://pawansinha.com.au/og-image.png",
+   "address": {"@type": "PostalAddress", "addressLocality": "Melbourne", "addressRegion": "VIC", "addressCountry": "AU"},
+   "areaServed": {"@type": "Country", "name": "Australia"},
+   "priceRange": "Rates on request",
+   "knowsAbout": ["Performance testing", "Load testing", "Capacity planning", "APRA CPS 230", "k6", "JMeter", "LoadRunner"],
+   "sameAs": ["https://www.linkedin.com/in/pawan-sinha-b5a356b6/"]},
+  {"@type": "BreadcrumbList", "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://pawansinha.com.au/"},
+    {"@type": "ListItem", "position": 2, "name": "Performance testing in Australia", "item": "https://pawansinha.com.au/performance-testing-australia/"}]},
+  {"@type": "FAQPage", "mainEntity": [
+    {"@type": "Question", "name": "Does APRA CPS 230 require load testing?", "acceptedAnswer": {"@type": "Answer", "text": "Not in those words. CPS 230 requires tolerance levels for each critical operation, scenario analysis and a systematic BCP testing program using severe but plausible scenarios. Load, stress and failover tests are one practical way to produce evidence that the systems behind a critical operation can hold your minimum service levels. Your risk and compliance team decides what evidence you need."}},
+    {"@type": "Question", "name": "How much does performance testing cost in Australia?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on the number of journeys, protocols, environments and how much monitoring access there is. A focused test can be a fixed price agreed up front, while programme work is usually a day rate or retainer. My rate is on request: book a free call and you get a scoped quote."}},
+    {"@type": "Question", "name": "How long does a load test take?", "acceptedAnswer": {"@type": "Answer", "text": "As general guidance, a focused test of a few key journeys is often one to two weeks of effort, and two to four weeks elapsed once you allow for fixes and a retest. Programmes, capacity plans and migrations take longer."}},
+    {"@type": "Question", "name": "Which load testing tools do you use?", "acceptedAnswer": {"@type": "Answer", "text": "k6 is my default for new work because it lives in your repository and pipeline. I also work with JMeter, LoadRunner and Gatling. If you already own NeoLoad or another tool with working scripts, we'll weigh keeping it against moving. The method matters more than the tool."}},
+    {"@type": "Question", "name": "Should we test in production or a test environment?", "acceptedAnswer": {"@type": "Answer", "text": "Usually a production-like test environment, with the differences from production written down so the results can be scaled honestly. Some questions, such as CDN, network or third-party limits, can only be answered in production."}},
+    {"@type": "Question", "name": "Can you load test production safely?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, with care: a quiet window you choose, a gradual ramp, abort thresholds and a kill switch, synthetic accounts that are easy to clean up, third parties told in advance, and your team watching the dashboards with me."}},
+    {"@type": "Question", "name": "How do you handle customer data and privacy?", "acceptedAnswer": {"@type": "Answer", "text": "I prefer synthetic or masked data, so real customer data never needs to leave production. Test data and results stay in your environment, and load generators can run in your own cloud account and Australian region. Any copy of real data is an information asset under your security controls, including CPS 234 if you are APRA-regulated."}},
+    {"@type": "Question", "name": "Do you work outside Melbourne?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. I'm based in Melbourne and work remotely with teams across Australia and New Zealand. On-site work in Melbourne or Sydney is available by arrangement."}}]}
+]}
+  </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .pta-prose > * { max-width: 68ch; }
+    .pta-prose p, .pta-prose li { color: var(--muted); }
+    .pta-prose ul { padding-left: 20px; }
+    .pta-prose li { margin: 6px 0; }
+    .pta-prose h3 { margin: 32px 0 8px; font-size: 20px; }
+    .pta-prose strong { color: var(--text); }
+    .pta-note { font-size: 14px; color: var(--muted); max-width: 68ch; }
+    .pta-map { padding: 0; margin: 24px 0 0; display: grid; gap: 14px; max-width: 920px; }
+    .pta-map .pta-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 20px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .pta-map p { margin: 0; color: var(--muted); }
+    .pta-map p:first-child { color: var(--text); }
+    .pta-map .lbl { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; }
+    .pta-cards .card p + p { margin-top: 10px; }
+    .pta-cards .card a { font-weight: 600; }
+    .pta-durations { width: 100%; max-width: 920px; border-collapse: collapse; margin-top: 20px; font-size: 15px; }
+    .pta-durations th, .pta-durations td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .pta-durations th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .pta-durations td:last-child { color: var(--muted); }
+    .pta-sources { font-size: 14px; color: var(--muted); max-width: 68ch; }
+    .pta-sources li { margin: 4px 0; overflow-wrap: anywhere; }
+    @media (max-width: 760px) {
+      .pta-map .pta-row { grid-template-columns: 1fr; gap: 8px; }
+      .pta-durations thead { display: none; }
+      .pta-durations tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--border); }
+      .pta-durations td { display: block; border: 0; padding: 2px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services" aria-current="page">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero svc-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Performance testing in Australia</span></nav>
+        <p class="eyebrow">Performance &amp; load testing · Australia</p>
+        <h1>Performance testing for Australian systems <span class="hl">that can't go down.</span></h1>
+        <p class="lead">Load, stress, soak and failover testing, capacity planning and CI performance gates for banks, insurers, super funds, retailers, government, health and gaming. You get a realistic workload model, tests you keep, bottlenecks traced to the cause, and a plain-English go/no-go report your board and your engineers can both use.</p>
+        <div class="cta">
+          <a class="btn js-book" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="pta-book-call">Book a free 30-min call</a>
+          <a class="btn btn-ghost" href="/?need=Performance%20testing#contact" data-track="pta-brief">Send me your project</a>
+        </div>
+        <ul class="facts">
+          <li>12+ years: banking, payments, gaming</li>
+          <li>ANZ · NAB · Visa · The Lottery Corporation</li>
+          <li>Melbourne · remote across Australia and NZ</li>
+          <li>Australian permanent resident</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <p class="eyebrow">Who it's for</p>
+      <h2>Teams with a lot riding on one busy hour</h2>
+      <div class="grid">
+        <article class="card"><div class="icon">🏦</div><h3>Banks and ADIs</h3><p>Payments, deposits and digital banking that sit inside CPS 230 critical operations, plus Consumer Data Right APIs with published performance targets.</p></article>
+        <article class="card"><div class="icon">🛡️</div><h3>Insurers and health funds</h3><p>Claims processing after a storm, flood or bushfire, when lodgements arrive all at once and claims is a named critical operation.</p></article>
+        <article class="card"><div class="icon">📊</div><h3>Super funds</h3><p>Member portals and fund administration at end of financial year, statement season and switching spikes.</p></article>
+        <article class="card"><div class="icon">🛒</div><h3>Retailers</h3><p>Checkout and search before Click Frenzy, Black Friday, Cyber Monday, Christmas, Boxing Day and EOFY sales.</p></article>
+        <article class="card"><div class="icon">🏛️</div><h3>Government and health</h3><p>Services with hard deadlines and launch days: tax time, grant rounds, registrations and bookings.</p></article>
+        <article class="card"><div class="icon">🎰</div><h3>Gaming and wagering</h3><p>Draw nights, big race days and jackpots: short, steep spikes where minutes of slowness cost real money.</p></article>
+      </div>
+    </section>
+
+    <section id="cps-230" class="section alt">
+      <div class="wrap">
+        <div class="pta-prose">
+          <p class="eyebrow">APRA CPS 230</p>
+          <h2>CPS 230 operational resilience: where performance testing fits</h2>
+          <p>APRA's Prudential Standard <a href="https://www.apra.gov.au/operational-risk-management" target="_blank" rel="noopener">CPS 230 Operational Risk Management</a> commenced on <strong>1 July 2025</strong> (<a href="https://www.apra.gov.au/news-and-publications/apra-finalises-new-prudential-standard-operational-risk" target="_blank" rel="noopener">APRA media release, 17 July 2023</a>). An updated version of CPS 230 and its guidance, CPG 230, commences on <strong>1 July 2026</strong>, according to APRA's operational risk page.</p>
+          <p>It applies to all APRA-regulated entities: authorised deposit-taking institutions (banks, building societies and credit unions, including foreign ADIs' Australian branches), general, life and private health insurers, and RSE licensees (super fund trustees). That's paragraph 2 of the <a href="https://www.apra.gov.au/system/files/2026-05/Prudential%20Standard%20-%20CPS%20230%20Operational%20Risk%20Management%20-%20clean.pdf" target="_blank" rel="noopener">standard (PDF)</a>.</p>
+
+          <h3>What the standard asks for</h3>
+          <ul>
+            <li><strong>IT capability</strong> "to meet its current and projected business requirements and to support its critical operations" (para 24).</li>
+            <li><strong>Critical operations.</strong> At a minimum, payments, deposit-taking and management, custody, settlements and clearing for an ADI. Claims processing for an insurer. Investment management and fund administration for an RSE licensee. And for everyone, customer enquiries and "the systems and infrastructure needed to support critical operations" (para 35).</li>
+            <li><strong>Tolerance levels</strong> for each critical operation: the maximum time you'd tolerate a disruption, the maximum data loss you'd accept, and the "minimum service levels" you'd maintain while running on alternative arrangements (para 37).</li>
+            <li><strong>A credible business continuity plan</strong> and a "systematic testing program" that covers all critical operations, includes an annual business continuity exercise, and tests your ability to meet tolerance levels "in a range of severe but plausible scenarios", including disruptions at material service providers (paras 42 and 43).</li>
+            <li><strong>Scenario analysis</strong> to assess the impact of severe operational risk events and "test its operational resilience" (para 26(c)), and regular testing of controls (para 29).</li>
+            <li><strong>Material service providers:</strong> a register, formal agreements and monitoring, and APRA notification within 24 hours of a disruption to a critical operation outside tolerance (para 41).</li>
+          </ul>
+
+          <h3>What it doesn't say</h3>
+          <p>CPS 230 doesn't mention load testing or performance testing by name, and nobody should tell you it "requires a load test". It is principles-based: it tells you what you must be able to show, not which test to run. Performance, capacity and failover testing is one practical way to produce that evidence for the technology behind a critical operation.</p>
+        </div>
+
+        <div class="pta-map" role="list" aria-label="How performance testing provides evidence for CPS 230">
+          <div class="pta-row" role="listitem"><p><span class="lbl">CPS 230 asks</span>IT capability for current and projected business requirements (para 24)</p><p><span class="lbl">Testing evidence</span>A load test at today's peak and at next year's forecast, and a capacity plan showing where the next limit is and when you will reach it.</p></div>
+          <div class="pta-row" role="listitem"><p><span class="lbl">CPS 230 asks</span>Minimum service levels under alternative arrangements (para 37(c))</p><p><span class="lbl">Testing evidence</span>Load the system at forecast peak while it runs degraded: one data centre or availability zone, a failover database, a reduced cluster. Record whether it still meets the minimum service level you set.</p></div>
+          <div class="pta-row" role="listitem"><p><span class="lbl">CPS 230 asks</span>Severe but plausible scenarios, including service provider disruption (paras 42–43)</p><p><span class="lbl">Testing evidence</span>Demand-surge and dependency tests: a sudden traffic spike, a slow or failing payment gateway, identity provider or core system, with timeouts, retries and queues measured.</p></div>
+          <div class="pta-row" role="listitem"><p><span class="lbl">CPS 230 asks</span>Maximum disruption time and data loss (para 37(a)–(b))</p><p><span class="lbl">Testing evidence</span>Failover and recovery under realistic load, timed end to end, with in-flight transactions reconciled so you know what was lost or duplicated.</p></div>
+          <div class="pta-row" role="listitem"><p><span class="lbl">CPS 230 asks</span>Scenario analysis and impact of new products and technology (paras 25, 26(c))</p><p><span class="lbl">Testing evidence</span>A capacity model with stated headroom, and a performance test before a major change, migration or new channel goes live.</p></div>
+        </div>
+
+        <div class="pta-prose">
+          <p class="pta-note">This is my reading of the published standard to help you scope testing. It isn't legal or compliance advice: your risk and compliance team decides what evidence your entity needs. CPS 230 also points to <strong>CPS 234 Information Security</strong> for information security requirements (para 24). That matters to load testing mainly through test data, covered in the FAQ below.</p>
+
+          <h3>Other Australian drivers</h3>
+          <ul>
+            <li><strong>Peak retail events.</strong> Click Frenzy, Black Friday, Cyber Monday, Christmas, Boxing Day and EOFY sales concentrate a season of traffic into hours. The first Click Frenzy in November 2012 is a well-known example: shoppers spent hours unable to reach the site after the 7pm launch, and some retailers' own sites froze too (<a href="https://phys.org/news/2012-11-australia-click-frenzy-online-sale.html" target="_blank" rel="noopener">AFP via Phys.org, 21 November 2012</a>).</li>
+            <li><strong>Government deadlines.</strong> Tax time, census night and grant rounds put a whole country on one site. On 9 August 2016 the ABS took the online Census form offline just after 7.30pm, after a confluence of events that included denial-of-service activity and an overloaded router. It came back at 2.30pm on 11 August, and reviews confirmed it wasn't a hack (<a href="https://www.abs.gov.au/ausstats/abs@.nsf/mediareleasesbyCatalogue/5239447C98B47FD0CA25800B00191B1A" target="_blank" rel="noopener">ABS, 2016 Census online form update</a>).</li>
+            <li><strong>Consumer Data Right.</strong> The <a href="https://consumerdatastandardsaustralia.github.io/standards/#non-functional-requirements" target="_blank" rel="noopener">Consumer Data Standards</a> (version 1.36.0 at the time of writing) set non-functional requirements for data holders: 99.5% availability per month, and 95% of calls per hour answered within the endpoint's tier threshold. Thresholds are 1,000 ms for high-priority endpoints, 1,500 ms for low-priority and unauthenticated ones, 4,000 ms for unattended calls and 6,000 ms for large payloads. Traffic thresholds scale from 150 to 450 peak TPS of secure traffic by number of active authorisations, plus 300 TPS of public traffic. That is a load profile you can test against directly.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <p class="eyebrow">Typical projects</p>
+      <h2>What Australian teams usually bring me in for</h2>
+      <div class="grid pta-cards">
+        <article class="card"><div class="icon">🚀</div><h3>Peak-readiness load test</h3><p>A fixed-scope test of your key journeys at forecast peak and beyond, with a go/no-go report and a retest after fixes.</p><p><a href="/peak-readiness/">Peak-readiness load test →</a></p></article>
+        <article class="card"><div class="icon">📈</div><h3>Capacity plan</h3><p>How much traffic you can take today, where the next limit is, and what it costs to move it. Built from a workload model of your real traffic.</p><p><a href="/tools/workload-model/">Try the free workload model →</a></p></article>
+        <article class="card"><div class="icon">🧭</div><h3>Performance test strategy for a programme</h3><p>Scope, environments, data, tooling, entry and exit criteria, and who signs off, written before the programme commits to dates.</p><p><a href="/services/qa-strategy/">QA strategy &amp; setup →</a></p></article>
+        <article class="card"><div class="icon">🚦</div><h3>CI performance gates</h3><p>p95 and error-rate thresholds that run on every deployment, so regressions stop in the pipeline instead of in production.</p><p><a href="/services/ci-cd-quality-gates/">CI/CD quality gates →</a></p></article>
+        <article class="card"><div class="icon">☁️</div><h3>Cloud migration validation</h3><p>Before-and-after baselines, so you can prove the new platform is at least as fast and find the noisy-neighbour, limit or latency surprises early.</p><p><a href="/services/performance-testing/">Performance &amp; load testing →</a></p></article>
+        <article class="card"><div class="icon">🤖</div><h3>LLM and AI feature load testing</h3><p>Token throughput, time to first token, rate limits and cost under load for chatbots and AI features.</p><p><a href="/services/llm-load-testing/">AI &amp; LLM load testing →</a></p></article>
+      </div>
+      <p class="pta-note" style="margin-top:24px">Want to read up first? The free <a href="/guides/">performance testing guides</a> cover k6, JMeter, Gatling, monitoring and bottleneck hunting.</p>
+    </section>
+
+    <section id="rates" class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">Rates and engagement models</p>
+        <h2>How pricing works</h2>
+        <p class="section-lead">My rate is on request, and every engagement is scoped on a free call first. Here is how the models work and what moves the cost, so you can budget before we talk.</p>
+        <div class="grid plans">
+          <article class="card plan">
+            <h3>Fixed price</h3>
+            <p class="plan-sub muted">Best for a peak-readiness or go-live test with a clear scope.</p>
+            <ul>
+              <li>Price agreed before work starts</li>
+              <li>Agreed journeys, volumes and environments</li>
+              <li>Report and one retest included</li>
+            </ul>
+            <a class="btn" href="/?need=Performance%20testing#contact" data-track="pta-plan-fixed">Ask for a quote</a>
+          </article>
+          <article class="card plan">
+            <h3>Day rate</h3>
+            <p class="plan-sub muted">Best for programmes, migrations and strategy work where scope will move.</p>
+            <ul>
+              <li>Embedded with your team, remote or hybrid</li>
+              <li>Weekly progress and findings</li>
+              <li>Easy to scale up or down</li>
+            </ul>
+            <a class="btn" href="/?need=Performance%20testing#contact" data-track="pta-plan-day">Discuss a programme</a>
+          </article>
+          <article class="card plan">
+            <h3>Retainer</h3>
+            <p class="plan-sub muted">Best for ongoing release testing, CI gates and peak-season cover.</p>
+            <ul>
+              <li>A set number of days each month</li>
+              <li>Priority for urgent tests and incidents</li>
+              <li>Gates and scripts kept current</li>
+            </ul>
+            <a class="btn" href="/?need=Performance%20testing#contact" data-track="pta-plan-retainer">Talk about a retainer</a>
+          </article>
+        </div>
+
+        <div class="pta-prose">
+          <h3>What drives the cost</h3>
+          <ul>
+            <li><strong>Number of journeys and APIs.</strong> Five well-chosen journeys usually cover most of the load. Thirty means more scripting and more maintenance.</li>
+            <li><strong>Protocols.</strong> HTTP and REST APIs are the quickest to script. Citrix, SAP GUI, thick clients, mainframe and messaging protocols take longer and may need LoadRunner-class tooling.</li>
+            <li><strong>Environments.</strong> Whether a production-like environment exists, who books it, and how far it differs from production.</li>
+            <li><strong>Test data.</strong> Synthetic accounts are fast. Masked production data, or data that is consumed by each test, takes planning.</li>
+            <li><strong>Monitoring access.</strong> With APM (Dynatrace, New Relic, Datadog) and log access, diagnosis is quick. Without it, root-causing takes longer.</li>
+            <li><strong>Third parties.</strong> Payment gateways, identity providers and core systems may need stubs or advance notice.</li>
+          </ul>
+
+          <h3>Typical durations</h3>
+          <p>General guidance only. Your quote depends on the factors above.</p>
+        </div>
+        <table class="pta-durations">
+          <thead><tr><th scope="col">Engagement</th><th scope="col">Typical range</th></tr></thead>
+          <tbody>
+            <tr><td>Focused peak-readiness or go-live test (a few key journeys, one environment)</td><td>1–2 weeks of effort, often 2–4 weeks elapsed with fixes and a retest</td></tr>
+            <tr><td>Performance test strategy for a programme</td><td>1–2 weeks</td></tr>
+            <tr><td>Capacity plan for a service or platform</td><td>2–4 weeks</td></tr>
+            <tr><td>CI performance gates set up in your pipeline</td><td>1–3 weeks</td></tr>
+            <tr><td>Cloud or platform migration validation</td><td>Several weeks to a few months, depending on the number of systems</td></tr>
+          </tbody>
+        </table>
+
+        <div class="pta-prose">
+          <h3>Market rates in Australia</h3>
+          <p>For a public benchmark, Hudson's <a href="https://au.hudson.com/salary-guide-digital-data-insights/" target="_blank" rel="noopener">Digital, Data &amp; Insights salary guide</a> (figures last updated January 2026) lists Australian contract daily rates of <strong>$680–$800 for a Senior Test Analyst</strong>, <strong>$800–$920 for a Lead Test Analyst</strong> and <strong>$920–$1,120 for a Test Manager</strong>, excluding super. It doesn't list performance engineering separately, and agency rates for niche skills vary by city, clearance and length of contract, so treat these as a reference point, not a price list.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <p class="eyebrow">How an engagement runs</p>
+      <h2>From first call to sign-off</h2>
+      <ol class="steps">
+        <li><span>01</span><h3>Discovery call</h3><p>Free, 30 minutes. Your system, your deadline, what worries you. Scope and price follow.</p></li>
+        <li><span>02</span><h3>Workload model</h3><p>Journeys, volumes, arrival rates and targets from your analytics and forecast, agreed with you.</p></li>
+        <li><span>03</span><h3>Scripts</h3><p>Version-controlled tests with realistic data, think time and correlation, kept in your repo.</p></li>
+        <li><span>04</span><h3>Test runs</h3><p>Load, stress, soak, spike or failover runs in a window you choose, with APM and logs watched live.</p></li>
+        <li><span>05</span><h3>Findings</h3><p>Bottlenecks traced to the query, pool, setting or dependency behind them, with a prioritised fix list.</p></li>
+        <li><span>06</span><h3>Retest</h3><p>Once fixes are in, the same tests run again so the improvement is measured, not assumed.</p></li>
+        <li><span>07</span><h3>Sign-off</h3><p>A go/no-go report for decision-makers, the detail for engineers, and handover of everything built.</p></li>
+      </ol>
+      <div class="pta-prose" style="margin-top:36px">
+        <h3>Where I work</h3>
+        <p>Based in Melbourne. Remote with teams across Australia and New Zealand, on Australian business hours. On-site in Melbourne or Sydney by arrangement. I'm an Australian permanent resident, so there's no visa sponsorship to think about.</p>
+      </div>
+    </section>
+
+    <section id="faq" class="section alt">
+      <div class="wrap">
+        <div class="pta-prose">
+          <p class="eyebrow">Questions</p>
+          <h2>Performance testing FAQ</h2>
+        </div>
+        <div class="faq pta-prose">
+          <details><summary>Does APRA CPS 230 require load testing?</summary><p>Not in those words. CPS 230 requires tolerance levels for each critical operation, scenario analysis and a systematic BCP testing program using severe but plausible scenarios. Load, stress and failover tests are one practical way to produce evidence that the systems behind a critical operation can hold your minimum service levels. Your risk and compliance team decides what evidence you need.</p></details>
+          <details><summary>How much does performance testing cost in Australia?</summary><p>It depends on the number of journeys, protocols, environments and how much monitoring access there is. A focused test can be a fixed price agreed up front, while programme work is usually a day rate or retainer. My rate is on request: book a free call and you get a scoped quote.</p></details>
+          <details><summary>How long does a load test take?</summary><p>As general guidance, a focused test of a few key journeys is often one to two weeks of effort, and two to four weeks elapsed once you allow for fixes and a retest. Programmes, capacity plans and migrations take longer.</p></details>
+          <details><summary>Which load testing tools do you use?</summary><p>k6 is my default for new work because it lives in your repository and pipeline. I also work with JMeter, LoadRunner and Gatling. If you already own NeoLoad or another tool with working scripts, we'll weigh keeping it against moving. The method matters more than the tool.</p></details>
+          <details><summary>Should we test in production or a test environment?</summary><p>Usually a production-like test environment, with the differences from production written down so the results can be scaled honestly. Some questions, such as CDN, network or third-party limits, can only be answered in production.</p></details>
+          <details><summary>Can you load test production safely?</summary><p>Yes, with care: a quiet window you choose, a gradual ramp, abort thresholds and a kill switch, synthetic accounts that are easy to clean up, third parties told in advance, and your team watching the dashboards with me.</p></details>
+          <details><summary>How do you handle customer data and privacy?</summary><p>I prefer synthetic or masked data, so real customer data never needs to leave production. Test data and results stay in your environment, and load generators can run in your own cloud account and Australian region. Any copy of real data is an information asset under your security controls, including CPS 234 if you are APRA-regulated.</p></details>
+          <details><summary>Do you work outside Melbourne?</summary><p>Yes. I'm based in Melbourne and work remotely with teams across Australia and New Zealand. On-site work in Melbourne or Sydney is available by arrangement.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="pta-prose">
+        <p class="eyebrow">Sources</p>
+        <h2>Where the facts on this page come from</h2>
+        <ul class="pta-sources">
+          <li>APRA, <a href="https://www.apra.gov.au/operational-risk-management" target="_blank" rel="noopener">Operational risk management</a> (CPS 230 and CPG 230 pages, updated version commencing 1 July 2026).</li>
+          <li>APRA, <a href="https://www.apra.gov.au/system/files/2026-05/Prudential%20Standard%20-%20CPS%20230%20Operational%20Risk%20Management%20-%20clean.pdf" target="_blank" rel="noopener">Prudential Standard CPS 230 Operational Risk Management (PDF, July 2026 version)</a>, paras 2, 24–26, 29, 34–37, 41–43.</li>
+          <li>APRA, <a href="https://www.apra.gov.au/news-and-publications/apra-finalises-new-prudential-standard-operational-risk" target="_blank" rel="noopener">APRA finalises new prudential standard on operational risk</a>, 17 July 2023 (commencement 1 July 2025).</li>
+          <li>Data Standards Body, <a href="https://consumerdatastandardsaustralia.github.io/standards/#non-functional-requirements" target="_blank" rel="noopener">Consumer Data Standards: non-functional requirements</a>, version 1.36.0.</li>
+          <li>Australian Bureau of Statistics, <a href="https://www.abs.gov.au/ausstats/abs@.nsf/mediareleasesbyCatalogue/5239447C98B47FD0CA25800B00191B1A" target="_blank" rel="noopener">2016 Census online form update</a>.</li>
+          <li>Phys.org (AFP), <a href="https://phys.org/news/2012-11-australia-click-frenzy-online-sale.html" target="_blank" rel="noopener">Australia "Click Frenzy" online sale tagged "Click Fail"</a>, 21 November 2012.</li>
+          <li>Hudson, <a href="https://au.hudson.com/salary-guide-digital-data-insights/" target="_blank" rel="noopener">Salary Guide: Digital, Data &amp; Insights</a>, figures last updated January 2026.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="contact">
+      <div class="wrap contact-inner">
+        <h2>Find your limits before your customers do</h2>
+        <p>Book a free 30-minute call. Bring your deadline and your worries, and leave with a scope and a next step. Or email <a href="mailto:hello@pawansinha.com.au" style="color:inherit">hello@pawansinha.com.au</a>.</p>
+        <div class="cta">
+          <a class="btn btn-light js-book" href="https://calendly.com/pawansinha4u/30min" target="_blank" rel="noopener" data-track="pta-book-call-bottom">Book a free 30-min call</a>
+          <a class="btn btn-outline-light" href="/?need=Performance%20testing#contact" data-track="pta-brief-bottom">Send a brief instead</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

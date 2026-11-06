@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LoadRunner cheat sheet: lr_ and web_ functions — Pawan Sinha</title>
+  <meta name="description" content="A printable LoadRunner VuGen reference: lr_* and web_* C functions, {Param} syntax, correlation calls, parameter settings, runtime settings and command lines.">
+  <meta property="og:title" content="LoadRunner cheat sheet: lr_* and web_* functions, parameters, correlation, runtime settings, CLI">
+  <meta property="og:description" content="A printable LoadRunner VuGen reference: lr_* and web_* C functions, {Param} syntax, correlation calls, parameter settings, runtime settings and command lines.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/loadrunner/cheat-sheet/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/loadrunner/cheat-sheet/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "LoadRunner cheat sheet: lr_ and web_ functions", "description": "A printable LoadRunner VuGen reference: lr_* and web_* C functions, {Param} syntax, correlation calls, parameter settings, runtime settings and command lines.", "url": "https://pawansinha.com.au/guides/loadrunner/cheat-sheet/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Cheat sheet</p>
+      <h1>LoadRunner cheat sheet</h1>
+      <p class="lead">The VuGen functions and settings you look up every week, on one page. Written for C-based Web - HTTP/HTML scripts in Professional Performance Engineering 26.x, most of it unchanged for many releases. Press <strong>F1</strong> on any function in VuGen for the full reference. Print it (Ctrl/Cmd + P) or keep the tab open.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="structure">Script structure</h2>
+      <pre class="ex-code"><code>vuser_init()   runs once per vuser at start     (login if users stay logged in)
+Action()       runs every iteration              (the measured journey)
+vuser_end()    runs once per vuser at stop       (logout, cleanup)
+globals.h      shared #includes and global variables
+Every web_* / lr_* argument list ends with LAST</code></pre>
+
+      <h2 id="lr">lr_* functions</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Function</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>lr_start_transaction("T")</code></td><td>Start a transaction timer</td></tr>
+          <tr><td><code>lr_end_transaction("T", LR_AUTO)</code></td><td>End it. Status <code>LR_AUTO</code>, <code>LR_PASS</code>, <code>LR_FAIL</code> or <code>LR_STOP</code></td></tr>
+          <tr><td><code>lr_start_sub_transaction("S", "T")</code> / <code>lr_end_sub_transaction("S", LR_AUTO)</code></td><td>Timer nested inside transaction T</td></tr>
+          <tr><td><code>lr_set_transaction_status(LR_FAIL)</code></td><td>Set status of open transactions</td></tr>
+          <tr><td><code>lr_get_transaction_duration("T")</code></td><td>Seconds elapsed so far (double)</td></tr>
+          <tr><td><code>lr_think_time(5)</code></td><td>Pause, governed by the Think Time runtime setting</td></tr>
+          <tr><td><code>lr_rendezvous("R")</code></td><td>Wait for other vusers (rarely a good idea)</td></tr>
+          <tr><td><code>lr_output_message("x=%s", s)</code></td><td>Write to the output/log</td></tr>
+          <tr><td><code>lr_log_message("...")</code></td><td>Write to the vuser log only</td></tr>
+          <tr><td><code>lr_error_message("...")</code></td><td>Write an error message</td></tr>
+          <tr><td><code>lr_exit(LR_EXIT_ITERATION_AND_CONTINUE, LR_FAIL)</code></td><td>End the iteration (or <code>LR_EXIT_VUSER</code> to stop the vuser)</td></tr>
+          <tr><td><code>lr_get_vuser_ip()</code>, <code>lr_whoami(&amp;id, &amp;grp, &amp;scid)</code></td><td>Run-time identity</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="params">Parameters</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Syntax / function</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>{Username}</code></td><td>Parameter inside any string argument</td></tr>
+          <tr><td><code>lr_eval_string("{Username}")</code></td><td>Current value as a C string</td></tr>
+          <tr><td><code>lr_save_string("abc", "P")</code></td><td>Save a string into parameter P</td></tr>
+          <tr><td><code>lr_save_int(42, "P")</code></td><td>Save an integer as a string</td></tr>
+          <tr><td><code>lr_param_sprintf("P", "%s-%d", a, n)</code></td><td>printf into a parameter</td></tr>
+          <tr><td><code>lr_advance_param("P")</code></td><td>Move a file parameter to its next value now</td></tr>
+          <tr><td><code>lr_paramarr_len("P")</code></td><td>Count of <code>P_1..P_n</code> (from <code>Ordinal=ALL</code>)</td></tr>
+          <tr><td><code>lr_paramarr_idx("P", 2)</code></td><td>Value of <code>P_2</code></td></tr>
+          <tr><td><code>lr_paramarr_random("P")</code></td><td>Random element of the array</td></tr>
+          <tr><td><code>{P_count}</code></td><td>Number of matches saved by <code>Ordinal=ALL</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Need</th><th>Select next row</th><th>Update value on</th></tr></thead>
+        <tbody>
+          <tr><td>One customer per vuser for the whole test</td><td>Unique</td><td>Once</td></tr>
+          <tr><td>New unique customer per iteration</td><td>Unique</td><td>Each iteration</td></tr>
+          <tr><td>Shareable values (search terms)</td><td>Random</td><td>Each iteration</td></tr>
+          <tr><td>Other columns of the same row</td><td>Same line as &lt;param&gt;</td><td>(follows it)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Unique values per vuser: <strong>Allocate Vuser values in the Controller</strong>, automatic or N per vuser. Rows needed ≈ vusers × (duration ÷ pacing) plus margin. Details in <a href="/guides/loadrunner/parameterisation/">parameterisation</a>.</p>
+
+      <h2 id="web">web_* functions</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Function</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>web_url("name", "URL=...", "Mode=HTML", LAST)</code></td><td>GET a URL</td></tr>
+          <tr><td><code>web_submit_data("name", "Action=...", "Method=POST", ITEMDATA, "Name=a", "Value=1", ENDITEM, LAST)</code></td><td>Submit form fields</td></tr>
+          <tr><td><code>web_custom_request("name", "URL=...", "Method=PUT", "EncType=application/json", "Body=...", LAST)</code></td><td>Any method, any body</td></tr>
+          <tr><td><code>web_add_header("H", "v")</code></td><td>Header on the next request</td></tr>
+          <tr><td><code>web_add_auto_header("H", "v")</code> / <code>web_remove_auto_header("H", LAST)</code></td><td>Header on all following requests / stop it</td></tr>
+          <tr><td><code>web_add_cookie("n=v; DOMAIN=host")</code></td><td>Add a cookie</td></tr>
+          <tr><td><code>web_cleanup_cookies()</code></td><td>Clear cookies</td></tr>
+          <tr><td><code>web_reg_find("Text=...", "Fail=NotFound", LAST)</code></td><td>Text check on the next response. <code>Fail=Found</code> for error text, <code>SaveCount=P</code> to count</td></tr>
+          <tr><td><code>web_set_max_html_param_len("100000")</code></td><td>Allow longer captured values</td></tr>
+          <tr><td><code>web_set_user("u", "p", "host:port")</code></td><td>HTTP authentication credentials</td></tr>
+          <tr><td><code>web_set_sockets_option("SSL_VERSION", "TLS1.2")</code></td><td>Socket and TLS options</td></tr>
+          <tr><td><code>web_convert_param("P", "SourceEncoding=PLAIN", "TargetEncoding=URL", LAST)</code></td><td>Re-encode a parameter</td></tr>
+          <tr><td><code>web_global_verification("Text=Error", "Fail=Found", LAST)</code></td><td>Check every following response</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="correlation">Correlation</h2>
+      <pre class="ex-code"><code>web_reg_save_param_ex("ParamName=Token", "LB=name=\"token\" value=\"", "RB=\"",
+    "Ordinal=1", "NotFound=ERROR", SEARCH_FILTERS, "Scope=Body", LAST);
+
+web_reg_save_param_json("ParamName=Id", "QueryString=$.items[0].id",
+    SEARCH_FILTERS, "Scope=Body", LAST);
+
+web_reg_save_param_regexp("ParamName=Ref", "RegExp=ref=([A-Z0-9]+)&amp;",
+    SEARCH_FILTERS, "Scope=Body", LAST);
+
+web_reg_save_param_xpath("ParamName=Sid", "QueryString=//SessionId",
+    SEARCH_FILTERS, "Scope=Body", LAST);</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Argument</th><th>Values</th></tr></thead>
+        <tbody>
+          <tr><td><code>LB</code> / <code>RB</code></td><td>Boundaries. <code>LB/IC=</code> ignores case</td></tr>
+          <tr><td><code>Ordinal</code></td><td><code>1</code>, <code>n</code>, <code>ALL</code> (array <code>P_1..P_n</code> and <code>P_count</code>), <code>RANDOM</code></td></tr>
+          <tr><td><code>NotFound</code></td><td><code>ERROR</code> (default) or <code>WARNING</code></td></tr>
+          <tr><td><code>SaveLen</code>, <code>SaveOffset</code></td><td>Save part of the match</td></tr>
+          <tr><td><code>Scope</code> (after <code>SEARCH_FILTERS</code>)</td><td><code>All</code>, <code>Body</code>, <code>Headers</code> (with <code>HeaderNames=</code>)</td></tr>
+        </tbody>
+      </table></div>
+      <p>All <code>web_reg_*</code> calls register for the <strong>next</strong> request: put them before it. More in <a href="/guides/loadrunner/correlation/">correlation</a>.</p>
+
+      <h2 id="rts">Runtime settings summary</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Setting</th><th>Load test value</th></tr></thead>
+        <tbody>
+          <tr><td>Pacing</td><td>At random intervals, around the interval from your workload maths</td></tr>
+          <tr><td>Think time</td><td>Random percentage of recorded (e.g. 50 to 150%), or realistic values in the script</td></tr>
+          <tr><td>Log</td><td>Send messages only when an error occurs</td></tr>
+          <tr><td>Browser emulation</td><td>Simulate a new user each iteration, if each iteration is a new session</td></tr>
+          <tr><td>Download non-HTML resources</td><td>Match production (off if a CDN serves them)</td></tr>
+          <tr><td>Continue on error</td><td>Off, unless your code checks errors itself</td></tr>
+          <tr><td>Run logic iterations</td><td>Ignored in duration-based schedules</td></tr>
+        </tbody>
+      </table></div>
+      <p>Vusers = target iterations per second × pacing interval (<a href="/glossary/littles-law/">Little's Law</a>). Example: 0.5/s × 120 s = 60 vusers. Remember Controller keeps its own copy of runtime settings per script.</p>
+
+      <h2 id="cli">Command lines</h2>
+      <pre class="ex-code"><code>wlrun.exe -TestPath C:\s\smoke.lrs -Run -ResultName C:\r\Res_01 -InvokeAnalysis
+wlrun.exe -TestPath C:\s\smoke.lrs -Run -ResultLocation C:\r -ResultCleanName Res_01
+
+CLIControllerApp.exe -TestPath C:\s\smoke.lrs -CollateAndAnalyze -ResultName C:\r\Res_01
+CLIControllerApp.exe -InputFile C:\s\run.xml -Run -OverrideLgs C:\s\lgs.txt -SilentMode
+
+DevWeb -mode=single -iterations=3 ./script_folder      (DevWeb.exe on Windows)
+DevWeb -mode=load ./script_folder</code></pre>
+      <p>From the 26.x help: wlrun arguments are case sensitive, only one Controller runs at a time, and results are overwritten. See <a href="/guides/loadrunner/ci-and-devops/">CI and DevOps</a>.</p>
+
+      <h2 id="analysis">Analysis quick reference</h2>
+      <ul>
+        <li>Filter graphs on <strong>Scenario Elapsed Time</strong> to the steady state. Exclude failed transactions from response times.</li>
+        <li>Check the summary's percentile setting in <strong>Tools → Options</strong>.</li>
+        <li>Merge graphs: <strong>Overlay</strong> (shared time axis), <strong>Tile</strong> (stacked), <strong>Correlate</strong> (y against y).</li>
+        <li>Look at granularity both coarse and fine before concluding there are no spikes.</li>
+      </ul>
+      <p>More in <a href="/guides/loadrunner/analysis/">Analysis</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Need a hand with LoadRunner?</h2>
+        <p>Book a free 30-minute call for help with a script, a scenario or a set of results. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-cheat-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-cheat-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

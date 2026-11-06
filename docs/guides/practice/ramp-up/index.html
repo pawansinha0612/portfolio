@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice 3: ramp up and read the k6 summary — Pawan Sinha</title>
+  <meta name="description" content="Hands-on exercise: a k6 ramp-up test on local QuickPizza, reading p95 against the average, and checking the summary with Little&#x27;s Law.">
+  <meta property="og:title" content="Practice exercise 3: ramp-up, percentiles and Little&#x27;s Law">
+  <meta property="og:description" content="Hands-on exercise: a k6 ramp-up test on local QuickPizza, reading p95 against the average, and checking the summary with Little&#x27;s Law.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/practice/ramp-up/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/practice/ramp-up/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Practice 3: ramp up and read the k6 summary", "description": "Hands-on exercise: a k6 ramp-up test on local QuickPizza, reading p95 against the average, and checking the summary with Little's Law.", "url": "https://pawansinha.com.au/guides/practice/ramp-up/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 3 of 10</p>
+      <h1>Exercise 3: ramp up and read the summary</h1>
+      <p class="lead">The report says "average response time 95 ms". The product owner hears "fast". One request in twenty took nearly twice that, and the slowest waited over three times as long. The summary k6 prints has everything you need to tell the real story, if you know which lines to read and how to check they add up.</p>
+      <ul class="pr-meta"><li>20 minutes</li><li>Up to 10 virtual users, about 2 minutes</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Shape load over time with <code>stages</code>, read percentiles instead of the average, and sanity-check the throughput k6 reports with <a href="/glossary/littles-law/">Little's Law</a>. If your numbers don't agree with Little's Law, either the test or your reading of it is wrong.</p>
+
+      <h2 id="setup">Setup</h2>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>03-ramp.js</code>:</p>
+      <pre class="ex-code"><code>// Exercise 3: ramp up, hold, ramp down, then read the summary. Run locally only.
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 10 }, // ramp up to 10 VUs
+    { duration: '1m', target: 10 },  // hold
+    { duration: '15s', target: 0 },  // ramp down
+  ],
+  summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(95)&lt;1000'],
+  },
+};
+
+const params = {
+  headers: { 'Content-Type': 'application/json', Authorization: 'token abcdef0123456789' },
+  tags: { name: 'pizza' },
+};
+
+export default function () {
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), params);
+  check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+  sleep(1); // think time
+}</code></pre>
+      <p><code>summaryTrendStats</code> adds p99 to the summary. k6 shows avg, min, med, max, p(90) and p(95) by default.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code>k6 run 03-ramp.js</code></pre>
+      <p>Watch the progress line while it runs. The VU count climbs to 10 over 30 seconds, holds for a minute, then drains.</p>
+
+      <h2 id="expect">What you should see</h2>
+      <p>A summary shaped like this. These numbers are illustrative, yours will differ:</p>
+      <pre class="ex-code"><code>    HTTP
+    http_req_duration..: avg=95ms  min=21ms  med=88ms  p(90)=160ms p(95)=181ms p(99)=232ms max=318ms
+    http_req_failed....: 0.00%  0 out of 742
+    http_reqs..........: 742    7.06/s
+
+    EXECUTION
+    iteration_duration.: avg=1.09s min=1.02s med=1.09s p(90)=1.16s p(95)=1.18s p(99)=1.23s max=1.32s
+    iterations.........: 742    7.06/s
+    vus................: 1      min=1   max=10
+    vus_max............: 10     min=10  max=10</code></pre>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Little's Law says <em>concurrency = throughput × time in the system</em>. During the one-minute hold you have 10 VUs, and each iteration takes about <code>iteration_duration</code>. What request rate should you see during the hold? Why is the overall <code>http_reqs</code> rate in the summary lower than that?</li>
+        <li>Roughly how many requests should the whole run make? Work it out from the stages before you look, then compare with <code>http_reqs</code>.</li>
+        <li>Compare avg, med, p95 and max. Which one would you put in a report as "the response time", and what does the gap between p95 and max tell you?</li>
+        <li>Double the VUs (change both targets of 10 to 20) and run again. Did p95 change much? What does that say about where QuickPizza is on its <a href="/explain/queueing/">queueing curve</a>?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Throughput = concurrency ÷ time per iteration. With 10 VUs and about 1.1 s per iteration (1 s think time plus the request), that is about 10 ÷ 1.1 ≈ 9 iterations per second during the hold. The summary rate is lower because it averages over the whole run, including the ramps where fewer VUs were active.</li>
+            <li>Ramp up: 30 s at an average of 5 VUs ≈ 5 × 30 ÷ 1.1 ≈ 136. Hold: 60 s at 10 VUs ≈ 545. Ramp down: 15 s at an average of 5 VUs ≈ 68. Total ≈ 750. If you are within a few percent, the test did what you designed. If you are far off, something is wrong (errors that end iterations early, VUs stuck on long timeouts, a mistaken stage) and the latency numbers can't be trusted yet.</li>
+            <li>Report percentiles: p95 (and p99 for anything user-facing), with the median for context. The average mixes fast and slow requests into a number no user experienced. A big gap between p95 and max means a long tail: a few requests are much slower than the rest. With only a few hundred samples, max is a single request, so treat it as a clue, not a result. See <a href="/explain/percentiles/">why averages lie</a>.</li>
+            <li>Probably not much. At 20 VUs with 1 s of think time the server receives fewer than 20 requests per second, which is far below what it can handle, so there is almost no queueing. Latency only climbs once utilisation gets high. Finding that point is <a href="/guides/practice/find-the-knee/">Exercise 6</a>.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/open-vs-closed/">Exercise 4: open vs closed workload model</a>. Background: <a href="/explain/load-profiles/">load profiles explained</a> and the <a href="/tools/k6-results/">k6 results explainer</a> (paste your summary into it).</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="ramp"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Got a report full of averages?</h2>
+        <p>I review load test results and turn them into a clear verdict against your targets. Book a free 30-minute call to talk it through.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-3-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-3-hub">All exercises</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/guides/js/practice.js"></script>
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

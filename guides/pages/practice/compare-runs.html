@@ -1,0 +1,137 @@
+<!--{"title": "Practice 9: compare two load test runs", "og_title": "Practice exercise 9: is that regression real or noise?", "description": "Hands-on exercise: measure run-to-run noise with an A/A test, ship a small regression into QuickPizza, and prove it with k6 summaries and the compare tool.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 9 of 10</p>
+      <h1>Exercise 9: compare two runs</h1>
+      <p class="lead">The release candidate's p95 is 8% worse than last week's. Is that a regression, or just the difference between two runs of the same code? If you don't know how much your results wobble on their own, you can't answer, and you will either block a good release or wave through a bad one.</p>
+      <ul class="pr-meta"><li>25 minutes</li><li>3 runs of 1 minute at 10 iterations/s</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Run the same test twice on the same build to measure noise (an A/A comparison), then change the build and run it again (A/B). Use k6's <code>--summary-export</code> files and the <a href="/tools/compare-runs/">compare runs tool</a> to decide whether the difference is real.</p>
+
+      <h2 id="setup">Setup</h2>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>09-compare.js</code>. It uses a fixed arrival rate, so both runs get exactly the same load whatever the latency does:</p>
+      <pre class="ex-code"><code>// Exercise 9: a steady, repeatable run to compare before and after a change. Run locally only.
+//   k6 run --summary-export=baseline.json 09-compare.js
+import http from 'k6/http';
+import { check } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const AUTH = { 'Content-Type': 'application/json', Authorization: 'token abcdef0123456789' };
+
+export const options = {
+  scenarios: {
+    steady: {
+      executor: 'constant-arrival-rate',
+      rate: 10,
+      timeUnit: '1s',
+      duration: '1m',
+      preAllocatedVUs: 10,
+      maxVUs: 50,
+    },
+  },
+  summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
+  // One threshold per name, so the summary (and the compare tool) gets one row per request
+  thresholds: {
+    'http_req_duration{name:pizza}': ['p(95)&lt;2000'],
+    'http_req_duration{name:doughs}': ['p(95)&lt;2000'],
+    http_req_failed: ['rate&lt;0.01'],
+  },
+};
+
+export default function () {
+  const pizza = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), {
+    headers: AUTH,
+    tags: { name: 'pizza' },
+  });
+  check(pizza, { 'pizza status is 200': (r) =&gt; r.status === 200 });
+
+  const doughs = http.get(`${BASE_URL}/api/doughs`, { headers: AUTH, tags: { name: 'doughs' } });
+  check(doughs, { 'doughs status is 200': (r) =&gt; r.status === 200 });
+}</code></pre>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code># Run A and run A again: same build, nothing changed
+k6 run --summary-export=baseline.json 09-compare.js
+k6 run --summary-export=rerun.json 09-compare.js</code></pre>
+      <p>Now "ship a release" that adds 50 ms to one internal call. Stop the container and start it with:</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 \
+  -e QUICKPIZZA_DELAY_COPY_API_NAMES=50ms \
+  ghcr.io/grafana/quickpizza-local:latest</code></pre>
+      <pre class="ex-code"><code># Run B: the candidate
+k6 run --summary-export=candidate.json 09-compare.js</code></pre>
+      <p>Open the <a href="/tools/compare-runs/">compare runs tool</a>. Load <code>baseline.json</code> as the baseline and <code>rerun.json</code> as the candidate, and read the verdict. Then do it again with <code>candidate.json</code>. The files stay in your browser.</p>
+      <p>Prefer the terminal? This prints the p95 of each request name from all three files:</p>
+      <pre class="ex-code"><code>for f in baseline rerun candidate; do
+  jq -r --arg f "$f" '[$f,
+    (.metrics["http_req_duration{name:pizza}"]["p(95)"] | floor),
+    (.metrics["http_req_duration{name:doughs}"]["p(95)"] | floor)] | @tsv' "$f.json"
+done</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <p>Illustrative numbers, p95 in milliseconds:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Run</th><th>pizza p95</th><th>doughs p95</th></tr></thead>
+        <tbody>
+          <tr><td>baseline</td><td>112</td><td>4</td></tr>
+          <tr><td>rerun (A/A)</td><td>118</td><td>4</td></tr>
+          <tr><td>candidate</td><td>165</td><td>4</td></tr>
+        </tbody>
+      </table></div>
+      <p>The A/A pair differs a little even though nothing changed. The candidate moves <code>pizza</code> by about 50 ms and leaves <code>doughs</code> alone.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>How big was the difference between your two A runs, in percent? What does that mean for the smallest regression you can detect with this test?</li>
+        <li>Why did <code>doughs</code> not change? Why is it useful to have a request that shouldn't change in the comparison?</li>
+        <li>The regression added 50 ms to one internal call. How much did pizza's p95 move? Is it exactly 50 ms, and why might it not be?</li>
+        <li>How would you make the comparison more trustworthy before using it as a release gate in CI?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Typically a few percent on a quiet laptop, sometimes more. That spread is your noise floor. If two runs of the same build differ by 6%, a 5% "regression" is not evidence of anything. Either the change has to be clearly bigger than the noise, or you need more runs (or longer ones) so the noise shrinks.</li>
+            <li>Its path doesn't touch the copy service, so the change can't affect it. A control like that separates "the change made X slower" from "the machine was busier during run B". If the control moves as much as the target, suspect the environment, not the code.</li>
+            <li>Close to 50 ms, because each pizza calls the names endpoint once, in sequence, on the critical path. It won't be exact: QuickPizza adds its own random pause to every pizza, and p95 of a sum isn't the sum of the p95s. Had the delay been on a call made several times per request, or made in parallel, the effect would be bigger or smaller.</li>
+            <li>Run each side more than once and compare distributions, not single numbers. Use the same environment, data and warm-up for both. Pin the load with an arrival-rate executor (as here). Keep tags stable so transactions match by name. Set the regression rule from your measured noise, for example "p95 worse by more than 10% <em>and</em> more than 20 ms".</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/jmeter/">Exercise 10: the same test in JMeter</a> (optional). Background: the <a href="/tools/compare-runs/">compare runs tool</a> and the <a href="/tools/k6-results/">k6 results explainer</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="compare"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want performance regression checks in your pipeline?</h2>
+        <p>A useful release gate is mostly about noise, baselines and the right thresholds. Book a free 30-minute call and I'll help you set one up.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-9-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-9-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

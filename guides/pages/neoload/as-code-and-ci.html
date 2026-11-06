@@ -1,0 +1,186 @@
+<!--{"title": "NeoLoad as-code and CI: YAML, neoload CLI, pipelines", "og_title": "NeoLoad as-code and CI/CD: YAML projects, the neoload CLI, NeoLoadCmd and pipeline examples", "description": "Run NeoLoad from pipelines: as-code YAML projects, the neoload CLI (login, test-settings, upload, run, junitsla), NeoLoadCmd, and GitLab and Jenkins jobs.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · As-code and CI</p>
+      <h1>NeoLoad as code: tests that live next to the app</h1>
+      <p class="lead">The API team ships twice a day. The performance team runs NeoLoad from a shared workstation once a sprint, when someone remembers. By the time a slow endpoint is found, it is buried under 20 merges. NeoLoad's as-code YAML and the <code>neoload</code> command line let a pipeline upload a project, run it on a zone in NeoLoad Web and fail the build on SLAs, without anyone opening the GUI.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#yaml">As-code YAML</a></li>
+          <li><a href="#hybrid">Mixing GUI projects and YAML</a></li>
+          <li><a href="#cli">The neoload CLI</a></li>
+          <li><a href="#gitlab">GitLab CI</a></li>
+          <li><a href="#jenkins">Jenkins, Azure DevOps and GitHub Actions</a></li>
+          <li><a href="#neoloadcmd">NeoLoadCmd</a></li>
+          <li><a href="#gates">Designing the gate</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="yaml">1. As-code YAML</h2>
+      <p>A NeoLoad project can be written as YAML: servers, variables, User Paths, populations, scenarios and SLA profiles. The schema is documented in Tricentis's neoload-models repository on GitHub and in the NeoLoad docs ("YAML format"). Files must end in <code>.yaml</code> or <code>.yml</code>. A small but complete project:</p>
+      <pre class="ex-code"><code># default.yaml
+name: accounts-api
+
+sla_profiles:
+- name: api_sla
+  thresholds:
+  - perc-transaction-resp-time (p95) warn &gt;= 500ms fail &gt;= 800ms per test
+  - error-rate warn &gt;= 1% fail &gt;= 2% per test
+  - error-rate fail &gt;= 5% per interval
+
+servers:
+- name: api
+  host: accounts-staging.example.com
+  scheme: https
+  port: 443
+
+variables:
+- file:
+    name: users
+    path: data/users.csv
+    is_first_line_column_names: true
+    change_policy: each_iteration
+    scope: unique
+
+user_paths:
+- name: ViewAccounts
+  actions:
+    pacing: 20s
+    steps:
+    - transaction:
+        name: 01_Login
+        sla_profile: api_sla
+        steps:
+        - request:
+            server: api
+            url: /v1/login
+            method: POST
+            headers:
+            - Content-Type: application/json
+            body: |
+              {"username": "${users.username}", "password": "${users.password}"}
+            extractors:
+            - name: token
+              jsonpath: $.access_token
+    - think_time: 3s
+    - transaction:
+        name: 02_Accounts
+        sla_profile: api_sla
+        steps:
+        - request:
+            server: api
+            url: /v1/accounts
+            headers:
+            - Authorization: Bearer ${token}
+
+populations:
+- name: pop_accounts
+  user_paths:
+  - name: ViewAccounts
+    distribution: 100%
+
+scenarios:
+- name: ci_smoke
+  populations:
+  - name: pop_accounts
+    rampup_load:
+      min_users: 5
+      max_users: 30
+      increment_users: 5
+      increment_every: 30s
+      duration: 10m</code></pre>
+      <p>Every key here comes from the as-code reference (SLA threshold syntax, <code>servers</code>, file variables, <code>pacing</code> on the actions container, transactions, requests with <code>extractors</code>, populations and a ramp-up policy). I could not run it here, so treat it as a sketch and validate it with <code>neoload validate default.yaml</code> before use. Thirty users pacing at 20 seconds gives about 1.5 iterations per second, a sensible smoke load.</p>
+      <p>Split larger projects with <code>includes:</code>, for example a common design file plus per-environment files for servers, variables and SLAs, and choose the environment file at run time.</p>
+
+      <h2 id="hybrid">2. Mixing GUI projects and YAML</h2>
+      <p>You don't have to write everything in YAML. A common pattern is to design complex User Paths in the GUI (recording and correlation are much faster there) and keep scenarios, servers and SLAs in YAML that the pipeline overrides per environment. A YAML scenario with the same name as one in the project replaces it entirely, and a new name adds one. Recent releases can also open a YAML file or zipped project directly in the GUI.</p>
+
+      <h2 id="cli">3. The neoload CLI</h2>
+      <p>The command line client is a Python package called <code>neoload</code> (version 1.4.1 on PyPI at the time of writing). It talks to the NeoLoad Web API with a token, so it runs anywhere Python 3 does, not just on Windows.</p>
+      <pre class="ex-code"><code>pip3 install neoload
+
+# authenticate (SaaS by default, --url for an on-premises NeoLoad Web API)
+neoload login $NLW_TOKEN
+neoload login --url https://neoload-api.internal.example.com/ --workspace "Default Workspace" $NLW_TOKEN
+
+# create or update test settings: zone, generator count, scenario
+neoload test-settings --zone $NLW_ZONE --lgs 2 --scenario ci_smoke createorpatch accounts-ci
+
+# upload the project folder to those test settings
+neoload project --path ./perf upload accounts-ci
+
+# check YAML syntax and schema
+neoload validate ./perf/default.yaml
+
+# run, naming the result after the build
+neoload run --name "accounts-ci-$CI_PIPELINE_IID" --description "commit $CI_COMMIT_SHORT_SHA"
+
+# export SLA results as JUnit XML for the CI test report
+neoload test-results --junit-file junit-sla.xml junitsla</code></pre>
+      <p>Behaviour worth knowing, from the CLI's README and source:</p>
+      <ul>
+        <li><code>neoload run</code> blocks and streams progress, prints a summary with passed and failed SLAs, and exits non-zero when the result fails its SLAs. <code>--return-0</code> turns that off. <code>--detached</code> starts the test and returns at once.</li>
+        <li>If the scenario doesn't exist in the project, NeoLoad Web falls back to its "Custom" scenario (10 users for 5 minutes). Always pass or set the scenario explicitly.</li>
+        <li>When chaining commands on one line, the exit code is that of the last command, so don't chain <code>run</code> with <code>test-results junitsla</code>. Run them as separate steps.</li>
+        <li>If the uploaded folder contains other YAML files (such as <code>.gitlab-ci.yml</code>), add a <code>.nlignore</code> file, or NeoLoad Web tries to parse them as as-code and fails.</li>
+        <li><code>neoload fastfail</code> with a detached run stops a test early when SLAs are being violated, so a broken environment fails the pipeline in minutes instead of after the full duration.</li>
+      </ul>
+
+      <h2 id="gitlab">4. GitLab CI</h2>
+      <pre class="ex-code"><code># .gitlab-ci.yml (sketch)
+performance:
+  stage: test
+  image: python:3.12-slim
+  variables:
+    NLW_ZONE: "defaultzone"
+  script:
+    - pip3 install neoload
+    - neoload login $NLW_TOKEN
+    - neoload test-settings --zone $NLW_ZONE --lgs 2 --scenario ci_smoke createorpatch accounts-ci
+    - neoload project --path ./perf upload accounts-ci
+    - neoload run --name "accounts-ci-$CI_PIPELINE_IID" --external-url "$CI_JOB_URL" --external-url-label "GitLab job $CI_JOB_ID"
+  after_script:
+    - neoload test-results --junit-file junit-sla.xml junitsla
+  artifacts:
+    when: always
+    reports:
+      junit: junit-sla.xml</code></pre>
+      <p>Store <code>NLW_TOKEN</code> as a masked CI variable. The JUnit export sits in <code>after_script</code> because that still runs when <code>neoload run</code> fails the job on SLAs. It relies on the CLI's config file (login and current result) still being there, which holds when <code>after_script</code> runs in the same job container. If your runner differs, log in again there and select the result explicitly. The CLI repository has maintained pipeline examples for GitLab, Jenkins, Azure DevOps, GitHub Actions, AWS and Bamboo. Start from those and compare against this sketch.</p>
+
+      <h2 id="jenkins">5. Jenkins, Azure DevOps and GitHub Actions</h2>
+      <ul>
+        <li><strong>Jenkins</strong>: run the same CLI commands in <code>sh</code> steps, and publish <code>junit-sla.xml</code> with the <code>junit</code> step. The CLI repository includes a Jenkinsfile that uses detached mode with <code>fastfail</code>. Tricentis has also published a NeoLoad plugin for Jenkins over the years. Check whether your Jenkins uses it, but the CLI approach is the same across CI systems.</li>
+        <li><strong>Azure DevOps</strong>: a script step on a Linux or Windows agent with Python, the same commands, and Publish Test Results for the JUnit file. Tricentis maintains Azure DevOps examples in the CLI repository.</li>
+        <li><strong>GitHub Actions</strong>: <code>actions/setup-python</code>, then the CLI. Keep the token in repository or environment secrets.</li>
+      </ul>
+      <p>NeoLoad 2026.2 added <strong>DevOps Workspaces</strong>, aimed at early-stage tests in CI/CD with dedicated capacity. If your licence includes them, they are worth a look for pipeline runs.</p>
+
+      <h2 id="neoloadcmd">6. NeoLoadCmd</h2>
+      <p>Before the CLI and NeoLoad Web, pipelines ran the desktop install headless with <code>NeoLoadCmd</code>. It still exists and still appears in the current docs, for example running a project with extra YAML files:</p>
+      <pre class="ex-code"><code>NeoLoadCmd.exe -project "C:\perf\MyProject\MyProject.nlp" "C:\perf\myproject-scenarios.yaml" "C:\perf\myproject-environment.yaml" -launch MyScenario</code></pre>
+      <p>It needs NeoLoad installed on the agent and its own access to generators and a licence. For new pipelines, prefer the <code>neoload</code> CLI and NeoLoad Web zones, and check your version's NeoLoadCmd reference for its other arguments.</p>
+
+      <h2 id="gates">7. Designing the gate</h2>
+      <ul>
+        <li><strong>Small, fast, every day.</strong> 10 to 15 minutes at a fraction of peak, on merges to main or nightly. Keep full-scale tests in a scheduled window.</li>
+        <li><strong>Percentiles and error rate per transaction</strong>, with thresholds a little above the current baseline. Add a per-interval error-rate rule so a bad few minutes fails the run. See <a href="/glossary/thresholds/">thresholds</a>.</li>
+        <li><strong>Stable environment and data.</strong> Gates on noisy shared environments get flaky, and flaky gates get switched off.</li>
+        <li><strong>Name results after the build</strong> so NeoLoad Web trends line up with commits.</li>
+        <li><strong>Budget licence capacity.</strong> Pipeline runs lease users from the same pool as big tests.</li>
+      </ul>
+      <p>For the open-source equivalent, see the <a href="/guides/jmeter/ci-pipelines/">JMeter CI pipelines guide</a>. <strong>Next:</strong> <a href="/guides/neoload/analysis-and-sla/">analysis and SLAs</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Want NeoLoad in your pipeline?</h2>
+        <p>Book a free 30-minute call and we'll sketch a gate that fits your tools and environments. Or see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-ci-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-ci-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>

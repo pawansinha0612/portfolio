@@ -1,0 +1,97 @@
+<!--{"title": "LoadRunner runtime settings: pacing, think time, logs", "og_title": "LoadRunner runtime settings: pacing maths, think time, run logic and log levels", "description": "Set LoadRunner runtime settings that model real users: pacing maths, think time replay, run logic and iterations, and log levels that don't sink generators.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Runtime settings and pacing</p>
+      <h1>LoadRunner pacing: 100 vusers is not a workload</h1>
+      <p class="lead">The requirement says "the system must handle 1,800 logins an hour". You run 100 vusers with think time ignored and pacing "as soon as the previous iteration ends". The server sees 9,000 logins an hour, falls over, and the project spends a week chasing a problem production will never have. Runtime settings are where vusers become a workload with a known rate.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#where">Where runtime settings live</a></li>
+          <li><a href="#runlogic">Run logic and iterations</a></li>
+          <li><a href="#pacing">Pacing options</a></li>
+          <li><a href="#maths">Pacing maths with Little's Law</a></li>
+          <li><a href="#think">Think time</a></li>
+          <li><a href="#logs">Log settings</a></li>
+          <li><a href="#other">Other settings worth checking</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="where">1. Where runtime settings live</h2>
+      <p>Runtime settings are stored with the script (<code>default.cfg</code> and related files). Open them in VuGen with <strong>F4</strong> or <strong>Replay → Runtime Settings</strong>. In Controller, each script in a scenario has its own copy: select the script in the Design tab and open <strong>Runtime Settings</strong>. Changes made in Controller apply to that scenario only and do not flow back to VuGen.</p>
+      <div class="g-warn">
+        <p><strong>Two copies, two truths.</strong> A common trap is fixing pacing in VuGen, re-running the scenario, and wondering why nothing changed. Controller kept its own copy. Check the settings in the scenario before every significant run, and record them in the test report. Release 26.3 redesigned the runtime settings UI, so labels below may sit in different places in your version.</p>
+      </div>
+
+      <h2 id="runlogic">2. Run logic and iterations</h2>
+      <p><strong>Run Logic</strong> sets how many times the Action section repeats and in what order the actions run. You can group actions into blocks and run them sequentially or randomly with percentages, which is the simplest way to build a mix such as 70% browse, 20% search, 10% buy inside one script.</p>
+      <p>The iteration count applies when you run in VuGen and when a Controller schedule is set to run until completion. In a duration-based Controller schedule, vusers keep iterating until the duration ends, regardless of the count. Run one iteration in VuGen when debugging, and let the Controller schedule decide in a load test.</p>
+
+      <h2 id="pacing">3. Pacing options</h2>
+      <p><a href="/glossary/pacing/">Pacing</a> controls the time from the start of one iteration to the start of the next. It is what gives a vuser a fixed rate. The options, in the wording most versions use:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Option</th><th>What happens</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>As soon as the previous iteration ends</td><td>No gap. Rate is set by response time, so it rises as the system gets faster and falls as it slows</td><td>Debugging and data loading only</td></tr>
+          <tr><td>After the previous iteration ends, with a fixed or random delay</td><td>A gap after each iteration. Rate still depends on response time</td><td>Rarely the right choice for load tests</td></tr>
+          <tr><td>At fixed intervals, every N seconds</td><td>Iterations start N seconds apart, if the previous one has finished</td><td>Precise, repeatable rates</td></tr>
+          <tr><td>At random intervals, every N to M seconds</td><td>Start-to-start gap randomised in a range</td><td>The usual choice: fixed average rate, no lock-step</td></tr>
+        </tbody>
+      </table></div>
+      <p>Prefer the interval options. They keep the rate constant even when response times change, which is what a production arrival rate does. Random intervals stop vusers drifting into lock-step and hitting the server in waves.</p>
+      <p>If an iteration takes longer than the pacing interval, the next one starts immediately and that vuser falls below its target rate. Check in Analysis that achieved throughput matched the target. If it didn't, the test ran a lighter load than you think.</p>
+
+      <h2 id="maths">4. Pacing maths with Little's Law</h2>
+      <p><a href="/glossary/littles-law/">Little's Law</a> for a closed workload: vusers = throughput × time per iteration, where time per iteration is the pacing interval (as long as each iteration finishes inside it).</p>
+      <p>For the opening example: target 1,800 logins per hour = 0.5 per second. If each iteration is one login journey and you choose pacing of 120 seconds, you need 0.5 × 120 = <strong>60 vusers</strong>. Check the journey fits: if response times plus think time come to 70 seconds, there is 50 seconds of headroom for slowdown before the rate drops.</p>
+      <p>Choose pacing first from realistic session length, then derive vusers. Not the other way round. The <a href="/tools/workload-model/">workload model tool</a> and <a href="/tools/capacity-calculator/">capacity calculator</a> do this arithmetic for several journeys at once.</p>
+      <div class="g-note">
+        <p><strong>Closed model limits.</strong> Vusers with pacing are a closed model: when the system slows, each vuser waits longer and arrivals drop. Production traffic from the internet is closer to an open model. See <a href="/glossary/open-vs-closed-workload-model/">open vs closed workload models</a> and <a href="/glossary/coordinated-omission/">coordinated omission</a> for why that matters when the system is struggling.</p>
+      </div>
+
+      <h2 id="think">5. Think time</h2>
+      <p><code>lr_think_time(n)</code> pauses the vuser. The <strong>Think Time</strong> runtime setting decides what happens to those calls on replay:</p>
+      <ul>
+        <li><strong>Ignore think time</strong>: skip them. Fine for debugging, wrong for load tests.</li>
+        <li><strong>Replay think time as recorded</strong>: use the values in the script.</li>
+        <li><strong>Multiply recorded think time by</strong> a factor.</li>
+        <li><strong>Use random percentage of recorded think time</strong>, for example 50% to 150%: realistic variation. A sensible default.</li>
+        <li><strong>Limit think time to</strong> N seconds: caps long pauses from a slow recording.</li>
+      </ul>
+      <p>Recorded think times reflect how fast you clicked during the recording. Replace them with values based on real user behaviour from analytics where you can. <a href="/glossary/think-time/">Think time</a> and pacing work together: think time shapes the gaps <em>inside</em> a journey, pacing sets the rate <em>of</em> journeys.</p>
+
+      <h2 id="logs">6. Log settings</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Setting</th><th>When</th></tr></thead>
+        <tbody>
+          <tr><td>Extended log, with parameter substitution and data returned by server</td><td>Debugging in VuGen only. Very heavy</td></tr>
+          <tr><td>Standard log</td><td>Short runs in VuGen</td></tr>
+          <tr><td>Send messages only when an error occurs (log cache)</td><td>Load tests. Logs the context around an error without logging everything</td></tr>
+          <tr><td>Disable logging</td><td>Very large tests where even error logging costs too much. You lose diagnostics</td></tr>
+        </tbody>
+      </table></div>
+      <p>Extended logging on 500 vusers writes every response body to disk on the generators. It slows the vusers, fills disks, and inflates response times so the test measures the generator rather than the system. Before every load test, confirm logging is set to errors only in the <em>scenario's</em> runtime settings.</p>
+
+      <h2 id="other">7. Other settings worth checking</h2>
+      <ul>
+        <li><strong>Miscellaneous → Error Handling</strong>: "Continue on error" keeps a vuser going after a failed step. Off is usually better, so a broken iteration ends and the next one starts clean. Turn it on only with explicit checks in code.</li>
+        <li><strong>Miscellaneous → Multithreading</strong>: run vusers as threads (lighter) or processes (more isolation). Threads are the default for most protocols.</li>
+        <li><strong>Browser emulation → Simulate a new user on each iteration</strong>: clears cookies and cache between iterations. On for most journeys that log in and out per iteration. Off when one vuser is one long-lived session.</li>
+        <li><strong>Internet Protocol → Preferences</strong>: download non-HTML resources (images, CSS, JS) or not. Turn it off if the CDN serves them in production and you are testing the origin.</li>
+        <li><strong>Network → Speed Simulation</strong>: bandwidth emulation for mobile or branch-office users, when that is part of the requirement.</li>
+      </ul>
+      <p><strong>Next:</strong> <a href="/guides/loadrunner/controller-scenarios/">Controller scenarios</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure your workload model is right?</h2>
+        <p>Book a free 30-minute call and we'll check your pacing and vuser numbers against your traffic. For full test design, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-rts-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-rts-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,137 @@
+<!--{"title": "Practice 4: open vs closed workload model in k6", "og_title": "Practice exercise 4: why fixed-VU tests go easy on a slow server", "description": "Hands-on exercise: run the same k6 test with constant-vus and constant-arrival-rate, slow QuickPizza down, and watch the closed model send less traffic.", "scripts": ["/guides/js/practice.js"], "article": true}-->
+    <style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 4 of 10</p>
+      <h1>Exercise 4: open vs closed workload model</h1>
+      <p class="lead">Production slows down at 9 am. Your load test of "10 users" slows down too, and quietly sends a third of the traffic it sent yesterday. Real customers don't wait politely for the previous customer's page to load before they arrive. Your test did, so it went easy on the server exactly when it should have pushed.</p>
+      <ul class="pr-meta"><li>30 minutes</li><li>4 runs of 1 minute</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>See the difference between a <a href="/glossary/open-vs-closed-workload-model/">closed model</a> (a fixed number of VUs, each waiting for its response before sending the next request) and an open model (new requests arrive at a fixed rate whatever the server does). Then slow the server down and watch how differently they react.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>Start QuickPizza normally for the first two runs:</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>04-open-vs-closed.js</code>. One file, two scenarios, chosen with <code>-e MODEL=...</code>:</p>
+      <pre class="ex-code"><code>// Exercise 4: the same journey under a closed model (fixed users) and an open model (fixed arrival rate).
+// Run locally only:  k6 run -e MODEL=closed 04-open-vs-closed.js   then   -e MODEL=open
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const MODEL = __ENV.MODEL || 'closed';
+
+const scenarios = {
+  // Closed: 10 users, each waits for its response, thinks 1s, then sends the next request.
+  closed: { executor: 'constant-vus', vus: 10, duration: '1m' },
+  // Open: 8 new iterations start every second, however slow the server gets.
+  open: {
+    executor: 'constant-arrival-rate',
+    rate: 8,
+    timeUnit: '1s',
+    duration: '1m',
+    preAllocatedVUs: 10,
+    maxVUs: 50,
+  },
+};
+
+if (!scenarios[MODEL]) throw new Error(`MODEL must be closed or open, got ${MODEL}`);
+
+export const options = {
+  scenarios: { [MODEL]: scenarios[MODEL] },
+  summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
+};
+
+const params = {
+  headers: { 'Content-Type': 'application/json', Authorization: 'token abcdef0123456789' },
+  tags: { name: 'pizza' },
+};
+
+export default function () {
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), params);
+  check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+  // Think time belongs to the closed model. In the open model the arrival rate already sets the pace.
+  if (MODEL === 'closed') sleep(1);
+}</code></pre>
+      <p>Both scenarios start at the same load: 10 VUs with 1 s of think time send a bit under 10 requests per second, and the open scenario asks for 8 per second.</p>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code># Healthy server
+k6 run -e MODEL=closed 04-open-vs-closed.js
+k6 run -e MODEL=open 04-open-vs-closed.js</code></pre>
+      <p>Now make every pizza request 2 seconds slower. Stop the container (<kbd>Ctrl+C</kbd>) and start it with a delay:</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 \
+  -e QUICKPIZZA_DELAY_RECOMMENDATIONS_API_PIZZA_POST=2s \
+  ghcr.io/grafana/quickpizza-local:latest</code></pre>
+      <pre class="ex-code"><code># Slow server
+k6 run -e MODEL=closed 04-open-vs-closed.js
+k6 run -e MODEL=open 04-open-vs-closed.js</code></pre>
+      <p>Write down <code>http_reqs</code> (count and rate), p95, and the <code>vus</code> line from all four runs.</p>
+
+      <h2 id="expect">What you should see</h2>
+      <p>Illustrative numbers. The pattern is what matters:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Run</th><th>Requests/s</th><th>p95</th><th>VUs</th></tr></thead>
+        <tbody>
+          <tr><td>Closed, healthy</td><td>≈ 9.5</td><td>≈ 0.1 s</td><td>10</td></tr>
+          <tr><td>Open, healthy</td><td>≈ 8</td><td>≈ 0.1 s</td><td>a few busy at a time</td></tr>
+          <tr><td>Closed, slow</td><td>≈ 3.3</td><td>≈ 2.1 s</td><td>10</td></tr>
+          <tr><td>Open, slow</td><td>≈ 8</td><td>≈ 2.1 s</td><td>climbs to about 17</td></tr>
+        </tbody>
+      </table></div>
+      <p>In the slow open run you may also see a few <code>dropped_iterations</code> near the start, while k6 creates the extra VUs it suddenly needs.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Both slow runs report the same p95. So what did the closed model get wrong?</li>
+        <li>Use Little's Law to predict the closed model's request rate on the slow server, and the number of VUs the open model needs. Do your predictions match?</li>
+        <li>Set <code>maxVUs: 12</code> in the open scenario and repeat the slow open run. What happens, and which metric tells you?</li>
+        <li>When is a closed model the right choice?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>The load. On the slow server the closed test sent about a third of the requests, because each VU spent 2 seconds waiting instead of sending. A test that is meant to say "can we handle 8 requests per second?" answered a different question: "can we handle 3?". In a real system, lower load also means less queueing, so a closed test can understate latency once the server is near saturation. This back-off is closely related to <a href="/glossary/coordinated-omission/">coordinated omission</a>.</li>
+            <li>Closed: 10 VUs ÷ (2.1 s response + 1 s think) ≈ 3.2 requests/s. Open: concurrency = 8 requests/s × 2.1 s ≈ 17 VUs busy at once. Little's Law predicts both.</li>
+            <li>k6 can't start iterations without a free VU, so it skips them and counts them in <code>dropped_iterations</code>, and you get a warning about insufficient VUs. The achieved rate falls below 8 per second. Any test with dropped iterations did not deliver the load you designed, so check that line on every open-model run.</li>
+            <li>When the real users really are a fixed population that waits: a batch job with N workers, a connection pool, a call centre with 50 agents. For public web traffic, where arrivals don't depend on how fast you are, use an arrival-rate executor.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/test-data-and-correlation/">Exercise 5: test data and correlation</a>. Background: <a href="/guides/k6/scenarios-and-executors/">scenarios and executors</a> and <a href="/explain/load-profiles/">load profiles explained</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="open-closed"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Is your load test modelling real traffic?</h2>
+        <p>The workload model decides whether a test result means anything. Book a free 30-minute call and I'll look at yours.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-4-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-4-hub">All exercises</a>
+        </p>
+      </div>
+    </section>

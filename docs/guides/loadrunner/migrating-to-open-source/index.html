@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Migrating from LoadRunner to JMeter or k6 — Pawan Sinha</title>
+  <meta name="description" content="Moving from LoadRunner to JMeter or k6: when it makes sense, what translates (HTTP, correlation, data) and what doesn&#x27;t (Citrix, SAP GUI), and a phased plan.">
+  <meta property="og:title" content="Migrating from LoadRunner to JMeter or k6: when it pays, what translates and what doesn&#x27;t">
+  <meta property="og:description" content="Moving from LoadRunner to JMeter or k6: when it makes sense, what translates (HTTP, correlation, data) and what doesn&#x27;t (Citrix, SAP GUI), and a phased plan.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/loadrunner/migrating-to-open-source/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/loadrunner/migrating-to-open-source/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Migrating from LoadRunner to JMeter or k6", "description": "Moving from LoadRunner to JMeter or k6: when it makes sense, what translates (HTTP, correlation, data) and what doesn't (Citrix, SAP GUI), and a phased plan.", "url": "https://pawansinha.com.au/guides/loadrunner/migrating-to-open-source/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/loadrunner/">LoadRunner</a> · Migrating to open source</p>
+      <h1>Leaving LoadRunner: what moves, what stays, what breaks</h1>
+      <p class="lead">The licence renewal lands on the CIO's desk and someone asks, "Can't we just use JMeter?" Six months later the web scripts are in k6, the team is happy, and the quarter-end Citrix test of the claims system has nowhere to run. Moving off LoadRunner can be a good decision. It goes wrong when it is treated as a tool swap instead of an inventory of what you actually test.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#when">When moving makes sense</a></li>
+          <li><a href="#inventory">Start with an inventory</a></li>
+          <li><a href="#translates">What translates</a></li>
+          <li><a href="#doesnt">What doesn't translate</a></li>
+          <li><a href="#which">JMeter or k6?</a></li>
+          <li><a href="#plan">A phased plan</a></li>
+          <li><a href="#baseline">Re-baseline, don't compare</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="when">1. When moving makes sense</h2>
+      <p>Moving tends to pay off when:</p>
+      <ul>
+        <li>Most of what you test is HTTP: websites, REST and GraphQL APIs, microservices.</li>
+        <li>Developers or SREs want to own performance tests in the same repos and pipelines as their code.</li>
+        <li>You want to run tests from containers or Kubernetes, scale generators on demand, and avoid Windows-only infrastructure.</li>
+        <li>Your team's skills are moving to JavaScript, Groovy or Python and away from C.</li>
+      </ul>
+      <p>Staying, or keeping LoadRunner for part of the estate, makes sense when:</p>
+      <ul>
+        <li>Critical journeys run through Citrix, SAP GUI, Oracle Forms, terminal emulation (RTE) or other thick-client protocols.</li>
+        <li>You depend on Enterprise Performance Engineering for shared scheduling, trending and audit across many teams, and would have to rebuild that.</li>
+        <li>You have hundreds of stable, maintained scripts and the licence is already paid for the next term. Migration is effort. Spend it where it buys something.</li>
+      </ul>
+      <p>The <a href="/compare/jmeter-vs-loadrunner/">JMeter vs LoadRunner comparison</a> and the <a href="/compare/tool-picker/">tool picker</a> go through the trade-offs in more detail.</p>
+
+      <h2 id="inventory">2. Start with an inventory</h2>
+      <p>Before anyone rewrites a script, list every script and scenario you actually run, with:</p>
+      <ul>
+        <li>Protocol (Web HTTP/HTML, TruClient, Citrix, SAP GUI, Web Services, DevWeb...)</li>
+        <li>How often it runs and who relies on the results (release gate, quarterly peak test, regulatory evidence)</li>
+        <li>Complexity: number of steps, correlations, custom C code, external DLLs</li>
+        <li>Data and environment dependencies</li>
+      </ul>
+      <p>Typically a minority of scripts carry most of the value, and some scripts have not run in years. Retire those instead of migrating them.</p>
+
+      <h2 id="translates">3. What translates</h2>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>LoadRunner</th><th>JMeter</th><th>k6</th></tr></thead>
+        <tbody>
+          <tr><td><code>web_url</code>, <code>web_submit_data</code>, <code>web_custom_request</code></td><td>HTTP Request sampler</td><td><code>http.get</code>, <code>http.post</code>, <code>http.request</code></td></tr>
+          <tr><td><code>lr_start_transaction</code> / <code>lr_end_transaction</code></td><td>Transaction Controller</td><td><code>group()</code> or tags plus a custom <code>Trend</code></td></tr>
+          <tr><td><code>web_reg_save_param_ex</code> / <code>_json</code> / <code>_regexp</code></td><td>Boundary, JSON and Regular Expression Extractors</td><td>Parse the response in JavaScript: <code>res.json()</code>, regex</td></tr>
+          <tr><td><code>web_reg_find</code></td><td>Response Assertion</td><td><code>check()</code></td></tr>
+          <tr><td>File parameter, unique / random</td><td>CSV Data Set Config (sharing modes)</td><td><code>SharedArray</code> plus scenario index for uniqueness</td></tr>
+          <tr><td><code>lr_think_time</code> and pacing</td><td>Timers and pacing patterns</td><td><code>sleep()</code>, or arrival-rate executors</td></tr>
+          <tr><td>Controller schedule</td><td>Thread Groups and plugins</td><td>Scenarios and executors</td></tr>
+          <tr><td>SLAs in Analysis</td><td>Assertions plus a CI script</td><td><code>thresholds</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>There is no reliable automatic converter from VuGen C scripts to JMeter or k6. The practical route is to re-record each journey (JMeter's HTTP(S) Test Script Recorder, or a browser HAR file converted to k6), then rebuild correlation and data using the LoadRunner script as the specification. The old script tells you exactly which values were correlated and where they came from, which is the hard part. If your team already moved some tests to JMeter, the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a> gives you a first draft of a k6 script.</p>
+      <div class="g-note">
+        <p><strong>Custom C code is the hidden cost.</strong> Scripts with hand-written encryption, hashing, signature or date logic in C need that logic rewritten in Groovy or JavaScript and tested. Count those scripts separately in the inventory.</p>
+      </div>
+
+      <h2 id="doesnt">4. What doesn't translate</h2>
+      <ul>
+        <li><strong>Citrix ICA.</strong> Neither JMeter nor k6 drives a Citrix session. Options are to keep LoadRunner (or NeoLoad) for Citrix, or test the services behind the Citrix-published app at the HTTP or database layer instead, which is a different test.</li>
+        <li><strong>SAP GUI.</strong> Same story. SAP Fiori and other web front ends are HTTP and migrate fine. The desktop SAP GUI protocol does not.</li>
+        <li><strong>Oracle Forms (NCA), RTE terminal, proprietary binary protocols.</strong> Usually no practical open-source equivalent.</li>
+        <li><strong>TruClient browser tests.</strong> Partly: k6 has a browser module and Playwright can measure browser timings, but browser-level load is expensive in any tool. Often a handful of browser vusers on top of protocol-level load answers the real question.</li>
+        <li><strong>Analysis-style reporting.</strong> JMeter's HTML dashboard and Grafana dashboards for k6 are good, but cross-run comparisons, SLA reports and templates need building. Budget for it.</li>
+        <li><strong>Central governance.</strong> If Enterprise Performance Engineering is your system of record for test evidence, you need a replacement: results in a time-series store, reports archived per release.</li>
+      </ul>
+
+      <h2 id="which">5. JMeter or k6?</h2>
+      <p>For LoadRunner teams, JMeter feels familiar: a GUI, recorders, many protocol plugins, and a large community. k6 suits teams that live in code review and want tests next to the application, with thresholds that fail a pipeline out of the box. I'd pick JMeter when testers own the tests and need breadth of protocols, and k6 when developers own them and most traffic is HTTP or gRPC. See <a href="/compare/k6-vs-jmeter/">k6 vs JMeter</a> for the full comparison, and the <a href="/guides/jmeter/">JMeter guides</a> or <a href="/guides/k6/">k6 guides</a> to get started.</p>
+
+      <h2 id="plan">6. A phased plan</h2>
+      <ol>
+        <li><strong>Pilot one journey.</strong> Pick a valuable, HTTP-only journey with real correlation. Rebuild it, run it alongside the LoadRunner version in the same window, and compare.</li>
+        <li><strong>Build the platform once.</strong> Generators (containers or VMs), results storage, dashboards, CI integration and a report template. This is most of the effort and it is shared by every script after.</li>
+        <li><strong>Migrate by value.</strong> Release-gate journeys first, then peak-test journeys. Retire what nobody uses.</li>
+        <li><strong>Use the bridge if it helps.</strong> Professional Performance Engineering can run JMeter and Gatling tests alongside VuGen scripts (the licence page lists both). During the transition, that lets one scenario mix old and new scripts.</li>
+        <li><strong>Keep LoadRunner for what can't move</strong>, and right-size the licence to those protocols and vuser counts at the next renewal.</li>
+        <li><strong>Train the team.</strong> Correlation, workload modelling and analysis skills transfer. Tool habits don't.</li>
+      </ol>
+
+      <h2 id="baseline">7. Re-baseline, don't compare</h2>
+      <p>The same journey measured by two tools will not report identical numbers. Tools differ in what a transaction includes (embedded resources, redirects, think time), in connection reuse and in how they time requests. Run both side by side in the same environment, understand the differences, then set a new <a href="/glossary/baseline/">baseline</a> in the new tool. Don't fail a release because k6 reports 8% higher than last quarter's LoadRunner run.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Weighing up a migration?</h2>
+        <p>Book a free 30-minute call and we'll look at your script inventory and what's worth moving. For a migration delivered end to end, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-lr-migrate-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/loadrunner/" data-track="guide-lr-migrate-hub">All LoadRunner guides</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

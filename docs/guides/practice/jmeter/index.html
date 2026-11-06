@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice 10: the same load test in JMeter — Pawan Sinha</title>
+  <meta name="description" content="Optional hands-on exercise: the QuickPizza journey as a JMeter plan with an assertion and a JSON extractor, run from the CLI and compared with k6.">
+  <meta property="og:title" content="Practice exercise 10: the pizza journey in JMeter, compared with k6">
+  <meta property="og:description" content="Optional hands-on exercise: the QuickPizza journey as a JMeter plan with an assertion and a JSON extractor, run from the CLI and compared with k6.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/practice/jmeter/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/practice/jmeter/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Practice 10: the same load test in JMeter", "description": "Optional hands-on exercise: the QuickPizza journey as a JMeter plan with an assertion and a JSON extractor, run from the CLI and compared with k6.", "url": "https://pawansinha.com.au/guides/practice/jmeter/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 10 of 10</p>
+      <h1>Exercise 10: the same test in JMeter</h1>
+      <p class="lead">Your new client runs JMeter, and your scripts are in k6. Or the other way round. The concepts carry over exactly: virtual users, think time, assertions, correlation, percentiles. The vocabulary and the defaults don't, and the defaults are where two tools quietly disagree about the same server.</p>
+      <ul class="pr-meta"><li>Optional</li><li>30 minutes</li><li>5 threads, 1 minute</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Run the pizza journey from <a href="/guides/practice/test-data-and-correlation/">Exercise 5</a> as a JMeter test plan, from the command line, with a response assertion and a JSON extractor. Then compare JMeter's numbers with k6's for the same load on the same server.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>Install Java 17 or later and JMeter 5.6 (<code>brew install jmeter</code> on macOS, or see <a href="/guides/jmeter/getting-started/">getting started with JMeter</a>). Start QuickPizza:</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The test plan</h2>
+      <p>Save as <code>pizza.jmx</code>. Open it in the JMeter GUI first (<code>jmeter -t pizza.jmx</code>) to see the tree, but don't run load from the GUI.</p>
+      <pre class="ex-code"><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!-- Exercise 10: the pizza journey in JMeter. Run locally only:
+     jmeter -n -t pizza.jmx -l pizza.jtl -e -o report
+     Override with -Jthreads=5 -Jduration=60 -Jhost=localhost -Jport=3333 --&gt;
+&lt;jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3"&gt;
+  &lt;hashTree&gt;
+    &lt;TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="QuickPizza practice"&gt;
+      &lt;boolProp name="TestPlan.functional_mode"&gt;false&lt;/boolProp&gt;
+      &lt;boolProp name="TestPlan.serialize_threadgroups"&gt;false&lt;/boolProp&gt;
+      &lt;elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables"&gt;
+        &lt;collectionProp name="Arguments.arguments"/&gt;
+      &lt;/elementProp&gt;
+    &lt;/TestPlan&gt;
+    &lt;hashTree&gt;
+      &lt;ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Users"&gt;
+        &lt;stringProp name="ThreadGroup.on_sample_error"&gt;startnextloop&lt;/stringProp&gt;
+        &lt;elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller"&gt;
+          &lt;boolProp name="LoopController.continue_forever"&gt;false&lt;/boolProp&gt;
+          &lt;intProp name="LoopController.loops"&gt;-1&lt;/intProp&gt;
+        &lt;/elementProp&gt;
+        &lt;stringProp name="ThreadGroup.num_threads"&gt;${__P(threads,5)}&lt;/stringProp&gt;
+        &lt;stringProp name="ThreadGroup.ramp_time"&gt;${__P(rampup,10)}&lt;/stringProp&gt;
+        &lt;boolProp name="ThreadGroup.scheduler"&gt;true&lt;/boolProp&gt;
+        &lt;stringProp name="ThreadGroup.duration"&gt;${__P(duration,60)}&lt;/stringProp&gt;
+        &lt;stringProp name="ThreadGroup.delay"&gt;0&lt;/stringProp&gt;
+        &lt;boolProp name="ThreadGroup.same_user_on_next_iteration"&gt;true&lt;/boolProp&gt;
+      &lt;/ThreadGroup&gt;
+      &lt;hashTree&gt;
+        &lt;ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults"&gt;
+          &lt;stringProp name="HTTPSampler.protocol"&gt;${__P(protocol,http)}&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.domain"&gt;${__P(host,localhost)}&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.port"&gt;${__P(port,3333)}&lt;/stringProp&gt;
+          &lt;elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables"&gt;
+            &lt;collectionProp name="Arguments.arguments"/&gt;
+          &lt;/elementProp&gt;
+        &lt;/ConfigTestElement&gt;
+        &lt;hashTree/&gt;
+        &lt;HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager"&gt;
+          &lt;collectionProp name="HeaderManager.headers"&gt;
+            &lt;elementProp name="" elementType="Header"&gt;
+              &lt;stringProp name="Header.name"&gt;Content-Type&lt;/stringProp&gt;
+              &lt;stringProp name="Header.value"&gt;application/json&lt;/stringProp&gt;
+            &lt;/elementProp&gt;
+            &lt;elementProp name="" elementType="Header"&gt;
+              &lt;stringProp name="Header.name"&gt;Authorization&lt;/stringProp&gt;
+              &lt;stringProp name="Header.value"&gt;token abcdef0123456789&lt;/stringProp&gt;
+            &lt;/elementProp&gt;
+          &lt;/collectionProp&gt;
+        &lt;/HeaderManager&gt;
+        &lt;hashTree/&gt;
+        &lt;HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="pizza"&gt;
+          &lt;stringProp name="HTTPSampler.path"&gt;/api/pizza&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.method"&gt;POST&lt;/stringProp&gt;
+          &lt;boolProp name="HTTPSampler.use_keepalive"&gt;true&lt;/boolProp&gt;
+          &lt;boolProp name="HTTPSampler.postBodyRaw"&gt;true&lt;/boolProp&gt;
+          &lt;elementProp name="HTTPsampler.Arguments" elementType="Arguments"&gt;
+            &lt;collectionProp name="Arguments.arguments"&gt;
+              &lt;elementProp name="" elementType="HTTPArgument"&gt;
+                &lt;boolProp name="HTTPArgument.always_encode"&gt;false&lt;/boolProp&gt;
+                &lt;stringProp name="Argument.value"&gt;{"maxNumberOfToppings": 5}&lt;/stringProp&gt;
+                &lt;stringProp name="Argument.metadata"&gt;=&lt;/stringProp&gt;
+              &lt;/elementProp&gt;
+            &lt;/collectionProp&gt;
+          &lt;/elementProp&gt;
+        &lt;/HTTPSamplerProxy&gt;
+        &lt;hashTree&gt;
+          &lt;ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think time 1s"&gt;
+            &lt;stringProp name="ConstantTimer.delay"&gt;1000&lt;/stringProp&gt;
+          &lt;/ConstantTimer&gt;
+          &lt;hashTree/&gt;
+          &lt;ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Status is 200"&gt;
+            &lt;collectionProp name="Asserion.test_strings"&gt;
+              &lt;stringProp name="49586"&gt;200&lt;/stringProp&gt;
+            &lt;/collectionProp&gt;
+            &lt;stringProp name="Assertion.custom_message"&gt;&lt;/stringProp&gt;
+            &lt;stringProp name="Assertion.test_field"&gt;Assertion.response_code&lt;/stringProp&gt;
+            &lt;boolProp name="Assertion.assume_success"&gt;false&lt;/boolProp&gt;
+            &lt;intProp name="Assertion.test_type"&gt;8&lt;/intProp&gt;
+          &lt;/ResponseAssertion&gt;
+          &lt;hashTree/&gt;
+          &lt;JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract pizza id"&gt;
+            &lt;stringProp name="JSONPostProcessor.referenceNames"&gt;pizzaId&lt;/stringProp&gt;
+            &lt;stringProp name="JSONPostProcessor.jsonPathExprs"&gt;$.pizza.id&lt;/stringProp&gt;
+            &lt;stringProp name="JSONPostProcessor.match_numbers"&gt;1&lt;/stringProp&gt;
+            &lt;stringProp name="JSONPostProcessor.defaultValues"&gt;NOT_FOUND&lt;/stringProp&gt;
+          &lt;/JSONPostProcessor&gt;
+          &lt;hashTree/&gt;
+        &lt;/hashTree&gt;
+        &lt;HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="rate"&gt;
+          &lt;stringProp name="HTTPSampler.path"&gt;/api/ratings&lt;/stringProp&gt;
+          &lt;stringProp name="HTTPSampler.method"&gt;POST&lt;/stringProp&gt;
+          &lt;boolProp name="HTTPSampler.use_keepalive"&gt;true&lt;/boolProp&gt;
+          &lt;boolProp name="HTTPSampler.postBodyRaw"&gt;true&lt;/boolProp&gt;
+          &lt;elementProp name="HTTPsampler.Arguments" elementType="Arguments"&gt;
+            &lt;collectionProp name="Arguments.arguments"&gt;
+              &lt;elementProp name="" elementType="HTTPArgument"&gt;
+                &lt;boolProp name="HTTPArgument.always_encode"&gt;false&lt;/boolProp&gt;
+                &lt;stringProp name="Argument.value"&gt;{"pizza_id": ${pizzaId}, "stars": 5}&lt;/stringProp&gt;
+                &lt;stringProp name="Argument.metadata"&gt;=&lt;/stringProp&gt;
+              &lt;/elementProp&gt;
+            &lt;/collectionProp&gt;
+          &lt;/elementProp&gt;
+        &lt;/HTTPSamplerProxy&gt;
+        &lt;hashTree&gt;
+          &lt;ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Status is 201"&gt;
+            &lt;collectionProp name="Asserion.test_strings"&gt;
+              &lt;stringProp name="49587"&gt;201&lt;/stringProp&gt;
+            &lt;/collectionProp&gt;
+            &lt;stringProp name="Assertion.custom_message"&gt;&lt;/stringProp&gt;
+            &lt;stringProp name="Assertion.test_field"&gt;Assertion.response_code&lt;/stringProp&gt;
+            &lt;boolProp name="Assertion.assume_success"&gt;false&lt;/boolProp&gt;
+            &lt;intProp name="Assertion.test_type"&gt;8&lt;/intProp&gt;
+          &lt;/ResponseAssertion&gt;
+          &lt;hashTree/&gt;
+        &lt;/hashTree&gt;
+      &lt;/hashTree&gt;
+    &lt;/hashTree&gt;
+  &lt;/hashTree&gt;
+&lt;/jmeterTestPlan&gt;</code></pre>
+      <p>How the parts map to k6:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>JMeter element</th><th>k6 equivalent</th></tr></thead>
+        <tbody>
+          <tr><td>Thread Group (5 threads, 60 s)</td><td><code>vus: 5, duration: '60s'</code></td></tr>
+          <tr><td>HTTP Request Defaults + <code>${__P(host,localhost)}</code></td><td><code>BASE_URL</code> from <code>-e</code></td></tr>
+          <tr><td>HTTP Header Manager</td><td><code>headers</code> in the request params</td></tr>
+          <tr><td>Constant Timer (1000 ms)</td><td><code>sleep(1)</code>, but JMeter runs it <em>before</em> the sampler</td></tr>
+          <tr><td>Response Assertion (code equals 200)</td><td>A check, except a failed assertion marks the sample as an error</td></tr>
+          <tr><td>JSON Extractor <code>$.pizza.id</code> → <code>${pizzaId}</code></td><td><code>res.json('pizza.id')</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="run">Run it</h2>
+      <pre class="ex-code"><code>jmeter -n -t pizza.jmx -l pizza.jtl -e -o report</code></pre>
+      <p>Then run k6 at the same load, using the script from <a href="/guides/practice/thresholds/">Exercise 2</a> with its users and duration overridden on the command line:</p>
+      <pre class="ex-code"><code>k6 run --vus 5 --duration 60s --summary-export=k6-pizza.json 02-thresholds.js</code></pre>
+      <p>Open <code>report/index.html</code> for JMeter's dashboard. Then load <code>pizza.jtl</code> and <code>k6-pizza.json</code> into the <a href="/tools/compare-runs/">compare runs tool</a>. Both tools name the request <code>pizza</code>, so they line up on one row.</p>
+
+      <h2 id="expect">What you should see</h2>
+      <p>JMeter prints a summary line every 30 seconds and a final one, something like this (illustrative):</p>
+      <pre class="ex-code"><code>summary =    263 in 00:01:00 =    4.4/s Avg:    62 Min:    10 Max:   190 Err:     0 (0.00%)</code></pre>
+      <p>The count includes both <code>pizza</code> and <code>rate</code> samples. In the HTML report, the Statistics table has one row per label with percentiles. pizza's p95 should be in the same range as k6's. Don't expect identical numbers.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>Stop QuickPizza, start a fresh one, and edit the plan so the Authorization header says <code>token wrongtoken000000</code>. Run it. What does JMeter report, and how is that different from Exercise 1's k6 run with a bad token and no thresholds?</li>
+        <li>The JSON Extractor has a default value of <code>NOT_FOUND</code>. What happens to the rate request when the pizza request fails? What if you change the Thread Group's error action to <em>Continue</em>?</li>
+        <li>JMeter's Thread Group is a closed model. What would you use in JMeter for an open model like Exercise 4's arrival rate?</li>
+        <li>Paste <code>pizza.jmx</code> into the <a href="/tools/jmeter-to-k6/">JMeter to k6 converter</a>. What did it translate cleanly, and what would you still fix by hand?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Every pizza sample is an error (<code>Err: 100%</code>) because the 401 fails the response assertion, and no rating requests are sent at all, because the Thread Group starts the next loop after a failed sampler. But <code>jmeter -n</code> still exits with code 0 when samples fail. Like k6 without thresholds, it needs a pass/fail step, for example a CI step that reads the JTL or <code>statistics.json</code> and fails on error rate or p95.</li>
+            <li>In this plan, nothing: the Thread Group's "Action to be taken after a Sampler error" is <em>Start Next Thread Loop</em>, so the rating is skipped. Set it to <em>Continue</em> and the rating request is sent with <code>{"pizza_id": NOT_FOUND, "stars": 5}</code>, which is invalid JSON, and fails with an error of its own. That second error is noise caused by the first, and it doubles your error count. For finer control, wrap the rating in an If Controller that checks <code>"${pizzaId}" != "NOT_FOUND"</code>. In k6, the <code>return</code> after a failed check does the same job.</li>
+            <li>The Open Model Thread Group (built in since JMeter 5.5) or the Arrivals and Concurrency thread groups from the plugins. A Constant Throughput Timer only caps throughput: it can't start more threads when the server slows down. See <a href="/guides/jmeter/thread-groups-and-load-shapes/">thread groups and load shapes</a>.</li>
+            <li>The request, headers, think time and extractor usually translate well. Expect to review the assertion (a k6 check doesn't fail the request the way a JMeter assertion does, so add thresholds), the property-based host and port, and anything that relies on JMeter scoping rules. Treat converter output as a first draft, not a finished script.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p>That's all ten. Go back to the <a href="/guides/practice/">practice hub</a> to check your progress, then write up Exercise 7 as a real finding with the <a href="/guides/templates/results-report/">results report template</a>. For more JMeter, read the <a href="/guides/jmeter/">JMeter guides</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="jmeter"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Moving from JMeter to k6, or the other way?</h2>
+        <p>Book a free 30-minute call to talk through a migration or a tool choice for your team.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-10-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-10-hub">All exercises</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/guides/js/practice.js"></script>
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!--{"title": "NeoLoad correlation: extractors, frameworks, variables", "og_title": "NeoLoad correlation and variables: extractors, framework parameters, dynamic parameters and data", "description": "Correlate NeoLoad User Paths: variable extractors, dynamic parameter search, framework parameters, and file variables with the right change policy and scope.", "article": true}-->
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/neoload/">NeoLoad</a> · Correlation and variables</p>
+      <h1>NeoLoad correlation: trust the wizard, then check its work</h1>
+      <p class="lead">The post-recording wizard found 14 dynamic parameters and the User Path check is green. You run 200 users and 30% of them fail at payment. The wizard correlated the session token and the CSRF value, but the basket ID comes back in a JSON response it treated as static, and every user is paying for the same basket. Automatic correlation gets you most of the way. The rest is knowing where to look.</p>
+    </section>
+
+    <section class="wrap ex-prose">
+      <nav class="g-toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#dynamic">Dynamic parameters and the search</a></li>
+          <li><a href="#extractors">Variable extractors</a></li>
+          <li><a href="#frameworks">Framework parameters</a></li>
+          <li><a href="#variables">Variables for test data</a></li>
+          <li><a href="#policy">Change policy, scope and order</a></li>
+          <li><a href="#debug">When correlation fails</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="dynamic">1. Dynamic parameters and the search</h2>
+      <p>A dynamic parameter is a value the server generates and the client sends back later: session IDs, CSRF tokens, OAuth tokens, IDs created during the journey. NeoLoad handles them two ways:</p>
+      <ul>
+        <li><strong>Framework dynamic parameters</strong>: predefined rules for known frameworks and applications. NeoLoad ships frameworks for common platforms, including a SAP Fiori framework added in 2026.2.</li>
+        <li><strong>Generic dynamic parameters</strong>: detected by comparing values across requests and responses, then configured automatically.</li>
+      </ul>
+      <p>The post-recording wizard runs a dynamic parameter search for you. You can run it again from the User Path at any time, which is worth doing after you fix a correlation, because a broken early value can hide later ones.</p>
+
+      <h2 id="extractors">2. Variable extractors</h2>
+      <p>When the search misses something, add a variable extractor on the request whose response contains the value (select the request, open its advanced settings and the Variable extractors tab). The main fields:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Variable name</td><td>Use it later as <code>${basketId}</code></td></tr>
+          <tr><td>Extract from</td><td>Body, headers or both. Narrower is safer</td></tr>
+          <tr><td>Starting with / Ending with</td><td>Text immediately before and after the value, the boundary method</td></tr>
+          <tr><td>Regular expression</td><td>Alternative to boundaries, with a value template such as <code>$1$</code></td></tr>
+          <tr><td>XPath / JSONPath</td><td>Locate the value in XML or JSON first, optionally then apply a regex</td></tr>
+          <tr><td>Occurrence</td><td>Which match: the first (default), a specific one, random, or all (for loops)</td></tr>
+          <tr><td>Decode</td><td>HTML or URL decoding</td></tr>
+          <tr><td>Default value / assertion</td><td>What to return if nothing matches, and whether that raises an assertion error</td></tr>
+        </tbody>
+      </table></div>
+      <p>After you create an extractor, NeoLoad searches later requests for the extracted value and offers to replace it: <strong>Replace all</strong>, or <strong>Replace manually</strong> to review each one. Review manually when the value is short or common (like <code>1</code>), or you will replace things that only looked the same.</p>
+      <p>The as-code equivalent, on the request that returns the basket:</p>
+      <pre class="ex-code"><code>- request:
+    url: /api/basket
+    server: shop
+    method: POST
+    headers:
+    - Content-Type: application/json
+    body: |
+      {"sku": "${products.sku}", "qty": 1}
+    extractors:
+    - name: basketId
+      jsonpath: $.basket.id
+    - name: csrfToken
+      from: header
+      regexp: 'X-CSRF-Token: (.+)'
+      extract_once: true</code></pre>
+      <p>Treat this as a sketch: it follows the as-code reference, but I could not run it here, and the header regex depends on how your server formats the header. Run <code>neoload validate</code> on the file before using it. Later requests use <code>${basketId}</code>. The extractor settings (<code>from</code>, <code>jsonpath</code>, <code>xpath</code>, <code>regexp</code>, <code>match_number</code>, <code>template</code>, <code>decode</code>, <code>extract_once</code>, <code>default</code>, <code>throw_assertion_error</code>) are documented in the neoload-models as-code reference. In it, <code>match_number: -1</code> extracts all occurrences and <code>0</code> picks one at random.</p>
+      <div class="g-note">
+        <p><strong>Leave the assertion on for anything critical.</strong> By default a missed extraction raises an assertion error. For a session token, that is exactly right: the user fails at the step that broke, not three steps later with a confusing 400. Turn it off only when "not found" is a valid outcome you handle with an If action.</p>
+      </div>
+
+      <h2 id="frameworks">3. Framework parameters</h2>
+      <p>If the same kind of value appears in many places (a token on every form, a view state on every page), turn the extractor into a <strong>framework parameter</strong>. Use <strong>Add to framework parameters</strong> from the extractor, or manage frameworks in <strong>Edit → Preferences → Frameworks</strong>. A framework rule says where to extract the value from and where to inject it (a parameter name or value, a path, a header or text content). Then run the dynamic parameter search again and NeoLoad applies the rule everywhere.</p>
+      <p>Frameworks live in preferences, so they apply across projects, and they can be exported and imported. Build a framework for your organisation's common platform once, share it, and every new recording against that platform correlates more of itself.</p>
+
+      <h2 id="variables">4. Variables for test data</h2>
+      <p>Variables are defined in the Design section (the variables manager) or in as-code. The common types:</p>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Type</th><th>Gives you</th></tr></thead>
+        <tbody>
+          <tr><td>File</td><td>Rows from a CSV-style file: usernames, passwords, accounts, search terms</td></tr>
+          <tr><td>List</td><td>A small inline table of values</td></tr>
+          <tr><td>Counter</td><td>A number that increments between a start and an end</td></tr>
+          <tr><td>Random number, Random string, Random UUID</td><td>Generated values</td></tr>
+          <tr><td>Current date, Date</td><td>Formatted dates</td></tr>
+          <tr><td>SQL</td><td>Values from a database query</td></tr>
+          <tr><td>JavaScript</td><td>A value computed by a script</td></tr>
+          <tr><td>Shared queue</td><td>Values passed between virtual users, for example IDs created by one User Path and consumed by another</td></tr>
+          <tr><td>Secret vault</td><td>A secret read from an external vault at launch (2026.2, configured in NeoLoad Web)</td></tr>
+          <tr><td>Constant (and Password in recent as-code)</td><td>Fixed values</td></tr>
+        </tbody>
+      </table></div>
+      <p>Reference a file variable column as <code>${users.username}</code>, that is <code>${variableName.columnName}</code>.</p>
+
+      <h2 id="policy">5. Change policy, scope and order</h2>
+      <p>These three settings decide which virtual user gets which value, and when it changes. In as-code they look like this:</p>
+      <pre class="ex-code"><code>variables:
+- file:
+    name: users
+    path: data/users.csv
+    is_first_line_column_names: true
+    change_policy: each_user
+    scope: unique
+    order: sequential
+    out_of_value: stop_test</code></pre>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Setting</th><th>Options</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Change policy</td><td>each use, each request, each page, each iteration (default), each user</td><td>When the variable takes a new value. "Each iteration" changes it between Init, Actions and End too</td></tr>
+          <tr><td>Scope</td><td>local, global (default), unique</td><td>Local: values per virtual user. Global: shared across users. Unique: shared, but a value is used by only one user at a time</td></tr>
+          <tr><td>Order</td><td>sequential, random, any (default)</td><td>How values are handed out</td></tr>
+          <tr><td>Out of values</td><td>cycle (default), stop test, no-value code</td><td>What happens when the file runs out</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-tablewrap"><table class="g-table">
+        <thead><tr><th>Need</th><th>Change policy</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td>One customer per virtual user, logged in once in Init</td><td>Each user</td><td>Unique</td></tr>
+          <tr><td>A new customer per iteration, never shared at the same time</td><td>Each iteration</td><td>Unique</td></tr>
+          <tr><td>Search terms or product IDs, sharing is fine</td><td>Each iteration</td><td>Global, random order</td></tr>
+          <tr><td>Single-use data such as vouchers</td><td>Each iteration</td><td>Unique, stop test when out, file sized for the run</td></tr>
+        </tbody>
+      </table></div>
+      <div class="g-warn">
+        <p><strong>Global is the default, and it is not unique.</strong> With Global scope, two virtual users can hold the same row at the same time. For logins, that means two users sharing an account, session clashes and lock-outs that look like application bugs. Use Unique for anything a real user would own.</p>
+      </div>
+      <p>Size files for the whole test: users × (duration ÷ pacing) rows for per-iteration unique data, plus margin. The glossary entry on <a href="/glossary/parameterisation/">parameterisation</a> covers data design in tool-neutral terms.</p>
+
+      <h2 id="debug">6. When correlation fails</h2>
+      <ol>
+        <li>Run <strong>Check User Path</strong> and open the first failing request. Compare the request NeoLoad sent with the recorded one.</li>
+        <li>Look at the variables tab of the check: which variables were used, and which were extracted with what value. A <code>&lt;NOT FOUND&gt;</code> value points straight at the broken extractor.</li>
+        <li>Check the extractor is on the right request. Values often arrive in a redirect, or in an API call made after the page loads.</li>
+        <li>Check encoding. The same value can be URL-encoded in one place and raw in another. Use the decode option or encode on injection.</li>
+        <li>If the value is generated in the browser by JavaScript, there is nothing to extract. Reproduce it in a JavaScript action, or ask the developers for a test-only bypass.</li>
+      </ol>
+      <p>The tool-neutral idea is in the glossary under <a href="/glossary/correlation/">correlation</a>. <strong>Next:</strong> <a href="/guides/neoload/populations-and-scenarios/">populations and scenarios</a>.</p>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Correlation that refuses to work?</h2>
+        <p>Book a free 30-minute call and we'll trace it through your User Path together. For full test build and delivery, see <a href="/services/performance-testing/">performance testing services</a>.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-nl-corr-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/neoload/" data-track="guide-nl-corr-hub">All NeoLoad guides</a>
+        </p>
+      </div>
+    </section>

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice 2: k6 thresholds that fail the run — Pawan Sinha</title>
+  <meta name="description" content="Hands-on exercise: k6 thresholds on p95 and error rate, exit code 99, abortOnFail, and QuickPizza fault injection to make the run fail for real.">
+  <meta property="og:title" content="Practice exercise 2: make a k6 test able to fail">
+  <meta property="og:description" content="Hands-on exercise: k6 thresholds on p95 and error rate, exit code 99, abortOnFail, and QuickPizza fault injection to make the run fail for real.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/guides/practice/thresholds/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/guides/practice/thresholds/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232557d6'/><path d='M7 22l6-7 5 4 7-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/explain/explain.css">
+  <link rel="stylesheet" href="/guides/guides.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Practice 2: k6 thresholds that fail the run", "description": "Hands-on exercise: k6 thresholds on p95 and error rate, exit code 99, abortOnFail, and QuickPizza fault injection to make the run fail for real.", "url": "https://pawansinha.com.au/guides/practice/thresholds/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}, "publisher": {"@type": "Person", "name": "Pawan Sinha"}}</script>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/" aria-current="page">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+<style>
+.pr-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+      .pr-meta li { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+      .ex-prose > .faq, .ex-prose > .pr-done, .ex-prose > .g-tablewrap { max-width: 660px; }
+      .ex-prose > .faq { margin: 16px 0; }
+      .faq details + details { margin-top: 10px; }
+      .faq details ul, .faq details ol { color: var(--muted); margin: 0 0 16px; }
+      .faq details pre.ex-code { margin: 0 0 16px; }
+      .pr-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 28px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+      .pr-done label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+      .pr-done input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); cursor: pointer; }
+      .pr-done .pr-count { color: var(--muted); font-size: 14px; }
+      .pr-done.is-done { border-color: var(--ok); }
+    </style>
+    <section class="wrap ex-hero">
+      <p class="eyebrow"><a href="/guides/">Guides</a> · <a href="/guides/practice/">Practice</a> · Exercise 2 of 10</p>
+      <h1>Exercise 2: thresholds that fail the run</h1>
+      <p class="lead">Your nightly load test has been green for three months. Someone finally opens the report and finds p95 went from 200 ms to 1.4 seconds in week six. Nothing failed because nothing was allowed to. A test without thresholds is a measurement. A test with thresholds is a decision.</p>
+      <ul class="pr-meta"><li>20 minutes</li><li>2 virtual users, 30 seconds per run</li><li>Run locally only</li></ul>
+    </section>
+
+    <section class="wrap ex-prose">
+      <h2 id="goal">Goal</h2>
+      <p>Write pass/fail criteria as k6 <a href="/glossary/thresholds/">thresholds</a>, see the exit code change when one is crossed, stop a broken run early with <code>abortOnFail</code>, and use QuickPizza's fault injection to fail the error-rate threshold for real.</p>
+
+      <h2 id="setup">Setup</h2>
+      <p>Start QuickPizza locally (<a href="/guides/practice/#setup">setup</a>). The error injection in step 3 sends special headers to the server, which is one more reason this belongs on your own machine.</p>
+      <pre class="ex-code"><code>docker run --rm --name quickpizza -p 3333:3333 ghcr.io/grafana/quickpizza-local:latest</code></pre>
+
+      <h2 id="script">The script</h2>
+      <p>Save as <code>02-thresholds.js</code>:</p>
+      <pre class="ex-code"><code>// Exercise 2: thresholds that pass or fail the run (exit code 99 on failure).
+// Run locally only. Try: -e P95_MS=50   or   -e FAIL_PCT=10
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3333';
+const P95_MS = __ENV.P95_MS || 800;
+const FAIL_PCT = __ENV.FAIL_PCT || '';
+
+export const options = {
+  vus: 2,
+  duration: '30s',
+  thresholds: {
+    // Fewer than 1% of requests may fail
+    http_req_failed: ['rate&lt;0.01'],
+    // 95% of pizza requests must finish within P95_MS milliseconds
+    'http_req_duration{name:pizza}': [`p(95)&lt;${P95_MS}`],
+    // Stop early if checks are clearly broken (evaluated after the first 10s)
+    checks: [{ threshold: 'rate&gt;0.95', abortOnFail: true, delayAbortEval: '10s' }],
+  },
+};
+
+const headers = {
+  'Content-Type': 'application/json',
+  Authorization: 'token abcdef0123456789',
+};
+if (FAIL_PCT) {
+  // QuickPizza fault injection: make the ingredients lookup fail FAIL_PCT% of the time
+  headers['x-error-get-ingredients'] = 'practice-fault';
+  headers['x-error-get-ingredients-percentage'] = String(FAIL_PCT);
+}
+
+export default function () {
+  const res = http.post(`${BASE_URL}/api/pizza`, JSON.stringify({ maxNumberOfToppings: 5 }), {
+    headers,
+    tags: { name: 'pizza' },
+  });
+  check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+  sleep(1);
+}</code></pre>
+      <p>The <code>name</code> tag matters. <code>http_req_duration{name:pizza}</code> is a sub-metric: the threshold applies only to requests tagged <code>name: pizza</code>. In a real script, each request gets its own threshold, because a fast health check averaged in with a slow checkout hides the checkout.</p>
+
+      <h2 id="run">Run it three ways</h2>
+      <pre class="ex-code"><code># 1. Healthy: should pass
+k6 run 02-thresholds.js; echo "exit code: $?"
+
+# 2. An impossible latency target: should fail
+k6 run -e P95_MS=50 02-thresholds.js; echo "exit code: $?"
+
+# 3. Inject errors into 10% of ingredient lookups: should fail and stop early
+k6 run -e FAIL_PCT=10 02-thresholds.js; echo "exit code: $?"</code></pre>
+
+      <h2 id="expect">What you should see</h2>
+      <p>Run 1 ends with a green THRESHOLDS block and <code>exit code: 0</code>. Run 2 marks the p95 threshold with a cross, prints <code>thresholds on metrics 'http_req_duration{name:pizza}' have been crossed</code> and exits with <code>99</code>. Run 3 looks something like this (illustrative):</p>
+      <pre class="ex-code"><code>  █ THRESHOLDS
+
+    checks
+    ✗ 'rate&gt;0.95' rate=70.00%
+
+    http_req_duration{name:pizza}
+    ✓ 'p(95)&lt;800' p(95)=50.74ms
+
+    http_req_failed
+    ✗ 'rate&lt;0.01' rate=30.00%
+
+ERRO[0010] thresholds on metrics 'checks, http_req_failed' were crossed; at least one has
+           abortOnFail enabled, stopping test prematurely
+exit code: 99</code></pre>
+      <p>Run 3 stops after about 10 seconds instead of 30. That is <code>delayAbortEval: '10s'</code> at work.</p>
+
+      <h2 id="questions">Questions</h2>
+      <ol>
+        <li>In run 3 you asked for 10% of ingredient lookups to fail. Why did roughly a third of pizza requests fail instead of 10%?</li>
+        <li>Why does the abort wait 10 seconds (<code>delayAbortEval</code>) instead of stopping on the first failed check?</li>
+        <li>Run 2 failed on latency. Should a latency threshold use <code>abortOnFail</code>? When would you use it and when not?</li>
+        <li>In run 3, p95 still passed. Is that good news?</li>
+      </ol>
+      <div class="faq">
+        <details>
+          <summary>Answer / what to look for</summary>
+          <ol>
+            <li>Fan-out. To build one pizza, QuickPizza's recommendations service looks up four kinds of ingredient (olive oil, tomato, mozzarella, toppings), and the fault applies to each lookup. A pizza succeeds only if all four succeed: 0.9<sup>4</sup> ≈ 0.66, so about 34% of pizzas fail. One flaky dependency called several times per request multiplies its failure rate. The same maths applies to latency, which is why tail latency gets worse as fan-out grows.</li>
+            <li>A rate needs enough samples to mean anything. One failure in the first two requests is a 50% failure rate. The delay stops a single unlucky request from killing a two-hour soak test.</li>
+            <li>Usually not. A latency breach still produces useful data about how the system behaves when slow. Abort when carrying on is pointless or harmful: errors that show the script or environment is broken, or a test against a shared environment that is hurting other people.</li>
+            <li>No. Failed requests are often fast (an error is cheap to return), so they can pull percentiles <em>down</em>. Always read latency together with the error rate. Thresholds on <code>http_req_duration{expected_response:true}</code> measure successful requests only, if that is what your target means.</li>
+          </ol>
+        </details>
+      </div>
+
+      <h2 id="next">Next</h2>
+      <p><a href="/guides/practice/ramp-up/">Exercise 3: ramp up and read the summary</a>. Background: <a href="/guides/k6/thresholds-and-checks/">thresholds and checks in k6</a>.</p>
+      <div class="pr-done">
+        <label><input type="checkbox" data-practice="thresholds"> I have done this exercise</label>
+        <span class="pr-count" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="wrap cta-end">
+      <div class="cta-panel">
+        <h2>Not sure what your pass/fail numbers should be?</h2>
+        <p>Good thresholds come from real traffic and real business targets, not round numbers. Book a free 30-minute call and we can work them out for your system.</p>
+        <p class="cta-row">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="guide-practice-2-call">Book a free 30-minute call</a>
+          <a class="btn btn-ghost" href="/guides/practice/" data-track="guide-practice-2-hub">All exercises</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/guides/">Guides</a>
+        <a href="/explain/">Explainers</a>
+        <a href="/play/">Games</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/glossary/">Glossary</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/guides/js/practice.js"></script>
+  <script src="/guides/guides.js" defer></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
