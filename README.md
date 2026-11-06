@@ -1,6 +1,6 @@
 # pawansinha.com.au
 
-Portfolio website and tooling for **Pawan Sinha, QA & Test Automation Engineer** (Melbourne, ABN registered).
+Portfolio website and tooling for **Pawan Sinha, Performance Testing Consultant** (Melbourne, ABN registered).
 
 **Live site:** https://pawansinha.com.au
 

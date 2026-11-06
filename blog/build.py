@@ -235,7 +235,7 @@ FOOT = '''  </main>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <p>© {year} Pawan Sinha · QA &amp; Test Automation Engineer</p>
+      <p>© {year} Pawan Sinha · Performance Testing Consultant</p>
       <p><a href="/privacy/">Privacy</a> · ABN 43 627 514 346</p>
     </div>
   </footer>

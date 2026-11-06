@@ -577,7 +577,7 @@ function firstName(name) {
 }
 
 function signature() {
-  return 'Kind regards,\n' + MY_NAME + '\nQA & Test Automation Engineer\nhttps://pawansinha.com.au';
+  return 'Kind regards,\n' + MY_NAME + '\nPerformance Testing Consultant\nhttps://pawansinha.com.au';
 }
 
 // A leading ' stops the sheet treating text like "=..." as a formula
