@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>When the cache fails, the database pays</title>
+      <link>https://pawansinha.com.au/blog/caching-strategies-and-how-they-fail-under-load/</link>
+      <guid>https://pawansinha.com.au/blog/caching-strategies-and-how-they-fail-under-load/</guid>
+      <pubDate>Fri, 06 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Cache-aside, read-through, write-through and write-behind compared by failure mode, then the failures that matter at scale: stampedes, synchronised expiry, hot keys, cold starts, penetration, stale-write races and eviction churn.</description>
+    </item>
+    <item>
       <title>The week-2 decisions that sink your week-38 load test</title>
       <link>https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/</link>
       <guid>https://pawansinha.com.au/blog/greenfield-performance-engineering-before-the-first-line-of-code/</guid>
