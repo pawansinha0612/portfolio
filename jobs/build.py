@@ -505,6 +505,9 @@ TEMPLATE = r"""<!doctype html>
       .alerts button { justify-self: stretch; }
     }
   </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="nav">

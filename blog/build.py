@@ -171,6 +171,9 @@ HEAD = '''<!doctype html>
     .blog-index-sub .subscribe {{ margin: 0 0 64px; }}
     @media (max-width: 600px) {{ .blog-hero {{ padding-top: 40px; }} .article {{ font-size: 16px; }} }}
   </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="nav">

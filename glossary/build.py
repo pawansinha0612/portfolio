@@ -153,6 +153,9 @@ HEAD = '''<!doctype html>
     .none {{ color: var(--muted); margin: 24px 0 0; }}
     @media (max-width: 600px) {{ .project-hero {{ padding-top: 40px; }} }}
   </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="nav">

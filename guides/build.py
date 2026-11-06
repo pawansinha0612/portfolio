@@ -60,7 +60,10 @@ SHELL = """<!doctype html>
   <link rel="stylesheet" href="/chat.css">
   <link rel="stylesheet" href="/explain/explain.css">
   <link rel="stylesheet" href="/guides/guides.css">
-{styles}{jsonld}</head>
+{styles}{jsonld}  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
 <body{body_attr}>
   <header class="nav">
     <div class="wrap nav-inner">
