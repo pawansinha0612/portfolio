@@ -30,5 +30,9 @@
   "your-capacity-plan-breaks-long-before-100-utilisation": {
     "date": "2026-11-07",
     "id": "urn:li:share:7524622661138825216"
+  },
+  "green-load-test-red-production-the-database-bottleneck": {
+    "date": "2026-11-08",
+    "id": "urn:li:share:7524978150762647552"
   }
 }
