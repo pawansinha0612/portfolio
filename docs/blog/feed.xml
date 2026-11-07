@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your capacity plan breaks long before 100% utilisation</title>
+      <link>https://pawansinha.com.au/blog/your-capacity-plan-breaks-long-before-100-utilisation/</link>
+      <guid>https://pawansinha.com.au/blog/your-capacity-plan-breaks-long-before-100-utilisation/</guid>
+      <pubDate>Sat, 07 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why response time bends upward long before a server is full, how Kingman&#x27;s formula prices the cost of bursty traffic, how many servers change the answer, and how to measure and load test the inputs.</description>
+    </item>
+    <item>
       <title>When the cache fails, the database pays</title>
       <link>https://pawansinha.com.au/blog/caching-strategies-and-how-they-fail-under-load/</link>
       <guid>https://pawansinha.com.au/blog/caching-strategies-and-how-they-fail-under-load/</guid>
