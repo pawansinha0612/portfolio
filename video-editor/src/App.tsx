@@ -1635,6 +1635,11 @@ function About({ onClose }: { onClose: () => void }) {
           </li>
           <li>Nothing is saved: closing the tab loses the edit, so export before you leave.</li>
         </ul>
+        <p>
+          <a href="/videos/demos/video-editor.mp4" target="_blank" rel="noopener">
+            Watch the 1-minute demo
+          </a>
+        </p>
         <p className="dim small">Built with React and TypeScript by Pawan Sinha.</p>
         <div className="row end">
           <button className="primary" onClick={onClose}>

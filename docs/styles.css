@@ -566,3 +566,7 @@ html.lenis, html.lenis body { height: auto; }
 .about-text { max-width: 68ch; }
 .about-text p { color: var(--muted); margin: 0 0 16px; }
 @media (max-width: 600px) { .about-photo { width: 160px; height: 160px; } .about-photo span { font-size: 46px; } }
+
+/* Self-hosted demo videos (/videos/demos/) */
+.demo-video { margin: 8px 0 0; }
+.demo-video video { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); background: #0f172a; }
