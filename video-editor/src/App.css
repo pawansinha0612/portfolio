@@ -222,3 +222,21 @@ textarea { resize: vertical; }
   .top-actions .primary { padding: 8px 12px; }
   .brand .link { display: none; }
 }
+
+/* Music library */
+.library { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.library li {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel-2); border: 1px solid transparent; border-radius: 8px; padding: 6px;
+}
+.library li.on { border-color: var(--accent); }
+.lib-play { width: 30px; height: 30px; padding: 0; justify-content: center; flex: none; }
+.lib-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.lib-meta b { font-size: 13px; font-weight: 600; }
+.lib-meta span { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-spin {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent); animation: lib-spin .8s linear infinite;
+}
+@keyframes lib-spin { to { transform: rotate(360deg); } }
+.hint.bad { color: var(--bad); }

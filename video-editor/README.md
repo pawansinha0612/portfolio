@@ -15,6 +15,7 @@ closing the tab.
 | Text | Title / boxed / name-banner styles. Drag in the preview to place, drag on the timeline to retime. |
 | Look | Colour presets plus brightness, contrast and saturation (canvas filters). |
 | Audio | Voice volume, background music that loops, fades out and ducks while you talk (real-time level detection). |
+| Music library | Five royalty-free loops (lo-fi, upbeat, corporate, ambient, tech) composed and synthesised in the browser by `src/music.ts`: oscillators, filtered noise and a generated reverb, with no samples or recordings, so nobody else owns the audio. Rendered on first use with `OfflineAudioContext` and folded into seamless WAV loops. |
 | Format | 16:9, 9:16 (Shorts) or 1:1; fill (crop, with position) or fit; 720p or 1080p. |
 | Timeline | Split (S), delete, reorder, trim by dragging clip edges, undo/redo (Ctrl/Cmd+Z). |
 | Export | Plays the timeline once in real time, recording the canvas plus the audio mix with MediaRecorder. MP4 in Chrome/Edge/Safari, WebM in Firefox. |

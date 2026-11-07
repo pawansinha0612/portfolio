@@ -58,6 +58,7 @@ import {
   Player,
   exportMime
 } from './player'
+import { LIBRARY, type LibraryTrack, renderTrack } from './music'
 import './App.css'
 
 // --- Project history (undo/redo) -------------------------------------------
@@ -499,6 +500,11 @@ export default function App() {
               music={music}
               onSettings={setSettings}
               onMusicFile={(f) => setMusic({ name: f.name, url: URL.createObjectURL(f) })}
+              onLibraryTrack={(name, blob) => {
+                if (music) URL.revokeObjectURL(music.url)
+                setMusic({ name, url: URL.createObjectURL(blob) })
+                say(`Music added: ${name}`)
+              }}
               onRemoveMusic={() => {
                 if (music) URL.revokeObjectURL(music.url)
                 setMusic(null)
@@ -1055,19 +1061,17 @@ function AudioPanel(props: {
   music: Music | null
   onSettings: (p: Partial<Settings>, key?: string) => void
   onMusicFile: (f: File) => void
+  onLibraryTrack: (name: string, blob: Blob) => void
   onRemoveMusic: () => void
 }) {
-  const { settings, music, onSettings, onMusicFile, onRemoveMusic } = props
+  const { settings, music, onSettings, onMusicFile, onLibraryTrack, onRemoveMusic } = props
   const ref = useRef<HTMLInputElement>(null)
   return (
     <div className="panel-body">
       <h2>Audio</h2>
       <Slider label="Voice volume" value={settings.voiceVolume} min={0} max={2} step={0.05} fmt={(v) => `${Math.round(v * 100)}%`} onChange={(v) => onSettings({ voiceVolume: v }, 'voice')} />
       <h3>Background music</h3>
-      <p className="hint">
-        Use music you have the rights to, such as the free YouTube Audio Library. It loops under the whole video and
-        fades out at the end.
-      </p>
+      <p className="hint">Music loops under the whole video and fades out at the end.</p>
       {music ? (
         <div className="row between music-row">
           <span className="ellipsis" title={music.name}>
@@ -1079,7 +1083,7 @@ function AudioPanel(props: {
         </div>
       ) : (
         <button className="small-btn" onClick={() => ref.current?.click()}>
-          <Upload size={13} /> Choose a music file
+          <Upload size={13} /> Upload your own music
         </button>
       )}
       <input
@@ -1098,7 +1102,98 @@ function AudioPanel(props: {
         <input type="checkbox" checked={settings.duck} onChange={(e) => onSettings({ duck: e.target.checked })} /> Lower the
         music while you talk
       </label>
+      <MusicLibrary current={music?.name ?? null} onUse={onLibraryTrack} />
     </div>
+  )
+}
+
+function MusicLibrary({ current, onUse }: { current: string | null; onUse: (name: string, blob: Blob) => void }) {
+  const [busy, setBusy] = useState<string | null>(null)
+  const [playing, setPlaying] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const audio = useRef<HTMLAudioElement | null>(null)
+  const url = useRef<string | null>(null)
+  useEffect(
+    () => () => {
+      audio.current?.pause()
+      if (url.current) URL.revokeObjectURL(url.current)
+    },
+    []
+  )
+  const stop = () => {
+    audio.current?.pause()
+    setPlaying(null)
+  }
+  const preview = async (t: LibraryTrack) => {
+    if (playing === t.id) return stop()
+    stop()
+    setBusy(t.id)
+    setError('')
+    try {
+      const blob = await renderTrack(t.id)
+      if (!audio.current) {
+        audio.current = new Audio()
+        audio.current.onended = () => setPlaying(null)
+      }
+      if (url.current) URL.revokeObjectURL(url.current)
+      url.current = URL.createObjectURL(blob)
+      audio.current.src = url.current
+      await audio.current.play()
+      setPlaying(t.id)
+    } catch {
+      setError('This browser could not play the preview.')
+    } finally {
+      setBusy(null)
+    }
+  }
+  const use = async (t: LibraryTrack) => {
+    setBusy(t.id)
+    setError('')
+    try {
+      const blob = await renderTrack(t.id)
+      stop()
+      onUse(t.name, blob)
+    } catch {
+      setError('This browser could not create the track.')
+    } finally {
+      setBusy(null)
+    }
+  }
+  return (
+    <>
+      <h3>Free music library</h3>
+      <p className="hint">
+        These tracks are composed and synthesised by this editor's own code, with no samples or recordings, so they are
+        free to use anywhere, including monetised YouTube videos and client work.
+      </p>
+      <ul className="library">
+        {LIBRARY.map((t) => {
+          const inUse = current === t.name
+          return (
+            <li key={t.id} className={inUse ? 'on' : ''}>
+              <button
+                className="small-btn ghost lib-play"
+                onClick={() => preview(t)}
+                disabled={busy === t.id}
+                aria-label={playing === t.id ? `Stop preview of ${t.name}` : `Preview ${t.name}`}
+              >
+                {busy === t.id ? <span className="lib-spin" /> : playing === t.id ? <Pause size={13} /> : <Play size={13} />}
+              </button>
+              <span className="lib-meta">
+                <b>{t.name}</b>
+                <span>
+                  {t.mood} · {t.bpm} BPM
+                </span>
+              </span>
+              <button className="small-btn" onClick={() => use(t)} disabled={inUse || busy === t.id}>
+                {inUse ? 'In use' : 'Use'}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {error && <p className="hint bad">{error}</p>}
+    </>
   )
 }
 

@@ -114,3 +114,22 @@ test('wrapText wraps by width', () => {
   const lines = wrapText('one two three four', 9, (s) => s.length)
   assert.deepEqual(lines, ['one two', 'three', 'four'])
 })
+
+import { encodeWav, foldTail, loudnessGain, midiToHz, seeded } from '../src/music.ts'
+
+test('music helpers: tuning, seeded randomness, seamless loop fold, WAV header', () => {
+  near(midiToHz(69), 440)
+  near(midiToHz(57), 220)
+  const a = seeded(42), b = seeded(42)
+  for (let i = 0; i < 5; i++) assert.equal(a(), b())
+  const folded = foldTail(new Float32Array([1, 2, 3, 4, 5, 6, 7]), 4)
+  assert.deepEqual([...folded], [1 + 5, 2 + 6, 3 + 7, 4])
+  const g = loudnessGain([new Float32Array([0.5, -0.5, 0.5, -0.5])])
+  near(g, 0.16 / 0.5)
+  const wav = new DataView(encodeWav([new Float32Array([0, 1]), new Float32Array([-1, 0.5])], 44100))
+  assert.equal(wav.byteLength, 44 + 8)
+  assert.equal(String.fromCharCode(wav.getUint8(0), wav.getUint8(1), wav.getUint8(2), wav.getUint8(3)), 'RIFF')
+  assert.equal(wav.getUint16(22, true), 2)
+  assert.equal(wav.getInt16(46, true), -32768)
+  assert.equal(wav.getInt16(48, true), 32767)
+})

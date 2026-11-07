@@ -134,7 +134,7 @@ export class Player {
   private lastVoice = 0
   private gateEl: HTMLVideoElement | null = null
   private gateTime = -1
-  private gateStill = 0
+  private gateMoved = 0
 
   attach(canvas: HTMLCanvasElement, host: HTMLElement) {
     this.canvas = canvas
@@ -427,14 +427,15 @@ export class Player {
     const job = this.job
     if (!job || job.recorder.state === 'inactive') return
     const v = this.current
-    // Safari can report "playing" while its clock is stuck, so also require
-    // currentTime to have moved within the last couple of frames.
+    // Safari can report "playing" while its clock is stuck, so also require currentTime to have moved recently.
+    // Measured in wall time, not frames: Firefox only updates currentTime once per video frame (~40 ms at 24 fps),
+    // and a frame count would wrongly pause the recorder there and squash the export.
     const t = v ? v.currentTime : -1
-    if (v === this.gateEl && t === this.gateTime) this.gateStill++
-    else this.gateStill = 0
+    const now = performance.now()
+    if (v !== this.gateEl || t !== this.gateTime) this.gateMoved = now
     this.gateEl = v
     this.gateTime = t
-    const flowing = !!v && !v.paused && !v.seeking && v.readyState >= 3 && this.gateStill < 2
+    const flowing = !!v && !v.paused && !v.seeking && v.readyState >= 3 && now - this.gateMoved < 150
     if (!flowing && job.recorder.state === 'recording') {
       job.recorder.pause()
       this.musicEl?.pause()
