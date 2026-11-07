@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Green load test, red production: finding the database bottleneck</title>
+      <link>https://pawansinha.com.au/blog/green-load-test-red-production-the-database-bottleneck/</link>
+      <guid>https://pawansinha.com.au/blog/green-load-test-red-production-the-database-bottleneck/</guid>
+      <pubDate>Sun, 08 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why a PostgreSQL-backed service passes its load test and still blows its p99 in production, and the order I check things in: pool exhaustion, N+1, generic-plan flips, lock waits, replicas and indexes, with the exact queries for PostgreSQL 13+.</description>
+    </item>
+    <item>
       <title>Your capacity plan breaks long before 100% utilisation</title>
       <link>https://pawansinha.com.au/blog/your-capacity-plan-breaks-long-before-100-utilisation/</link>
       <guid>https://pawansinha.com.au/blog/your-capacity-plan-breaks-long-before-100-utilisation/</guid>
