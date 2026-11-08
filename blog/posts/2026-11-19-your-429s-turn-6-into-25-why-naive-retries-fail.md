@@ -5,6 +5,7 @@ summary: Why immediate retries against a rate limit multiply rejections without 
 description: Immediate retries against a rate limit turn 6% 429s into 25% and help no extra users. The maths, and retries that work: backoff, jitter, budgets.
 tags: Performance, LLM, Resilience
 highlight: 25%
+repost: If retries can't add capacity, what exactly is your retry loop doing during a rate limit?
 linkedin: |
   Your API allows 1,000 requests a minute. Peak traffic is 1,064. About 6% of calls get a 429.
 

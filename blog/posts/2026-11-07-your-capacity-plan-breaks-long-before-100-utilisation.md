@@ -5,6 +5,7 @@ summary: Why response time bends upward long before a server is full, how Kingma
 description: Why response time climbs long before 100% utilisation, how Kingman's formula prices bursty traffic, and why constant-rate load tests miss it.
 tags: Performance, Queueing, Capacity Planning
 highlight: utilisation
+repost: Why can bursty traffic at 65% CPU hurt p99 more than steady traffic at 80%?
 linkedin: |
   Your load test holds a 5 ms p99. Production, at the same average traffic, spikes to 2 seconds. Same code, CPU at 65%.
 

@@ -87,6 +87,7 @@ function setup() {
   practiceSheet();
   jobsSheet();
   dailyPlanSheet();
+  updateDailyPlan();
   siteCheckSheet();
   leadsSheet();
   hiringSheet();
@@ -1312,29 +1313,71 @@ const PLAN_HEADERS = ['task', 'when', 'link', 'active', 'notes'];
 const GH_PUBLIC = 'pawansinha0612/portfolio';
 const GH_PRIVATE = 'pawansinha0612/portfolio-private';
 const OPS_URL = 'https://github.com/' + GH_PRIVATE + '/blob/main/OPERATIONS.md';
+const TODO_URL = 'https://github.com/' + GH_PRIVATE + '/blob/main/TODO.md';
 const PLAN_SEED = [
-  // routine
+  // routine (updated 2026-11-08 for working without Claude: see TODO.md and AFTER-THE-MAC.md in the private repo)
   ['Skim the Job leads issue from the job radar', 'daily', 'https://github.com/' + GH_PRIVATE + '/issues', 'Yes', ''],
-  ['New blog drafts PR arrives today: ask Claude to fact-check it, then merge it before Saturday', 'Sun', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', ''],
-  ['Last day to merge this week\'s blog drafts PR (fact-checked), so the daily posts keep going', 'Sat', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', ''],
+  ['Blog drafts PR arrives today: read its Automatic review at the bottom, fix or delete flagged posts, then merge. Never merge unread', 'Sun', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', 'No time this week? Close the PR instead. The blog pauses safely.'],
+  ['Last day to merge (or close) this week\'s blog drafts PR', 'Sat', 'https://github.com/' + GH_PUBLIC + '/pulls', 'Yes', ''],
   ['LinkedIn carousels and YouTube scripts issues arrived: pick this week\'s', 'Sun', 'https://github.com/' + GH_PRIVATE + '/issues', 'Yes', ''],
   ['Post a LinkedIn carousel (PDF from Sunday\'s issue, post text in its .md file)', 'Tue, Thu', 'https://github.com/' + GH_PRIVATE + '/tree/main/linkedin/carousels', 'Yes', ''],
+  ['Tool spotlight post went out at ~12:30pm: reply to every comment', 'Tue, Thu', 'https://www.linkedin.com/in/pawan-sinha-b5a356b6/recent-activity/all/', 'Yes', ''],
   ['LinkedIn: invite this week\'s new connections to follow your page (page → Grow → Invite to follow)', 'Mon', 'https://www.linkedin.com/', 'Yes', ''],
-  ['LinkedIn: repost one blog post with a short question', 'Wed', 'https://pawansinha.com.au/blog/', 'Yes', ''],
+  ['Outreach: send 3–5 personal emails from hello@ and follow up on any sent 5+ days ago', 'weekdays', 'https://github.com/' + GH_PRIVATE + '/blob/main/OUTREACH-PLAN.md', 'Yes', 'Leads tab shows who needs a follow-up. Prompts 6 and 7 in PROMPTS.md help write them.'],
+  ['Open TODO.md: tick off what you finished, pick 2 things for this week', 'Mon', TODO_URL, 'Yes', ''],
   ['Check GoatCounter: which pages and tools got visits this week', 'Fri', 'https://pawansinha.goatcounter.com/', 'Yes', ''],
-  // one-off to-dos
-  ['List the Interview Guide (A$19) on Gumroad, then send Claude the link', 'open', OPS_URL, 'Yes', 'products/interview-guide/LISTING.md'],
-  ['List the Templates Pack (A$15) on Gumroad, then send Claude the link', 'open', OPS_URL, 'Yes', 'products/test-templates/LISTING.md'],
-  ['List the k6 kit, Perf Advisor and portfolio template on Gumroad', 'open', OPS_URL, 'Yes', 'each product folder has a LISTING.md'],
+  // one-off to-dos (shown every day until you set active to No)
+  ['List your 5 products on Gumroad, then GitHub → Actions → Set a product link for each', 'open', TODO_URL, 'Yes', 'Each products/ folder has the zip and LISTING.md'],
+  ['Upload a square headshot as docs/me.jpg (GitHub → docs → Add file → Upload files)', 'open', 'https://github.com/' + GH_PUBLIC + '/tree/main/docs', 'Yes', 'The About section shows "PS" until then'],
   ['Turn on auto-renew for pawansinha.com.au in Hostinger', 'open', 'https://hpanel.hostinger.com/', 'Yes', ''],
-  ['Send 3–4 testimonial requests', 'open', OPS_URL, 'Yes', 'profile/testimonial-requests.md'],
-  ['Google Search Console: request indexing of the home page', 'open', 'https://search.google.com/search-console', 'Yes', ''],
-  ['Try the new tools on your phone (JMeter → k6, SLO, capacity) and turn on a job alert', 'open', 'https://pawansinha.com.au/tools/', 'Yes', ''],
+  ['Send 3–4 testimonial requests', 'open', 'https://github.com/' + GH_PRIVATE + '/blob/main/profile/testimonial-requests.md', 'Yes', ''],
+  ['Search Console: request indexing of home, /guides/ and /tools/, and resubmit sitemap.xml', 'open', 'https://search.google.com/search-console', 'Yes', ''],
+  ['LinkedIn: change your headline to "Performance Testing Consultant" and refresh your site preview in Post Inspector', 'open', 'https://www.linkedin.com/post-inspector/', 'Yes', ''],
+  ['Send a test email to hello@pawansinha.com.au and check it reaches Gmail', 'open', '', 'Yes', ''],
+  ['Add real numbers to your case studies (edit CASES in services/build.py on GitHub)', 'open', 'https://github.com/' + GH_PUBLIC + '/blob/main/services/build.py', 'Yes', 'Peak load, response times, time saved. Pages rebuild by themselves'],
+  ['Try the video editor with a real clip: Suggestions tab, then export', 'open', SITE_URL + '/projects/video-editor/', 'Yes', ''],
   // dates
-  ['Leaving the work Mac: copy personal files, sign out of personal accounts, revoke the GitHub token', '2026-11-05 to 2026-11-08', OPS_URL, 'Yes', ''],
-  ['Black Friday 27 Nov: post the peak-readiness quiz and offer on LinkedIn', '2026-11-17 to 2026-11-27', 'https://pawansinha.com.au/peak-readiness/quiz/', 'Yes', ''],
+  ['Black Friday outreach: Huxbaby, Outdoors Domain and Padre first. Fill each [CHECK] using your /site-check/', '2026-11-09 to 2026-11-20', 'https://github.com/' + GH_PRIVATE + '/blob/main/outreach/2026-11-black-friday-emails.md', 'Yes', '~5 emails a day'],
+  ['Record and upload YouTube video 03 (the Black Friday game), then Actions → Add a video', '2026-11-09 to 2026-11-24', 'https://github.com/' + GH_PRIVATE + '/tree/main/youtube/long', 'Yes', ''],
+  ['Black Friday 27 Nov: post the peak-readiness quiz and offer on LinkedIn', '2026-11-17 to 2026-11-27', SITE_URL + '/peak-readiness/quiz/', 'Yes', ''],
   ['Renew the LinkedIn token before it expires (~28 Dec): Actions → LinkedIn token', '2026-12-18 to 2026-12-28', 'https://github.com/' + GH_PUBLIC + '/actions', 'Yes', ''],
 ];
+// Reminders from earlier versions that are now wrong or replaced. updateDailyPlan() switches them off.
+const PLAN_RETIRED = [
+  'New blog drafts PR arrives today: ask Claude to fact-check it, then merge it before Saturday',
+  'Last day to merge this week\'s blog drafts PR (fact-checked), so the daily posts keep going',
+  'LinkedIn: repost one blog post with a short question',
+  'List the Interview Guide (A$19) on Gumroad, then send Claude the link',
+  'List the Templates Pack (A$15) on Gumroad, then send Claude the link',
+  'List the k6 kit, Perf Advisor and portfolio template on Gumroad',
+  'Google Search Console: request indexing of the home page',
+  'Try the new tools on your phone (JMeter → k6, SLO, capacity) and turn on a job alert',
+  'Leaving the work Mac: copy personal files, sign out of personal accounts, revoke the GitHub token',
+];
+
+// Run once after pasting a new Code.gs (setup also runs it): adds new reminders to the Daily plan tab and switches
+// off retired ones. Rows you added or edited yourself are left alone. Safe to run again.
+function updateDailyPlan() {
+  const sh = dailyPlanSheet();
+  const rows = sh.getDataRange().getValues();
+  const have = new Set(rows.slice(1).map(r => String(r[0]).trim()));
+  const active = PLAN_HEADERS.indexOf('active') + 1;
+  let off = 0;
+  rows.slice(1).forEach((r, i) => {
+    if (PLAN_RETIRED.indexOf(String(r[0]).trim()) >= 0 && String(r[3]).trim() !== 'No') {
+      sh.getRange(i + 2, active).setValue('No');
+      off++;
+    }
+  });
+  const add = PLAN_SEED.filter(r => !have.has(r[0]));
+  if (add.length) {
+    const start = sh.getLastRow() + 1;
+    sh.getRange(start, 2, add.length, 1).setNumberFormat('@');
+    sh.getRange(start, 1, add.length, PLAN_HEADERS.length).setValues(add);
+  }
+  Logger.log('Daily plan: added ' + add.length + ' reminder(s), switched off ' + off + ' old one(s).');
+  return { added: add.length, retired: off };
+}
 // Tabs counted in "new since yesterday": tab → [label, link to show]
 const PLAN_COUNTS = [
   ['Enquiries', 'enquiries'], ['Quiz', 'quiz leads'], ['Course', 'course sign-ups'], ['Subscribers', 'digest subscribers'],
@@ -1402,6 +1445,16 @@ function fetchText(url) {
   } catch (err) { return null; }
 }
 
+// Today's "repost:" line from the post's front matter in the public repo ('' if none).
+function repostLine(today) {
+  const files = ghGet('/repos/' + GH_PUBLIC + '/contents/blog/posts');
+  const f = (files || []).find(x => String(x.name).indexOf(today + '-') === 0);
+  if (!f) return '';
+  const md = fetchText('https://raw.githubusercontent.com/' + GH_PUBLIC + '/main/blog/posts/' + encodeURIComponent(f.name));
+  const m = md && /^---[\s\S]*?^repost:\s*(.+)$[\s\S]*?^---/m.exec(md);
+  return m ? m[1].trim().replace(/^["']|["']$/g, '') : '';
+}
+
 // Everything the email shows, as plain data (so it can be tested).
 function buildDailyPlan() {
   const now = new Date();
@@ -1409,6 +1462,7 @@ function buildDailyPlan() {
   const weekday = Number(Utilities.formatDate(now, 'Australia/Melbourne', 'u'));  // 1 = Monday
   const checks = [];   // { ok: true/false/null, text, link }
   const add = (ok, text, link) => checks.push({ ok: ok, text: text, link: link || '' });
+  let todaysPost = null, linkedinPost = '';
 
   // 1. Today's blog post is live (newest item in the RSS feed is dated today)
   const feed = fetchText(FEED_URL + '?t=' + now.getTime());
@@ -1417,7 +1471,10 @@ function buildDailyPlan() {
     const item = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<link>([\s\S]*?)<\/link>[\s\S]*?<pubDate>([\s\S]*?)<\/pubDate>/.exec(feed);
     const unx = t => String(t).replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
     const day = item ? melbDay(new Date(item[3].trim())) : '';
-    if (item && day === today) add(true, "Today's blog post is live: " + unx(item[1].trim()), item[2].trim());
+    if (item && day === today) {
+      add(true, "Today's blog post is live: " + unx(item[1].trim()), item[2].trim());
+      todaysPost = { title: unx(item[1].trim()), link: item[2].trim() };
+    }
     else add(false, "No blog post went live today" + (item ? ' (latest is from ' + day + ')' : '') + '. Check Actions → Blog publish, and that a drafts PR was merged.', 'https://github.com/' + GH_PUBLIC + '/actions/workflows/blog-publish.yml');
   }
 
@@ -1428,7 +1485,10 @@ function buildDailyPlan() {
   if (!log) add(null, "Couldn't check LinkedIn today: look at your profile's latest post.", 'https://www.linkedin.com/in/pawan-sinha-b5a356b6/recent-activity/all/');
   else {
     const hit = Object.keys(log).find(k => log[k] && log[k].date === today);
-    if (hit) add(true, 'Shared on LinkedIn: open it and reply to any comments', 'https://www.linkedin.com/feed/update/' + log[hit].id + '/');
+    if (hit) {
+      linkedinPost = 'https://www.linkedin.com/feed/update/' + log[hit].id + '/';
+      add(true, 'Shared on LinkedIn: open it and reply to any comments', linkedinPost);
+    }
     else add(false, 'Not shared on LinkedIn today. Check Actions → Blog publish → "Share on LinkedIn" (an expired token is the usual cause).', 'https://github.com/' + GH_PUBLIC + '/actions/workflows/blog-publish.yml');
   }
 
@@ -1437,7 +1497,7 @@ function buildDailyPlan() {
   if (pulls === null) add(null, "Couldn't reach GitHub to check pull requests: have a look yourself.", 'https://github.com/' + GH_PUBLIC + '/pulls');
   else pulls.forEach(p => {
     const days = Math.floor((now - new Date(p.created_at)) / 86400000);
-    add(false, 'Pull request waiting: "' + p.title + '" (open ' + days + (days === 1 ? ' day' : ' days') + '). Ask Claude to check it, then merge.', p.html_url);
+    add(false, 'Pull request waiting: "' + p.title + '" (open ' + days + (days === 1 ? ' day' : ' days') + '). Read its Automatic review, fix or delete flagged posts, then merge.', p.html_url);
   });
 
   // 4. Failed GitHub jobs (latest run of each workflow failed) and open issues
@@ -1490,6 +1550,18 @@ function buildDailyPlan() {
     const kind = planWhen(r[1], today, weekday);
     if (kind) plan[kind].push({ task: task, link: /^https?:\/\//.test(String(r[2])) ? String(r[2]) : '', notes: String(r[4] || ''), when: String(r[1]) });
   });
+
+  // 6b. Repost today's post with its ready-made question (the post's "repost:" line, added by the drafts review)
+  if (todaysPost) {
+    let line = '';
+    try { line = repostLine(today); } catch (err) {}
+    plan.today.unshift({
+      task: 'Repost today\'s post on LinkedIn (Repost → Repost with your thoughts): ' + todaysPost.title,
+      link: linkedinPost || todaysPost.link,
+      notes: line ? 'Paste: ' + line : 'Write one short question for it (PROMPTS.md, prompt 3).',
+      when: 'daily',
+    });
+  }
 
   // 7. Outreach (Leads tab) and Gumroad sales since yesterday (added 2026-11-04)
   let extra = { outreach: [], sales: null };

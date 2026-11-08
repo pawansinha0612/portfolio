@@ -5,6 +5,7 @@ summary: The cloud limits that let a short load test pass and production fail: T
 description: Cloud load tests pass on banked credits. CPU credits, network allowances, NAT ports, cross-AZ hops and steal time, and the metric that shows each.
 tags: Performance, Cloud, AWS
 highlight: credit
+repost: Did your load test run long enough to spend the CPU credits it started with?
 linkedin: |
   The 30-minute load test on a t3.medium passed at 60% CPU. In production, at the same load, the box ground down to a crawl on day two.
 

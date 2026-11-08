@@ -5,6 +5,7 @@ summary: Most teams pick a load tool by habit and find its limits mid-project. A
 description: k6, JMeter, Gatling, Locust and LoadRunner compared on what actually blocks you: protocol support, workload model, scale-out cost and result fidelity.
 tags: Performance, Load Testing, Tooling
 highlight: gRPC
+repost: Would your current load tool still work if your API moved to gRPC tomorrow?
 linkedin: |
   Your team picks the load tool it already knows. Six months later the API moves to gRPC, the business wants a test at 1,500 orders per second, and the scripts can't do either.
 

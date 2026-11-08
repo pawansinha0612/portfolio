@@ -4,6 +4,7 @@ date: 2026-11-01
 summary: Origin load scales with (1 − hit ratio), cache keys quietly fragment, and synchronised expiry is a load test you never planned. How to engineer and test a CDN properly.
 description: Origin load scales with 1 − hit ratio, so 95% to 90% doubles it. Cache-key fragmentation, origin shield, synchronised expiry and how to load test a CDN.
 tags: Performance, CDN, Caching
+repost: Did you know a hit ratio dropping from 95% to 90% doubles your origin load?
 linkedin: |
   A CDN hit ratio dropping from 95% to 90% sounds like a rounding error. It doubles your origin load.
 

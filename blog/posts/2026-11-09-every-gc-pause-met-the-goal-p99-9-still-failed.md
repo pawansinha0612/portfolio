@@ -4,6 +4,7 @@ date: 2026-11-09
 summary: A pause-time goal says how long each pause may be, not how many requests it hits. How allocation rate and eden size set pause frequency, what really drives G1, ZGC and Shenandoah tail latency, and how to prove it from unified GC logs.
 description: A GC pause goal limits pause length, not how many requests a pause hits. How allocation rate drives G1, ZGC and Shenandoah tail latency.
 tags: Performance, Java, GC, Latency
+repost: Every GC pause met its goal, so why is p99.9 still red?
 linkedin: |
   Every G1 pause is under the 200 ms goal. The p99.9 SLO is still red.
 

@@ -5,6 +5,7 @@ summary: Most slow-system investigations start with a fix. Start instead with se
 description: Stop guessing at slow systems: find the saturated resource with service demand, the USE method and a stepped open-model test, and prove it first.
 tags: Performance, Bottlenecks, Capacity Planning
 highlight: bottleneck
+repost: Can you name the saturated resource and the number that proves it, before you change anything?
 linkedin: |
   "Let's double the connection pool and see." That's a guess, not an analysis.
 

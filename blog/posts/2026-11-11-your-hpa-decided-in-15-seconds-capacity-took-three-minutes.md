@@ -5,6 +5,7 @@ summary: Scale-out lag is rarely the HPA's maths. It is metric delay, scale-up p
 description: HPA scale-out lag is metric delay, sync period, node provisioning and pod start stacked together. What the stabilisation window really does.
 tags: Performance, Kubernetes, Autoscaling
 highlight: three minutes
+repost: Your HPA decides in seconds, but how long until the new pods actually serve traffic?
 linkedin: |
   Traffic triples in a minute. The HPA asks for more pods within seconds. The pods serve traffic three minutes later.
 

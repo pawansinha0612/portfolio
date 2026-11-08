@@ -5,6 +5,7 @@ summary: Why averaging p99 across pods, load generators or time windows gives a 
 description: Averaging p99 across pods gives a number no request had. Merge histograms instead, size buckets for your SLO, and know histogram_quantile's error.
 tags: Performance, Prometheus, k6
 highlight: average
+repost: Is any dashboard you trust showing an average of p99 values right now?
 linkedin: |
   Four pods. The dashboard averages their p99 and shows 315 ms. The real p99 across all requests is 1.2 seconds.
 

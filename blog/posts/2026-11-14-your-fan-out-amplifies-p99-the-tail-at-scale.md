@@ -5,6 +5,7 @@ summary: The maths of tail latency under fan-out from Dean and Barroso's "The Ta
 description: Fan out to 100 back-ends and a 1% slow call makes 63% of requests slow. Fan-out maths, hedged and tied requests, deadlines and how to test it.
 tags: Performance, Latency, Microservices
 highlight: 63%
+repost: If a page waits for 100 calls, does each back-end need to be good at p99, or p99.99?
 linkedin: |
   Each back-end call is slow 1% of the time. A page waits for 100 of them.
 

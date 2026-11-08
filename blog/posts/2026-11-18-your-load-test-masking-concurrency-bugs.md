@@ -5,6 +5,7 @@ summary: Why green load tests miss race conditions, lost updates, deadlocks and 
 description: Green load tests miss races, lost updates, deadlocks and pool starvation. Design tests that provoke them with hot keys and check invariants.
 tags: Performance, Concurrency, Testing
 highlight: oversold
+repost: Does your load test check the data at the end, or only the response codes?
 linkedin: |
   The load test passed. p95 was fine, errors were 0.02%. The next morning the warehouse had 40 orders for items it didn't have.
 

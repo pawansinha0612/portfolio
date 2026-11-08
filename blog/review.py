@@ -162,11 +162,16 @@ def main():
                 parts.append('| | Says | Problem | Suggested fix |\n|---|---|---|---|')
                 parts += [f'| {"❌" if i.get("severity") == "error" else "🔎"} | {esc(i.get("quote", ""))} | {esc(i.get("problem", ""))} | {esc(i.get("fix", ""))} |' for i in issues]
             if repost:
+                repost = ' '.join(repost.replace(';', ',').split())
                 reposts.append((meta.get('date', ''), title, repost))
+                # Store it in the post too: the 9am daily plan email shows it on the day the post goes live.
+                if not re.search(r'^repost:', text.split('\n---\n', 1)[0], re.M):
+                    path.write_text(re.sub(r'^(linkedin:)', lambda m: f'repost: {repost}\n' + m.group(1), text,
+                                           count=1, flags=re.M), encoding='utf-8')
         else:
             parts.append('\n**AI fact-check:** skipped (no AI key).\n')
     if reposts:
-        parts.append('\n## Repost lines (copy one each morning)\n')
+        parts.append('\n## Repost lines\n\nSaved in each post as `repost:`. Your 9am daily plan email shows the day\'s line. Edit it in the post file if you want different words.\n')
         parts += [f'- **{d}, {t}:** {r}' for d, t, r in reposts]
         parts.append('\nCheck each line still matches the post after your edits.')
     head = f'\n\n**{total_err} likely error(s) flagged.** Fix or rule them out before merging.\n' if total_err else ''

@@ -5,6 +5,7 @@ summary: Why an LLM feature that feels instant for five people slows down at lau
 description: An LLM feature that feels instant for five users slows at launch. Measure TTFT, TPOT, total time and TPM at real concurrency with k6.
 tags: Performance, k6, LLM
 highlight: mirage
+repost: How many answers will your AI feature be generating at once at peak, and have you tested that many?
 linkedin: |
   Five people tried the AI assistant in the demo. First words in half a second, full answer in four. Everyone loved it.
 

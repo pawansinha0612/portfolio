@@ -4,6 +4,7 @@ date: 2026-11-02
 summary: A closed-loop load generator politely waits whenever the system stalls, so the worst moments never get measured. A worked example, how to spot it in results you already have, and how to fix it.
 description: A closed-loop load tool waits when the system stalls, so the worst requests are never measured. How to spot coordinated omission and fix it.
 tags: Performance, Load Testing, Latency
+repost: Is your p99 low because the system was fast, or because your load tool stopped sending requests while it stalled?
 linkedin: |
   Your load test says p99 is 1 ms. The real p99 is 9 seconds. Same run, same system.
 

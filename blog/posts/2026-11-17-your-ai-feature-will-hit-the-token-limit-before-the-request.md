@@ -5,6 +5,7 @@ summary: How to budget tokens per minute for an LLM feature, why reserved max_to
 description: LLM features hit the tokens-per-minute limit long before requests per minute. Budget peak TPM, mind max_tokens and agents, and test it.
 tags: AI, LLM, Performance
 highlight: token limit
+repost: You know your requests per minute, but do you know your tokens per minute at peak?
 linkedin: |
   120 requests a minute against a 1,000 RPM limit. 12% used, lots of headroom.
 

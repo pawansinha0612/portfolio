@@ -5,6 +5,7 @@ summary: Head sampling keeps 1% of everything, including 1% of the requests you 
 description: 1% head sampling keeps 1% of your slow requests too. Keep every slow and failed trace with tail sampling, then link metrics, traces, logs and profiles.
 tags: Performance, Observability, OpenTelemetry, Tracing
 highlight: slow requests
+repost: When p99 spikes, does your trace sample still contain a single slow request?
 linkedin: |
   The p99 panel spikes to 3 seconds. You open the tracing backend and every trace you have is fast.
 

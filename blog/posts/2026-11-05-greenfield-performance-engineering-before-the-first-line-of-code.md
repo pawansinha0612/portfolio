@@ -5,6 +5,7 @@ summary: The cheapest performance work happens before anything is built. Measura
 description: The cheapest performance work happens before code exists: NFRs from business numbers, latency budgets per hop, a capacity model and a test strategy.
 tags: Performance, Architecture, Capacity Planning
 highlight: week-38
+repost: Which week-2 design decision will your week-38 load test find too late to change?
 linkedin: |
   On a greenfield project, the most valuable performance work happens before there's anything to load test.
 

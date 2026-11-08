@@ -5,6 +5,7 @@ summary: Why %util lies on SSDs and cloud volumes, how to read await and aqu-sz 
 description: Why %util lies on SSDs and cloud volumes, how per-second averages hide 500 ms stalls, and how gp2 burst credits make short load tests pass.
 tags: Performance, Disk I/O, AWS
 highlight: 500 ms
+repost: Would your 20-minute load test notice when the volume's burst credits run out?
 linkedin: |
   iostat shows 100% util and 2 ms write latency. The disk is fine. An hour later, commits stall for half a second.
 
