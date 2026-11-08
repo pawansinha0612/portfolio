@@ -20,13 +20,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 - [x] Kubernetes autoscaling end to end — HPA control loop and stabilisation windows, Cluster Autoscaler vs Karpenter node provisioning time, scale-out lag vs traffic ramp rate, and how to test it
 - [x] Observability for performance engineers, beyond dashboards — OpenTelemetry traces, metrics and logs joined by trace ID, exemplars, high-cardinality data, continuous profiling
 - [x] Disk and storage I/O bottlenecks — iostat await, %util and queue depth, IOPS vs throughput limits, fsync cost, cloud volume burst credits (for example AWS gp2 vs gp3)
-- [ ] The tail at scale: fan-out amplifies p99 — probability a request hits at least one slow backend is 1 - 0.99^N; hedged and tied requests, latency budgets per hop
-- [ ] Load testing an LLM feature before launch — why the demo-with-five-users lies; TTFT vs TPOT vs total time, RPM and TPM limits, streaming, and a k6 test plan that measures all of them
-- [ ] Cloud performance traps — burstable instance CPU credits, per-instance network bandwidth limits, cross-AZ latency and cost, noisy neighbours, managed-service throttling quotas
-- [ ] Your AI feature will hit the token limit before the request limit — tokens per call as metered (system prompt, RAG context, history, max_tokens reservation), peak TPM arithmetic, and how agents multiply it
-- [ ] Concurrency bugs that only appear under load — race conditions, lock contention, deadlocks, connection and thread starvation; designing tests that provoke them
-- [ ] 429 Too Many Requests: designing retries for rate-limited LLM APIs — Retry-After, exponential backoff with jitter, retry budgets, fallback models and queues; how naive retries turn 6% 429s into 25%
-- [ ] You can't average percentiles — why averaging p99 across pods or time windows is wrong; mergeable histograms, Prometheus histogram_quantile bucket error, native histograms
+- [x] The tail at scale: fan-out amplifies p99 — probability a request hits at least one slow backend is 1 - 0.99^N; hedged and tied requests, latency budgets per hop
+- [x] Load testing an LLM feature before launch — why the demo-with-five-users lies; TTFT vs TPOT vs total time, RPM and TPM limits, streaming, and a k6 test plan that measures all of them
+- [x] Cloud performance traps — burstable instance CPU credits, per-instance network bandwidth limits, cross-AZ latency and cost, noisy neighbours, managed-service throttling quotas
+- [x] Your AI feature will hit the token limit before the request limit — tokens per call as metered (system prompt, RAG context, history, max_tokens reservation), peak TPM arithmetic, and how agents multiply it
+- [x] Concurrency bugs that only appear under load — race conditions, lock contention, deadlocks, connection and thread starvation; designing tests that provoke them
+- [x] 429 Too Many Requests: designing retries for rate-limited LLM APIs — Retry-After, exponential backoff with jitter, retry budgets, fallback models and queues; how naive retries turn 6% 429s into 25%
+- [x] You can't average percentiles — why averaging p99 across pods or time windows is wrong; mergeable histograms, Prometheus histogram_quantile bucket error, native histograms
 - [ ] Time to first token under load — why TTFT degrades first (queueing before prefill), prefill vs decode, measuring it with streaming, and why k6 time-to-first-byte is only an approximation
 - [ ] Database connection pool sizing with queueing theory — pods × pool size vs max_connections, pool wait time as the real signal, why bigger pools raise latency
 - [ ] Self-hosted LLM capacity: vLLM batching, KV cache and GPU memory — continuous batching, how throughput rises while per-user tokens/s falls, finding the concurrency knee with a load test
