@@ -16,6 +16,8 @@ closing the tab.
 | Look | Colour presets plus brightness, contrast and saturation (canvas filters). |
 | Audio | Voice volume, background music that loops, fades out and ducks while you talk (real-time level detection). |
 | Suggestions | Checks the video and lists fixes with one-click apply: dark, overexposed, flat or dull picture (8 sampled frames), quiet or clipping voice, silence before the first word, long pauses, missing captions or title, music too loud or not ducked, Shorts length/format and export resolution. Rules in `src/advisor.ts` (unit-tested). |
+| Speed, zoom, volume per clip | Click a clip: speed 0.25× to 4× (slow motion or fast forward, voice keeps its pitch), punch-in zoom up to 200%, volume or mute. Speed is exact in the export because the timeline maps every clip as (out − in) / speed. |
+| Fades and text animation | Fade in/out from black (picture and sound) in Look. Titles can pop, fade or slide up. |
 | Formats | 16:9, 9:16 Shorts, 1:1 square, 4:5 Instagram feed. |
 | Music library | Five royalty-free loops (lo-fi, upbeat, corporate, ambient, tech) composed and synthesised in the browser by `src/music.ts`: oscillators, filtered noise and a generated reverb, with no samples or recordings, so nobody else owns the audio. Rendered on first use with `OfflineAudioContext` and folded into seamless WAV loops. |
 | Format | 16:9, 9:16 (Shorts) or 1:1; fill (crop, with position) or fit; 720p or 1080p. |

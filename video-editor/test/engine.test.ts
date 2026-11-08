@@ -185,3 +185,25 @@ test('advisor helpers: frame stats, voice stats, quiet runs, 4:5 size', () => {
   near(quietRun(env, -40, 0, 0.14, 0.02, true), 0.02)
   assert.deepEqual(outputSize('4:5', 1080), { w: 1080, h: 1350 })
 })
+
+import { clipLength as cl2, clipSpeed, sourceToTimeline as s2t } from '../src/engine.ts'
+
+test('speed: clips at 2x last half as long and map times correctly; slow motion doubles', () => {
+  const fast = { id: 'f', assetId: 'A', in: 10, out: 20, speed: 2 }
+  const slow = { id: 's', assetId: 'B', in: 0, out: 4, speed: 0.5 }
+  near(cl2(fast), 5)
+  near(cl2(slow), 8)
+  assert.equal(clipSpeed({ id: 'x', assetId: 'A', in: 0, out: 1 }), 1)
+  const clips = [fast, slow]
+  near(totalDuration(clips), 13)
+  const a = locate(clips, 2)!
+  assert.equal(a.clip.id, 'f'); near(a.srcTime, 14) // 2 s into a 2x clip = 4 s of source
+  const b = locate(clips, 9)!
+  assert.equal(b.clip.id, 's'); near(b.srcTime, 2) // 4 s into a 0.5x clip = 2 s of source
+  near(s2t(clips, 'A', 14)!, 2)
+  near(s2t(clips, 'B', 2)!, 9)
+  const parts = splitAt(clips, 2)
+  assert.equal(parts.length, 3)
+  assert.deepEqual(parts.slice(0, 2).map((c) => [c.in, c.out, c.speed]), [[10, 14, 2], [14, 20, 2]])
+  near(totalDuration(parts), 13)
+})

@@ -6,6 +6,7 @@ import {
   type Cue,
   type Grade,
   clipLength,
+  clipSpeed,
   cueAt,
   filterString,
   fitRect,
@@ -42,7 +43,10 @@ export interface Overlay {
   size: number // font size as a fraction of the frame's shorter side
   color: string
   style: OverlayStyle
+  anim?: OverlayAnim
 }
+
+export type OverlayAnim = 'none' | 'pop' | 'fade' | 'slide'
 
 export interface CaptionStyle {
   enabled: boolean
@@ -63,6 +67,8 @@ export interface Settings {
   voiceVolume: number // 0..2
   musicVolume: number // 0..1
   duck: boolean
+  fadeIn?: number // seconds of fade from black at the start (0 = off)
+  fadeOut?: number // seconds of fade to black at the end (0 = off)
 }
 
 export interface Project {
@@ -325,13 +331,29 @@ export class Player {
     m.play().catch(() => {})
   }
 
+  /** 0 = fully visible, 1 = fully black, from the fade in/out settings at the current time. */
+  private fadeAmount(): number {
+    const s = this.project?.settings
+    if (!s) return 0
+    const fi = s.fadeIn ?? 0
+    const fo = s.fadeOut ?? 0
+    let k = 0
+    if (fi > 0 && this.time < fi) k = Math.max(k, 1 - this.time / fi)
+    const left = this.duration - this.time
+    if (fo > 0 && left < fo) k = Math.max(k, 1 - Math.max(0, left) / fo)
+    return Math.min(1, Math.max(0, k))
+  }
+
   private mixAudio() {
     const a = this.audio
     const s = this.project?.settings
     if (!a || !s) return
     const now = a.ctx.currentTime
-    a.voice.gain.setTargetAtTime(s.voiceVolume, now, 0.05)
-    let target = s.musicVolume
+    const loc = this.project ? locate(this.project.clips, this.time) : null
+    const clipVol = loc ? (loc.clip.volume ?? 1) : 1
+    const fade = 1 - this.fadeAmount()
+    a.voice.gain.setTargetAtTime(s.voiceVolume * clipVol * fade, now, 0.03)
+    let target = s.musicVolume * fade
     if (s.duck && this.playing) {
       a.analyser.getFloatTimeDomainData(a.buf)
       let sum = 0
@@ -387,6 +409,11 @@ export class Player {
       this.current = v
       this.seekEl(v, loc.srcTime)
     }
+    const rate = clipSpeed(clip)
+    if (v.playbackRate !== rate) {
+      v.playbackRate = rate
+      v.preservesPitch = true // speed changes keep the voice at its normal pitch
+    }
     if (v.paused && !v.ended) v.play().catch(() => {})
     if (v.seeking || v.readyState < 2) return // waiting for data: hold the playhead
 
@@ -395,7 +422,7 @@ export class Player {
       this.seekEl(v, loc.srcTime)
       return
     }
-    this.time = start + Math.max(0, src - clip.in)
+    this.time = start + Math.max(0, src - clip.in) / rate
 
     // Get the next clip ready on the standby element.
     const next = clips[index + 1]
@@ -414,6 +441,8 @@ export class Player {
       v.pause()
       this.current = nv
       this.seekEl(nv, next.in)
+      nv.playbackRate = clipSpeed(next)
+      nv.preservesPitch = true
       nv.play().catch(() => {})
     }
   }
@@ -473,6 +502,14 @@ export class Player {
     const v = this.current
     if (loc && v && v.dataset.asset === loc.clip.assetId && v.readyState >= 2 && v.videoWidth) {
       const r = fitRect(v.videoWidth, v.videoHeight, w, h, p.settings.fit, p.settings.panX, p.settings.panY)
+      const z = Math.min(2, Math.max(1, loc.clip.zoom ?? 1))
+      if (z !== 1) {
+        // Punch in around the frame centre.
+        r.x = w / 2 + (r.x - w / 2) * z
+        r.y = h / 2 + (r.y - h / 2) * z
+        r.w *= z
+        r.h *= z
+      }
       ctx.filter = filterString(p.settings.grade)
       ctx.drawImage(v, r.x, r.y, r.w, r.h)
       ctx.filter = 'none'
@@ -482,12 +519,40 @@ export class Player {
     this.overlayBoxes = []
     for (const o of p.overlays) {
       if (this.time < o.start || this.time >= o.start + o.dur || !o.text.trim()) continue
+      const anim = o.anim ?? 'none'
+      const inP = Math.min(1, (this.time - o.start) / 0.35)
+      const outP = Math.min(1, (o.start + o.dur - this.time) / 0.3)
+      const ease = 1 - Math.pow(1 - inP, 3)
+      ctx.save()
+      if (anim !== 'none' && this.playing) {
+        const cx = o.x * w
+        const cy = o.y * h
+        if (anim === 'pop') {
+          const sc = inP < 1 ? 0.6 + 0.4 * ease + Math.sin(inP * Math.PI) * 0.08 : 1
+          ctx.translate(cx, cy)
+          ctx.scale(sc, sc)
+          ctx.translate(-cx, -cy)
+          ctx.globalAlpha = Math.min(1, inP * 2)
+        } else if (anim === 'fade') {
+          ctx.globalAlpha = Math.max(0, Math.min(inP, outP))
+        } else if (anim === 'slide') {
+          ctx.translate(0, (1 - ease) * unit * 0.08)
+          ctx.globalAlpha = ease
+        }
+      }
       this.overlayBoxes.push(this.drawOverlay(ctx, o, w, h, unit))
+      ctx.restore()
     }
 
     if (loc && p.captionStyle.enabled) {
       const cue = cueAt(p.captions[loc.clip.assetId], loc.srcTime)
       if (cue) this.drawCaption(ctx, cue.text, p.captionStyle, w, h, unit)
+    }
+
+    const fade = this.fadeAmount()
+    if (fade > 0) {
+      ctx.fillStyle = `rgba(0,0,0,${fade.toFixed(3)})`
+      ctx.fillRect(0, 0, w, h)
     }
   }
 

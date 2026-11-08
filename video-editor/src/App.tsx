@@ -6,6 +6,9 @@ import {
   Captions,
   Download,
   Film,
+  Gauge,
+  Volume2,
+  VolumeX,
   Lightbulb,
   CircleCheck,
   TriangleAlert,
@@ -35,6 +38,7 @@ import {
   type Grade,
   type Range,
   clipLength,
+  clipSpeed,
   clipStarts,
   locate,
   HOP,
@@ -129,6 +133,8 @@ const INITIAL: Project = {
     duck: true
   }
 }
+
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
 const CLIP_COLORS = ['#3b6fe0', '#7c5ce0', '#1f9bb5', '#2f9e6b', '#c4567f', '#c98a2c']
 
@@ -513,7 +519,13 @@ export default function App() {
             />
           )}
           {tab === 'look' && (
-            <LookPanel grade={settings.grade} onChange={(g, key) => setSettings({ grade: { ...settings.grade, ...g } }, key)} />
+            <LookPanel
+              grade={settings.grade}
+              onChange={(g, key) => setSettings({ grade: { ...settings.grade, ...g } }, key)}
+              fadeIn={settings.fadeIn ?? 0}
+              fadeOut={settings.fadeOut ?? 0}
+              onFade={(p) => setSettings(p)}
+            />
           )}
           {tab === 'audio' && (
             <AudioPanel
@@ -813,8 +825,8 @@ function SuggestionsPanel(props: {
       voice,
       voiceVolume: settings.voiceVolume,
       pauses: { count, seconds },
-      leadSilence: Math.min(lead, clipLength(first)),
-      tailSilence: Math.min(tail, clipLength(last)),
+      leadSilence: Math.min(lead, first.out - first.in) / clipSpeed(first),
+      tailSilence: Math.min(tail, last.out - last.in) / clipSpeed(last),
       hasCaptions: used.some((id) => (project.captions[id]?.length ?? 0) > 0),
       hasOverlays: project.overlays.length > 0,
       hasMusic,
@@ -867,11 +879,11 @@ function SuggestionsPanel(props: {
           const clips = [...p.clips]
           const f = clips[0]
           const cutIn = Math.max(0, result.lead - 0.15)
-          if (cutIn > 0 && clipLength(f) - cutIn >= MIN_CLIP) clips[0] = { ...f, in: f.in + cutIn }
+          if (cutIn > 0 && f.out - f.in - cutIn >= MIN_CLIP) clips[0] = { ...f, in: f.in + cutIn }
           const li = clips.length - 1
           const l = clips[li]
           const cutOut = Math.max(0, result.tail - 0.3)
-          if (cutOut > 0 && clipLength(l) - cutOut >= MIN_CLIP) clips[li] = { ...l, out: l.out - cutOut }
+          if (cutOut > 0 && l.out - l.in - cutOut >= MIN_CLIP) clips[li] = { ...l, out: l.out - cutOut }
           return { ...p, clips }
         })
         say('Trimmed the silence at the start and end.')
@@ -1259,6 +1271,17 @@ function TextPanel(props: {
             ]}
             onChange={(v) => onChange(o.id, { style: v }, '')}
           />
+          <div className="field-label">Animation</div>
+          <Segmented
+            value={o.anim ?? 'none'}
+            options={[
+              ['none', 'None'],
+              ['pop', 'Pop'],
+              ['fade', 'Fade'],
+              ['slide', 'Slide up']
+            ]}
+            onChange={(v) => onChange(o.id, { anim: v }, '')}
+          />
           <Slider label="Size" value={o.size} min={0.03} max={0.2} step={0.005} fmt={(v) => `${Math.round(v * 1000) / 10}%`} onChange={(v) => onChange(o.id, { size: v }, `size-${o.id}`)} />
           <div className="row">
             <label className="field">
@@ -1300,7 +1323,19 @@ function TextPanel(props: {
   )
 }
 
-function LookPanel({ grade, onChange }: { grade: Grade; onChange: (g: Partial<Grade>, key?: string) => void }) {
+function LookPanel({
+  grade,
+  onChange,
+  fadeIn,
+  fadeOut,
+  onFade
+}: {
+  grade: Grade
+  onChange: (g: Partial<Grade>, key?: string) => void
+  fadeIn: number
+  fadeOut: number
+  onFade: (p: Partial<Settings>) => void
+}) {
   const presets: [Grade['preset'], string][] = [
     ['none', 'Original'],
     ['punchy', 'Punchy'],
@@ -1326,6 +1361,30 @@ function LookPanel({ grade, onChange }: { grade: Grade; onChange: (g: Partial<Gr
       <button className="small-btn ghost" onClick={() => onChange({ preset: 'none', brightness: 0, contrast: 0, saturation: 0 })}>
         Reset
       </button>
+      <h3>Fades</h3>
+      <p className="hint">Fade the picture and sound in from black at the start, and out to black at the end.</p>
+      <div className="field-label">Fade in</div>
+      <Segmented
+        value={String(fadeIn)}
+        options={[
+          ['0', 'Off'],
+          ['0.5', '0.5 s'],
+          ['1', '1 s'],
+          ['2', '2 s']
+        ]}
+        onChange={(v) => onFade({ fadeIn: Number(v) })}
+      />
+      <div className="field-label">Fade out</div>
+      <Segmented
+        value={String(fadeOut)}
+        options={[
+          ['0', 'Off'],
+          ['0.5', '0.5 s'],
+          ['1', '1 s'],
+          ['2', '2 s']
+        ]}
+        onChange={(v) => onFade({ fadeOut: Number(v) })}
+      />
     </div>
   )
 }
@@ -1626,6 +1685,7 @@ function Timeline(props: {
   const { clips, overlays } = project
   const total = totalDuration(clips)
   const starts = clipStarts(clips)
+  const selClip = sel?.kind === 'clip' ? clips.find((c) => c.id === sel.id) : undefined
   const scrollRef = useRef<HTMLDivElement>(null)
   const silences = useSyncExternalStore(silenceStore.subscribe, silenceStore.get)
   const colorOf = useMemo(() => {
@@ -1694,8 +1754,42 @@ function Timeline(props: {
         <button className="small-btn" onClick={() => props.onMove(1)} disabled={!props.canMove} title="Move clip later">
           <ArrowRight size={14} />
         </button>
+        {selClip && (
+          <span className="clip-tools" aria-label="Selected clip">
+            <label title="Speed: below 1× is slow motion, above 1× is fast forward. The voice keeps its normal pitch.">
+              <Gauge size={14} />
+              <select value={String(clipSpeed(selClip))} onChange={(e) => updateClip(selClip.id, { speed: Number(e.target.value) }, `speed-${selClip.id}`)} aria-label="Clip speed">
+                {SPEEDS.map((v) => (
+                  <option key={v} value={String(v)}>
+                    {v}×{v < 1 ? ' slow' : v > 1 ? ' fast' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label title="Zoom in on this clip (punch-in), the jump-cut trick for talking videos">
+              <ZoomIn size={14} />
+              <select value={String(selClip.zoom ?? 1)} onChange={(e) => updateClip(selClip.id, { zoom: Number(e.target.value) }, `zoomc-${selClip.id}`)} aria-label="Clip zoom">
+                {[1, 1.1, 1.2, 1.3, 1.5, 2].map((v) => (
+                  <option key={v} value={String(v)}>
+                    {Math.round(v * 100)}%
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label title="Volume of this clip">
+              {selClip.volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              <select value={String(selClip.volume ?? 1)} onChange={(e) => updateClip(selClip.id, { volume: Number(e.target.value) }, `vol-${selClip.id}`)} aria-label="Clip volume">
+                {[0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map((v) => (
+                  <option key={v} value={String(v)}>
+                    {v === 0 ? 'Mute' : `${Math.round(v * 100)}%`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </span>
+        )}
         <span className="spacer" />
-        <span className="dim small hide-sm">Space play · S split · ←/→ frame · drag clip edges to trim</span>
+        <span className="dim small hide-sm">{selClip ? 'Speed, zoom and volume apply to the selected clip' : 'Space play · S split · click a clip for speed, zoom, volume'}</span>
         <button className="icon" onClick={() => setZoom(Math.max(2, zoom / 1.5))} aria-label="Zoom out">
           <ZoomOut size={15} />
         </button>
@@ -1723,6 +1817,8 @@ function Timeline(props: {
               const left = starts[i] * zoom + 12
               const w = Math.max(4, clipLength(c) * zoom)
               const marks = silences[c.assetId] ?? []
+              const sp = clipSpeed(c)
+              const badges = [sp !== 1 ? `${sp}×` : '', (c.zoom ?? 1) > 1 ? `🔍${Math.round((c.zoom ?? 1) * 100)}%` : '', c.volume === 0 ? '🔇' : c.volume != null && c.volume !== 1 ? `🔊${Math.round(c.volume * 100)}%` : ''].filter(Boolean)
               return (
                 <div
                   key={c.id}
@@ -1740,16 +1836,19 @@ function Timeline(props: {
                       <i
                         key={k}
                         className="silence"
-                        style={{ left: (Math.max(m.start, c.in) - c.in) * zoom, width: (Math.min(m.end, c.out) - Math.max(m.start, c.in)) * zoom }}
+                        style={{ left: ((Math.max(m.start, c.in) - c.in) / sp) * zoom, width: ((Math.min(m.end, c.out) - Math.max(m.start, c.in)) / sp) * zoom }}
                       />
                     ))}
-                  <span className="clip-label">{a?.name ?? 'missing file'}</span>
+                  <span className="clip-label">
+                    {badges.length > 0 && <b className="clip-badges">{badges.join(' ')}</b>}
+                    {a?.name ?? 'missing file'}
+                  </span>
                   <span
                     className="handle left"
                     onPointerDown={(e) => {
                       setSel({ kind: 'clip', id: c.id })
                       const base = c.in
-                      dragWith(e, (dt) => updateClip(c.id, { in: Math.max(0, Math.min(c.out - MIN_CLIP, base + dt)) }, `trim-${c.id}`))
+                      dragWith(e, (dt) => updateClip(c.id, { in: Math.max(0, Math.min(c.out - MIN_CLIP, base + dt * sp)) }, `trim-${c.id}`))
                     }}
                   />
                   <span
@@ -1758,7 +1857,7 @@ function Timeline(props: {
                       setSel({ kind: 'clip', id: c.id })
                       const base = c.out
                       const max = a?.duration ?? c.out
-                      dragWith(e, (dt) => updateClip(c.id, { out: Math.min(max, Math.max(c.in + MIN_CLIP, base + dt)) }, `trim-${c.id}`))
+                      dragWith(e, (dt) => updateClip(c.id, { out: Math.min(max, Math.max(c.in + MIN_CLIP, base + dt * sp)) }, `trim-${c.id}`))
                     }}
                   />
                 </div>
@@ -1907,6 +2006,10 @@ function About({ onClose }: { onClose: () => void }) {
           <li>
             <b>Export</b> draws each frame (crop, colour, text, captions) on a canvas and records it with the audio mix
             using the browser's MediaRecorder.
+          </li>
+          <li>
+            <b>Speed, zoom and volume</b>: click a clip on the timeline and use the controls above it. Slow motion and
+            fast forward keep the voice at its normal pitch.
           </li>
           <li>Nothing is saved: closing the tab loses the edit, so export before you leave.</li>
         </ul>

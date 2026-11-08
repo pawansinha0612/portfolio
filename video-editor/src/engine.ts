@@ -6,6 +6,9 @@ export interface Clip {
   assetId: string
   in: number // seconds into the source file
   out: number
+  speed?: number // playback speed, 0.25..4 (default 1). The clip lasts (out - in) / speed on the timeline
+  volume?: number // 0..2 (default 1), multiplies the voice volume while this clip plays
+  zoom?: number // 1..2 (default 1), punch-in around the frame centre
 }
 
 export interface Cue {
@@ -26,7 +29,10 @@ export const MIN_CLIP = 0.1
 let idCounter = 0
 export const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(idCounter++).toString(36)}`
 
-export const clipLength = (c: Clip) => c.out - c.in
+export const clipSpeed = (c: Clip) => (c.speed && c.speed > 0 ? c.speed : 1)
+
+/** Seconds the clip lasts on the timeline. */
+export const clipLength = (c: Clip) => (c.out - c.in) / clipSpeed(c)
 
 export function totalDuration(clips: Clip[]): number {
   return clips.reduce((sum, c) => sum + clipLength(c), 0)
@@ -57,7 +63,7 @@ export function locate(clips: Clip[], t: number): Located | null {
     const len = clipLength(c)
     if (t < start + len || (i === clips.length - 1 && t <= start + len)) {
       const into = Math.max(0, Math.min(t - start, len))
-      return { index: i, clip: c, start, srcTime: c.in + into }
+      return { index: i, clip: c, start, srcTime: c.in + into * clipSpeed(c) }
     }
     start += len
   }
@@ -299,7 +305,7 @@ export function suggestThreshold(env: Float32Array): number {
 export function sourceToTimeline(clips: Clip[], assetId: string, src: number): number | null {
   let start = 0
   for (const c of clips) {
-    if (c.assetId === assetId && src >= c.in && src < c.out) return start + (src - c.in)
+    if (c.assetId === assetId && src >= c.in && src < c.out) return start + (src - c.in) / clipSpeed(c)
     start += clipLength(c)
   }
   return null

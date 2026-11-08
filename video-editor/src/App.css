@@ -254,3 +254,13 @@ textarea { resize: vertical; }
 .advice-tip .advice-icon { color: var(--accent); }
 .advice-good .advice-icon { color: #4cc38a; }
 .advice-good p { margin-bottom: 0 !important; }
+
+/* Selected clip: speed, zoom, volume */
+.clip-tools { display: inline-flex; gap: 6px; align-items: center; padding-left: 6px; margin-left: 2px; border-left: 1px solid var(--line); }
+.clip-tools label { display: inline-flex; align-items: center; gap: 4px; color: var(--dim); }
+.clip-tools select {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 5px 6px; font: inherit; font-size: 13px;
+}
+.clip-badges { font-weight: 700; margin-right: 6px; background: rgba(0,0,0,.35); padding: 0 5px; border-radius: 4px; }
+.field-label { font-size: 12px; color: var(--dim); margin: 6px 0 -4px; font-weight: 600; }
