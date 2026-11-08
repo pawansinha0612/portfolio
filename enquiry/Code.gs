@@ -50,7 +50,9 @@
  * After changing this code: Deploy → Manage deployments → edit → Version: New version → Deploy.
  */
 
-const OWNER_EMAIL = 'pawansinha4u@gmail.com';
+// Where notifications go. Not written here (this file is public): it's the Google account the script runs as
+// (the web app is deployed "Execute as: Me"). To send them elsewhere, add a Script property OWNER_EMAIL.
+const OWNER_EMAIL = PropertiesService.getScriptProperties().getProperty('OWNER_EMAIL') || Session.getEffectiveUser().getEmail();
 const MY_NAME = 'Pawan Sinha';
 
 const ENQUIRY_SHEET = 'Enquiries';
