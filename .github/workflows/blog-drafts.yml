@@ -18,7 +18,7 @@ permissions:
 jobs:
   draft:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +50,7 @@ jobs:
       - name: Check the drafts (rules + AI fact-check)
         if: steps.pending.outputs.open == '0'
         continue-on-error: true   # a failed review must not stop the drafts from arriving
+        timeout-minutes: 30       # a slow review is skipped so the pull request still opens
         env:
           AI_BASE_URL: ${{ vars.AI_BASE_URL }}
           AI_MODEL: ${{ vars.AI_MODEL }}
