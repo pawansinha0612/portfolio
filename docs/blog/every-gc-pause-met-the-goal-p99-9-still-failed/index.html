@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Every GC pause met the goal. p99.9 still failed. — Pawan Sinha</title>
+  <meta name="description" content="A GC pause goal limits pause length, not how many requests a pause hits. How allocation rate drives G1, ZGC and Shenandoah tail latency.">
+  <meta property="og:title" content="Every GC pause met the goal. p99.9 still failed. — Pawan Sinha">
+  <meta property="og:description" content="A GC pause goal limits pause length, not how many requests a pause hits. How allocation rate drives G1, ZGC and Shenandoah tail latency.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Every GC pause met the goal. p99.9 still failed.</h1>
+        <div class="post-meta"><span>9 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Java</span><span class="tag">GC</span><span class="tag">Latency</span></div></div>
+      </header>
+      <div class="article">
+<p>Your G1 dashboard is green. The longest pause this week was 140 ms, comfortably inside the 200 ms goal. Median latency is 15 ms.</p>
+<p>Then the p99.9 SLO breaches again, and the slow requests line up with GC events. Someone drops <code>MaxGCPauseMillis</code> to 50. The tail gets worse.</p>
+<p>The pause goal was never the right number to watch. It limits how long each pause is. Tail latency depends on how many requests a pause lands on.</p>
+<h2>The number that matters: how often requests meet a pause</h2>
+<p>A request is hurt by GC if a stop-the-world pause starts while it is in flight, or if it arrives during one. With pause frequency f, pause length p and request duration d, the share of requests that overlap a pause is roughly:</p>
+<p><strong>overlap ≈ f × (p + d)</strong></p>
+<p>This holds while the result is small.</p>
+<p>For example: 1 young GC per second, 25 ms pauses and 40 ms requests. Overlap ≈ 1 × (0.025 + 0.040) = <strong>6.5% of requests</strong>. GC time is only 2.5% of wall-clock time, which looks harmless on a throughput dashboard. Yet GC sits inside your p95, so it certainly defines p99 and p99.9. Every pause met the goal.</p>
+<h2>What sets frequency, and what sets length</h2>
+<p><strong>Frequency</strong> is mostly allocation rate divided by eden size. Eden is the part of the young generation where new objects are allocated. At 1 GB/s into a 1 GB eden, you get roughly one young GC per second.</p>
+<p><strong>Length</strong> is mostly driven by live data, not garbage. A young collection copies surviving objects and scans roots (thread stacks and, in G1, remembered sets that track old-to-young references). Dead objects cost almost nothing to reclaim. That follows from the weak generational hypothesis: most objects die young.</p>
+<p>In a request-driven service, survivors are largely the data of requests in flight at that moment. That volume barely changes with eden size. So a larger eden usually means fewer pauses of roughly the same length, and fewer requests hit.</p>
+<p>Here is the trap with G1. It meets <code>MaxGCPauseMillis</code> mainly by resizing the young generation. A tighter goal means a smaller eden, which means more frequent pauses. Each pause gets shorter, but the overlap share can go up.</p>
+<p>Try your own numbers:</p>
+<div class="widget" data-widget="gc"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>G1: what the flags actually do</h2>
+<ul>
+<li><code>-XX:MaxGCPauseMillis</code> (default 200) is a soft goal. G1 predicts pause cost from history and sizes the young generation and mixed-collection work to fit. It is not a guarantee.</li>
+<li>Fixing the young generation with <code>-Xmn</code> or <code>-XX:NewSize</code>/<code>-XX:MaxNewSize</code> largely switches off that pause-driven sizing. Do it only if you have measured why.</li>
+<li><code>-XX:G1ReservePercent</code> (default 10) keeps part of the heap free as to-space so evacuation has somewhere to copy objects. Raising it lowers the risk of evacuation failure, which produces long pauses. It does not make the pause goal more likely to be met.</li>
+<li><code>-XX:G1HeapRegionSize</code> is chosen ergonomically from heap size. Objects of half a region or more are humongous and are allocated directly in old regions. Raise it only if logs show heavy humongous allocation.</li>
+</ul>
+<p>The best G1 fixes are usually upstream of flags: allocate less per request, and give the heap room.</p>
+<h2>ZGC: pauses are tiny, the risk moves</h2>
+<p>ZGC does marking and relocation concurrently with the application. Its pauses are typically well under a millisecond and do not grow with heap or live-set size.</p>
+<p>Version matters. Generational ZGC is opt-in with <code>-XX:+UseZGC -XX:+ZGenerational</code> in JDK 21, the default mode from JDK 23, and the only mode from JDK 24, where non-generational ZGC was removed. On JDK 17, ZGC is non-generational.</p>
+<p>With pauses this short, the tail risk is the <strong>allocation stall</strong>: allocation outpaces the concurrent cycle, the heap fills, and application threads block until memory is freed. The GC log shows <code>Allocation Stall</code> lines with the thread and duration.</p>
+<p>The main lever is headroom. Set <code>-Xmx</code> so the concurrent cycle finishes before the heap fills. <code>-XX:SoftMaxHeapSize</code> asks ZGC to try to stay below a lower limit, while keeping <code>-Xmx</code> as burst room. Note that <code>-XX:ZCollectionInterval</code> is not a pause target. It forces a collection every N seconds.</p>
+<h2>Shenandoah: same idea, different failure path</h2>
+<p>Shenandoah is also concurrent, with pauses typically in the low milliseconds or below. It ships in OpenJDK builds such as Temurin, Corretto and Red Hat's, but not in Oracle JDK.</p>
+<p>The real knobs are <code>-XX:ShenandoahGCHeuristics</code> (<code>adaptive</code> by default, with <code>static</code>, <code>compact</code> and <code>aggressive</code> as alternatives) and <code>-XX:ShenandoahGCMode</code> (<code>satb</code> by default). A generational mode exists in recent JDKs, so check your release notes before relying on it.</p>
+<p>When allocation outruns a concurrent cycle, Shenandoah falls back to a degenerated GC, which finishes the cycle stop-the-world, and in the worst case to a full GC. Both appear in the log as pauses. If you see them, add heap headroom or reduce allocation before touching heuristics.</p>
+<h2>Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Collector</th>
+<th>Typical pause</th>
+<th>Main tail-latency risk</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G1</td>
+<td>Tens of ms per young or mixed pause</td>
+<td>Pause frequency × length, evacuation failure</td>
+<td>Lowest CPU overhead of the three in most services</td>
+</tr>
+<tr>
+<td>ZGC</td>
+<td>Well under 1 ms</td>
+<td>Allocation stalls when heap headroom runs out</td>
+<td>Concurrent threads take CPU, needs memory headroom</td>
+</tr>
+<tr>
+<td>Shenandoah</td>
+<td>Low ms or below</td>
+<td>Degenerated and full GCs under allocation pressure</td>
+<td>Concurrent threads take CPU, needs memory headroom</td>
+</tr>
+</tbody>
+</table>
+<p>My default: G1 when p99 targets are in the hundreds of milliseconds and CPU is tight. ZGC when p99.9 matters at tens of milliseconds and you can spare CPU and memory.</p>
+<h2>Measure it, don't guess</h2>
+<p>Enable unified logging (JDK 9 and later) with GC and safepoint tags:</p>
+<pre><code class="language-bash">java -Xlog:gc*,safepoint:file=gc.log:time,uptime,level,tags -jar app.jar
+</code></pre>
+<p>A G1 pause line looks like this:</p>
+<pre><code>[2026-11-09T10:15:30.123+1100][12.345s][info][gc          ] GC(42) Pause Young (Normal) (G1 Evacuation Pause) 512M-&gt;128M(2048M) 8.123ms
+</code></pre>
+<p>Pause count, total, p50, p99 and max (nearest-rank percentiles):</p>
+<pre><code class="language-bash">grep -E '\] GC\([0-9]+\) Pause .*[0-9.]+ms$' gc.log \
+  | sed -E 's/.* ([0-9.]+)ms$/\1/' \
+  | sort -n \
+  | awk '{ v[NR] = $1; sum += $1 }
+         END { i = int(NR * 0.99); if (i &lt; NR * 0.99) i++
+               printf &quot;pauses=%d total=%.1fms p50=%s p99=%s max=%s\n&quot;, NR, sum, v[int((NR + 1) / 2)], v[i], v[NR] }'
+</code></pre>
+<p>Divide the total by the log's time span to get the paused fraction. A GC log analyser gives the same with charts.</p>
+<p><strong>Allocation rate</strong> is not in a dedicated log line. Estimate it from the log: heap before this GC minus heap after the previous one, divided by the time between them. Or record with JFR and read <code>jdk.ObjectAllocationSample</code> and <code>jdk.GCHeapSummary</code> events.</p>
+<p><strong>Safepoints beyond GC.</strong> A safepoint is a point where all application threads are stopped so the JVM can do work that needs a consistent view. GC is only one reason. Other VM operations, such as class redefinition and thread dumps, also use them. <code>-Xlog:safepoint</code> reports each operation, including time-to-safepoint: how long the JVM waited for the last thread to reach a stop point. A long time-to-safepoint stalls every thread that already stopped, and it does not show up as GC time.</p>
+<h2>Checklist</h2>
+<ol>
+<li>Compute overlap ≈ pauses per second × (pause + request duration). If it exceeds 0.1%, GC is in your p99.9.</li>
+<li>Alert on paused time per minute and pause count, not just max pause.</li>
+<li>On G1, reduce frequency with heap room and less allocation before lowering the pause goal.</li>
+<li>On ZGC and Shenandoah, watch for allocation stalls and degenerated or full GCs, and buy headroom with heap size.</li>
+<li>Log safepoints as well as GC, and check time-to-safepoint.</li>
+<li>Correlate slow requests with pause timestamps before you change a single flag.</li>
+</ol>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Every GC pause met the goal. p99.9 still failed.", "description": "A GC pause goal limits pause length, not how many requests a pause hits. How allocation rate drives G1, ZGC and Shenandoah tail latency.", "datePublished": "2026-11-09", "url": "https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

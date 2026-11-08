@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Every GC pause met the goal. p99.9 still failed.</title>
+      <link>https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/</link>
+      <guid>https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/</guid>
+      <pubDate>Mon, 09 Nov 2026 08:00:00 +1100</pubDate>
+      <description>A pause-time goal says how long each pause may be, not how many requests it hits. How allocation rate and eden size set pause frequency, what really drives G1, ZGC and Shenandoah tail latency, and how to prove it from unified GC logs.</description>
+    </item>
+    <item>
       <title>Green load test, red production: finding the database bottleneck</title>
       <link>https://pawansinha.com.au/blog/green-load-test-red-production-the-database-bottleneck/</link>
       <guid>https://pawansinha.com.au/blog/green-load-test-red-production-the-database-bottleneck/</guid>
