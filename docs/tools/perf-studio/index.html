@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perf Studio: Free Performance Testing Workspace — Pawan Sinha</title>
+  <meta name="description" content="Free performance engineering workspace. Turn an OpenAPI file into a k6 script, estimate VUs, test types, data and effort, analyse k6 or JMeter results against your targets, get rule-based fixes and a one-page go/no-go report. Runs in your browser.">
+  <meta property="og:title" content="Perf Studio: Free Performance Testing Workspace — Pawan Sinha">
+  <meta property="og:description" content="From API definition to go/no-go report in one page: k6 script, test estimate, results analysis with bottleneck signals, recommendations that quote the numbers behind them, and a printable executive report. Free, and nothing leaves your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/perf-studio/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/perf-studio/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Perf Studio","url":"https://pawansinha.com.au/tools/perf-studio/","description":"A free, browser-only performance engineering workspace: OpenAPI to k6, test estimation, k6 and JMeter results analysis, rule-based recommendations and an executive go/no-go report.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How many virtual users do I need for a load test?","acceptedAnswer":{"@type":"Answer","text":"Use Little's Law: users = throughput × (response time + think time). 500 users with a 0.5 second response time and 5 seconds of think time make about 91 requests a second. Perf Studio works this out from either peak users or peak requests per hour."}},
+    {"@type":"Question","name":"Does Perf Studio use AI?","acceptedAnswer":{"@type":"Answer","text":"No. Every number comes from your inputs or your results, and every recommendation is a written rule that quotes the measured value that triggered it. The same results always give the same report."}},
+    {"@type":"Question","name":"Which results can it read?","acceptedAnswer":{"@type":"Answer","text":"k6 end-of-test summaries (text, --summary-export JSON and handleSummary JSON) and JMeter results (.jtl or .csv with a header row, or XML). JMeter files also give a timeline, so it can spot latency rising with load and a throughput plateau."}},
+    {"@type":"Question","name":"Is my data uploaded?","acceptedAnswer":{"@type":"Answer","text":"No. Your API definition and results are read and analysed in your browser. Nothing is sent anywhere."}}
+  ]}</script>
+  <style>
+    .ps-hero { padding: 64px 16px 8px; }
+    .ps-hero > * { max-width: 760px; }
+    .ps-hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 0 0 16px; }
+    .private-note { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px;
+      background: var(--ok-bg); color: var(--ok); font-size: 14px; font-weight: 600; }
+    .ps-app { padding: 28px 16px 16px; }
+    .steps { display: flex; gap: 6px; overflow-x: auto; padding: 4px; margin: 0 0 16px; border: 1px solid var(--border); border-radius: 14px;
+      background: var(--alt); -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .steps button { flex: 1 0 auto; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent;
+      border: 0; border-radius: 10px; padding: 9px 14px; white-space: nowrap; }
+    .steps button b { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; font-size: 12px;
+      background: var(--border); color: var(--text); }
+    .steps button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .steps button[aria-selected="true"] b { background: var(--accent); color: #fff; }
+    .steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .panel h2 { font-size: 18px; margin: 0 0 4px; }
+    .panel h3 { font-size: 16px; margin: 20px 0 8px; }
+    .panel .sub, .panel p.note { color: var(--muted); font-size: 14px; margin: 0 0 12px; max-width: 66ch; }
+    .panel ul.note { color: var(--muted); font-size: 14px; max-width: 66ch; padding-left: 20px; margin: 0; }
+    .panel ul.note li { margin-bottom: 4px; }
+    .panel code, .guide code { font: 500 13px "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    textarea.code, pre.code { width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0; }
+    textarea.code { min-height: 170px; resize: vertical; display: block; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    pre.code { overflow: auto; max-height: 520px; white-space: pre; tab-size: 2; }
+    .row-btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+    .row-btns button, .out-head button { font: inherit; cursor: pointer; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .file-name { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .out-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .out-head .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .msgs:empty { display: none; }
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; margin: 0; max-width: 66ch; }
+    .msg.warn { background: var(--warn-bg); color: var(--warn); }
+    .msg.info { background: var(--alt); color: var(--muted); border: 1px solid var(--border); }
+    .msg.err { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+    .ops { max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--alt); }
+    .ops:empty::before { content: "Paste a definition above, or try an example, and its endpoints appear here."; display: block; padding: 14px; color: var(--muted); font-size: 14px; }
+    .op { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 14px; font-size: 14px; border-bottom: 1px solid var(--border); }
+    .op:last-child { border-bottom: 0; }
+    .op input[type=checkbox] { accent-color: var(--accent); margin: 0; }
+    .op .m { min-width: 58px; text-align: center; font: 700 11px/1.9 "JetBrains Mono", monospace; border-radius: 6px; padding: 0 6px; background: var(--ok-bg); color: var(--ok); }
+    .op .m.unsafe { background: var(--warn-bg); color: var(--warn); }
+    .op .p { font: 500 13px/1.5 "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; min-width: 0; }
+    .op label.mix { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+    .op label.mix input { width: 64px; font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 18px; }
+    .field { display: block; min-width: 0; }
+    .field > span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field input, .field select { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+    .field[hidden] { display: none; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg label { display: flex; align-items: center; gap: 6px; padding: 8px 12px; font-size: 14px; cursor: pointer; }
+    .seg label + label { border-left: 1px solid var(--border); }
+    .seg input { accent-color: var(--accent); margin: 0; }
+    .checkline { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+    .checkline input { accent-color: var(--accent); }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 4px 0 6px; }
+    .tile { background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+    .tile b { display: block; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; overflow-wrap: anywhere; }
+    .tile span { font-size: 13px; color: var(--muted); }
+    .tile.bad b { color: var(--warn); }
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); -webkit-overflow-scrolling: touch; }
+    table.data { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 700; font-size: 12.5px; background: var(--alt); }
+    table.data td:first-child, table.data th:first-child { text-align: left; }
+    table.data td.wrap-cell { white-space: normal; min-width: 220px; text-align: left; }
+    table.data tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .pill.ok { background: var(--ok-bg); color: var(--ok); }
+    .pill.bad { background: var(--warn-bg); color: var(--warn); }
+    .pill.na { background: var(--alt); color: var(--muted); }
+    .verdict { border-radius: 16px; padding: 16px 20px; border: 1px solid var(--border); background: var(--alt); margin-bottom: 12px; }
+    .verdict h3 { margin: 0 0 4px; font-size: clamp(20px, 3vw, 24px); }
+    .verdict p { margin: 0; max-width: 66ch; }
+    .verdict.go { background: var(--ok-bg); } .verdict.go h3 { color: var(--ok); }
+    .verdict.risk, .verdict.no-go { background: var(--warn-bg); } .verdict.risk h3, .verdict.no-go h3 { color: var(--warn); }
+    .signals { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .signals li { max-width: 720px; border: 1px solid var(--border); border-left-width: 4px; border-radius: 12px; padding: 10px 14px; background: var(--surface); }
+    .signals li.bad { border-left-color: #c2341d; } .signals li.warn { border-left-color: #d49a1a; } .signals li.info { border-left-color: var(--border); }
+    .signals strong { display: block; }
+    .signals .metric { font: 500 13px/1.5 "JetBrains Mono", monospace; color: var(--text); overflow-wrap: anywhere; margin: 2px 0; }
+    .signals p { margin: 0; color: var(--muted); font-size: 14px; max-width: 66ch; }
+    .rec h3 { margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .rec .because { font-size: 14px; color: var(--muted); margin: 0 0 8px; max-width: 66ch; }
+    .rec .because b { color: var(--text); }
+    .rec ul { margin: 0; padding-left: 20px; max-width: 66ch; } .rec li { margin-bottom: 4px; }
+    .next-row { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .report-frame { width: 100%; min-height: 600px; border: 1px solid var(--border); border-radius: 12px; background: #fff; display: block; }
+    .guide { padding: 40px 16px 8px; }
+    .guide > * { max-width: 868px; }
+    .guide > :is(p, ol, ul) { max-width: 66ch; }
+    .guide h2 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 12px; }
+    .guide h3 { font-size: 18px; margin: 24px 0 6px; }
+    .guide p, .guide ol, .guide ul { color: var(--muted); }
+    .guide ol, .guide ul { padding-left: 22px; }
+    .guide li { margin-bottom: 6px; }
+    .guide strong { color: var(--text); }
+    .tools-end { padding: 24px 16px 72px; }
+    .tools-end > * { max-width: 1000px; }
+    .related { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .related a { display: inline-block; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+      font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .related a:hover { border-color: var(--accent); color: var(--accent); }
+    [role=tabpanel][hidden] { display: none; }
+    @media (max-width: 600px) {
+      .ps-hero { padding-top: 40px; }
+      .panel { padding: 16px 14px; }
+      .op { grid-template-columns: auto auto minmax(0, 1fr); padding: 8px 10px; }
+      .op label.mix { grid-column: 3; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap ps-hero">
+      <p class="eyebrow">Free tool · Performance engineering workspace</p>
+      <h1>Perf Studio</h1>
+      <p class="lead">From API definition to go/no-go in one page. Get a k6 script, an estimate of the load, tests, data and effort, and an analysis of your results. Then get fixes that quote the numbers behind them, and a one-page report for your managers.</p>
+      <p class="private-note">🔒 Runs in your browser. No AI, no uploads: nothing you paste is sent anywhere.</p>
+    </section>
+
+    <section class="wrap ps-app" aria-label="Perf Studio">
+      <div class="steps" role="tablist" aria-label="Steps">
+        <button type="button" role="tab" id="tab-script" aria-controls="p-script" aria-selected="true"><b>1</b>API &amp; k6 script</button>
+        <button type="button" role="tab" id="tab-estimate" aria-controls="p-estimate" aria-selected="false" tabindex="-1"><b>2</b>Estimate</button>
+        <button type="button" role="tab" id="tab-results" aria-controls="p-results" aria-selected="false" tabindex="-1"><b>3</b>Results</button>
+        <button type="button" role="tab" id="tab-recs" aria-controls="p-recs" aria-selected="false" tabindex="-1"><b>4</b>Recommendations</button>
+        <button type="button" role="tab" id="tab-report" aria-controls="p-report" aria-selected="false" tabindex="-1"><b>5</b>Report</button>
+      </div>
+
+      <!-- 1. API and k6 script -->
+      <div role="tabpanel" id="p-script" aria-labelledby="tab-script">
+        <div class="panel">
+          <h2><label for="spec-in">Your API definition</label></h2>
+          <p class="sub">OpenAPI 3.0, 3.1 or Swagger 2.0, as JSON or YAML. No definition? Skip to step 2 and estimate from your traffic numbers alone.</p>
+          <div class="examples">Try an example:
+            <button class="chip-btn" type="button" data-example="openapi3">Bookshop (OpenAPI 3, YAML)</button>
+            <button class="chip-btn" type="button" data-example="swagger2">Petstore (Swagger 2.0, JSON)</button>
+            <button class="chip-btn" type="button" id="spec-clear">Clear</button>
+          </div>
+          <textarea id="spec-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="openapi: 3.0.3&#10;info:&#10;  title: My API&#10;  version: 1.0.0&#10;paths:&#10;  /items:&#10;    get: ..."></textarea>
+          <div class="row-btns">
+            <span class="btn btn-ghost btn-small file-btn">Upload a file<input type="file" id="spec-file" accept=".json,.yaml,.yml,application/json,text/yaml" aria-label="Upload an OpenAPI or Swagger file"></span>
+            <span class="file-name" id="spec-file-name"></span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Endpoints and traffic mix</h2>
+          <p class="sub">Tick the endpoints to load test. <strong>Mix</strong> is each endpoint's share of the requests: 3 and 1 means three times as many calls to the first. Use your analytics or access logs if you have them.</p>
+          <div class="examples">
+            <button class="chip-btn" type="button" id="sel-all">Select all</button>
+            <button class="chip-btn" type="button" id="sel-get">Only GET (read-only)</button>
+            <button class="chip-btn" type="button" id="sel-none">None</button>
+          </div>
+          <div class="ops" id="ops" role="group" aria-label="Endpoints and mix"></div>
+        </div>
+
+        <div class="panel">
+          <div class="out-head">
+            <h2>k6 script</h2>
+            <div class="btns">
+              <button class="btn btn-small" type="button" id="k6-copy" data-track="perf-studio-k6-copy">Copy</button>
+              <button class="btn btn-ghost btn-small" type="button" id="k6-download" data-track="perf-studio-k6-download">Download script.js</button>
+            </div>
+          </div>
+          <div class="grid" style="margin-bottom:12px">
+            <label class="field"><span>Script load</span>
+              <select id="k6-mode">
+                <option value="estimate">From the estimate in step 2 (load test)</option>
+                <option value="smoke">Smoke test: 2 VUs for 1 minute</option>
+              </select>
+            </label>
+          </div>
+          <div class="msgs" id="k6-msgs" aria-live="polite"></div>
+          <pre class="code" id="k6-out" tabindex="0" aria-label="Generated k6 script"><code>// Paste an OpenAPI or Swagger definition above, or try an example.</code></pre>
+          <p class="note" style="margin-top:12px">Made with the <a href="/tools/openapi-to-k6/">OpenAPI to k6 converter</a>. Perf Studio adds a threshold per endpoint and p(99), so step 3 can judge each endpoint. Run it with <code>k6 run --summary-export=summary.json script.js</code>, then load <code>summary.json</code> in step 3.</p>
+          <div class="next-row"><button class="btn btn-small" type="button" data-go="estimate">Next: estimate →</button></div>
+        </div>
+      </div>
+
+      <!-- 2. Estimate -->
+      <div role="tabpanel" id="p-estimate" aria-labelledby="tab-estimate" hidden>
+        <div class="panel">
+          <h2>Your peak and your targets</h2>
+          <p class="sub">The estimate uses the endpoints and mix from step 1. Without a definition, it treats all requests as one endpoint.</p>
+          <form id="est-form" onsubmit="return false">
+            <div class="grid">
+              <div class="field"><span>Peak measured as</span>
+                <div class="seg" role="radiogroup" aria-label="Peak measured as">
+                  <label><input type="radio" name="basis" value="users" checked>Users</label>
+                  <label><input type="radio" name="basis" value="requests">Requests / hour</label>
+                </div>
+              </div>
+              <label class="field" id="f-users"><span>Peak concurrent users</span><input type="number" name="peakUsers" min="1" step="1" value="500" inputmode="numeric"></label>
+              <label class="field" id="f-reqs" hidden><span>Peak requests per hour</span><input type="number" name="peakPerHour" min="1" step="1" value="300000" inputmode="numeric"></label>
+              <label class="field"><span>Think time between requests (s)</span><input type="number" name="thinkTimeS" min="0" step="0.5" value="5" inputmode="decimal"></label>
+              <label class="field"><span>Expected response time (s)</span><input type="number" name="respTimeS" min="0.01" step="0.1" value="0.5" inputmode="decimal"></label>
+              <label class="field"><span>Target p95 (ms)</span><input type="number" name="targetP95Ms" min="0" step="50" value="800" inputmode="numeric"></label>
+              <label class="field"><span>Error rate limit (%)</span><input type="number" name="errorPct" min="0" step="0.1" value="1" inputmode="decimal"></label>
+              <label class="field"><span>Test environment</span>
+                <select name="environment">
+                  <option value="prod">Production-like (same size)</option>
+                  <option value="scaled">Scaled-down copy</option>
+                  <option value="shared">Shared test environment</option>
+                </select>
+              </label>
+              <label class="field" id="f-scale" hidden><span>Size compared to production (%)</span><input type="number" name="envScalePct" min="1" max="100" step="5" value="50" inputmode="numeric"></label>
+              <label class="field"><span>Soak test length (hours)</span><input type="number" name="soakHours" min="1" max="72" step="1" value="4" inputmode="numeric"></label>
+            </div>
+            <label class="checkline" style="margin-top:14px"><input type="checkbox" name="auth" checked>The API needs a login or token (adds test accounts and script time)</label>
+          </form>
+        </div>
+
+        <div class="panel" id="est-out" aria-live="polite">
+          <h2>The estimate</h2>
+          <div class="msgs" id="est-msgs"></div>
+          <div class="tiles" id="est-tiles"></div>
+          <h3>Target load per endpoint</h3>
+          <div class="tbl-wrap"><table class="data" id="est-eps"></table></div>
+          <h3>Tests to run</h3>
+          <div class="tbl-wrap"><table class="data" id="est-tests"></table></div>
+          <h3>Test data</h3>
+          <ul id="est-data" class="note"></ul>
+          <h3>Load generator</h3>
+          <p class="note" id="est-gen"></p>
+          <h3>Effort</h3>
+          <div class="tbl-wrap"><table class="data" id="est-effort"></table></div>
+          <h3>Assumptions</h3>
+          <ul id="est-assume" class="note"></ul>
+          <div class="next-row"><button class="btn btn-small" type="button" data-go="results">Next: results →</button></div>
+        </div>
+      </div>
+
+      <!-- 3. Results -->
+      <div role="tabpanel" id="p-results" aria-labelledby="tab-results" hidden>
+        <div class="panel">
+          <h2><label for="res-in">Your load test results</label></h2>
+          <p class="sub">A k6 summary (the text at the end of a run, <code>--summary-export</code> JSON or <code>handleSummary</code> JSON), or a JMeter <code>.jtl</code> / <code>.csv</code> with a header row. JMeter files also give a timeline, so Perf Studio can see latency and throughput change as load rises.</p>
+          <div class="examples">Try a sample:
+            <button class="chip-btn" type="button" data-sample="k6">k6 summary, per endpoint</button>
+            <button class="chip-btn" type="button" data-sample="k6export">k6 --summary-export</button>
+            <button class="chip-btn" type="button" data-sample="jtl">JMeter JTL, 20,000 rows</button>
+            <button class="chip-btn" type="button" id="res-clear">Clear</button>
+          </div>
+          <textarea id="res-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste k6 output or JMeter CSV here, or upload a file."></textarea>
+          <div class="row-btns">
+            <span class="btn btn-ghost btn-small file-btn">Upload results<input type="file" id="res-file" accept=".json,.txt,.jtl,.csv,.xml,.log" aria-label="Upload k6 or JMeter results"></span>
+            <span class="file-name" id="res-file-name"></span>
+          </div>
+          <p class="note" id="res-slo" style="margin:12px 0 0"></p>
+        </div>
+
+        <div class="panel" id="res-out" aria-live="polite">
+          <h2>Analysis</h2>
+          <div class="msgs" id="res-msgs"></div>
+          <div id="res-body"><p class="note">Load results above, or try a sample, to see the analysis.</p></div>
+          <div class="next-row"><button class="btn btn-small" type="button" data-go="recs">Next: recommendations →</button></div>
+        </div>
+      </div>
+
+      <!-- 4. Recommendations -->
+      <div role="tabpanel" id="p-recs" aria-labelledby="tab-recs" hidden>
+        <div class="panel">
+          <h2>Recommendations</h2>
+          <p class="sub">Each one comes from a written rule and quotes the measured numbers that triggered it. Start at the top.</p>
+          <div id="recs-body"><p class="note">Load results in step 3 first.</p></div>
+          <div class="next-row"><button class="btn btn-small" type="button" data-go="report">Next: report →</button></div>
+        </div>
+      </div>
+
+      <!-- 5. Report -->
+      <div role="tabpanel" id="p-report" aria-labelledby="tab-report" hidden>
+        <div class="panel">
+          <h2>Executive report</h2>
+          <p class="sub">One printable page: verdict, key numbers, top risks, recommendations and next steps. Print it to PDF, or download it as HTML or Markdown for a wiki or ticket.</p>
+          <form id="rep-form" class="grid" onsubmit="return false" style="margin-bottom:14px">
+            <label class="field"><span>System or project</span><input type="text" name="project" value="" placeholder="Bookshop checkout" autocomplete="off"></label>
+            <label class="field"><span>Release</span><input type="text" name="release" value="" placeholder="2.4.0" autocomplete="off"></label>
+            <label class="field"><span>Environment</span><input type="text" name="environment" value="" placeholder="Performance (prod-like)" autocomplete="off"></label>
+            <label class="field"><span>Date</span><input type="date" name="date"></label>
+          </form>
+          <div id="rep-body"><p class="note">Load results in step 3 first.</p></div>
+          <div class="row-btns" id="rep-btns" hidden>
+            <button class="btn btn-small" type="button" id="rep-print" data-track="perf-studio-report-print">Print or save as PDF</button>
+            <button class="btn btn-ghost btn-small" type="button" id="rep-html" data-track="perf-studio-report-html">Download HTML</button>
+            <button class="btn btn-ghost btn-small" type="button" id="rep-md" data-track="perf-studio-report-md">Download Markdown</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Five steps, one page, no guesswork</h2>
+      <ol>
+        <li><strong>API and k6 script.</strong> Your OpenAPI or Swagger file becomes a k6 script, using the same converter as the <a href="/tools/openapi-to-k6/">OpenAPI to k6 tool</a>. Perf Studio sizes it from your estimate and adds a threshold per endpoint, so k6 reports each endpoint on its own.</li>
+        <li><strong>Estimate.</strong> Little's Law turns peak users (or peak requests per hour), think time and response time into requests a second and VUs. You get the load per endpoint, and the five tests to run with their length. You also get the test data, the load generator size and the effort in days.</li>
+        <li><strong>Results.</strong> Load a k6 summary or a JMeter results file. You get throughput, p50 to p99 and errors per endpoint against your targets. Then come the bottleneck signals: latency rising with load, throughput flattening while users grow, errors bunched on one endpoint, and a long tail (p99 far above the median).</li>
+        <li><strong>Recommendations.</strong> Each signal maps to written rules: pools, autoscaling, indexes, caching, timeouts and retries, payload size. Every recommendation says which measured number triggered it.</li>
+        <li><strong>Report.</strong> A one-page go, go-with-risks or no-go verdict with the key numbers, top risks and next steps. Print it, or download it as HTML or Markdown.</li>
+      </ol>
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Does it use AI?</h3>
+      <p>No. Every number comes from your inputs or your results, and every rule is written down. The same results always give the same report, and you can see why each line is there.</p>
+      <h3>How is the verdict decided?</h3>
+      <p>No-go if anything blocking is found: overall p95 or error rate over the target, errors rising with load, a throughput plateau, timeouts or 5xx errors, or k6 running out of VUs. Go with risks if only warnings are found, such as one slow endpoint or a long tail. Go if neither.</p>
+      <h3>Why are some numbers in the estimate rules of thumb?</h3>
+      <p>Load generator size and effort depend on your scripts and team. The estimate lists every assumption it uses, so you can adjust it. Measured numbers in step 3 always come from your results.</p>
+      <h3>My JMeter file is huge.</h3>
+      <p>Files of a few hundred MB work, but big files are faster in the <a href="/tools/jtl-analyser/">JMeter results analyser</a>, which reads them in a background thread. Its percentiles are the same exact ones Perf Studio uses.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/openapi-to-k6/">OpenAPI → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/jtl-analyser/">JMeter results analyser →</a>
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Want a second pair of eyes?</p>
+          <h3>I plan, run and explain load tests for go-live</h3>
+          <p>Perf Studio gets you a long way. If the verdict is no-go, or the go-live is too important to guess, I can review your results or run the test with your team. Tell me what you're working on.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20%26%20load%20testing#contact" data-track="perf-studio-contact">Ask about a load test</a>
+          <a class="btn btn-ghost" href="/#services" data-track="perf-studio-services">See my services</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/tools/openapi-to-k6/convert.js"></script>
+  <script src="/tools/k6-results/explain.js"></script>
+  <script src="/tools/jtl-analyser/jtl.js"></script>
+  <script src="/tools/workload-model/workload.js"></script>
+  <script src="/tools/perf-studio/studio.js"></script>
+  <script src="/tools/perf-studio/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log Analyser: Group Errors, Find Spikes and Slow Endpoints — Pawan Sinha</title>
+  <meta name="description" content="Free log analyser that runs in your browser. Drop an application or web server log (JSON, logfmt, Log4j, Logback, Spring Boot, Nginx, Apache, syslog) and get errors grouped by message, exceptions by type, an error timeline with spike detection and slow endpoints. Handles 50 MB files.">
+  <meta property="og:title" content="Log Analyser — Pawan Sinha">
+  <meta property="og:description" content="Free tool: drop a log file and see the errors that matter, grouped by message and exception, with a timeline that flags spikes and the first error in each. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/log-analyser/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/log-analyser/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Log analyser","url":"https://pawansinha.com.au/tools/log-analyser/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Is my log uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The file is read and analysed in your browser, in a background thread. Logs often hold customer data, tokens and internal host names, so nothing is sent to a server."}},
+    {"@type":"Question","name":"Which log formats does it read?","acceptedAnswer":{"@type":"Answer","text":"JSON lines (pino, Bunyan, Winston, Serilog, Logstash, ECS), logfmt, timestamped application logs (Log4j, Logback, Spring Boot, Python logging, nginx error log), Apache and Nginx access logs in common or combined format, and syslog (RFC 3164 and 5424). Anything else is read as plain text, with levels found by keyword."}},
+    {"@type":"Question","name":"How does it group errors?","acceptedAnswer":{"@type":"Answer","text":"Each error message is turned into a template: numbers, UUIDs, IP addresses, hex values, emails, URLs, times and quoted strings are replaced with placeholders. Messages with the same template are counted together, with first seen, last seen and an example. Stack traces are grouped separately by exception type and top frame."}},
+    {"@type":"Question","name":"How is a spike detected?","acceptedAnswer":{"@type":"Answer","text":"Errors are counted per time bucket (one minute for short logs, longer for logs that span days). A bucket is a spike when its error count is more than the mean plus three standard deviations and at least 3. The first error in each spike is shown, because it is usually closest to the cause."}},
+    {"@type":"Question","name":"How big a file can it handle?","acceptedAnswer":{"@type":"Answer","text":"50 MB and more. The file is read in 4 MB chunks in a Web Worker, so the page stays responsive; a 50 MB log usually takes a few seconds. Up to 20,000 warning and error lines are kept for search."}}
+  ]}</script>
+  <style>
+    /* Full .wrap width like the header; children are capped instead of centring a narrower box. */
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .dropzone { position: relative; border-radius: 12px; }
+    .dropzone.over textarea { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--alt)); }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .filechip { display: inline-flex; gap: 8px; align-items: center; margin: 8px 0 0; padding: 4px 6px 4px 12px; background: var(--alt); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 13px; max-width: 100%; }
+    .filechip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .filechip button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .filechip[hidden] { display: none; }
+    .actions label.btn { cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .field select { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+    .ja-stat.fatal b, .ja-stat.error b { color: var(--bad); } .ja-stat.warn b { color: var(--warn); }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--bad); border-radius: 12px; padding: 12px 16px; margin-top: 12px; min-width: 0; }
+    .card-x.warn { border-left-color: var(--warn); } .card-x.info { border-left-color: var(--accent); }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; }
+    .card-x p { margin: 0; font-size: 14px; color: var(--muted); max-width: 84ch; overflow-wrap: anywhere; }
+    .mono, .card-x code { font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace; color: var(--text); overflow-wrap: anywhere; }
+    pre.stack { margin: 8px 0 0; font: 500 12px/1.55 "JetBrains Mono", ui-monospace, monospace; background: var(--alt); border-radius: 10px; padding: 10px 12px;
+      overflow-x: auto; max-height: 360px; white-space: pre; color: var(--text); }
+    .chart-box { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 0; }
+    .chart-box svg { display: block; width: 100%; height: 200px; }
+    .chart-box .bar { fill: color-mix(in srgb, var(--bad) 55%, transparent); cursor: pointer; }
+    .chart-box .bar.spike { fill: var(--bad); }
+    .chart-box .bar.sel { fill: var(--accent); }
+    .chart-box .wbar { fill: color-mix(in srgb, var(--warn) 45%, transparent); }
+    .chart-box .thr { stroke: var(--muted); stroke-dasharray: 4 4; stroke-width: 1; }
+    .chart-box .axis { stroke: var(--border); }
+    .chart-box .ylab { font-size: 11px; color: var(--muted); margin: 0 0 2px; }
+    .chart-box .xlab { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 4px; flex-wrap: wrap; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+    .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+    table.data td.msg code { font: 500 12.5px "JetBrains Mono", monospace; }
+    table.data td.l { text-align: left; }
+    details.ex summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
+    details.grp { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-width: 0; margin-bottom: 8px; }
+    details.grp summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+    details.grp summary::-webkit-details-marker { display: none; }
+    details.grp summary::before { content: '▸'; color: var(--muted); }
+    details.grp[open] summary::before { content: '▾'; }
+    details.grp .cnt { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3ch; }
+    details.grp .top { font: 500 12.5px "JetBrains Mono", monospace; overflow-wrap: anywhere; min-width: 0; flex: 1 1 260px; }
+    details.grp .body { padding: 0 14px 12px; font-size: 14px; color: var(--muted); }
+    .explore { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin: 0 0 10px; }
+    .explore label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+    .explore input[type=search], .explore input[type=datetime-local] { font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; min-width: 0; max-width: 100%; }
+    .explore input[type=search] { width: min(100%, 320px); }
+    .explore .check { flex-direction: row; align-items: center; gap: 6px; }
+    .lvchips { display: flex; flex-wrap: wrap; gap: 6px; }
+    ul.hits { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); max-height: 520px; overflow: auto; }
+    ul.hits li { padding: 6px 12px; border-bottom: 1px solid var(--border); font: 500 12.5px/1.5 "JetBrains Mono", monospace; overflow-wrap: anywhere; }
+    ul.hits li:last-child { border-bottom: 0; }
+    ul.hits .lv { display: inline-block; min-width: 5ch; font-weight: 700; }
+    ul.hits .lv.ERROR, ul.hits .lv.FATAL { color: var(--bad); } ul.hits .lv.WARN { color: var(--warn); }
+    ul.hits .ln { color: var(--muted); }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .exports button { font: inherit; cursor: pointer; }
+    .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+    .two > div { min-width: 0; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Log analysis</p>
+      <h1>Log analyser</h1>
+      <p class="lead">Drop an application or web server log and see what went wrong: errors grouped by message, exceptions by type, a timeline that flags error spikes, and the first error in each one. Access logs also get status codes, slow endpoints and top clients.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>The file is read on this page, in a background thread. Logs often hold customer data and tokens, so nothing is uploaded or stored.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Log analyser">
+      <div class="panel">
+        <h2><label for="log-in">Paste a log, or drop a file here</label></h2>
+        <p class="sub">JSON lines, logfmt, Log4j, Logback, Spring Boot, Python logging, Nginx and Apache access logs, syslog or plain text. The format is detected for you. Files of 50 MB or more are fine.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="java">Spring Boot app log</button>
+          <button class="chip-btn" type="button" data-sample="access">Nginx access log</button>
+          <button class="chip-btn" type="button" data-sample="json">JSON lines (Node.js)</button>
+          <button class="chip-btn" type="button" data-sample="big">50 MB test file</button>
+        </div>
+        <div class="dropzone" id="drop">
+          <textarea id="log-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="2026-11-08 10:00:02,300 ERROR [http-nio-8080-exec-2] com.acme.OrderService - Payment failed for order 12345&#10;java.lang.IllegalStateException: Gateway returned 502&#10;    at com.acme.PaymentClient.charge(PaymentClient.java:88)"></textarea>
+        </div>
+        <div class="filechip" id="filechip" hidden><span id="fname"></span><button type="button" id="unfile" aria-label="Remove file">✕</button></div>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="log-analyse">Analyse</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose file<input type="file" id="file" accept=".log,.txt,.json,.jsonl,.ndjson,.out,.csv,text/plain,application/json"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+          <label class="field" for="fmt">Format
+            <select id="fmt">
+              <option value="auto">Detect</option>
+              <option value="json">JSON lines</option>
+              <option value="logfmt">logfmt</option>
+              <option value="java">Timestamped app log</option>
+              <option value="access">Access log</option>
+              <option value="syslog">Syslog</option>
+              <option value="plain">Plain text</option>
+            </select>
+          </label>
+        </div>
+        <div class="ja-progress" id="progress" hidden><div class="track"><span class="fill" id="pfill"></span></div><span id="ptext">Reading…</span></div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>From thousands of lines to a short list of problems</h2>
+      <ol>
+        <li><strong>Format detection.</strong> The first 300 lines are tested against each format. Lines without a timestamp header (stack traces, wrapped messages) are joined to the entry above.</li>
+        <li><strong>Levels.</strong> Taken from the level field, a level word such as <code>ERROR</code> near the start of the line, a syslog priority, or an HTTP status (5xx is an error, 4xx a warning). Pino's numeric levels are understood.</li>
+        <li><strong>Error templates.</strong> <code>Payment failed for order 12345</code> and <code>Payment failed for order 12346</code> become one row: <code>Payment failed for order &lt;n&gt;</code>. The same is done for UUIDs, IPs, hex ids, emails, URLs, times and quoted strings.</li>
+        <li><strong>Exceptions.</strong> Java, Node.js, Python and Go stack traces are grouped by exception type and top frame, with the root cause from the last <code>Caused by:</code>.</li>
+        <li><strong>Timeline and spikes.</strong> Errors per minute (or a longer bucket for logs that span days). Spikes are buckets above the mean plus three standard deviations. Click a bar to see the errors in it.</li>
+      </ol>
+      <h3>Reading the results</h3>
+      <p>Start with the first error, not the most common one. In an incident, the most frequent message is usually a symptom (every request failing because the database pool is empty). The first error in the spike is closer to the cause.</p>
+      <p>Times are shown as written in the log. If the log has a time zone offset, it is ignored, so the times match what you see in the file.</p>
+      <h3>Tips for bigger logs</h3>
+      <ul>
+        <li>Choose the file rather than pasting it: the browser reads it in chunks and the page stays responsive.</li>
+        <li>For several files, join them first: <code>cat app.log.* &gt; all.log</code> on macOS or Linux.</li>
+        <li>Compressed logs (<code>.gz</code>) need unzipping first: <code>gunzip app.log.gz</code>.</li>
+      </ul>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Is my log uploaded anywhere?</h3>
+      <p>No. The file is read and analysed in your browser, in a background thread. Logs often hold customer data, tokens and internal host names, so nothing is sent to a server.</p>
+      <h3>Which log formats does it read?</h3>
+      <p>JSON lines (pino, Bunyan, Winston, Serilog, Logstash, ECS), logfmt, timestamped application logs (Log4j, Logback, Spring Boot, Python logging, nginx error log), Apache and Nginx access logs in common or combined format, and syslog (RFC 3164 and 5424). Anything else is read as plain text, with levels found by keyword.</p>
+      <h3>How does it group errors?</h3>
+      <p>Each error message is turned into a template by replacing the parts that change between occurrences. Messages with the same template are counted together, with first seen, last seen and an example. Stack traces are grouped separately by exception type and top frame.</p>
+      <h3>How is a spike detected?</h3>
+      <p>A time bucket is a spike when its error count is more than the mean plus three standard deviations, and at least 3. The first error in each spike is shown because it is usually closest to the cause.</p>
+      <h3>Where does the response time come from in an access log?</h3>
+      <p>From a field such as <code>rt=</code>, <code>request_time=</code> or <code>upstream_response_time=</code>, or a number at the end of the line. A number with a decimal point is read as seconds (Nginx <code>$request_time</code>); a whole number is read as milliseconds.</p>
+      <h3>How big a file can it handle?</h3>
+      <p>50 MB and more. The file is read in 4 MB chunks in a Web Worker; a 50 MB log usually takes a few seconds. Up to 20,000 warning and error lines are kept for search.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/ci-failure-detective/">CI/CD failure detective →</a>
+        <a href="/tools/thread-dump/">Thread dump analyser →</a>
+        <a href="/tools/gc-log/">GC log analyser →</a>
+        <a href="/tools/jtl-analyser/">JMeter results analyser →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Errors only show up under load?</h3>
+          <p>Bring the log from a bad hour. I'll help you find the first failure, the bottleneck behind it and a load test that reproduces it before your users do. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20%26%20load%20testing#contact" data-track="log-analyser-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/log-analyser/logs.js"></script>
+  <script src="/tools/log-analyser/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

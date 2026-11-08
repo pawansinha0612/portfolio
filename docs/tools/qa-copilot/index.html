@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QA Manager Copilot: Test Scenarios, Strategy, Estimates and Release Risk — Pawan Sinha</title>
+  <meta name="description" content="Free toolkit for test managers and QA leads. Turn user stories and acceptance criteria into test scenarios with boundary values, write a test strategy, make a PERT test estimate, track requirement coverage, score release risk and print a one-page stakeholder report. Rule-based and runs in your browser.">
+  <meta property="og:title" content="QA Manager Copilot — Pawan Sinha">
+  <meta property="og:description" content="Free tool for QA leads: requirements → test scenarios (CSV for Zephyr or Xray, and Gherkin), test strategy, three-point estimate, coverage tracker, release go/no-go score and a stakeholder report. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/qa-copilot/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/qa-copilot/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"QA manager copilot","url":"https://pawansinha.com.au/tools/qa-copilot/","applicationCategory":"BusinessApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Does it use AI, and is my data uploaded?","acceptedAnswer":{"@type":"Answer","text":"No to both. Every result comes from written rules that run in your browser, so the same input always gives the same output and nothing is sent anywhere. The coverage tracker is saved in this browser's local storage only."}},
+    {"@type":"Question","name":"What requirement formats can I paste?","acceptedAnswer":{"@type":"Answer","text":"User stories (As a … I want … so that …) with acceptance criteria, Gherkin features and scenarios (Given, When, Then), and plain requirement lines with must, should or shall. IDs such as REQ-12, US-3 or Jira keys at the start of a line are kept."}},
+    {"@type":"Question","name":"How are boundary values chosen?","acceptedAnswer":{"@type":"Answer","text":"Numbers in phrases such as between 1 and 100, max 50 characters, at least 8, 18 or older, less than 10 and exactly 4 digits become boundaries. Each gets the values just below, at and just above each limit, plus equivalence classes for a typical valid value, values outside the range and the wrong type."}},
+    {"@type":"Question","name":"Can I import the scenarios into Jira, Zephyr or Xray?","acceptedAnswer":{"@type":"Answer","text":"Yes. The CSV has Name, Precondition, Action, Data, Expected Result, Priority, Labels and Requirement columns that map straight onto Zephyr Scale and Xray CSV import. There is also a Gherkin export for Cucumber, SpecFlow or Behave."}},
+    {"@type":"Question","name":"How is the test estimate worked out?","acceptedAnswer":{"@type":"Answer","text":"Effort is built bottom-up from scenario counts and complexity, execution cycles, automation, retests, regression, environment setup and management overhead. That is the most likely value; optimistic and pessimistic values come from the uncertainty you choose, and the PERT formula (O + 4M + P) / 6 gives the expected effort and a 95% confidence figure."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+    .tabs button { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; }
+    .tabs button:hover { border-color: var(--accent); color: var(--accent); }
+    .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .tabpanel[hidden] { display: none; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    textarea.code { width: 100%; min-height: 200px; resize: vertical; display: block; font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .grid-f { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px 18px; }
+    .f { display: flex; flex-direction: column; gap: 4px; font-size: 14px; min-width: 0; }
+    .f > span { font-weight: 600; }
+    .f small { color: var(--muted); font-size: 12.5px; }
+    .f input, .f select, .f textarea, .cell { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; min-width: 0; width: 100%; }
+    .f textarea { min-height: 70px; resize: vertical; }
+    .f input:focus, .f select:focus, .f textarea:focus, .cell:focus { outline: none; border-color: var(--accent); }
+    .f-wide { grid-column: 1 / -1; }
+    fieldset.fs { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px 12px; margin: 0; min-width: 0; }
+    fieldset.fs legend { font-size: 14px; font-weight: 700; padding: 0 6px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+    .checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+    .checks input { accent-color: var(--accent); }
+    h3.sec { font-size: 16px; margin: 18px 0 8px; }
+    table.data.edit td { text-align: left; white-space: normal; vertical-align: top; padding: 6px; }
+    table.data.edit td:first-child { min-width: 90px; max-width: 120px; }
+    table.data.edit th { text-align: left; }
+    table.data.edit .cell { font-size: 13px; padding: 5px 7px; }
+    table.data.edit textarea.cell { min-height: 54px; resize: vertical; min-width: 190px; }
+    table.data.edit input.cell { min-width: 200px; }
+    table.data.edit select.cell { width: auto; }
+    .tp { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+    .x { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 2px 6px; font-size: 15px; }
+    .x:hover { color: var(--bad); }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .exports button, .exports label { font: inherit; cursor: pointer; }
+    .exports input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .doc-out { margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+    .doc-out[hidden] { display: none; }
+    .doc-out h1 { font-size: clamp(22px, 3vw, 28px); margin: 0 0 10px; }
+    .doc-out h2 { font-size: 19px; margin: 22px 0 8px; }
+    .doc-out h3 { font-size: 16px; margin: 16px 0 6px; }
+    .doc-out p, .doc-out li { max-width: 80ch; }
+    .doc-out table.data th, .doc-out table.data td { text-align: left; white-space: normal; }
+    .doc-out table.data th:first-child, .doc-out table.data td:first-child { min-width: 120px; }
+    .doc-out .tbl-wrap { margin: 8px 0 12px; }
+    .reqlist { margin: 6px 0 0; padding-left: 20px; font-size: 14px; color: var(--muted); }
+    .reqlist li { margin: 2px 0; max-width: 90ch; overflow-wrap: anywhere; }
+    .reqlist b { color: var(--text); }
+    .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; }
+    .two > div { min-width: 0; }
+    .addrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 8px; }
+    .addrow .f { flex: 1 1 120px; }
+    .addrow button { font: inherit; cursor: pointer; }
+    table.matrix th, table.matrix td { text-align: center; padding: 6px 8px; }
+    table.matrix th:first-child, table.matrix td:first-child { text-align: left; }
+    table.matrix th.rot { font: 500 11px "JetBrains Mono", monospace; white-space: nowrap; }
+    .st-pass { color: var(--ok); font-weight: 700; } .st-fail { color: var(--bad); font-weight: 700; } .st-blocked { color: var(--warn); font-weight: 700; } .st-notrun, .st-uncovered { color: var(--muted); }
+    .st-uncovered { font-style: italic; }
+    .risk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .risk-list li { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 14px; }
+    .risk-list li span { flex: 1 1 240px; min-width: 0; }
+    .risk-list select { font: inherit; font-size: 13.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; }
+    .meter { height: 12px; border-radius: 8px; background: linear-gradient(90deg, var(--ok) 0 20%, color-mix(in srgb, var(--warn) 70%, var(--ok)) 20% 40%, var(--warn) 40% 60%, var(--bad) 60% 100%); position: relative; margin: 14px 0 4px; max-width: 640px; }
+    .meter i { position: absolute; top: -5px; width: 4px; height: 22px; border-radius: 2px; background: var(--text); transform: translateX(-2px); }
+    .meter-lbl { display: flex; justify-content: space-between; max-width: 640px; font-size: 12px; color: var(--muted); }
+    .reasons { margin: 10px 0 0; padding-left: 20px; font-size: 14px; }
+    .reasons li { margin: 3px 0; max-width: 85ch; }
+    .reasons em { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; }
+    .note { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 8px 0 0; }
+    @media print {
+      body[data-print] > *:not(main), body[data-print] main > section:not(.app), body[data-print] .tabs, body[data-print] .tabpanel:not(.printing),
+      body[data-print] .printing > .panel, body[data-print] .no-print { display: none !important; }
+      body[data-print] .doc-out { border: 0; padding: 0; }
+      body[data-print] { background: #fff; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Test management</p>
+      <h1>QA manager copilot</h1>
+      <p class="lead">Six tools for test managers and QA leads in one place: turn requirements into test scenarios, write a test strategy, estimate the effort, track coverage, score release risk and print a one-page report for stakeholders.</p>
+      <p class="private-note">🔒 Rule-based and runs in your browser. <span>No AI model and no server: the same input always gives the same result, and requirements never leave your computer.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="QA manager copilot">
+      <div class="tabs" role="tablist" aria-label="Tools">
+        <button type="button" role="tab" id="t-scenarios" aria-controls="scenarios" aria-selected="true">1. Test scenarios</button>
+        <button type="button" role="tab" id="t-strategy" aria-controls="strategy" aria-selected="false">2. Test strategy</button>
+        <button type="button" role="tab" id="t-estimate" aria-controls="estimate" aria-selected="false">3. Estimate</button>
+        <button type="button" role="tab" id="t-coverage" aria-controls="coverage" aria-selected="false">4. Coverage</button>
+        <button type="button" role="tab" id="t-risk" aria-controls="risk" aria-selected="false">5. Release risk</button>
+        <button type="button" role="tab" id="t-report" aria-controls="report" aria-selected="false">6. Report</button>
+      </div>
+
+      <!-- (a) requirements → scenarios -->
+      <div class="tabpanel" id="scenarios" role="tabpanel" aria-labelledby="t-scenarios">
+        <div class="panel">
+          <h2><label for="req-in">Paste requirements</label></h2>
+          <p class="sub">User stories with acceptance criteria, Gherkin scenarios, or one requirement per line. Separate stories with a blank line. IDs such as <code>REQ-12</code> or <code>SHOP-381</code> at the start of a line are kept.</p>
+          <div class="examples">Try a sample:
+            <button class="chip-btn" type="button" data-req="stories">User stories</button>
+            <button class="chip-btn" type="button" data-req="gherkin">Gherkin feature</button>
+            <button class="chip-btn" type="button" data-req="plain">Plain requirements</button>
+          </div>
+          <textarea id="req-in" class="code" spellcheck="false" placeholder="SHOP-381 As a customer, I want to reset my password so that I can sign in again.&#10;Acceptance criteria:&#10;- The reset link expires after 30 minutes&#10;- Password must be between 8 and 64 characters"></textarea>
+          <fieldset class="fs" style="margin-top:12px"><legend>Scenario types</legend>
+            <div class="checks" id="types"></div>
+          </fieldset>
+          <div class="actions">
+            <button class="btn" type="button" id="gen" data-track="qa-copilot-scenarios">Generate scenarios</button>
+            <button class="btn btn-ghost btn-small" type="button" id="req-clear">Clear</button>
+          </div>
+          <p class="err" id="req-err" role="alert" hidden></p>
+        </div>
+        <div id="scen-out" class="result" hidden></div>
+      </div>
+
+      <!-- (b) strategy -->
+      <div class="tabpanel" id="strategy" role="tabpanel" aria-labelledby="t-strategy" hidden>
+        <div class="panel">
+          <h2>Describe the project</h2>
+          <p class="sub">The strategy is written from your answers: test levels, environments, entry and exit criteria matched to the risk, automation approach, defect targets, roles, reporting and risks.</p>
+          <div class="examples"><button class="chip-btn" type="button" id="st-sample">Fill in an example</button></div>
+          <div class="grid-f">
+            <label class="f"><span>Project or product</span><input id="st-project" placeholder="Online store checkout"></label>
+            <label class="f"><span>Type</span><select id="st-type"><option value="web">Web application</option><option value="mobile">Mobile app</option><option value="api">APIs / microservices</option><option value="data">Data platform / ETL</option><option value="package">Enterprise package (SAP, Salesforce)</option><option value="migration">Migration / upgrade</option><option value="ai">AI / LLM product</option></select></label>
+            <label class="f"><span>Risk level</span><select id="st-risk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical / regulated</option></select></label>
+            <label class="f"><span>Test team size</span><input id="st-team" type="number" min="1" value="3" inputmode="numeric"></label>
+            <label class="f"><span>Release cadence</span><select id="st-cadence"><option value="continuous">Continuous (many a day)</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="fortnightly" selected>Fortnightly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select></label>
+            <label class="f"><span>Owner</span><input id="st-owner" placeholder="QA lead name"></label>
+          </div>
+          <div class="grid-f" style="margin-top:12px">
+            <fieldset class="fs"><legend>Environments</legend><div class="checks" id="st-envs"></div></fieldset>
+            <fieldset class="fs"><legend>Test levels</legend><div class="checks" id="st-levels"></div></fieldset>
+          </div>
+          <div class="grid-f" style="margin-top:12px">
+            <label class="f"><span>Tools</span><textarea id="st-tools" placeholder="One per line, e.g. Jira + Zephyr Scale&#10;Playwright&#10;k6"></textarea></label>
+            <label class="f"><span>In scope</span><textarea id="st-in" placeholder="One per line"></textarea></label>
+            <label class="f"><span>Out of scope</span><textarea id="st-out" placeholder="One per line"></textarea></label>
+          </div>
+          <div class="actions"><button class="btn" type="button" id="st-go" data-track="qa-copilot-strategy">Write the strategy</button></div>
+        </div>
+        <div class="doc-out" id="st-doc" hidden></div>
+        <div class="exports no-print" id="st-x" hidden>
+          <button class="btn btn-ghost btn-small" type="button" data-copy="strategy">Copy Markdown</button>
+          <button class="btn btn-ghost btn-small" type="button" data-dl="strategy">Download .md</button>
+          <button class="btn btn-ghost btn-small" type="button" data-print="strategy">Print or save as PDF</button>
+          <span class="copied" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <!-- (c) estimate -->
+      <div class="tabpanel" id="estimate" role="tabpanel" aria-labelledby="t-estimate" hidden>
+        <div class="panel">
+          <h2>Test effort estimate</h2>
+          <p class="sub">Counts and times per scenario are bottom-up; the uncertainty sets the optimistic and pessimistic range. Results update as you type.</p>
+          <div class="examples"><button class="chip-btn" type="button" id="es-from">Use the scenarios from tab 1</button><button class="chip-btn" type="button" id="es-reset">Reset to defaults</button></div>
+          <div class="grid-f" id="es-form"></div>
+        </div>
+        <div id="es-out" class="result"></div>
+      </div>
+
+      <!-- (d) coverage -->
+      <div class="tabpanel" id="coverage" role="tabpanel" aria-labelledby="t-coverage" hidden>
+        <div class="panel">
+          <h2>Requirement coverage tracker</h2>
+          <p class="sub">Link tests to requirements and record results. Saved in this browser only (local storage). Export a backup to share it or move it to another computer.</p>
+          <div class="examples">
+            <button class="chip-btn" type="button" id="cv-sample">Load an example</button>
+            <button class="chip-btn" type="button" id="cv-from">Add the scenarios from tab 1</button>
+          </div>
+          <div class="two">
+            <div>
+              <h3 class="sec" style="margin-top:4px">Requirements</h3>
+              <div class="addrow"><label class="f"><span>ID</span><input id="cv-rid" placeholder="REQ-1"></label><label class="f" style="flex:3 1 180px"><span>Title</span><input id="cv-rtitle" placeholder="Customer can reset password"></label><button class="btn btn-ghost btn-small" type="button" id="cv-radd">Add</button></div>
+              <div id="cv-reqs"></div>
+            </div>
+            <div>
+              <h3 class="sec" style="margin-top:4px">Tests</h3>
+              <div class="addrow"><label class="f"><span>ID</span><input id="cv-tid" placeholder="TC-1"></label><label class="f" style="flex:2 1 160px"><span>Title</span><input id="cv-ttitle" placeholder="Reset link works"></label><label class="f"><span>Covers</span><input id="cv-treqs" placeholder="REQ-1, REQ-2"></label><button class="btn btn-ghost btn-small" type="button" id="cv-tadd">Add</button></div>
+              <div id="cv-tests"></div>
+            </div>
+          </div>
+          <div class="exports">
+            <label class="btn btn-ghost btn-small" for="cv-csv">Import results CSV<input type="file" id="cv-csv" accept=".csv,.tsv,.txt,text/csv"></label>
+            <button class="btn btn-ghost btn-small" type="button" id="cv-xcsv">Export CSV</button>
+            <button class="btn btn-ghost btn-small" type="button" id="cv-xjson">Export backup (JSON)</button>
+            <label class="btn btn-ghost btn-small" for="cv-ijson">Import backup<input type="file" id="cv-ijson" accept=".json,application/json"></label>
+            <button class="btn btn-ghost btn-small" type="button" id="cv-clear">Clear all</button>
+            <span class="copied" id="cv-msg" aria-live="polite"></span>
+          </div>
+          <p class="note">Results CSV: a header row with <b>Test ID</b> (or Name) and <b>Status</b>, and optionally <b>Requirement</b>. Exports from Zephyr Scale, Xray, TestRail and Azure Test Plans work. Passed, Failed, Blocked and Not run (or Unexecuted) are understood.</p>
+        </div>
+        <div id="cv-out" class="result"></div>
+      </div>
+
+      <!-- (e) release risk -->
+      <div class="tabpanel" id="risk" role="tabpanel" aria-labelledby="t-risk" hidden>
+        <div class="panel">
+          <h2>Release readiness</h2>
+          <p class="sub">Mark each check, enter open defects and test results. The score is out of 100: higher means riskier. Any open critical defect is an automatic no-go.</p>
+          <div class="examples"><button class="chip-btn" type="button" id="rk-from">Use coverage from tab 4</button><button class="chip-btn" type="button" id="rk-sample">Fill in an example</button></div>
+          <ul class="risk-list" id="rk-checks"></ul>
+          <div class="grid-f" style="margin-top:14px" id="rk-form"></div>
+        </div>
+        <div id="rk-out" class="result"></div>
+      </div>
+
+      <!-- (f) report -->
+      <div class="tabpanel" id="report" role="tabpanel" aria-labelledby="t-report" hidden>
+        <div class="panel">
+          <h2>Stakeholder report</h2>
+          <p class="sub">A one-page summary built from the estimate (tab 3), coverage (tab 4) and release risk (tab 5). Print it, save it as a PDF, or copy the Markdown into an email or Confluence.</p>
+          <div class="grid-f">
+            <label class="f"><span>Project</span><input id="rp-project" placeholder="Online store"></label>
+            <label class="f"><span>Release</span><input id="rp-release" placeholder="2.4.0"></label>
+            <label class="f"><span>Prepared by</span><input id="rp-author" placeholder="Your name"></label>
+            <label class="f"><span>Date</span><input id="rp-date"></label>
+            <label class="f f-wide"><span>Notes (optional)</span><textarea id="rp-notes" placeholder="Anything stakeholders should know: scope changes, known issues, decisions needed."></textarea></label>
+          </div>
+          <fieldset class="fs" style="margin-top:12px"><legend>Include</legend><div class="checks">
+            <label><input type="checkbox" id="rp-risk" checked> Release risk</label><label><input type="checkbox" id="rp-cov" checked> Coverage and progress</label><label><input type="checkbox" id="rp-def" checked> Open defects</label><label><input type="checkbox" id="rp-est" checked> Effort estimate</label>
+          </div></fieldset>
+          <div class="actions"><button class="btn" type="button" id="rp-go" data-track="qa-copilot-report">Build the report</button></div>
+        </div>
+        <div class="doc-out" id="rp-doc" hidden></div>
+        <div class="exports no-print" id="rp-x" hidden>
+          <button class="btn btn-ghost btn-small" type="button" data-copy="report">Copy Markdown</button>
+          <button class="btn btn-ghost btn-small" type="button" data-dl="report">Download .md</button>
+          <button class="btn btn-ghost btn-small" type="button" data-print="report">Print or save as PDF</button>
+          <span class="copied" aria-live="polite"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Test design rules, written down</h2>
+      <p>Everything here follows standard test design techniques (ISTQB-style) applied by rules, not guesses. You get a solid first draft in seconds, then use your judgement to edit it.</p>
+      <ol>
+        <li><strong>Scenarios.</strong> Each requirement gets a happy path and one check per acceptance criterion. Words in the text add more: login, email, payment, upload, date, search and duplicates add matching negative tests; roles add permission tests; form words add empty and whitespace checks; and performance, security and accessibility prompts appear only when the requirement hints at them.</li>
+        <li><strong>Boundaries.</strong> Limits such as <code>between 8 and 64 characters</code> give 7, 8, 9, 63, 64 and 65. <code>at least 18</code> gives 17, 18 and 19. Equivalence classes add one typical valid value and the invalid classes on each side.</li>
+        <li><strong>Strategy.</strong> Exit criteria tighten with risk (90% pass for low risk, 100% for regulated work), defect fix targets shorten, and fast release cadences shift the automation advice.</li>
+        <li><strong>Estimate.</strong> Bottom-up hours for design, execution per cycle, automation build and upkeep, defect retests, regression, setup and management. PERT turns the range into an expected value: <code>E = (O + 4M + P) / 6</code>, with a 95% figure of E + 1.645σ.</li>
+        <li><strong>Release risk.</strong> Up to 35 points for missing checks, 30 for open defects (25 for each critical), 15 for coverage gaps, 10 for failed tests, 10 for flaky tests and 5 for a large release. Under 30 is a go; 30 to 59 is a go with conditions; 60 or more, an open critical defect, coverage under 60% or a pass rate under 85% is a no-go.</li>
+      </ol>
+      <h3>Importing into Jira</h3>
+      <p>Zephyr Scale: Tests → Import → CSV, then map Name, Precondition, Action (step), Data, Expected Result, Priority and Labels. Xray: Test Case Importer → CSV, with Action, Data and Result as the step columns. The Requirement column holds the requirement ID so you can link the tests after import.</p>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Does it use AI, and is my data uploaded?</h3>
+      <p>No to both. Every result comes from written rules that run in your browser, so the same input always gives the same output and nothing is sent anywhere. The coverage tracker is saved in this browser's local storage only.</p>
+      <h3>What requirement formats can I paste?</h3>
+      <p>User stories (As a … I want … so that …) with acceptance criteria, Gherkin features and scenarios, and plain requirement lines with must, should or shall. IDs such as <code>REQ-12</code>, <code>US-3</code> or Jira keys at the start of a line are kept.</p>
+      <h3>How are boundary values chosen?</h3>
+      <p>Numbers in phrases such as <em>between 1 and 100</em>, <em>max 50 characters</em>, <em>at least 8</em>, <em>18 or older</em>, <em>less than 10</em> and <em>exactly 4 digits</em> become boundaries, with values just below, at and just above each limit.</p>
+      <h3>Can I import the scenarios into Jira, Zephyr or Xray?</h3>
+      <p>Yes. The CSV columns map straight onto Zephyr Scale and Xray CSV import. There is also a Gherkin export for Cucumber, SpecFlow or Behave.</p>
+      <h3>How is the test estimate worked out?</h3>
+      <p>Bottom-up from your counts and rates, which gives the most likely value. Optimistic and pessimistic values come from the uncertainty you choose, and the PERT formula gives the expected effort and a 95% confidence figure to plan with.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/ci-failure-detective/">CI/CD failure detective →</a>
+        <a href="/tools/test-data/">Test data generator →</a>
+        <a href="/tools/openapi-to-playwright/">OpenAPI → Playwright tests →</a>
+        <a href="/templates/">Test templates →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Setting up testing for a new team or project?</h3>
+          <p>Bring your backlog and release plan. I'll help you shape a test strategy, estimate and quality gates that fit your team, and the reporting your stakeholders will actually read. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=QA%20strategy%20%26%20setup#contact" data-track="qa-copilot-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/qa-copilot/qa.js"></script>
+  <script src="/tools/qa-copilot/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

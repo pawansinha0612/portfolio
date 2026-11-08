@@ -23,6 +23,11 @@
     dataDriven: true,     // one test per enum / example value
     shape: true,          // check required response fields exist
     yaml: null,           // function (text) → object, for YAML input
+    // API Automation Factory options. All off by default, and when off the output is exactly what it was before them.
+    dataTable: false,     // a data table per endpoint (examples, enums, min/max limits) looped with for...of
+    tokenHelper: false,   // global-setup.ts that gets a bearer token once (client credentials or a login endpoint)
+    htmlReport: false,    // playwright.config.ts with html + junit reporters, and a package.json with scripts
+    catalogue: false,     // result.catalogue: one row per test case, for CSV or Markdown export
   };
 
   const RESERVED = new Set(('request res json body test expect field item value BASE_URL break case catch class const continue debugger ' +
@@ -231,6 +236,10 @@
     const groups = new Map();         // tag → [test code]
     const C = result.counts;
     let pathIds = 0, generatedBodies = 0, unsafe = 0, deprecated = 0, truncated = 0;
+    const cat = [];                   // test case catalogue rows (only returned when o.catalogue)
+    const note = (tag, endpoint, scenario, type, expected) => cat.push({ tag, endpoint, scenario, type, expected });
+    const tableNames = new Set();
+    let tableRows = 0, tableCut = 0;
 
     for (const entry of chosen) {
       const { op, item, method, path } = entry;
@@ -311,6 +320,8 @@
           const names = pairs.map(x => x[0]);
           if (new Set(names).size === names.length) { opts.params = {}; pairs.forEach(([k, v]) => { opts.params[k] = v; }); }
           else opts.params = raw('new URLSearchParams(' + toCode(pairs.map(([k, v]) => [k, v instanceof Raw ? raw('String(' + v.code + ')') : asString(v)]), '    ') + ')');
+          // data table rows: the documented parameters, then one overridden by the row (only used when dataTable is on)
+          if (ov.paramsExtra && !(opts.params instanceof Raw)) opts.params = raw('{ ...' + toCode(opts.params, '') + ', ' + ov.paramsExtra + ' }');
         }
         if (body) {
           const value = 'body' in ov ? ov.body : body.value;
@@ -400,9 +411,64 @@
           '}',
         ].join('\n'));
         C.dataDriven += loop.values.length; C.positive += loop.values.length;
+        for (const x of loop.values) note(entry.tag, label, `${label} with ${pname}=${x} returns ${statusText}`, 'positive', expectedOk(statusText, shape));
       } else {
         tests.push(testCode(`${label} returns ${statusText}`, [call(), ...positiveChecks], entry.summary));
         C.positive++;
+        note(entry.tag, label, `${label} returns ${statusText}`, 'positive', expectedOk(statusText, shape));
+      }
+
+      // ---- data table (opt-in): rows made from examples, enums and min/max limits, looped with for...of
+      const valCodesAll = [400, 422].filter(documented);
+      const badText = valCodesAll.length ? valCodesAll.join(' or ') : '4xx';
+      const badChecks = valCodesAll.length === 1 ? [`expect(res.status()).toBe(${valCodesAll[0]});`]
+        : valCodesAll.length > 1 ? [`expect(${toCode(valCodesAll)}).toContain(res.status());`]
+          : ['expect(res.status()).toBeGreaterThanOrEqual(400);', 'expect(res.status()).toBeLessThan(500);'];
+      if (o.dataTable) {
+        const okChecks = positiveChecks.filter(l => /res\.status\(\)/.test(l));
+        const covered = loop && o.dataDriven ? (loop.kind === 'body' ? 'body:' + loop.name : loop.kind + ':' + loop.p.name) : '';
+        const sources = [];
+        if (body && body.kind === 'json' && isObj(body.value) && bodySchema && isObj(bodySchema.properties)) {
+          const rows = [];
+          for (const [name, ps0] of Object.entries(bodySchema.properties)) {
+            const ps = resolve(ctx, ps0);
+            if (!ps || ps.readOnly) continue;
+            rows.push(...fieldCases(ctx, name, ps, covered === 'body:' + name));
+          }
+          if (rows.length) sources.push({ where: 'body', rows });
+        }
+        const qNames = queryPs.map(x => x.p.name);
+        if (queryPs.length && new Set(qNames).size === qNames.length) {
+          const rows = [];
+          for (const { p } of queryPs) rows.push(...fieldCases(ctx, p.name, paramSchema(ctx, p), covered === 'query:' + p.name));
+          if (rows.length) sources.push({ where: 'query', rows });
+        }
+        for (const src of sources) {
+          let rows = src.rows;
+          if (rows.length > MAX_TABLE) { tableCut++; rows = rows.slice(0, MAX_TABLE); }
+          const nameBase = tableName(method, path, src.where === 'query' ? 'QueryRows' : 'Rows');
+          let tname = nameBase, i = 2;
+          while (tableNames.has(tname)) tname = nameBase + i++;
+          tableNames.add(tname);
+          const where = src.where === 'body' ? 'body field' : 'query parameter';
+          const ov = src.where === 'body'
+            ? { body: raw('{ ...' + toCode(body.value, '    ') + ', [row.field]: row.value }') }
+            : { paramsExtra: '[row.field]: String(row.value)' };
+          tests.push([
+            `// Data table for ${label}: each row changes one ${where}, using the schema's examples, enums and limits.`,
+            `// Valid rows expect ${statusText}. Invalid rows expect ${badText}. Add your own rows to the table.`,
+            `const ${tname} = [`,
+            ...rows.map(r => '  { ' + [['name', r.name], ['field', r.field], ['value', r.value], ['valid', r.valid]].map(([k, v]) => k + ': ' + toCode(v)).join(', ') + ' },'),
+            '];',
+            `for (const row of ${tname}) {`,
+            `  test(${tpl([label + ': ', { code: 'row.name' }])}, async ({ request }) => {`,
+            ...indentLines([call(ov), 'if (row.valid) {', ...indentLines(okChecks, '  '), '} else {', ...indentLines(badChecks, '  '), '}'], '    '),
+            '  });',
+            '}',
+          ].join('\n'));
+          for (const r of rows) note(entry.tag, label, `${label}: ${r.name}`, r.type, r.valid ? 'Status ' + statusText : 'Status ' + badText + ' (refused)');
+          tableRows += rows.length; C.positive += rows.filter(r => r.valid).length; C.negative += rows.filter(r => !r.valid).length;
+        }
       }
 
       if (o.negative) {
@@ -425,6 +491,7 @@
           tests.push(testCode(`${label} rejects a body without "${f}"`, [
             `// "${f}" is required, so the API should refuse the request.`, call({ body: b }), ...fourxx(valCodes)]));
           C.negative++;
+          note(entry.tag, label, `${label} rejects a body without "${f}"`, 'negative', 'Status ' + badText + ' (refused)');
         }
 
         // wrong type: a required body field first, then a required query or path parameter that isn't a string
@@ -450,6 +517,7 @@
             `// The ${wrong.where} "${wrong.name}" should be ${/^[aeiou]/.test(wrong.t) ? 'an' : 'a'} ${wrong.t}. This sends ${toCode(wrongValue(wrong.t))}.`,
             call(wrong.ov), ...fourxx(valCodes)]));
           C.negative++;
+          note(entry.tag, label, `${label} rejects "${wrong.name}" with the wrong type`, 'negative', 'Status ' + badText + ' (refused)');
         }
 
         // no auth
@@ -459,6 +527,7 @@
             call({ noAuth: true }),
             codes.length === 1 ? `expect(res.status()).toBe(${codes[0]});` : 'expect([401, 403]).toContain(res.status());']));
           C.negative++;
+          note(entry.tag, label, `${label} without auth returns ${codes.length === 1 ? codes[0] : '401 or 403'}`, 'auth', 'Status ' + (codes.length === 1 ? codes[0] : '401 or 403') + ' (no credentials sent)');
         }
 
         // unknown id in the path
@@ -473,6 +542,7 @@
             call({ path: { [idParam.name]: missing } }),
             ...(documented(404) ? ['expect(res.status()).toBe(404);'] : fourxx([], "The definition doesn't document a 404, so this accepts any 4xx."))]));
           C.negative++;
+          note(entry.tag, label, `${label} returns 404 for an unknown ${idParam.name}`, 'negative', documented(404) ? 'Status 404' : 'Status 4xx (404 not documented)');
         }
       }
 
@@ -511,7 +581,260 @@
     if (deprecated) result.info.push(`${deprecated} selected operation${deprecated === 1 ? ' is' : 's are'} marked deprecated in the definition.`);
     if (truncated) result.info.push(`Long value lists were cut to the first ${MAX_LOOP} values to keep the test count sensible.`);
     result.info.push(`Generated ${C.tests} test${C.tests === 1 ? '' : 's'} (${C.positive} positive, ${C.negative} negative${C.dataDriven ? ', ' + C.dataDriven + ' of them data-driven' : ''}) in ${groups.size} describe block${groups.size === 1 ? '' : 's'} (one per tag).`);
+
+    // ---- API Automation Factory extras. Nothing below runs unless one of the opt-in options is on.
+    if (o.dataTable) {
+      C.dataTable = tableRows;
+      result.info.push(tableRows
+        ? `Data tables add ${tableRows} row${tableRows === 1 ? '' : 's'} (counted above). Each row is one test: valid rows expect success, invalid rows expect a 4xx.`
+        : 'Data tables: no body fields or required query parameters with examples, enums or min/max limits, so no rows were added.');
+      if (tableCut) result.info.push(`${tableCut} data table${tableCut === 1 ? ' was' : 's were'} cut to the first ${MAX_TABLE} rows.`);
+    }
+    if (o.tokenHelper || o.htmlReport) {
+      result.files = [];
+      let setup = null;
+      if (o.tokenHelper) {
+        if (result.env.some(e => e.name === 'API_TOKEN')) {
+          setup = tokenSetup(ctx, ops, srv.url);
+          result.files.push({ name: 'global-setup.ts', about: 'Gets a bearer token once before the tests run and shares it through API_TOKEN.', content: setup.code });
+          result.info.push('Token helper: global-setup.ts gets a token once, before any test runs. Set API_TOKEN yourself to skip it' +
+            (setup.tokenUrl ? `, or set CLIENT_ID and CLIENT_SECRET for the client credentials flow (${setup.tokenUrl}).` : ', or set TOKEN_URL, CLIENT_ID and CLIENT_SECRET for the client credentials flow.') +
+            ` For a login endpoint, set LOGIN_USER and LOGIN_PASS${setup.loginPath ? ' (it posts to ' + setup.loginPath + ')' : ' and LOGIN_URL'}.`);
+        } else {
+          result.info.push("Token helper: the selected endpoints don't use bearer or OAuth 2 auth, so there's no token to fetch and global-setup.ts wasn't added.");
+        }
+      }
+      result.config = makeConfig({ html: o.htmlReport, setup: !!setup });
+      if (o.htmlReport) {
+        result.files.push({ name: 'package.json', about: 'Scripts to run the tests and open the HTML report.', content: PACKAGE_JSON });
+        result.command = 'npm test';
+      }
+    }
+    if (o.catalogue) {
+      result.catalogue = cat.map((r, i) => Object.assign({ id: 'TC-' + String(i + 1).padStart(3, '0') }, r));
+    }
     return result;
+  }
+
+  // ---------------------------------------------------------------- API Automation Factory helpers
+
+  const MAX_TABLE = 24;
+
+  function expectedOk(statusText, shape) {
+    return 'Status ' + statusText + (shape && shape.fields.length ? '; required fields present: ' + shape.fields.join(', ') : '');
+  }
+
+  // "POST", "/orders/{orderId}/items" → "postOrdersByOrderIdItemsRows"
+  function tableName(method, path, suffix) {
+    const words = path.replace(/\{([^}]+)\}/g, ' by $1 ').split(/[^A-Za-z0-9]+/).filter(Boolean);
+    const s = method.toLowerCase() + words.map(w => w[0].toUpperCase() + w.slice(1)).join('') + suffix;
+    return /^[A-Za-z_$]/.test(s) ? s : 'op' + s;
+  }
+
+  const scalar = v => v !== null && v !== undefined && typeof v !== 'object';
+  const shortVal = v => { const s = typeof v === 'string' ? JSON.stringify(v) : String(v); return s.length > 40 ? s.slice(0, 37) + '…"' : s; };
+  const tidy = x => +(+x).toFixed(6);
+
+  // Rows for one field: [{ field, name, value, valid, type: 'positive' | 'negative' | 'boundary' }].
+  // Values come only from the schema: example(s), enum, minLength/maxLength, minimum/maximum (and the exclusive forms).
+  function fieldCases(ctx, field, s, skipEnum) {
+    s = resolve(ctx, s);
+    if (!s) return [];
+    const t = typeOf(s);
+    const out = [];
+    const seen = new Set();
+    const add = (name, value, valid, type) => {
+      const k = (valid ? '1' : '0') + (value instanceof Raw ? value.code : JSON.stringify(value));
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ field, name: `"${field}" ${name}`, value, valid, type });
+    };
+    const ex = [];
+    if (scalar(s.example)) ex.push(s.example);
+    if (Array.isArray(s.examples)) ex.push(...s.examples.filter(scalar));
+    if (Array.isArray(s.enum) && s.enum.some(scalar)) {
+      const vals = s.enum.filter(scalar);
+      if (!skipEnum) vals.slice(0, MAX_LOOP).forEach(v => add(`= ${shortVal(v)} (allowed value)`, v, true, 'positive'));
+      if (t === 'string' && !vals.includes('not-an-allowed-value')) add('not in the allowed values', 'not-an-allowed-value', false, 'negative');
+      return out;
+    }
+    ex.forEach(v => add(`= ${shortVal(v)} (example)`, v, true, 'positive'));
+    const str = n => (n <= 40 ? 'a'.repeat(n) : raw(`'a'.repeat(${n})`));
+    if (t === 'string') {
+      const min = Number(s.minLength), max = Number(s.maxLength);
+      if (isFinite(min) && min > 0 && min <= 1000) {
+        add(`at the minimum length (${min} character${min === 1 ? '' : 's'})`, str(min), true, 'boundary');
+        add(`one character too short (${min - 1})`, str(min - 1), false, 'boundary');
+      }
+      if (isFinite(max) && max >= 0 && max <= 1000 && !(isFinite(min) && max < min)) {
+        add(`at the maximum length (${max} character${max === 1 ? '' : 's'})`, str(max), true, 'boundary');
+        add(`one character too long (${max + 1})`, str(max + 1), false, 'boundary');
+      }
+    } else if (t === 'integer' || t === 'number') {
+      const step = t === 'integer' ? 1 : 0.01;
+      const num = x => (typeof x === 'number' && isFinite(x) ? x : null);
+      let lo = num(s.minimum), loEx = s.exclusiveMinimum === true;
+      if (num(s.exclusiveMinimum) !== null && (lo === null || s.exclusiveMinimum >= lo)) { lo = s.exclusiveMinimum; loEx = true; }
+      let hi = num(s.maximum), hiEx = s.exclusiveMaximum === true;
+      if (num(s.exclusiveMaximum) !== null && (hi === null || s.exclusiveMaximum <= hi)) { hi = s.exclusiveMaximum; hiEx = true; }
+      if (lo !== null) {
+        add(loEx ? `just above the exclusive minimum (${tidy(lo + step)})` : `at the minimum (${lo})`, loEx ? tidy(lo + step) : lo, true, 'boundary');
+        add(loEx ? `at the exclusive minimum (${lo})` : `below the minimum (${tidy(lo - step)})`, loEx ? lo : tidy(lo - step), false, 'boundary');
+      }
+      if (hi !== null) {
+        add(hiEx ? `just below the exclusive maximum (${tidy(hi - step)})` : `at the maximum (${hi})`, hiEx ? tidy(hi - step) : hi, true, 'boundary');
+        add(hiEx ? `at the exclusive maximum (${hi})` : `above the maximum (${tidy(hi + step)})`, hiEx ? hi : tidy(hi + step), false, 'boundary');
+      }
+    }
+    return out;
+  }
+
+  // An OAuth 2 client credentials token URL and a login-looking POST endpoint, if the definition has them.
+  function tokenSetup(ctx, ops, baseUrl) {
+    const spec = ctx.spec;
+    const schemes = Object.values((spec.components && spec.components.securitySchemes) || spec.securityDefinitions || {}).map(x => K.deref(ctx, x));
+    let tokenUrl = '', scopes = '';
+    for (const s of schemes) {
+      if (!isObj(s) || String(s.type).toLowerCase() !== 'oauth2') continue;
+      const flow = isObj(s.flows) && isObj(s.flows.clientCredentials) ? s.flows.clientCredentials : (s.flow === 'application' ? s : null);
+      if (flow && typeof flow.tokenUrl === 'string') { tokenUrl = flow.tokenUrl; scopes = Object.keys(flow.scopes || {}).join(' '); break; }
+    }
+    if (tokenUrl && !/^https?:\/\//i.test(tokenUrl)) tokenUrl = baseUrl.replace(/\/+$/, '') + '/' + tokenUrl.replace(/^\/+/, '');
+    const login = ops.find(x => x.method === 'POST' && /(^|\/)(login|log-in|signin|sign-in|authenticate|sessions?|auth\/token|oauth\/token|token)(\/|$)/i.test(x.path) && !/\{/.test(x.path));
+    const loginPath = login ? login.path : '';
+    const env = [
+      { name: 'TOKEN_URL', about: 'OAuth 2 token endpoint (client credentials)' },
+      { name: 'CLIENT_ID', about: 'OAuth 2 client id for a test client' },
+      { name: 'CLIENT_SECRET', about: 'OAuth 2 client secret' },
+      { name: 'LOGIN_USER', about: 'test account user name for the login endpoint' },
+      { name: 'LOGIN_PASS', about: 'test account password for the login endpoint' },
+    ];
+    const code = [
+      '// Generated by the OpenAPI to Playwright generator: https://pawansinha.com.au/tools/openapi-to-playwright/',
+      '// Gets an access token ONCE, before any test runs, and shares it with every test through process.env.API_TOKEN.',
+      '// The first of these that is set wins:',
+      '//   1. API_TOKEN                            a token you got yourself',
+      '//   2. TOKEN_URL, CLIENT_ID, CLIENT_SECRET  OAuth 2 client credentials (SCOPE is optional)',
+      '//   3. LOGIN_URL, LOGIN_USER, LOGIN_PASS    a login endpoint that answers with a token in JSON',
+      '// Use a test client or test account, never a real user. Keep secrets in environment variables or CI secrets.',
+      "import { request } from '@playwright/test';",
+      '',
+      `const BASE_URL = (process.env.BASE_URL || ${lit(baseUrl)}).replace(/\\/+$/, '');`,
+      `const TOKEN_URL = process.env.TOKEN_URL || ${lit(tokenUrl)};`,
+      `const SCOPE = process.env.SCOPE ?? ${lit(scopes)};`,
+      `const LOGIN_URL = process.env.LOGIN_URL || ${loginPath ? '`${BASE_URL}' + loginPath.replace(/`/g, '').replace(/\$\{/g, '') + '`' : "''"};`,
+      '',
+      '// The token can be in a different field of the JSON answer. Set TOKEN_FIELD if it is, for example TOKEN_FIELD=data.jwt',
+      'function pickToken(json: unknown): string {',
+      "  const field = process.env.TOKEN_FIELD || '';",
+      '  const get = (path: string): unknown => path.split(\'.\').reduce<unknown>((o, k) => (o && typeof o === \'object\' ? (o as Record<string, unknown>)[k] : undefined), json);',
+      "  const found = field ? get(field) : ['access_token', 'accessToken', 'token', 'id_token', 'jwt'].map(get).find(v => typeof v === 'string');",
+      "  return typeof found === 'string' ? found : '';",
+      '}',
+      '',
+      'async function clientCredentials(): Promise<string> {',
+      '  const api = await request.newContext();',
+      '  try {',
+      "    const form: Record<string, string> = { grant_type: 'client_credentials', client_id: process.env.CLIENT_ID || '', client_secret: process.env.CLIENT_SECRET || '' };",
+      '    if (SCOPE) form.scope = SCOPE;',
+      '    const res = await api.post(TOKEN_URL, { form });',
+      '    if (!res.ok()) throw new Error(`Token request to ${TOKEN_URL} failed with ${res.status()}: ${(await res.text()).slice(0, 200)}`);',
+      '    return pickToken(await res.json());',
+      '  } finally {',
+      '    await api.dispose();',
+      '  }',
+      '}',
+      '',
+      'async function login(): Promise<string> {',
+      '  const api = await request.newContext();',
+      '  try {',
+      "    // Change the field names if your login endpoint expects different ones (email instead of username, for example).",
+      "    const res = await api.post(LOGIN_URL, { data: { username: process.env.LOGIN_USER || '', password: process.env.LOGIN_PASS || '' } });",
+      '    if (!res.ok()) throw new Error(`Login at ${LOGIN_URL} failed with ${res.status()}: ${(await res.text()).slice(0, 200)}`);',
+      '    return pickToken(await res.json());',
+      '  } finally {',
+      '    await api.dispose();',
+      '  }',
+      '}',
+      '',
+      'export default async function globalSetup(): Promise<void> {',
+      '  if (process.env.API_TOKEN) return;',
+      "  let token = '';",
+      '  if (TOKEN_URL && process.env.CLIENT_ID) token = await clientCredentials();',
+      '  else if (LOGIN_URL && process.env.LOGIN_USER) token = await login();',
+      '  else {',
+      "    console.warn('global-setup: no API_TOKEN, client credentials or login details are set, so tests that need auth will get 401 or 403.');",
+      '    return;',
+      '  }',
+      "  if (!token) throw new Error('global-setup: the token answer had no access_token, accessToken, token, id_token or jwt field. Set TOKEN_FIELD.');",
+      '  process.env.API_TOKEN = token;   // test workers start after this and read it',
+      '}',
+      '',
+    ].join('\n');
+    return { code, env, tokenUrl, loginPath };
+  }
+
+  function makeConfig(f) {
+    const lines = [
+      "import { defineConfig } from '@playwright/test';",
+      '',
+      'export default defineConfig({',
+      "  testDir: './tests',            // put api.spec.ts in this folder",
+      '  timeout: 30_000,',
+      '  retries: process.env.CI ? 1 : 0,',
+      '  workers: 1,                    // the tests create and change data, so run them one at a time',
+    ];
+    if (f.setup) lines.push("  globalSetup: './global-setup.ts',   // gets the bearer token once (see global-setup.ts)");
+    if (f.html) {
+      lines.push(
+        '  reporter: [',
+        "    ['list'],",
+        "    ['html', { open: 'never', outputFolder: 'playwright-report' }],   // npm run report",
+        "    ['junit', { outputFile: 'test-results/junit.xml' }],             // for CI and test management tools",
+        '  ],');
+    } else {
+      lines.push("  reporter: [['list'], ['html', { open: 'never' }]],");
+    }
+    lines.push('});', '');
+    return lines.join('\n');
+  }
+
+  const PACKAGE_JSON = JSON.stringify({
+    name: 'api-tests',
+    private: true,
+    scripts: {
+      test: 'playwright test',
+      'test:smoke': 'playwright test --grep "returns 2"',
+      'test:list': 'playwright test --list',
+      report: 'playwright show-report playwright-report',
+    },
+    devDependencies: { '@playwright/test': '^1.48.0', '@types/node': '^20.0.0' },
+  }, null, 2) + '\n';
+
+  // ---------------------------------------------------------------- test case catalogue exports
+
+  const CAT_COLS = [['id', 'ID'], ['tag', 'Area'], ['endpoint', 'Endpoint'], ['scenario', 'Scenario'], ['type', 'Type'], ['expected', 'Expected result']];
+
+  function csvCell(v) {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // stop spreadsheets running a cell as a formula
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function catalogueCsv(rows) {
+    return [CAT_COLS.map(c => c[1]).join(',')].concat(rows.map(r => CAT_COLS.map(([k]) => csvCell(r[k])).join(','))).join('\r\n') + '\r\n';
+  }
+
+  function catalogueMarkdown(rows, title) {
+    const md = s => String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const byType = {};
+    rows.forEach(r => { byType[r.type] = (byType[r.type] || 0) + 1; });
+    const out = [`# Test case catalogue${title ? ': ' + md(title) : ''}`, '',
+      `${rows.length} test case${rows.length === 1 ? '' : 's'}: ` + ['positive', 'negative', 'boundary', 'auth'].filter(t => byType[t]).map(t => `${byType[t]} ${t}`).join(', ') + '.', '',
+      '| ' + CAT_COLS.map(c => c[1]).join(' | ') + ' |', '|' + CAT_COLS.map(() => '---').join('|') + '|'];
+    rows.forEach(r => out.push('| ' + CAT_COLS.map(([k]) => md(r[k])).join(' | ') + ' |'));
+    out.push('', '_Generated from the API definition by pawansinha.com.au/tools/openapi-to-playwright/. Each row is one test in api.spec.ts._', '');
+    return out.join('\n');
   }
 
   function bodySchemaOf(ctx, op, params, type) {
@@ -558,6 +881,7 @@ export default defineConfig({
   const api = {
     generate, DEFAULTS, CONFIG, EXAMPLES: K.EXAMPLES, parseSpec: K.parseSpec,
     listOperations: K.listOperations,
+    catalogueCsv, catalogueMarkdown, makeConfig, PACKAGE_JSON,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.OpenApiToPlaywright = api;

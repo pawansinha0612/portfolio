@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CI/CD Failure Detective: Find Why Your Pipeline Failed — Pawan Sinha</title>
+  <meta name="description" content="Free CI/CD log analyser for GitHub Actions, GitLab CI and Jenkins. Paste a failed job log and get the first real error, the likely cause and a fix from 90+ failure patterns, plus failed tests. Compare several runs or JUnit XML files to find flaky tests. Runs in your browser.">
+  <meta property="og:title" content="CI/CD Failure Detective — Pawan Sinha">
+  <meta property="og:description" content="Free tool: paste a failed pipeline log and see the root cause, not the noise. Plain-English cause and fix for npm, Maven, Gradle, Docker, Kubernetes, Playwright and Selenium failures. Flaky test finder across runs. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/ci-failure-detective/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/ci-failure-detective/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"CI/CD failure detective","url":"https://pawansinha.com.au/tools/ci-failure-detective/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Is my build log uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The log is analysed in your browser with a fixed list of patterns. Build logs can hold internal host names, package names and sometimes secrets, so nothing is sent to a server or an AI model."}},
+    {"@type":"Question","name":"Which CI systems does it support?","acceptedAnswer":{"@type":"Answer","text":"GitHub Actions, GitLab CI and Jenkins are detected by their markers, and Azure Pipelines and CircleCI logs work too. Colour codes, progress bars and timestamp prefixes are removed before matching, so raw downloaded logs are fine."}},
+    {"@type":"Question","name":"How does it decide which error is the root cause?","acceptedAnswer":{"@type":"Answer","text":"Lines like 'Process completed with exit code 1', 'BUILD FAILED' and 'npm ERR! A complete log' are results, not causes, so they are marked as follow-on noise. The earliest real error is the candidate, and a more specific error close to it, or a severe one such as a full disk or out of memory, takes priority."}},
+    {"@type":"Question","name":"How does it find flaky tests?","acceptedAnswer":{"@type":"Answer","text":"Load several logs or JUnit XML files from runs of the same suite. A test that passes in one run and fails in another, or passes only on retry (Playwright flaky, Surefire flakyFailure), is flagged as flaky. Tests that fail every time are listed separately as consistent failures."}},
+    {"@type":"Question","name":"What if my error is not recognised?","acceptedAnswer":{"@type":"Answer","text":"The first line that looks like an error is shown with its context, so you still have a starting point. The pattern list covers the most common failures in dependency installs, builds, tests, Docker, Kubernetes, auth and pipeline configuration."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+    .modes .chip-btn { font-size: 14px; padding: 7px 16px; }
+    .modes .chip-btn[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .dropzone { position: relative; border-radius: 12px; }
+    .dropzone.over textarea, .dropzone.over .drop { border-color: var(--accent); border-style: dashed; }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .actions label.btn { cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .runs { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+    .runs li { display: inline-flex; gap: 6px; align-items: center; background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 12px; font-size: 13px; max-width: 100%; }
+    .runs li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .runs button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 16px; min-width: 0; }
+    .card-x + .card-x { margin-top: 10px; }
+    .card-x.bad { border-left-color: var(--bad); } .card-x.warn { border-left-color: var(--warn); } .card-x.info { border-left-color: var(--accent); } .card-x.mute { border-left-color: var(--border); }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+    .card-x p { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); max-width: 84ch; overflow-wrap: anywhere; }
+    .card-x p b { color: var(--text); }
+    .cat { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--alt); border: 1px solid var(--border); color: var(--muted); margin-right: 6px; vertical-align: 1px; white-space: nowrap; }
+    pre.ctx { margin: 8px 0 0; font: 500 12px/1.55 "JetBrains Mono", ui-monospace, monospace; background: var(--alt); border-radius: 10px; padding: 8px 0; overflow-x: auto; max-height: 360px; color: var(--text); }
+    pre.ctx span { display: block; padding: 0 12px; white-space: pre; min-width: max-content; }
+    pre.ctx span i { display: inline-block; width: 5.5ch; color: var(--muted); font-style: normal; user-select: none; }
+    pre.ctx span.hit { background: var(--bad-bg); box-shadow: inset 3px 0 0 var(--bad); }
+    details.more { margin-top: 6px; }
+    details.more summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
+    .lnk { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.hist td.s { text-align: center; font-size: 15px; }
+    table.hist td.s.fail { color: var(--bad); } table.hist td.s.pass { color: var(--ok); } table.hist td.s.flaky { color: var(--warn); }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .exports button { font: inherit; cursor: pointer; }
+    .panel[hidden] { display: none; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · CI/CD</p>
+      <h1>CI/CD failure detective</h1>
+      <p class="lead">Paste a failed job log from GitHub Actions, GitLab CI or Jenkins. See the first real error, separated from the follow-on noise, with a plain-English cause and fix. Load several runs to find flaky tests and failures that keep coming back.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Logs are matched against a fixed list of patterns on this page. Nothing is uploaded or sent to an AI model.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="CI failure detective">
+      <div class="modes" role="tablist" aria-label="Mode">
+        <button class="chip-btn" type="button" role="tab" id="tab-one" aria-controls="p-one" aria-selected="true">One failed job</button>
+        <button class="chip-btn" type="button" role="tab" id="tab-multi" aria-controls="p-multi" aria-selected="false">Several runs (flaky tests)</button>
+      </div>
+
+      <div class="panel" id="p-one" role="tabpanel" aria-labelledby="tab-one">
+        <h2><label for="log-in">Paste the job log, or drop the file here</label></h2>
+        <p class="sub">Raw logs are fine: colour codes, progress bars and timestamps are stripped first. In GitHub Actions use the ⋯ menu → View raw logs; in GitLab, the Raw button; in Jenkins, Console Output → View as plain text.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="gh">GitHub Actions: npm install</button>
+          <button class="chip-btn" type="button" data-sample="gl">GitLab: Docker build</button>
+          <button class="chip-btn" type="button" data-sample="jk">Jenkins: Maven tests</button>
+          <button class="chip-btn" type="button" data-sample="pw">Playwright run</button>
+        </div>
+        <div class="dropzone" id="drop">
+          <textarea id="log-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="2026-11-08T10:00:01.0Z npm ERR! code ERESOLVE&#10;2026-11-08T10:00:01.0Z npm ERR! ERESOLVE unable to resolve dependency tree&#10;...&#10;2026-11-08T10:00:02.1Z ##[error]Process completed with exit code 1."></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="ci-detective-analyse">Find the cause</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose file<input type="file" id="file" accept=".log,.txt,.out,text/plain"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+        </div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div class="panel" id="p-multi" role="tabpanel" aria-labelledby="tab-multi" hidden>
+        <h2>Load several runs of the same pipeline</h2>
+        <p class="sub">Choose job logs or JUnit XML reports (Maven Surefire, Gradle, pytest <code>--junitxml</code>, Jest and Playwright JUnit reporters), oldest first. You can mix logs and XML. Each file is one run.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-msample="xml">5 nightly runs (JUnit XML)</button>
+          <button class="chip-btn" type="button" data-msample="logs">4 Playwright logs</button>
+        </div>
+        <div class="dropzone" id="mdrop">
+          <textarea id="m-in" class="code" style="min-height:120px" spellcheck="false" autocomplete="off" placeholder="Drop files here, choose them below, or paste one run at a time and press Add pasted run."></textarea>
+        </div>
+        <ul class="runs" id="runs" aria-label="Loaded runs"></ul>
+        <div class="actions">
+          <button class="btn" type="button" id="m-go" data-track="ci-detective-multi">Compare runs</button>
+          <label class="btn btn-ghost btn-small" for="m-file">Choose files<input type="file" id="m-file" multiple accept=".log,.txt,.xml,text/plain,application/xml,text/xml"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="m-add">Add pasted run</button>
+          <button class="btn btn-ghost btn-small" type="button" id="m-clear">Clear runs</button>
+        </div>
+        <p class="err" id="m-err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>The first error, not the last one</h2>
+      <p>The red line at the bottom of a failed job is almost never the problem. <code>Process completed with exit code 1</code>, <code>BUILD FAILED</code> and <code>ERROR: Job failed</code> only say that something above went wrong. This tool reads the log the way an experienced engineer does.</p>
+      <ol>
+        <li><strong>Clean the log.</strong> ANSI colour codes, carriage-return progress bars and the timestamp prefixes that GitHub, GitLab and Jenkins add are removed, and the CI system is detected.</li>
+        <li><strong>Match known failures.</strong> Each line is checked against 90+ signatures in 12 categories, from <code>npm ERR! ERESOLVE</code> to <code>ImagePullBackOff</code>. Each has a plain-English cause and a fix.</li>
+        <li><strong>Pick the root cause.</strong> Exit codes and summary lines are marked as follow-on noise. The earliest real error is the candidate; a more specific error just after it, or a severe one such as a full disk, takes priority.</li>
+        <li><strong>List the failed tests.</strong> Jest, pytest, JUnit (Maven and Gradle), Playwright, Go, .NET and RSpec output is recognised, including tests that passed only on retry.</li>
+      </ol>
+      <h3>Finding flaky tests</h3>
+      <p>One failed run cannot tell you whether a test is flaky. Several runs can. Load the last few nightly runs (JUnit XML is the most reliable). A test that both passes and fails, or passes only on retry, is flagged. Consistent failures are listed separately: those are real bugs or broken tests, not flakiness.</p>
+      <h3>Common exit codes</h3>
+      <ul>
+        <li><code>1</code>: general failure. The reason is printed above.</li>
+        <li><code>127</code>: command not found. The tool is not installed on the runner or not on the PATH.</li>
+        <li><code>137</code>: killed, almost always out of memory. Lower parallel workers or give the job more memory.</li>
+        <li><code>143</code>: terminated, usually a timeout or a cancelled run.</li>
+      </ul>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Is my build log uploaded anywhere?</h3>
+      <p>No. The log is analysed in your browser with a fixed list of patterns. Build logs can hold internal host names, package names and sometimes secrets, so nothing is sent to a server or an AI model.</p>
+      <h3>Which CI systems does it support?</h3>
+      <p>GitHub Actions, GitLab CI and Jenkins are detected by their markers, and Azure Pipelines and CircleCI logs work too. Colour codes, progress bars and timestamp prefixes are removed before matching.</p>
+      <h3>How does it decide which error is the root cause?</h3>
+      <p>Lines like <code>Process completed with exit code 1</code> are results, not causes, so they are marked as follow-on noise. The earliest real error is the candidate, and a more specific error close to it, or a severe one such as a full disk or out of memory, takes priority.</p>
+      <h3>How does it find flaky tests?</h3>
+      <p>Load several logs or JUnit XML files from runs of the same suite. A test that passes in one run and fails in another, or passes only on retry, is flagged as flaky.</p>
+      <h3>What if my error is not recognised?</h3>
+      <p>The first line that looks like an error is shown with its context, so you still have a starting point. If a common failure is missing, tell me through the chat and I'll add it.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/log-analyser/">Log analyser →</a>
+        <a href="/tools/openapi-to-playwright/">OpenAPI → Playwright tests →</a>
+        <a href="/tools/qa-copilot/">QA manager copilot →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>A pipeline nobody trusts any more?</h3>
+          <p>Flaky tests, slow builds and red runs that everyone re-runs. Bring a few failed jobs and I'll help you sort real failures from noise and plan the fixes that give you a green build you believe. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=CI/CD%20quality%20gates#contact" data-track="ci-detective-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/ci-failure-detective/ci.js"></script>
+  <script src="/tools/ci-failure-detective/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

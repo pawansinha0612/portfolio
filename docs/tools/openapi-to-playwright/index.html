@@ -107,6 +107,16 @@
     .op-text { min-width: 0; }
     .field.wide { grid-column: 1 / -1; }
     .guide > :is(p, ol, ul), .panel .sub { max-width: 66ch; }   /* about 90 characters per line */
+    .factory { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+    .factory > p { margin: 0 0 10px; font-size: 14px; color: var(--muted); max-width: 66ch; }
+    .factory > p strong { color: var(--text); }
+    .extra-file { margin-top: 22px; }
+    .extra-file .about { margin: -4px 0 10px; font-size: 14px; color: var(--muted); }
+    .cat-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
+    .cat-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .cat-table th, .cat-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .cat-table th { position: sticky; top: 0; background: var(--surface); color: var(--muted); font-weight: 700; }
+    .cat-table td:first-child { font: 500 12px "JetBrains Mono", monospace; white-space: nowrap; }
     @media (max-width: 600px) {
       .project-hero { padding-top: 40px; }
       .panel { padding: 16px 14px; }
@@ -179,6 +189,15 @@
             <label><input type="checkbox" name="dataDriven" checked><span>Data-driven tests<small>one test per enum value or documented example</small></span></label>
             <label><input type="checkbox" name="shape" checked><span>Check response fields<small>the required fields in the success response are present</small></span></label>
           </div>
+          <div class="factory">
+            <p><strong>API Automation Factory extras</strong> (optional). Turn these on to get a fuller project: more tests, a token helper, reports and a test case list for your test manager.</p>
+            <div class="checks">
+              <label><input type="checkbox" name="dataTable"><span>Data tables<small>a table of rows per endpoint from the schema's examples, enums and min/max limits, one test per row</small></span></label>
+              <label><input type="checkbox" name="tokenHelper"><span>Token helper<small>global-setup.ts gets a bearer token once (OAuth 2 client credentials or a login endpoint)</small></span></label>
+              <label><input type="checkbox" name="htmlReport"><span>HTML report project<small>a config with HTML and JUnit reports, and a package.json with run scripts</small></span></label>
+              <label><input type="checkbox" name="catalogue"><span>Test case catalogue<small>every test as a row (ID, endpoint, scenario, type, expected result) as CSV or Markdown</small></span></label>
+            </div>
+          </div>
         </form>
       </div>
 
@@ -202,6 +221,17 @@
           </div>
           <pre class="code small" id="cfg" tabindex="0" aria-label="Playwright config"><code></code></pre>
         </div>
+        <div id="extra-files"></div>
+        <div class="cfg" id="cat-box" hidden>
+          <div class="out-head">
+            <h3>Test case catalogue <span id="cat-count" style="font-weight:500;color:var(--muted)"></span></h3>
+            <div class="btns">
+              <button class="btn btn-ghost btn-small" type="button" id="cat-csv" data-track="openapi-to-playwright-catalogue-csv">Download CSV</button>
+              <button class="btn btn-ghost btn-small" type="button" id="cat-md" data-track="openapi-to-playwright-catalogue-md">Download Markdown</button>
+            </div>
+          </div>
+          <div class="cat-wrap" tabindex="0" aria-label="Test case catalogue"><table class="cat-table" id="cat-table"></table></div>
+        </div>
       </div>
     </section>
 
@@ -222,6 +252,13 @@
         <li><strong>They don't know your business rules.</strong> The definition says a price is a number. It doesn't say the price must match the catalogue, or that a cancelled order can't be shipped. Add those assertions yourself.</li>
         <li><strong>They don't know your data.</strong> Example IDs like <code>/pet/1</code> may not exist in your test environment. Swap in real test IDs, or create the record in the test first.</li>
         <li><strong>They only know what's documented.</strong> If the definition leaves out a 404 or a 422, the test accepts any 4xx. A gap in the definition is worth fixing too.</li>
+      </ul>
+      <h2 style="margin-top:32px">API Automation Factory: optional extras</h2>
+      <ul>
+        <li><strong>Data tables.</strong> For each endpoint, a table of rows made only from your schema: examples, enum values, and the edges of <code>minLength</code>, <code>maxLength</code>, <code>minimum</code> and <code>maximum</code> (one inside, one outside). A <code>for (const row of …)</code> loop turns each row into a test. Valid rows expect success, invalid rows expect a 4xx. Add your own rows to the table.</li>
+        <li><strong>Token helper.</strong> A <code>global-setup.ts</code> that gets a bearer token once, before any test runs, and shares it through <code>API_TOKEN</code>. It uses OAuth 2 client credentials (<code>CLIENT_ID</code>, <code>CLIENT_SECRET</code>, and the token URL from your definition) or a login endpoint (<code>LOGIN_USER</code>, <code>LOGIN_PASS</code>). A token you set yourself always wins.</li>
+        <li><strong>HTML report project.</strong> A <code>playwright.config.ts</code> with the HTML report and a JUnit XML file for CI, plus a <code>package.json</code> with <code>npm test</code>, <code>npm run test:smoke</code> and <code>npm run report</code>.</li>
+        <li><strong>Test case catalogue.</strong> Every generated test as a row: ID, endpoint, scenario, type (positive, negative, boundary or auth) and expected result. Download it as CSV for a spreadsheet or test management tool, or as Markdown for a wiki page.</li>
       </ul>
       <h2 style="margin-top:32px">FAQ</h2>
       <h3>Can I use a Swagger 2.0 file?</h3>
@@ -313,7 +350,7 @@
     const STORE = 'openapi-to-playwright-options';
     const UNSAFE = ['POST', 'PUT', 'PATCH', 'DELETE'];
     const G = window.OpenApiToPlaywright;
-    let spec = '', ops = [], signature = '', selected = new Set();
+    let spec = '', ops = [], signature = '', selected = new Set(), config = G.CONFIG, catalogue = null, apiTitle = '';
     $('cfg').firstChild.textContent = G.CONFIG;
 
     // Remember the visitor's options in this browser only (not the definition itself).
@@ -327,7 +364,8 @@
 
     function options() {
       const f = form.elements;
-      return { baseUrl: f.baseUrl.value.trim(), negative: f.negative.checked, dataDriven: f.dataDriven.checked, shape: f.shape.checked };
+      return { baseUrl: f.baseUrl.value.trim(), negative: f.negative.checked, dataDriven: f.dataDriven.checked, shape: f.shape.checked,
+        dataTable: f.dataTable.checked, tokenHelper: f.tokenHelper.checked, htmlReport: f.htmlReport.checked, catalogue: f.catalogue.checked };
     }
 
     function msg(cls, text) {
@@ -368,6 +406,7 @@
       try { const s = Object.assign({}, o); delete s.baseUrl; localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
       msgs.textContent = '';
       run.hidden = true;
+      renderExtras(null);
       if (!input.value.trim()) {
         spec = ''; ops = []; signature = ''; renderOps();
         out.firstChild.textContent = '// Paste an OpenAPI or Swagger definition above, or try an example.'; return;
@@ -396,8 +435,61 @@
       code.textContent = `BASE_URL=https://your-test-api${env} npx playwright test --reporter=html`;
       run.append(code);
       run.append(r.env.length ? ' (replace … with your test credentials)' : '');
+      if (o.htmlReport) {
+        code.textContent = `BASE_URL=https://your-test-api${env} npm test`;
+        run.append(', then ');
+        const rep = document.createElement('code'); rep.textContent = 'npm run report'; run.append(rep, ' to open the HTML report.');
+      }
       run.hidden = false;
+      try { apiTitle = (G.parseSpec(input.value, window.jsyaml && window.jsyaml.load).info || {}).title || ''; } catch (e) { apiTitle = ''; }
+      renderExtras(r);
     }
+
+    // API Automation Factory extras: extra files, the config that goes with them, and the test case catalogue.
+    function download(name, text, type) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: type || 'text/plain' }));
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    function renderExtras(r) {
+      config = (r && r.config) || G.CONFIG;
+      $('cfg').firstChild.textContent = config;
+      const box = $('extra-files');
+      box.textContent = '';
+      for (const f of (r && r.files) || []) {
+        const wrap = document.createElement('div'); wrap.className = 'extra-file';
+        const head = document.createElement('div'); head.className = 'out-head';
+        const h = document.createElement('h3'); const c = document.createElement('code'); c.textContent = f.name; h.appendChild(c);
+        const btns = document.createElement('div'); btns.className = 'btns';
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-ghost btn-small'; b.textContent = 'Download ' + f.name;
+        b.addEventListener('click', () => download(f.name, f.content, f.name.endsWith('.json') ? 'application/json' : 'text/plain'));
+        btns.appendChild(b); head.append(h, btns);
+        const about = document.createElement('p'); about.className = 'about'; about.textContent = f.about;
+        const pre = document.createElement('pre'); pre.className = 'code small'; pre.tabIndex = 0; pre.setAttribute('aria-label', f.name);
+        const code = document.createElement('code'); code.textContent = f.content; pre.appendChild(code);
+        wrap.append(head, about, pre); box.appendChild(wrap);
+      }
+      catalogue = r && r.catalogue ? r.catalogue : null;
+      $('cat-box').hidden = !catalogue;
+      const t = $('cat-table');
+      t.textContent = '';
+      if (!catalogue) return;
+      $('cat-count').textContent = `(${catalogue.length} test case${catalogue.length === 1 ? '' : 's'})`;
+      const tr = document.createElement('tr');
+      ['ID', 'Endpoint', 'Scenario', 'Type', 'Expected result'].forEach(x => { const th = document.createElement('th'); th.textContent = x; tr.appendChild(th); });
+      const thead = document.createElement('thead'); thead.appendChild(tr); t.appendChild(thead);
+      const tb = document.createElement('tbody');
+      for (const row of catalogue.slice(0, 300)) {
+        const r2 = document.createElement('tr');
+        [row.id, row.endpoint, row.scenario, row.type, row.expected].forEach(x => { const td = document.createElement('td'); td.textContent = x; r2.appendChild(td); });
+        tb.appendChild(r2);
+      }
+      t.appendChild(tb);
+    }
+    $('cat-csv').addEventListener('click', () => { if (catalogue) download('test-case-catalogue.csv', G.catalogueCsv(catalogue), 'text/csv'); });
+    $('cat-md').addEventListener('click', () => { if (catalogue) download('test-case-catalogue.md', G.catalogueMarkdown(catalogue, apiTitle), 'text/markdown'); });
 
     let timer;
     const later = () => { clearTimeout(timer); timer = setTimeout(update, 200); };
@@ -443,7 +535,7 @@
       setTimeout(() => { btn.textContent = label; }, 1800);
     }
     $('copy').addEventListener('click', () => copy($('copy'), spec, out, 'Copy'));
-    $('copy-cfg').addEventListener('click', () => copy($('copy-cfg'), G.CONFIG, $('cfg'), 'Copy config'));
+    $('copy-cfg').addEventListener('click', () => copy($('copy-cfg'), config, $('cfg'), 'Copy config'));
     $('download').addEventListener('click', () => {
       if (!spec) return;
       const a = document.createElement('a');

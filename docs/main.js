@@ -84,7 +84,10 @@
   }
 
   // A link like /?need=Interview%20coaching#contact pre-selects that option (used from other pages)
-  const wanted = new URLSearchParams(location.search).get('need');
+  // Older links say "Performance testing"; the form option is "Performance & load testing".
+  const NEED_ALIASES = { 'Performance testing': 'Performance & load testing' };
+  const askedFor = new URLSearchParams(location.search).get('need');
+  const wanted = NEED_ALIASES[askedFor] || askedFor;
   if (formLive && wanted && [...form.elements.need.options].some(o => o.value === wanted)) form.elements.need.value = wanted;
 
   // Buttons tagged data-need pre-select that option in the form; without the form they fall back to email
