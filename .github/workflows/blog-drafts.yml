@@ -69,5 +69,7 @@ jobs:
           git switch -c "$branch"
           git add blog/posts blog/topics.md
           git commit -m 'Blog: draft next posts'
+          # Base the branch on the latest main, so changes pushed while drafting (e.g. to workflows) don't block the push.
+          git fetch -q origin main && git rebase -q origin/main
           git push -u origin "$branch"
           gh pr create --title "Blog drafts for review ($(date +%d\ %b))" --body-file blog/.draft-summary.md

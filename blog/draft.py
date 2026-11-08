@@ -40,7 +40,8 @@ MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
           'google/gemma-4-31b-it,nvidia/nemotron-3-super-120b-a12b,openai/gpt-oss-20b').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
-unavailable = set()     # models that 404 or time out; not tried again this run
+unavailable = set()     # models that 404 or time out twice; not tried again this run
+strikes = {}            # timeouts per model this run
 
 TOPIC_RE = re.compile(r'^- \[ \] (.+)$')
 
@@ -158,7 +159,11 @@ def chat(model, system, user, temperature=0.5):
                 continue
             raise ModelFailed(f'no usable reply ({err})')
         except (urllib.error.URLError, TimeoutError, ConnectionError) as err:
-            unavailable.add(model)  # one timeout costs minutes; don't spend them again on every topic
+            # A timeout costs minutes, so stop using a model after its second one this run.
+            # One timeout alone is often a busy moment on the free service.
+            strikes[model] = strikes.get(model, 0) + 1
+            if strikes[model] >= 2:
+                unavailable.add(model)
             raise ModelFailed(f'too slow or unreachable: {err}')
 
 

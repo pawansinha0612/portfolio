@@ -1,0 +1,54 @@
+# Click-to-run: which free AI models answer right now, and how fast?
+# Use it when the Sunday drafts fail or arrive with fewer than 7 posts. Then put the fastest working models,
+# best first and comma-separated, in Settings → Secrets and variables → Actions → Variables → AI_MODEL
+# (and REVIEW_MODEL for the fact-check).
+name: Check AI models
+
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: 'Models to try (comma-separated). Full list: https://integrate.api.nvidia.com/v1/models'
+        default: 'deepseek-ai/deepseek-v4.1-flash,moonshotai/kimi-k2.6,mistralai/mistral-large-4-1t-a52b,nvidia/nemotron-3-ultra-550b-a55b,z-ai/glm-5.3-flash,minimaxai/minimax-m3.1-flash,nvidia/llama-3.1-nemotron-ultra-253b-v1,google/gemma-4-31b-it,openai/gpt-oss-20b,mistralai/mistral-large-2-instruct'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Try each model
+        env:
+          AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          MODELS: ${{ inputs.models }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request, urllib.error
+          base = (os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1').rstrip('/')
+          key = os.environ.get('AI_API_KEY', '')
+          rows = []
+          for m in [x.strip() for x in os.environ['MODELS'].split(',') if x.strip()]:
+              body = json.dumps({'model': m, 'max_tokens': 300, 'temperature': 0.2, 'messages': [
+                  {'role': 'user', 'content': 'In about 150 words, explain what p99 latency means to a software engineer.'}]}).encode()
+              req = urllib.request.Request(base + '/chat/completions', data=body, headers={
+                  'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'})
+              t = time.time()
+              try:
+                  with urllib.request.urlopen(req, timeout=120) as r:
+                      data = json.loads(r.read())
+                  text = data['choices'][0]['message'].get('content') or ''
+                  words = len(text.split())
+                  ok = words >= 40
+                  rows.append((m, '✅ works' if ok else '⚠️ short reply', f'{time.time() - t:.0f} s', f'{words} words'))
+              except urllib.error.HTTPError as e:
+                  rows.append((m, f'❌ HTTP {e.code}', f'{time.time() - t:.0f} s', e.read().decode(errors='replace')[:80].replace('|', '/')))
+              except Exception as e:
+                  rows.append((m, '❌ timeout/error', f'{time.time() - t:.0f} s', str(e)[:80].replace('|', '/')))
+              print(rows[-1])
+          good = [r[0] for r in rows if r[1].startswith('✅')]
+          good.sort(key=lambda m: float(next(r[2] for r in rows if r[0] == m).split()[0]))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('## AI models right now\n\n| Model | Result | Time | Detail |\n|---|---|---|---|\n')
+              f.writelines(f'| `{a}` | {b} | {c} | {d} |\n' for a, b, c, d in rows)
+              f.write('\n**Suggested AI_MODEL value** (working models, fastest first):\n\n```\n' + ','.join(good[:4]) + '\n```\n')
+          PY
