@@ -1,135 +1,117 @@
 ---
-title: Your Load Test Masking Concurrency Bugs
+title: Your load test passed and oversold the last 40 units
 date: 2026-11-18
-summary: Load tests can hide race conditions and deadlocks. Learn how to design tests that surface these hidden failures.
-description: Detect concurrency bugs that surface only under load – race conditions, lock contention, deadlocks, connection starvation – with targeted test design.
+summary: Why green load tests miss race conditions, lost updates, deadlocks and pool starvation, how to design tests that provoke them (hot keys, contention windows, invariants), and the exact signals that prove them in the JVM, the connection pool and the database.
+description: Green load tests miss races, lost updates, deadlocks and pool starvation. Design tests that provoke them with hot keys and check invariants.
 tags: Performance, Concurrency, Testing
+highlight: oversold
 linkedin: |
-  Your load test reports 1 ms p99 latency, but real users see 9 seconds. The culprit? A hidden race condition that only appears under high concurrency. The fix is not to add more threads or increase capacity; it is to design a test that deliberately stresses the shared state. A simple k6 script that ramps to 1 k VUs, keeps a transaction open, and limits the thread pool will expose the problem. The key takeaway: use precise metrics—thread pool state, lock wait times, connection pool utilisation—and validate with thread dumps and JFR. How do you currently design your concurrency tests?
+  The load test passed. p95 was fine, errors were 0.02%. The next morning the warehouse had 40 orders for items it didn't have.
+
+  Load tests are built to measure speed, so they spread traffic across thousands of random products and users. Race conditions need the opposite: many requests fighting over the same row at the same moment. A random data set almost never creates that.
+
+  To find concurrency bugs under load:
+  → aim a slice of traffic at a few hot keys (one product, one account, one cart)
+  → assert invariants after the run (stock never below zero, money in = money out)
+  → watch BLOCKED threads, pool wait time and database lock waits, not just latency
+
+  The article has an interactive pool calculator: see when your threads start queueing for connections.
+
+  Does your load test check the data at the end, or only the response codes?
+
+  #PerformanceEngineering #Testing #SRE
 ---
-## A Load Test That Lies About Latency
-Your load test reports a 99th‑percentile latency of 1 ms, yet real users experience 9 seconds for the same endpoint. The test runs 200 virtual users for 30 seconds, all on a single machine. The system under test is a microservice that writes to a shared cache and then to a database. The anomaly appears only when the test is run in a CI pipeline, not in a local environment. The root cause is a race condition in the cache update logic that surfaces only under high concurrency.
+Your load test ran for an hour at twice the expected peak. p95 stayed under 300 ms and the error rate was 0.02%. Everyone signed off. The next morning the warehouse has 40 orders for a product with no stock, and two customers have been charged twice.
 
-## Why Concurrency Bugs Slip Through
-Concurrency bugs arise when multiple threads or processes manipulate shared state without proper isolation. The most common types are:
+The load test did its job. It measured speed. Nobody asked it to check whether the answers were right.
 
-* **Race condition** – two threads read the same value, modify it, and write back, leaving the final state inconsistent. It is invisible when the threads run serially.
-* **Lock contention** – a lock is held by one thread while many others wait, increasing latency. The effect scales with thread count.
-* **Deadlock** – two or more threads wait for each other’s locks, blocking forever. It is often triggered by a specific ordering of resource acquisition.
-* **Connection starvation** – the connection pool is exhausted, forcing new requests to queue. The queue grows until the pool is replenished.
-* **Thread starvation** – the thread pool is saturated, so new tasks wait in the queue until a worker becomes free.
+## Why load tests hide concurrency bugs
 
-A common misconception is that a load test that shows low latency guarantees correctness. In reality, the test may mask the problem because the load profile does not exercise the pathological interleavings that trigger the bug.
+Concurrency bugs need two requests touching the same state inside the same small window. A typical load test makes that unlikely on purpose. It picks random products from a catalogue of 50,000, random users from a pool of 10,000, and spreads them evenly. Real peaks don't look like that. A flash sale sends half the traffic to one product.
 
-## The Request Path as a Bottleneck Map
-A request traverses multiple layers: client, CDN, load balancer, API gateway, service thread, cache, database, network, and finally the client. Fixing one layer often shifts the bottleneck to the next. For example, increasing the thread pool size may reduce thread starvation but expose lock contention in the database layer. Understanding where the request spends time is essential to design a test that forces the hidden failure.
+Here are the bugs that hide, with a one-line definition of each:
 
-## Detecting Hidden Concurrency Issues
-### 1. Metrics and Tracing
-* **Thread pool metrics** – `jcmd <pid> Thread.print` shows the number of runnable, waiting, and blocked threads. A high `blocked` count indicates contention.
-* **Connection pool metrics** – in a JDBC pool, query `SELECT * FROM pool_status` or use the pool’s JMX bean. A high `idle` count with low `active` indicates starvation.
-* **Queue length** – in a Kubernetes environment, `kubectl top pod` shows CPU and memory; use `kubectl describe pod` to inspect container resource limits.
-* **Histogram merging** – Grafana can aggregate latency histograms across services. Look for a long tail that appears only under load.
-* **Coordinated omission** – Gil Tene’s phenomenon occurs when a test client misses measuring a request because the server is busy. k6 reports `p999` and `p9999` to expose this.
+- **Lost update.** Two transactions read the same value, both compute a new value and both write it. One write silently overwrites the other. This is the overselling bug: two buyers both read "1 left", and both succeed.
+- **Check-then-act race.** Code checks a condition ("is this coupon unused?") and then acts on it, without holding a lock or using a unique constraint between the two steps.
+- **Deadlock.** Two transactions each hold a lock the other needs. The database detects the cycle and aborts one of them, which usually reaches the user as a 500 or a retry.
+- **Lock contention.** Correct, but slow: many requests queue for the same row lock or the same `synchronized` block, and throughput collapses for that key while the rest of the system looks healthy.
+- **Pool starvation.** Every connection in the pool is checked out, so new requests wait for one. If a request needs two connections at once, for example an outer transaction plus an audit write, pool starvation can turn into a deadlock inside the application.
 
-### 2. Profiling
-* **JFR (Java Flight Recorder)** – enable `-XX:+UnlockCommercialFeatures -XX:+FlightRecorder` and record a 5‑minute session during peak load. Inspect the `Lock contention` event.
-* **k6 `--summary-export`** – export CSV and analyse the `http_reqs` and `http_req_duration` columns.
-* **CPU utilisation** – `top -H` shows per‑thread CPU usage. A thread stuck in `S` state indicates it is waiting for a lock.
+The first three are correctness bugs. Response time can look perfect while they happen. The last two are performance bugs that only appear when contention concentrates.
 
-## Designing Tests that Provoke Concurrency Bugs
-### 1. Load Shape Matters
-A ramp‑up to 1 k concurrent users over 10 seconds followed by a 30 second hold creates a high contention window. The key is to exceed the service’s optimal concurrency threshold. Use k6’s `stages` to define:
+## Design the test to create contention
+
+**Add a hot-key scenario.** Keep the realistic spread for most traffic, and add a second scenario that aims at a handful of keys. In k6 that is a separate scenario with its own data:
 
 ```js
-k6 run --vus 1000 --duration 30s \
-  --stages "10s:100,20s:500,10s:1000,30s:1000"
+export const options = {
+  scenarios: {
+    browse: { executor: 'constant-arrival-rate', rate: 200, timeUnit: '1s', duration: '20m', preAllocatedVUs: 200, exec: 'browse' },
+    hotProduct: {
+      executor: 'ramping-arrival-rate', startRate: 0, timeUnit: '1s', preAllocatedVUs: 300, exec: 'buyHot',
+      stages: [{ target: 150, duration: '30s' }, { target: 150, duration: '2m' }, { target: 0, duration: '10s' }],
+    },
+  },
+};
 ```
 
-### 2. Long‑Lived Transactions
-If the service uses database transactions, keep them open for a few seconds. The test should issue a `BEGIN` and delay the `COMMIT`. This forces the database to hold locks longer, increasing the chance of contention.
+`buyHot` buys from the same three product IDs, each seeded with a known stock count, for example 500 units.
 
-### 3. Resource Limits
-Configure the container with a low CPU quota (e.g., `cpu: 0.5`) and a small thread pool size (e.g., `maxThreads=50`). Run the test and watch the thread pool saturation.
+**Make arrivals simultaneous.** A spike from 0 to 150 requests a second in 30 seconds packs many requests into the same few milliseconds. An open model (arrival-rate executors) keeps sending at the set rate even when the system slows. A closed model with think time would back off, and contention would drop just when it matters.
 
-### 4. Chaos Injectors
-Use a lightweight chaos tool to kill a worker thread at random intervals. The test will then need to schedule the task on a new thread, exposing potential deadlocks.
+**Repeat the same request.** Send the same payment or order twice with the same idempotency key, a few milliseconds apart. A double-clicked submit button and a retrying client both look like this.
 
-## Example: Race Condition in a Cache Update
-Consider a service that increments a counter in Redis:
+**Don't let retries hide errors.** Deadlock victims are often retried by the framework. That keeps the error rate down and hides the deadlock. Count retries as a metric of their own.
 
-```java
-public void increment(String key) {
-    long value = redis.get(key); // read
-    redis.set(key, value + 1);   // write
-}
+## Assert invariants after the run
+
+The most important step happens after the load stops. Query the system of record and check facts that must always be true:
+
+```sql
+-- Stock can never go negative
+SELECT product_id, stock FROM inventory WHERE stock < 0;
+
+-- Units sold must match what was taken out of stock
+SELECT p.id, 500 - i.stock AS taken, COUNT(o.id) AS sold
+FROM products p JOIN inventory i ON i.product_id = p.id
+LEFT JOIN order_lines o ON o.product_id = p.id
+WHERE p.id IN (101, 102, 103)
+GROUP BY p.id, i.stock
+HAVING 500 - i.stock <> COUNT(o.id);
+
+-- One payment per idempotency key
+SELECT idempotency_key, COUNT(*) FROM payments GROUP BY idempotency_key HAVING COUNT(*) > 1;
 ```
 
-Two threads read the same value before either writes. The final counter is incremented only once. Under low load, the window is narrow; under 1 k concurrent users, the window widens, and the bug surfaces.
+Then compare with what the load tool saw: the number of successful buy responses for the hot products must equal the units sold. Any mismatch is a bug, whatever the latency was. Make these checks a pass/fail gate in the pipeline, next to the latency thresholds.
 
-### Proving the Hypothesis
-Run k6 with the `--summary-export` flag and inspect the `http_req_duration` histogram. A secondary peak at 5–10 ms indicates a race. Add a custom metric:
+## Signals that prove it while it happens
 
-```js
-import http from 'k6/http';
-import { Counter } from 'k6/metrics';
+**JVM threads.** Take thread dumps during the hot-key phase with `jcmd <pid> Thread.print`, three dumps about five seconds apart. Many threads in `BLOCKED` state waiting on the same monitor point to lock contention. The JVM's thread dump reports Java-level deadlocks explicitly ("Found one Java-level deadlock"). For lock waits over time, record with Java Flight Recorder: `jcmd <pid> JFR.start duration=5m filename=hot.jfr`, then look at the `jdk.JavaMonitorEnter` and `jdk.ThreadPark` events.
 
-export let raceDetected = new Counter('race_detected');
+**Connection pool.** With HikariCP and Micrometer, watch `hikaricp_connections_pending` (threads waiting for a connection), `hikaricp_connections_active` against the pool maximum, and `hikaricp_connections_acquire_seconds`. Pending above zero for long stretches means starvation. `hikaricp_connections_timeout_total` counts requests that gave up waiting.
 
-export default function () {
-    let res = http.get('https://api.example.com/increment');
-    if (res.status === 409) {
-        raceDetected.add(1);
-    }
-}
-```
+**Database locks.** In PostgreSQL, sessions waiting on locks show `wait_event_type = 'Lock'` in `pg_stat_activity`, `pg_stat_database.deadlocks` counts deadlocks, and `log_lock_waits = on` logs every wait longer than `deadlock_timeout`. In MySQL, `SHOW ENGINE INNODB STATUS` shows the latest deadlock, and `performance_schema.data_lock_waits` shows current waits.
 
-If `race_detected` spikes during the high‑concurrency phase, the race is confirmed.
+Latency for the hot scenario, reported separately from the browse scenario, is the other tell. If the hot keys' p99 is ten times the rest while CPU is low, the requests are waiting on a lock, not doing work.
 
-## Measuring Lock Contention
-Lock contention can be quantified using the **lock wait time** `L` and the **critical section time** `C`. Throughput `T` is:
+<div class="widget" data-widget="dbpool"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
 
-```
-T = (N * C) / (C + L)
-```
+## Fixes and their trade-offs
 
-where `N` is the number of threads. If `L` dominates, throughput collapses. Use `jcmd <pid> Thread.print` to capture the average `wait` time. If `wait` > 10 ms, consider using a lock‑free data structure or reducing the critical section.
+- **Atomic conditional update.** `UPDATE inventory SET stock = stock - 1 WHERE product_id = ? AND stock > 0`, then check that one row changed. It is simple and fast, and it serialises on the row, which is correct for a single counter.
+- **Optimistic locking** (a version column). There is no lock while reading, and a conflict fails the write. It suits low contention. On a hot key most attempts fail and retry, and throughput collapses.
+- **Pessimistic locking** (`SELECT ... FOR UPDATE`). It is correct, but every buyer of that product queues. Keep the transaction short and lock rows in a consistent order to avoid deadlocks.
+- **Unique constraints** for check-then-act. A unique index on the idempotency key or the coupon redemption turns a race into a clean constraint violation that the code can handle.
+- **Pool sizing.** Never let one request hold two connections from the same pool. If it must, size the pool so that the threads that can hold one and wait for a second can't use up every connection.
 
-## Detecting Deadlocks
-A deadlock manifests as a cycle in the wait‑for graph. The JVM exposes this via `jstack` or `jcmd <pid> Thread.print`. Look for `waiting` threads that hold a lock and are waiting for another. A quick check is:
+## Checklist
 
-```bash
-jcmd <pid> Thread.print | grep -E "waiting|blocked"
-```
+1. Add a hot-key scenario with known starting data to every peak test.
+2. Use arrival-rate executors so contention doesn't ease off when the system slows.
+3. Send duplicate requests with the same idempotency key.
+4. Report hot-key latency separately from the rest.
+5. Watch BLOCKED threads, pool pending count and database lock waits during the run.
+6. After the run, assert invariants in the database and fail the build on any mismatch.
 
-If you see a cycle of two or more threads, the service is deadlocked. Fix by enforcing a strict lock acquisition order or using try‑lock with timeout.
-
-## Connection and Thread Starvation
-### Connection Starvation
-If the pool has a maximum of 10 connections and the test opens 20 concurrent connections, the extra 10 will queue. The queue length can be observed via:
-
-```bash
-curl -s http://localhost:8080/actuator/metrics/jdbc.connections.active | jq .
-```
-
-A rising active count that never drops indicates starvation.
-
-### Thread Starvation
-A thread pool of 20 workers handling 100 concurrent requests will queue 80 tasks. The queue length is visible in the JMX bean `ThreadPoolExecutor`. A high `queueSize` coupled with low `activeThreads` signals starvation.
-
-## Checklist for Concurrency‑Sensitive Load Tests
-| Step | Action | Tool / Command |
-|------|--------|----------------|
-| 1 | Define concurrency threshold | k6 `--vus` or JMeter thread group | 
-| 2 | Set resource limits | Kubernetes `resources` | 
-| 3 | Enable detailed metrics | Grafana, Prometheus | 
-| 4 | Capture thread dumps | `jcmd <pid> Thread.print` | 
-| 5 | Inject chaos | k6 `--options`, custom script | 
-| 6 | Analyse lock contention | JFR, `jcmd <pid> Thread.print` | 
-| 7 | Verify no coordinated omission | k6 `--summary-export` | 
-| 8 | Monitor connection pool | JMX bean, `curl` | 
-| 9 | Validate deadlock detection | `jstack`, `jcmd` | 
-|10 | Iterate until metrics stabilize | Repeat steps 1‑9 |
-
-## Takeaway
-Concurrency bugs surface only when the system is pushed beyond its normal operating envelope. A load test that reports low latency does not guarantee correctness. By designing tests that deliberately stress thread pools, connection pools, and lock‑heavy paths, and by using precise metrics and profiling, you can surface race conditions, lock contention, deadlocks, and starvation before they hit production.
+A load test that only checks status codes and latency can pass while the data is wrong. Check the data too.

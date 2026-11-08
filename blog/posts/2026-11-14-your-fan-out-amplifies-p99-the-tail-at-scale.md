@@ -1,99 +1,117 @@
 ---
-title: Your Fan‑Out Amplifies p99: The Tail at Scale
+title: Your fan-out turns a 1% slow call into 63% slow requests
 date: 2026-11-14
-summary: A single slow micro‑service can wreck your p99. Learn how fan‑out, hedging and tied requests amplify tail latency and how to budget per hop.
-description: Tail latency explodes with fan‑out. Use probability, hedging, tied requests and hop budgets to keep p99 in check.
-tags: Performance, Latency, Microservices, Hedging
+summary: The maths of tail latency under fan-out from Dean and Barroso's "The Tail at Scale", why a back-end's p99 stops being good enough, and the fixes that work: hedged and tied requests, deadlines, fewer sequential hops and load tests that report per-call percentiles.
+description: Fan out to 100 back-ends and a 1% slow call makes 63% of requests slow. Fan-out maths, hedged and tied requests, deadlines and how to test it.
+tags: Performance, Latency, Microservices
+highlight: 63%
 linkedin: |
-  When a single micro‑service goes slow, the whole request can become a 2 s tail. The key is to recognise that fan‑out multiplies the tail probability: 1‑0.99^N. A quick takeaway: hedge only idempotent calls and tie only when you truly need all results. How do you currently allocate latency budgets per hop in your architecture?
+  Each back-end call is slow 1% of the time. A page waits for 100 of them.
+
+  How many page loads are slow? Not 1%. It's 1 − 0.99^100 = 63%.
+
+  That's the core of Dean and Barroso's "The Tail at Scale". With fan-out, a back-end's p99 stops mattering. To keep the page's p99 healthy at a fan-out of 100, each call needs to be good at p99.99.
+
+  What helps:
+  → hedged requests: resend a call that hasn't answered by its p95, keep whichever answers first
+  → tied requests: queue on two servers, cancel the copy that didn't start
+  → deadlines on every hop, and fewer calls in sequence
+
+  The article has an interactive calculator: set your fan-out and see what share of requests turn slow.
+
+  What's the largest fan-out on your critical path?
+
+  #PerformanceEngineering #Microservices #SRE
 ---
-## The problem you’re already seeing
-Your load test reports a p99 of 200 ms, but in production the p99 is 2 s. The request path fans out to ten downstream services. One of those services is occasionally slow – a single 1 s response blows the overall latency. You’re not alone; the tail grows with every hop you add.
+Your search page queries 100 index shards in parallel and waits for all of them. Each shard answers in 10 ms almost every time, and its p99 is a respectable 50 ms. Yet the search page's median is close to a second on busy days, and nobody can find a slow component.
 
-## Fan‑out and the probability of a slow hop
-When a request calls *N* independent back‑ends, the probability that at least one of them is slow is
+Every component is fast. The page is slow because it waits for the slowest of 100.
 
-\[\mathbb{P}_{\text{slow}} = 1 - (1 - p)^{N}\]\n
-where *p* is the probability that a single hop is slow. If *p* is 1 % and *N* is 10, the probability that the request experiences a slow hop is
+## The arithmetic of waiting for everyone
 
-\[1 - 0.99^{10} \approx 0.095\]\n
-So a 1 % tail on a single hop becomes a 9.5 % tail on the request. If you add another hop, the probability rises to 1 – 0.99^11 ≈ 0.104. The tail grows exponentially with the number of hops.
+If one call is slow with probability p, and a request waits for N independent calls, the request is fast only if every call is fast:
 
-## Coordinated omission is not the whole story
-Coordinated omission occurs when a test runner does not account for time spent waiting for a slow server. With fan‑out, the omission is compounded because the test sees the slowest hop, not the average. Even if you eliminate omission, the probability formula still applies.
+> P(request slow) = 1 − (1 − p)^N
 
-## Hedged requests: duplicate the call, keep the first
-A hedged request sends the same request to *M* instances of a service and returns the first response. The idea is to reduce the tail by trading extra load for speed. The expected latency of a hedged call is
+A worked example from Jeff Dean and Luiz André Barroso's paper "The Tail at Scale" (2013): a server that is slow for 1 in 100 requests, with a fan-out of 100, makes 1 − 0.99^100 ≈ 63% of user requests slow.
 
-\[\mathbb{E}[T] = \int_{0}^{\infty} \prod_{i=1}^{M} (1 - F_i(t))\,dt\]\n
-where *F_i(t)* is the cumulative distribution of the *i*‑th instance. For identical, independent instances with an exponential tail, the expected latency drops roughly by a factor of \(\ln M\). In practice, a hedged call to two instances halves the tail for a 1 % slow probability.
+The growth is steep at first and then flattens, because the probability can never exceed 100%:
 
-### Trade‑offs
-* **Cost** – double the traffic for the same operation. 
-* **Side‑effects** – only idempotent calls should be hedged, otherwise duplicate writes may corrupt state.
-* **Resource contention** – the service may throttle under the extra load.
+| Fan-out | Requests slow (p = 1%) |
+|---|---|
+| 1 | 1% |
+| 10 | 9.6% |
+| 50 | 39.5% |
+| 100 | 63.4% |
+| 200 | 86.6% |
 
-## Tied requests: wait for all responses
-Some flows require the results of all downstream calls, e.g. a distributed transaction that reads from two shards. The overall latency is the maximum of the individual latencies, so the tail is the tail of the slowest hop. If you can tolerate partial results, consider breaking the tie: return early and reconcile later.
+Turn it around and you get the requirement. For the request's p99 to be "fast", each call must be fast with probability 0.99^(1/N). At a fan-out of 100 that is 0.9999. **Each back-end has to be good at its p99.99, not its p99.**
 
-## Latency budgets per hop
-When you know the maximum acceptable request latency *L* and the number of hops *N*, a simple way to allocate budgets is to divide *L* evenly:
+<div class="widget" data-widget="fanout"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
 
-\[\text{Budget per hop} = \frac{L}{N}\]\n
-For a 1 s request with 10 hops, each hop gets 100 ms. This is a crude approach; in reality you should allocate more budget to hops that historically have higher variance.
+Real systems are worse than the formula in one way and better in another. Slowness is often correlated (a GC pause, a noisy neighbour, a hot shard affects many calls at once), so calls are not independent. And sequential hops add their latencies on top, so a chain of five services each adds its own tail.
 
-### Using a cumulative budget
-Track the cumulative latency *C(t)* after each hop. If *C(t) > t \times \text{budget per hop}*, trigger a circuit breaker or drop the request. This protects the tail before it reaches the end.
+## Why the back-end's tail exists
 
-## Practical checklist for engineers
-| Step | What to do | Why it matters |
-|------|------------|----------------|
-| 1 | Estimate *p* for each hop from historical data | You need the base probability to calculate the tail |
-| 2 | Compute \(1-(1-p)^N\) for the full path | Quantify how much the tail grows |
-| 3 | Identify idempotent calls that can be hedged | Hedging reduces tail but only for safe calls |
-| 4 | Set per‑hop budgets and enforce via circuit breakers | Prevent a single slow hop from dragging the whole request |
-| 5 | Instrument per‑hop latencies in production | You need real data to adjust budgets |
-| 6 | Review side‑effect safety before hedging | Avoid duplicate writes or state corruption |
-| 7 | Use tied requests only when all results are required | Reduce tail by breaking ties when possible |
+Variability is normal in shared systems. Common sources:
 
-## Example: modelling fan‑out and hedging in k6
-The following k6 script demonstrates a request that fans out to three services, hedges the second service, and ties the third:
+- garbage collection and other stop-the-world pauses
+- background work such as compaction, log rotation and cache refreshes
+- queueing behind a slow request on the same thread or connection
+- shared resources: CPU throttling, network, disk, a noisy neighbour
+- the occasional cold cache or page fault
 
-```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+You can reduce each one, but not to zero. The paper's argument is that large systems should be **tail-tolerant**: designed so that individual slow calls don't become slow requests.
 
-export let options = {
-    vus: 200,
-    duration: '30s',
-    thresholds: {
-        http_req_duration: ['p(99)<2000'],
-    },
-};
+## Hedged requests
 
-export default function () {
-    // Step 1: call service A
-    let resA = http.get('https://service-a/api');
-    check(resA, { 'A OK': (r) => r.status === 200 });
+Send the call to one replica. If it hasn't answered after a short delay, send the same call to a second replica and use whichever answer comes first.
 
-    // Step 2: hedged call to service B
-    let resB1 = http.get('https://service-b/api');
-    let resB2 = http.get('https://service-b/api');
-    let resB = resB1.duration < resB2.duration ? resB1 : resB2;
-    check(resB, { 'B OK': (r) => r.status === 200 });
+The usual delay is the call's p95. Only about 5% of calls are ever duplicated, so the extra load is small. A call is now slow only if both copies are slow, which turns p into roughly p² when replicas fail independently. The paper reports a Google benchmark where hedging after a 10 ms delay cut the 99.9th-percentile latency of a 100-server fan-out from 1,800 ms to 74 ms, at the cost of 2% more requests.
 
-    // Step 3: tied call to service C
-    let resC1 = http.get('https://service-c/api');
-    let resC2 = http.get('https://service-c/api');
-    // Wait for both
-    let resC = [resC1, resC2];
-    check(resC, { 'C OK': (r) => r.every((rr) => rr.status === 200) });
+Trade-offs:
 
-    sleep(1);
-}
-```
+- **Only for idempotent reads,** or writes protected by an idempotency key.
+- **Correlated slowness defeats it.** If both replicas are slow for the same reason (a hot key, an overloaded cluster), the hedge just adds load.
+- **Cap it.** Under overload, hedges add work exactly when there is none to spare. Limit hedges to a small share of traffic, or turn them off when error rates rise.
 
-The script sends two parallel requests to service B and keeps the faster one. It sends two parallel requests to service C and waits for both. The thresholds ensure the p99 stays below 2 s.
+## Tied requests
 
-## Takeaway
-When a request fans out, the tail latency grows exponentially with the number of hops. Use probability to quantify the risk, hedge only idempotent calls, tie only when necessary, and allocate per‑hop latency budgets enforced by circuit breakers. With these practices you keep the p99 predictable even as the service mesh scales.
+Hedging waits before duplicating. A tied request sends the call to two servers at once, each copy tagged with the other's identity. Whichever server starts executing first tells the other to cancel its copy. Because most of the delay is time spent in the queue, the call gets the shorter of two queues, and the cancellation means the work usually happens only once. It needs support in the server, so it fits systems you control end to end.
+
+## Deadlines and budgets
+
+Give every user request a deadline and pass the remaining time down with each call (gRPC deadlines do this out of the box). A shard that receives a call with 5 ms left and knows it needs 20 should fail fast rather than do work nobody will use.
+
+When results can be partial, decide what "good enough" means. A search page that returns results from 98 of 100 shards at the deadline is usually better than a complete page three seconds later. This is a product decision, so make it explicitly.
+
+## Reduce fan-out and sequential hops
+
+The cheapest tail is the one you don't have:
+
+- **Batch** many small calls to the same service into one.
+- **Cache** the results of slow, repeated calls near the caller.
+- **Flatten call chains.** Five services in sequence each add their tail, and parallel calls are better than sequential ones.
+- **Smaller partitions** let a slow or overloaded partition be moved or split quickly, instead of slowing everything on that machine.
+
+## How to load test for it
+
+Fan-out amplification is easy to miss because each service's own dashboard looks healthy.
+
+1. **Report per-call percentiles to p99.9 and beyond** for back-ends that sit behind a fan-out, with enough samples to trust them. A p99.99 needs well over 10,000 calls per measurement window.
+2. **Measure at the user-request level too,** and check that the request p99 matches what the formula predicts from the per-call tail. A big gap means correlated slowness, such as a shared pause or a hot shard.
+3. **Inject tail latency.** Add a fault that makes 1% of calls to one dependency take 500 ms, and watch what it does to the user-facing p99.
+4. **Test hedging under overload,** not just at normal load, and make sure the hedge rate stays capped.
+
+Avoid coordinated omission in these tests: use an open-model load generator, so slow responses don't reduce the rate of new requests and hide the tail you are trying to measure.
+
+## Checklist
+
+1. List the fan-out (parallel) and depth (sequential) of your critical requests.
+2. Compute the per-call percentile you actually need: 0.99^(1/N).
+3. Add hedging (with a cap) for idempotent reads behind large fan-outs.
+4. Propagate deadlines on every hop, and decide where partial results are acceptable.
+5. Batch, cache and flatten to reduce N.
+6. Load test with per-call tails, user-level tails and injected slowness.
+
+At scale, every rare event is happening somewhere, all the time. Design for the slowest call, because every big request waits for it.

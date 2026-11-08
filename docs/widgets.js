@@ -976,6 +976,186 @@
     update();
   };
 
+  // ---- Fan-out tail amplification (post: 2026-11-14) ----
+  W.fanout = function (node) {
+    var f = frame(node, 'Fan-out tail calculator', 'A request that waits for N back-end calls is only as fast as the slowest one. If each call is slow with probability p, the request is slow with probability 1 − (1 − p)^N. Hedging sends a second copy of a call that has not answered by its p95, so the call is slow only if both copies are.');
+    var u = function () { update(); };
+    var p = range(f, { label: 'Chance one call is slow', min: 0.01, max: 5, step: 0.01, value: 1, show: function (v) { return fmt(v, 2) + '%'; } }, u);
+    var n = range(f, { label: 'Calls per request (fan-out)', min: 1, max: 200, step: 1, value: 100 }, u);
+    var hedge = check(f, { label: 'Hedge each call after its p95', value: false }, u);
+    var st = stats(f.out, [['one', 'Slow calls'], ['req', 'Slow requests'], ['hedged', 'Slow requests, hedged'], ['extra', 'Extra calls from hedging']]);
+    var chart = h('div'); f.out.appendChild(chart);
+    legend(f.out, [['without hedging', C.a], ['with hedging', C.b]]);
+    var say = note(f.out);
+    function slow(q, k) { return 1 - Math.pow(1 - q, k); }
+    function update() {
+      var q = p() / 100, k = n(), q2 = q * q;
+      var a = slow(q, k), b = slow(q2, k);
+      st.one(pct(q, 2));
+      st.req(pct(a, 1), a > 0.1 ? 'warn' : '');
+      st.hedged(hedge() ? pct(b, 2) : 'off', hedge() ? 'ok' : '');
+      st.extra(hedge() ? 'about 5%' : '0%');
+      var pts = [], pts2 = [];
+      for (var i = 1; i <= 200; i++) { pts.push([i, slow(q, i) * 100]); pts2.push([i, slow(q2, i) * 100]); }
+      lineChart(chart, { xMin: 1, xMax: 200, yMin: 0, yMax: 100, xTitle: 'Fan-out (calls per request)', yTitle: '% of requests slow', yFmt: function (v) { return fmt(v) + '%'; },
+        series: hedge() ? [{ pts: pts, color: C.a }, { pts: pts2, color: C.b }] : [{ pts: pts, color: C.a }],
+        points: [{ x: k, y: a * 100, color: C.a, label: pct(a, 1) }] });
+      var msg = 'A ' + pct(q, 2) + ' slow call becomes ' + pct(a, 1) + ' of requests at a fan-out of ' + k + '. Your request p99 is now set by the call\'s p' + fmt(100 - (1 - Math.pow(0.99, 1 / k)) * 100, 3).replace(/0+$/, '') + ', not its p99.';
+      if (hedge()) msg += ' Hedging cuts it to ' + pct(b, 2) + ' for about 5% more calls, if the two replicas are slow independently. When slowness is shared (a hot partition, a GC pause on the only replica), hedging does little.';
+      say(msg, a > 0.1 && !hedge());
+    }
+    update();
+  };
+
+  // ---- LLM concurrency (post: 2026-11-15) ----
+  W.llmload = function (node) {
+    var f = frame(node, 'LLM load from your launch numbers', 'Streaming answers stay in flight for the whole generation, so concurrency follows Little\'s Law: requests per second × seconds per answer. Token throughput is what the provider\'s TPM limit and your GPUs actually see.');
+    var u = function () { update(); };
+    var rpm = number(f, { label: 'Peak requests per minute', min: 1, step: 1, value: 600 }, u);
+    var inTok = number(f, { label: 'Input tokens per request', min: 1, step: 1, value: 3000 }, u);
+    var outTok = number(f, { label: 'Output tokens per answer', min: 1, step: 1, value: 400 }, u);
+    var ttft = number(f, { label: 'Time to first token (ms)', min: 0, step: 50, value: 800 }, u);
+    var tpot = number(f, { label: 'Time per output token (ms)', min: 1, step: 1, value: 30 }, u);
+    var st = stats(f.out, [['total', 'Time per answer'], ['conc', 'Answers in flight'], ['tpm', 'Tokens per minute'], ['demo', 'A 5-user demo has']]);
+    var say = note(f.out);
+    function update() {
+      var total = ttft() + tpot() * Math.max(0, outTok() - 1);
+      var conc = rpm() / 60 * total / 1000;
+      var tpm = rpm() * (inTok() + outTok());
+      st.total(ms(total));
+      st.conc(fmt(conc, 0), conc > 50 ? 'warn' : '');
+      st.tpm(fmt(tpm));
+      st.demo('≤ 5 in flight');
+      say('At peak about ' + fmt(conc, 0) + ' answers are generating at once, ' + fmt(conc / 5, 0) + '× what a five-person demo exercises. Batching servers share the GPU across them, so time per output token usually grows as concurrency rises. Measure TTFT and TPOT at this concurrency, not at five. Check ' + fmt(tpm) + ' tokens per minute against your provider\'s TPM limit.', conc > 50);
+    }
+    update();
+  };
+
+  // ---- T3 CPU credits (post: 2026-11-16) ----
+  W.cpucredit = function (node) {
+    var f = frame(node, 'T3 CPU credit calculator', 'One CPU credit is one vCPU at 100% for one minute. A T3 instance earns credits at a fixed hourly rate and spends them whenever it runs above its baseline. In standard mode an empty balance caps the CPU at the baseline. In unlimited mode (the T3 default) it keeps running and you pay for surplus credits.');
+    var TYPES = { 't3.micro': [2, 12], 't3.small': [2, 24], 't3.medium': [2, 24], 't3.large': [2, 36], 't3.xlarge': [4, 96], 't3.2xlarge': [8, 192] };
+    var names = Object.keys(TYPES);
+    var u = function () { update(); };
+    var type = range(f, { label: 'Instance type', min: 0, max: names.length - 1, step: 1, value: 2, show: function (v) { return names[v]; } }, u);
+    var util = range(f, { label: 'Sustained CPU (whole instance)', min: 1, max: 100, step: 1, value: 60, show: function (v) { return v + '%'; } }, u);
+    var start = range(f, { label: 'Starting credit balance', min: 0, max: 100, step: 1, value: 100, show: function (v) { return v + '%'; } }, u);
+    var st = stats(f.out, [['base', 'Baseline'], ['earn', 'Earns'], ['spend', 'Spends at this load'], ['empty', 'Balance empty after']]);
+    var chart = h('div'); f.out.appendChild(chart);
+    legend(f.out, [['credit balance', C.a]]);
+    var say = note(f.out);
+    function dur(hh) { return hh < 2 ? fmt(hh * 60) + ' min' : fmt(hh, 1) + ' h'; }
+    function update() {
+      var t = TYPES[names[type()]], v = t[0], earn = t[1], max = earn * 24;
+      var base = earn / 60 / v;
+      var spend = v * util() / 100 * 60;
+      var bal = max * start() / 100, net = spend - earn;
+      var tEmpty = net > 0 ? bal / net : Infinity;
+      st.base(pct(base, 0) + ' per vCPU');
+      st.earn(fmt(earn) + ' credits/h');
+      st.spend(fmt(spend) + ' credits/h', net > 0 ? 'warn' : 'ok');
+      st.empty(isFinite(tEmpty) ? dur(tEmpty) : 'never', isFinite(tEmpty) && tEmpty < 24 ? 'warn' : 'ok');
+      var H = 24, pts = [];
+      for (var i = 0; i <= 96; i++) { var x = i / 4; pts.push([x, Math.max(0, Math.min(max, bal - net * x))]); }
+      lineChart(chart, { xMin: 0, xMax: H, yMin: 0, yMax: max * 1.05, xTitle: 'Hours at this load', yTitle: 'Credits', series: [{ pts: pts, color: C.a }], hLines: [{ y: max, color: C.m, label: 'max balance ' + fmt(max) }] });
+      if (isFinite(tEmpty)) say('A load test shorter than ' + dur(tEmpty) + ' runs on banked credits and passes. After that, standard mode caps the instance at ' + pct(base, 0) + ' per vCPU while the load needs ' + util() + '%. Unlimited mode keeps the speed and bills about ' + fmt(net / 60, 2) + ' surplus vCPU-hours per hour instead. Watch CPUCreditBalance and CPUSurplusCreditBalance.', true);
+      else say('This load stays at or under the baseline, so the balance never drains. Credits only help the bursts above ' + pct(base, 0) + ' per vCPU.', false);
+    }
+    update();
+  };
+
+  // ---- Token budget (post: 2026-11-17) ----
+  W.tokens = function (node) {
+    var f = frame(node, 'Token wall calculator', 'Tokens per call = system prompt + retrieved context + history + the answer. Many providers count the max_tokens you reserve, not the tokens you use, when they check the limit. Agents multiply it by the number of model calls per user request.');
+    var u = function () { update(); };
+    var sys = number(f, { label: 'System prompt tokens', min: 0, step: 50, value: 200 }, u);
+    var ctx = number(f, { label: 'Retrieved context tokens', min: 0, step: 100, value: 2000 }, u);
+    var hist = number(f, { label: 'Chat history tokens', min: 0, step: 100, value: 1200 }, u);
+    var max = number(f, { label: 'max_tokens reserved for the answer', min: 1, step: 50, value: 1000 }, u);
+    var calls = range(f, { label: 'Model calls per user request', min: 1, max: 10, step: 1, value: 1 }, u);
+    var rpm = number(f, { label: 'Peak user requests per minute', min: 1, step: 1, value: 120 }, u);
+    var lim = number(f, { label: 'TPM limit', min: 1, step: 1000, value: 400000 }, u);
+    var rlim = number(f, { label: 'RPM limit', min: 1, step: 1, value: 1000 }, u);
+    var st = stats(f.out, [['call', 'Tokens per call'], ['tpm', 'Peak TPM'], ['rpm', 'Peak model RPM'], ['wall', 'Which limit hits first']]);
+    var say = note(f.out);
+    function update() {
+      var per = sys() + ctx() + hist() + max();
+      var mrpm = rpm() * calls(), tpm = per * mrpm;
+      var tu = tpm / lim(), ru = mrpm / rlim();
+      st.call(fmt(per));
+      st.tpm(fmt(tpm) + ' (' + pct(tu, 0) + ')', tu > 1 ? 'warn' : 'ok');
+      st.rpm(fmt(mrpm) + ' (' + pct(ru, 0) + ')', ru > 1 ? 'warn' : 'ok');
+      st.wall(tu >= ru ? 'tokens' : 'requests', tu > 1 || ru > 1 ? 'warn' : '');
+      var maxUsers = Math.floor(Math.min(lim() / per, rlim()) / calls());
+      say('You use ' + pct(ru, 0) + ' of the request limit but ' + pct(tu, 0) + ' of the token limit. The most user requests per minute you can serve is about ' + fmt(maxUsers) + '. ' + (tu > 1 ? 'You hit the token wall first: trim the context, summarise history, or lower max_tokens to what answers really need.' : 'You fit, but check again when context or agent steps grow.'), tu > 1);
+    }
+    update();
+  };
+
+  // ---- Retry amplification under a rate limit (post: 2026-11-19) ----
+  W.retry = function (node) {
+    var f = frame(node, 'Retry amplification calculator', 'Steady-state model of a fixed rate limit. Each rejected attempt is retried immediately, up to the retry limit, and retries land in the same window. A retry budget caps retries at a share of first attempts.');
+    var u = function () { update(); };
+    var limit = number(f, { label: 'Rate limit (requests/min)', min: 1, step: 1, value: 1000 }, u);
+    var offered = number(f, { label: 'First attempts (requests/min)', min: 1, step: 1, value: 1064 }, u);
+    var retries = range(f, { label: 'Retries per request', min: 0, max: 6, step: 1, value: 1 }, u);
+    var budget = range(f, { label: 'Retry budget (0 = none)', min: 0, max: 50, step: 1, value: 0, show: function (v) { return v ? v + '% of first attempts' : 'none'; } }, u);
+    var st = stats(f.out, [['first', 'Rejected with no retries'], ['rej', 'Attempts rejected'], ['load', 'Attempts per minute'], ['fail', 'Users who still fail']]);
+    var say = note(f.out);
+    function update() {
+      var C = limit(), L = offered(), r = retries(), b = budget() / 100;
+      var f0 = Math.max(0, 1 - C / L), fr = f0, T = L;
+      for (var i = 0; i < 400; i++) {
+        var geo = 0, pw = 1;
+        for (var k = 1; k <= r; k++) { pw *= fr; geo += pw; }
+        var re = L * geo;
+        if (b > 0) re = Math.min(re, b * L);
+        T = L + re;
+        var nf = Math.max(0, 1 - C / T);
+        if (Math.abs(nf - fr) < 1e-9) break;
+        fr = fr + 0.5 * (nf - fr);
+      }
+      var served = Math.min(C, T);
+      var userFail = Math.max(0, 1 - served / L);
+      st.first(pct(f0, 1));
+      st.rej(pct(fr, 1), fr > f0 * 2 ? 'warn' : '');
+      st.load(fmt(T) + ' (' + fmt(T / L, 2) + '×)', T / L > 1.3 ? 'warn' : '');
+      st.fail(pct(userFail, 1));
+      if (L <= C) say('Load fits under the limit, so nothing is rejected in steady state. Retries only matter for bursts.', false);
+      else say('Retries cannot create capacity: ' + fmt(C) + ' requests a minute succeed either way, so ' + pct(userFail, 1) + ' of users still fail. What retries change is the load (' + fmt(T / L, 2) + '× the first attempts), the rejection rate (' + pct(f0, 1) + ' → ' + pct(fr, 1) + ') and the latency of everyone who waited for a retry. Back off with jitter and honour Retry-After so retries move into quieter seconds, and cap them with a budget.', fr > f0 * 2);
+    }
+    update();
+  };
+
+  // ---- Averaging percentiles across pods (post: 2026-11-20) ----
+  W.pctmerge = function (node) {
+    var f = frame(node, 'Averaged p99 vs real p99', 'Each pod serves fast requests (20 ms) and a share of slow ones (1,200 ms). The real p99 comes from all requests together. Averaging the pods\' p99 values gives every pod the same weight, whatever its traffic.');
+    var u = function () { update(); };
+    var pods = range(f, { label: 'Pods', min: 2, max: 12, step: 1, value: 4 }, u);
+    var share = range(f, { label: 'Traffic on the busiest pod', min: 5, max: 90, step: 1, value: 70, show: function (v) { return v + '%'; } }, u);
+    var hot = range(f, { label: 'Slow requests on the busiest pod', min: 0, max: 20, step: 0.1, value: 5, show: function (v) { return fmt(v, 1) + '%'; } }, u);
+    var cold = range(f, { label: 'Slow requests on the other pods', min: 0, max: 20, step: 0.1, value: 0.2, show: function (v) { return fmt(v, 1) + '%'; } }, u);
+    var st = stats(f.out, [['avg', 'Average of pod p99s'], ['real', 'Real p99 (merged)'], ['max', 'Worst pod p99'], ['slow', 'Slow requests overall']]);
+    var say = note(f.out);
+    var FAST = 20, SLOW = 1200;
+    function p99(slowFrac) { return slowFrac > 0.01 ? SLOW : FAST; }
+    function update() {
+      var n = pods(), s = share() / 100, hs = hot() / 100, cs = cold() / 100;
+      if (s < 1 / n) s = 1 / n;
+      var avg = (p99(hs) + (n - 1) * p99(cs)) / n;
+      var all = s * hs + (1 - s) * cs;
+      var real = p99(all);
+      st.avg(ms(avg));
+      st.real(ms(real), real > avg ? 'warn' : 'ok');
+      st.max(ms(Math.max(p99(hs), p99(cs))));
+      st.slow(pct(all, 2));
+      if (real > avg) say('The dashboard says ' + ms(avg) + ', a latency no request actually had. ' + pct(all, 2) + ' of all requests are slow, more than 1%, so the real p99 is ' + ms(real) + '. Merge histograms (sum the bucket counts across pods) before you take the quantile.', true);
+      else if (avg > real) say('Here the average overstates p99: the slow pod gets a full 1/' + n + ' vote but serves little traffic. Averaging is wrong in both directions.', true);
+      else say('The average happens to match the merged value here. Change the traffic split and it stops matching. The merged quantile always lies between the best and worst pod p99, so the worst pod is a safe upper bound.', false);
+    }
+    update();
+  };
+
   function init() {
     if (!document.getElementById('widget-css')) {
       var style = document.createElement('style');

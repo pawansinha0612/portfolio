@@ -1,165 +1,93 @@
 ---
-title: Your 429s Turn 6% into 25% – Why Naive Retries Fail
+title: One retry turned a 6% 429 rate into 25%
 date: 2026-11-19
-summary: Naive retry logic can quadruple your 429 rate. Learn how to design a robust strategy with Retry‑After, backoff, budgets, fallbacks and queues.
-description: 429 Too Many Requests: design retries with Retry‑After, jittered backoff, retry budgets, fallback models and queues to avoid exponential growth.
-tags: Performance, LLM, Retry
+summary: Why immediate retries against a rate limit multiply rejections without helping a single extra user, the maths behind it, and the retry design that works: Retry-After, jittered backoff, retry budgets, client-side rate limiting and queues.
+description: Immediate retries against a rate limit turn 6% 429s into 25% and help no extra users. The maths, and retries that work: backoff, jitter, budgets.
+tags: Performance, LLM, Resilience
+highlight: 25%
 linkedin: |
-  When you hit a 429, do you just retry or do you think about the server’s limits? A naive retry loop can turn a 6 % 429 rate into 25 %. The trick is to honour the Retry‑After header, use jittered exponential backoff, cap retries with a budget, and fall back to a lighter model when the 429 rate spikes. How do you design your retry strategy to avoid the thundering herd effect?
+  Your API allows 1,000 requests a minute. Peak traffic is 1,064. About 6% of calls get a 429.
+
+  Add one immediate retry and the rejection rate settles near 25%. Add three and it's about 50%, with almost twice the traffic.
+
+  The part that surprises people: the share of users who end up failing is still 6%. A rate limit is a fixed capacity. Retries can't create more of it. They add load, latency and noise while the same number of requests succeed.
+
+  Retries only help when they move work into quieter seconds: honour Retry-After, back off with jitter, cap them with a retry budget, and rate-limit yourself before the provider has to.
+
+  The article has an interactive calculator: set your limit, traffic and retry count and see the real rejection rate.
+
+  How many retries does your client do on a 429, and does your load test include them?
+
+  #PerformanceEngineering #SRE #LLM
 ---
-## Your 429s Turn 6% into 25% – Why Naive Retries Fail
+Your AI feature calls a provider that allows 1,000 requests a minute. At peak you send 1,064. The load test shows a 6% rate of `429 Too Many Requests`, which seems tolerable, so the client retries once on a 429. In production the provider's dashboard shows a quarter of your calls rejected, and users see answers arrive seconds later than before.
 
-You run a nightly integration test against a third‑party LLM. The test reports a 6 % 429 rate. Once the service goes live, the 429 rate explodes to 25 %. The culprit? A retry loop that blindly repeats failed requests.
+Nothing changed except the retry. That retry is the reason the number got worse.
 
-The loop looks like this:
+## The arithmetic of retrying into a wall
 
-```text
-for i in 1..3:
-    send request
-    if status == 429:
-        sleep 1s
-```
+A rate limit is a fixed capacity: 1,000 accepted calls per minute, no matter how many arrive. Everything above it is rejected.
 
-The 1‑second pause seems harmless, but it adds three more requests per failed call. If the original 6 % of 1 000 requests are 429s, you add 18 % more 429s. The service now sees 1 000 + 180 = 1 180 requests, and the 429 rate climbs to 25 %.
+Without retries, the rejection rate is simply the excess: 64 / 1,064 = 6%.
 
-### Why naive retries amplify 429s
+Now add one immediate retry. Every rejected call comes back once, so the total attempts are:
 
-A 429 response means the server has reached a rate limit. Retrying without regard to the server’s state creates *coordinated omission*: the client keeps sending requests while the server throttles, and the client’s own latency metrics become skewed. The server’s load increases, the rate limit tightens, and the cycle repeats.
+> attempts = first attempts × (1 + f)
 
-The effect can be visualised with Little’s Law. Let 
+where f is the share of attempts that get rejected. But f itself depends on the total attempts, because only 1,000 of them can succeed:
 
-- **L** be the average queue length, 
-- **λ** the arrival rate, 
-- **W** the average waiting time.
+> f = 1 − 1,000 / attempts
 
-Little’s Law states **L = λW**. When retries add to λ, W grows too, and the system saturates faster than the test environment suggested.
+Solve the two together and you get f ≈ 25% with about 1,325 attempts a minute. With three retries, the attempts become first × (1 + f + f² + f³). The fixed point is now f ≈ 50% and about 1,980 attempts a minute, nearly double the real demand.
 
-### Designing a robust retry strategy
+Then look at what users see. The limit still accepts exactly 1,000 calls a minute, and there are still 1,064 users asking. So 64 of them, 6%, still fail after all their retries. **Retries did not save a single extra user.** They added load, turned a 6% error rate into a 25% or 50% one on every dashboard, and made successful users wait for a second or third round trip.
 
-A principled approach requires four layers:
+<div class="widget" data-widget="retry"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
 
-1. **Respect the Retry‑After header** – the server tells you how long to wait.
-2. **Use exponential backoff with jitter** – avoid thundering herd.
-3. **Limit the number of retries** – a retry budget.
-4. **Add fallbacks or queues** – reduce load when the API is congested.
+This is a simple steady-state model. It assumes retries land in the same window and every attempt has the same chance of rejection. Real limiters use token buckets and sliding windows, and some count rejected calls against the quota too, which makes things worse. The direction is the same in every case. When demand exceeds capacity for a sustained period, immediate retries only amplify.
 
-#### Retry‑After header
+## When retries do help
 
-The HTTP 429 response may include a `Retry-After` header. It can be an HTTP date or a number of seconds. If present, use it directly:
+Retries are valuable when the overload is short. A burst exhausts a token bucket for two seconds, and a retry that waits until the bucket refills succeeds. The key word is *waits*. A retry helps only when it moves work from a full second into an emptier one.
+
+So the design question is never "how many retries?" but "where in time do the retries land?"
+
+## A retry design that works
+
+**1. Honour Retry-After.** On a 429 or 503 the server may send `Retry-After`, as a number of seconds or an HTTP date. It is the server telling you when capacity returns. Use it as the minimum wait. Many LLM providers also return headers describing the remaining requests and tokens in the current window. Read your provider's documentation and log them. They tell you how close to the wall you run before the first 429.
+
+**2. Exponential backoff with full jitter.** Without jitter, every client that was rejected at the same moment retries at the same moment, and you get synchronised waves. Full jitter spreads them out:
 
 ```text
-if response.status == 429 and response.headers.contains("Retry-After"):
-    wait = int(response.headers["Retry-After"])  # seconds
+wait = random(0, min(cap, base × 2^attempt))
 ```
 
-If the header is missing, fall back to a sensible default, e.g. 2 s. Do not ignore the header; the server’s back‑off policy is part of the contract.
+With base 0.5 s and cap 20 s, the third retry waits somewhere between 0 and 4 s. The spread is what breaks the herd.
 
-#### Exponential backoff with jitter
+**3. A retry budget.** Cap retries at a share of first attempts, for example 10%, measured over a sliding window. Below the budget, transient failures still get retried. In sustained overload the budget runs out and extra retries stop, so the load can't double. In the calculator, a 10% budget with three retries keeps rejections near 15% instead of 50%.
 
-A classic retry policy is:
+**4. Limit yourself before the provider does.** If you know the limit is 1,000 requests and 400,000 tokens a minute, run a client-side token bucket slightly below both. Requests over the line wait in a queue or are shed with a clear message. A queue in your own process gives you control over priority and timeouts, and the provider never sees the excess.
 
-```text
-delay = base * 2^retry + jitter
-```
+**5. Bound the total time, not just the attempts.** A user waiting for a chat answer will not wait 40 seconds of backoff. Give each user request a deadline and stop retrying when the remaining time can't fit another attempt.
 
-where `base` is the initial wait (e.g. 1 s), `retry` is the attempt number (starting at 0), and `jitter` is a random value in 
+**6. Degrade on purpose.** When the limit is the bottleneck for minutes at a time, retries can't fix it. Capacity can: a higher quota tier, a second region or deployment, or a smaller model for low-value calls. Decide in advance which requests get the fallback.
 
-```
-[0, base * 2^retry]
-```
+## Test the retries, not just the API
 
-The jitter spreads retries over a window, reducing the chance that many clients hit the server simultaneously. In practice, set `base` to 1 s and cap the maximum delay at 30 s.
+Most load tests run without the production client's retry logic, so they measure the API and miss the amplification. To see the real behaviour:
 
-#### Retry budgets
+- Drive the load through the same client library and retry settings as production, or reproduce them in the test script.
+- Record first attempts and retries as separate metrics. In k6, tag the requests (`tags: { attempt: '1' }`) and report each tag separately.
+- Push past the limit on purpose, for example 110% of the quota for ten minutes, and compare four numbers: rejection rate, total attempts, user-level failure rate and user-level latency.
+- Run it once with retries off as a baseline. If the user failure rate is the same with retries on, your retries are only adding load.
 
-A *retry budget* limits the total number of retries per request or per time window. For example, allow at most 2 retries per request, or 100 retries per minute across the entire service. The budget prevents runaway load.
+## Checklist
 
-| Budget type | Example | Effect |
-|-------------|---------|--------|
-| Per‑request | 2 retries | Keeps latency bounded |
-| Per‑minute | 100 retries | Caps overall load |
+1. Find every retry loop on the path to a rate-limited dependency, including the ones inside SDKs.
+2. Make sure each one honours Retry-After and uses jittered exponential backoff.
+3. Add a retry budget, around 10% of first attempts.
+4. Rate-limit and queue on your side, just below the provider's request and token limits.
+5. Give each user request a deadline that stops retries.
+6. Load test above the limit with production retry settings, and report first attempts and retries separately.
 
-Implement the budget with a token bucket. Each token represents a retry slot. When a retry is needed, attempt to take a token; if none are available, drop the request or send to a queue.
-
-#### Fallback models
-
-If the LLM provider offers multiple models, use a lower‑cost or local model when the primary one is rate‑limited. For example, switch from `gpt‑4` to `gpt‑3.5` when the 429 rate exceeds 10 %. This reduces the load on the throttled endpoint and preserves user experience.
-
-#### Queueing and backpressure
-
-A simple in‑memory queue can buffer requests when the 429 rate is high. The queue drains at a controlled rate, e.g. 5 req/s. Use a bounded queue to avoid unbounded memory growth. If the queue fills, reject new requests with a 503 and a `Retry‑After` header.
-
-### Putting it all together
-
-Below is a k6 script that demonstrates a full retry strategy. The script respects `Retry‑After`, applies exponential backoff with jitter, enforces a per‑request retry budget, and falls back to a lighter model when the 429 rate is high.
-
-```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export let options = {
-    vus: 10,
-    duration: '30s',
-    thresholds: {
-        http_req_failed: ['rate<0.05'], // <5% failures
-        http_req_duration: ['p(99)<500'],
-    },
-};
-
-const BASE_MODEL = 'gpt-4';
-const FALLBACK_MODEL = 'gpt-3.5';
-const MAX_RETRIES = 2;
-
-export default function () {
-    let retries = 0;
-    let model = BASE_MODEL;
-    let response;
-
-    while (retries <= MAX_RETRIES) {
-        response = http.post('https://api.llm.com/v1/chat', JSON.stringify({ model, prompt: 'Hello' }), {
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        if (response.status === 429) {
-            let retryAfter = response.headers['Retry-After'];
-            let wait = retryAfter ? parseInt(retryAfter) : 1 + Math.random() * Math.pow(2, retries);
-            sleep(wait);
-            retries++;
-            continue;
-        }
-
-        check(response, { 'status 200': r => r.status === 200 });
-        break;
-    }
-
-    // If the 429 rate is high, switch to fallback model for subsequent requests
-    if (get429Rate() > 0.10) {
-        model = FALLBACK_MODEL;
-    }
-}
-
-function get429Rate() {
-    // In a real system, read from a shared counter or metric
-    return __VU % 10 === 0 ? 0.12 : 0.04; // mock
-}
-```
-
-The script shows how to combine the four layers. In production you would replace the `get429Rate` stub with a real metric query.
-
-### Checklist for a resilient retry policy
-
-| Item | What to verify |
-|------|----------------|
-| Retry‑After usage | Server returns a header and client honours it |
-| Backoff formula | `delay = base * 2^retry + jitter` |
-| Retry budget | Max retries per request and per time window |
-| Fallback path | Alternate model or local cache is used when 429 > threshold |
-| Queue behaviour | Requests are buffered, not dropped, and the queue is bounded |
-| Metrics | 429 rate, retry count, latency percentiles, queue length |
-| Alerts | 429 rate > 10 % triggers an alert |
-
-Follow this checklist before deploying a new LLM integration. It will keep your 429 rate in check and prevent naive retries from turning a 6 % problem into a 25 % crisis.
-
-## Final thoughts
-
-Rate‑limited APIs are a common source of chaos. The key is to treat retries as a controlled, bounded process rather than a brute‑force hammer. Respect the server’s signals, back off intelligently, cap retries, and fall back gracefully. With these practices in place, you can keep your service responsive without overloading the provider.
+A 429 is the provider telling you the capacity is spent. A retry that ignores that message doesn't get more capacity. It just asks again, louder.
