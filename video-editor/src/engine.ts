@@ -19,7 +19,7 @@ export interface Range {
   end: number
 }
 
-export type Aspect = '16:9' | '9:16' | '1:1'
+export type Aspect = '16:9' | '9:16' | '1:1' | '4:5'
 
 export const MIN_CLIP = 0.1
 
@@ -221,6 +221,7 @@ export function cueAt(cues: Cue[] | undefined, t: number): Cue | null {
 export function outputSize(aspect: Aspect, res: 720 | 1080): { w: number; h: number } {
   if (aspect === '9:16') return { w: res, h: Math.round((res * 16) / 9) }
   if (aspect === '1:1') return { w: res, h: res }
+  if (aspect === '4:5') return { w: res, h: Math.round((res * 5) / 4) }
   return { w: Math.round((res * 16) / 9), h: res }
 }
 

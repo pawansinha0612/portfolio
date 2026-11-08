@@ -15,6 +15,8 @@ closing the tab.
 | Text | Title / boxed / name-banner styles. Drag in the preview to place, drag on the timeline to retime. |
 | Look | Colour presets plus brightness, contrast and saturation (canvas filters). |
 | Audio | Voice volume, background music that loops, fades out and ducks while you talk (real-time level detection). |
+| Suggestions | Checks the video and lists fixes with one-click apply: dark, overexposed, flat or dull picture (8 sampled frames), quiet or clipping voice, silence before the first word, long pauses, missing captions or title, music too loud or not ducked, Shorts length/format and export resolution. Rules in `src/advisor.ts` (unit-tested). |
+| Formats | 16:9, 9:16 Shorts, 1:1 square, 4:5 Instagram feed. |
 | Music library | Five royalty-free loops (lo-fi, upbeat, corporate, ambient, tech) composed and synthesised in the browser by `src/music.ts`: oscillators, filtered noise and a generated reverb, with no samples or recordings, so nobody else owns the audio. Rendered on first use with `OfflineAudioContext` and folded into seamless WAV loops. |
 | Format | 16:9, 9:16 (Shorts) or 1:1; fill (crop, with position) or fit; 720p or 1080p. |
 | Timeline | Split (S), delete, reorder, trim by dragging clip edges, undo/redo (Ctrl/Cmd+Z). |

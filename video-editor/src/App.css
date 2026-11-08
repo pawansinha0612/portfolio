@@ -240,3 +240,17 @@ textarea { resize: vertical; }
 }
 @keyframes lib-spin { to { transform: rotate(360deg); } }
 .hint.bad { color: var(--bad); }
+
+/* Suggestions */
+.advice-sum { margin-top: 4px; }
+.advice { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.advice li { display: flex; gap: 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.advice li b { font-size: 13px; display: block; }
+.advice li p { margin: 3px 0 8px; font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.advice li .small-btn { margin-top: 0; }
+.advice-icon { flex: none; margin-top: 1px; }
+.advice-fix { border-left: 3px solid var(--bad) !important; }
+.advice-fix .advice-icon { color: var(--bad); }
+.advice-tip .advice-icon { color: var(--accent); }
+.advice-good .advice-icon { color: #4cc38a; }
+.advice-good p { margin-bottom: 0 !important; }

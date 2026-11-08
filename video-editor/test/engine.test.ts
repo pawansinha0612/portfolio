@@ -133,3 +133,55 @@ test('music helpers: tuning, seeded randomness, seamless loop fold, WAV header',
   assert.equal(wav.getInt16(46, true), -32768)
   assert.equal(wav.getInt16(48, true), 32767)
 })
+
+import { advise, frameStats, quietRun, voiceStats, type AdviceInput } from '../src/advisor.ts'
+import { outputSize } from '../src/engine.ts'
+
+const base: AdviceInput = {
+  duration: 300, aspect: '16:9', res: 1080, sourceW: 1920, sourceH: 1080,
+  frames: [{ luma: 120, spread: 180, sat: 0.3 }],
+  grade: { preset: 'none', brightness: 0, contrast: 0, saturation: 0 },
+  voice: { speechDb: -20, peakDb: -6 }, voiceVolume: 1,
+  pauses: { count: 0, seconds: 0 }, leadSilence: 0, tailSilence: 0,
+  hasCaptions: true, hasOverlays: true, hasMusic: true, musicVolume: 0.3, duck: true,
+}
+const ids = (x: Partial<AdviceInput>) => advise({ ...base, ...x }).map((a) => a.id)
+
+test('advisor: a well-made video gets only "good" notes', () => {
+  const out = advise(base)
+  assert.ok(out.every((a) => a.level === 'good'), JSON.stringify(out.map((a) => a.id)))
+})
+
+test('advisor: dark, flat, quiet, slow start, pauses and missing extras are flagged with fixes', () => {
+  const out = advise({ ...base, frames: [{ luma: 60, spread: 80, sat: 0.05 }], voice: { speechDb: -34, peakDb: -12 },
+    leadSilence: 2.5, pauses: { count: 4, seconds: 3.2 }, hasCaptions: false, hasOverlays: false, hasMusic: false, duration: 45 })
+  const got = out.map((a) => a.id)
+  for (const id of ['dark', 'flat', 'dull', 'quiet', 'lead', 'pauses', 'captions', 'title', 'music', 'shorts']) assert.ok(got.includes(id), id)
+  assert.equal(out[0].level, 'fix')
+  const dark = out.find((a) => a.id === 'dark')!
+  assert.equal(dark.action!.do.kind, 'grade')
+  const quiet = out.find((a) => a.id === 'quiet')!
+  // -34 dB speech needs about +14 dB, but the -12 dB peak only allows +11 dB before -1 dBFS
+  assert.ok(quiet.action!.do.kind === 'voice' && quiet.action!.do.volume <= 3.55 && quiet.action!.do.volume > 1)
+})
+
+test('advisor: no repeat advice once a fix is applied', () => {
+  assert.ok(!ids({ frames: [{ luma: 60, spread: 180, sat: 0.3 }], grade: { preset: 'none', brightness: 40, contrast: 0, saturation: 0 } }).includes('dark'))
+  assert.ok(ids({ voiceVolume: 2, voice: { speechDb: -14, peakDb: -2 } }).includes('loud'))
+  assert.ok(ids({ aspect: '9:16', duration: 200 }).includes('too-long'))
+  assert.ok(ids({ sourceW: 1280, sourceH: 720 }).includes('res'))
+  assert.ok(ids({ musicVolume: 0.8 }).includes('music-loud'))
+  assert.ok(ids({ voiceVolume: 2, voice: { speechDb: -40, peakDb: -20 } }).includes('quiet-max'))
+})
+
+test('advisor helpers: frame stats, voice stats, quiet runs, 4:5 size', () => {
+  const px = new Uint8ClampedArray([0, 0, 0, 255, 255, 255, 255, 255])
+  const fs = frameStats(px)
+  near(fs.luma, 127.5, 0.6)
+  assert.equal(fs.sat, 0)
+  const env = new Float32Array([-60, -60, -60, -20, -18, -22, -60])
+  assert.equal(voiceStats(env, -40), null) // too little speech to judge
+  near(quietRun(env, -40, 0, 0.14, 0.02), 0.06)
+  near(quietRun(env, -40, 0, 0.14, 0.02, true), 0.02)
+  assert.deepEqual(outputSize('4:5', 1080), { w: 1080, h: 1350 })
+})

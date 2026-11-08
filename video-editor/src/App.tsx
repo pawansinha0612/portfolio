@@ -6,6 +6,9 @@ import {
   Captions,
   Download,
   Film,
+  Lightbulb,
+  CircleCheck,
+  TriangleAlert,
   Maximize2,
   Music2,
   Pause,
@@ -33,6 +36,8 @@ import {
   type Range,
   clipLength,
   clipStarts,
+  locate,
+  HOP,
   computeEnvelope,
   findSilences,
   formatTime,
@@ -59,6 +64,7 @@ import {
   exportMime
 } from './player'
 import { LIBRARY, type LibraryTrack, renderTrack } from './music'
+import { type Advice, type AdviceAction, type FrameStats, advise, frameStats, quietRun, voiceStats } from './advisor'
 import './App.css'
 
 // --- Project history (undo/redo) -------------------------------------------
@@ -126,7 +132,7 @@ const INITIAL: Project = {
 
 const CLIP_COLORS = ['#3b6fe0', '#7c5ce0', '#1f9bb5', '#2f9e6b', '#c4567f', '#c98a2c']
 
-type Tab = 'media' | 'silence' | 'captions' | 'text' | 'look' | 'audio' | 'format'
+type Tab = 'media' | 'tips' | 'silence' | 'captions' | 'text' | 'look' | 'audio' | 'format'
 type Selection = { kind: 'clip' | 'overlay'; id: string } | null
 
 interface ExportUi {
@@ -263,7 +269,10 @@ export default function App() {
           settings: { ...p.settings, aspect }
         }
       })
-      say(added.length === 1 ? `Imported ${added[0].name}` : `Imported ${added.length} videos`)
+      say(
+        (added.length === 1 ? `Imported ${added[0].name}` : `Imported ${added.length} videos`) +
+          '. Open Suggestions for tips on making it look and sound better.'
+      )
     },
     [commit, say]
   )
@@ -443,6 +452,7 @@ export default function App() {
           {(
             [
               ['media', Upload, 'Media'],
+              ['tips', Lightbulb, 'Suggestions'],
               ['silence', Wand2, 'Cut pauses'],
               ['captions', Captions, 'Captions'],
               ['text', Type, 'Text'],
@@ -466,6 +476,17 @@ export default function App() {
               onImport={() => fileRef.current?.click()}
               onAdd={addToTimeline}
               onRemove={removeAsset}
+            />
+          )}
+          {tab === 'tips' && (
+            <SuggestionsPanel
+              project={project}
+              assetById={assetById}
+              hasMusic={!!music}
+              commit={commit}
+              onSettings={setSettings}
+              openTab={setTab}
+              say={say}
             />
           )}
           {tab === 'silence' && (
@@ -649,6 +670,259 @@ function MediaPanel(props: {
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+// --- Suggestions ---------------------------------------------------------------
+
+function once(el: HTMLMediaElement, ev: string, ms = 5000): Promise<void> {
+  return new Promise((resolve) => {
+    const t = window.setTimeout(resolve, ms)
+    el.addEventListener(ev, () => {
+      clearTimeout(t)
+      resolve()
+    }, { once: true })
+  })
+}
+
+/** Brightness and colour of n frames spread across the timeline (before any Look is applied). */
+async function sampleFrames(clips: Clip[], assetById: Map<string, Asset>, n = 8): Promise<FrameStats[]> {
+  const total = totalDuration(clips)
+  if (!total) return []
+  const canvas = document.createElement('canvas')
+  canvas.width = 96
+  canvas.height = 54
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return []
+  const vids = new Map<string, HTMLVideoElement>()
+  const out: FrameStats[] = []
+  try {
+    for (let i = 0; i < n; i++) {
+      const loc = locate(clips, ((i + 0.5) / n) * total)
+      const a = loc && assetById.get(loc.clip.assetId)
+      if (!loc || !a) continue
+      let v = vids.get(a.id)
+      if (!v) {
+        v = document.createElement('video')
+        v.muted = true
+        v.playsInline = true
+        v.preload = 'auto'
+        v.src = a.url
+        vids.set(a.id, v)
+        await once(v, 'loadeddata')
+      }
+      v.currentTime = loc.srcTime
+      await once(v, 'seeked')
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height)
+      out.push(frameStats(ctx.getImageData(0, 0, canvas.width, canvas.height).data))
+    }
+  } finally {
+    vids.forEach((v) => {
+      v.removeAttribute('src')
+      v.load()
+    })
+  }
+  return out
+}
+
+interface Analysis {
+  advice: Advice[]
+  pauses: Record<string, Range[]>
+  lead: number
+  tail: number
+}
+
+function SuggestionsPanel(props: {
+  project: Project
+  assetById: Map<string, Asset>
+  hasMusic: boolean
+  commit: (u: Update, key?: string) => void
+  onSettings: (p: Partial<Settings>, key?: string) => void
+  openTab: (t: Tab) => void
+  say: (t: string, bad?: boolean) => void
+}) {
+  const { project, assetById, hasMusic, commit, onSettings, openTab, say } = props
+  const [busy, setBusy] = useState('')
+  const [result, setResult] = useState<Analysis | null>(null)
+  const envs = useRef(new Map<string, Float32Array | null>())
+  const rerun = useRef(false)
+
+  const run = async () => {
+    const { clips, settings } = project
+    if (!clips.length) return
+    const used = [...new Set(clips.map((c) => c.assetId))]
+    for (const id of used) {
+      if (envs.current.has(id)) continue
+      const a = assetById.get(id)
+      if (!a) continue
+      setBusy(`Listening to ${a.name}…`)
+      try {
+        envs.current.set(id, await decodeEnvelope(a.file))
+      } catch {
+        envs.current.set(id, null)
+      }
+    }
+    setBusy('Looking at the picture…')
+    let frames: FrameStats[] = []
+    try {
+      frames = await sampleFrames(clips, assetById)
+    } catch {
+      frames = []
+    }
+
+    // Sound: use the asset with the most time on the timeline for the voice level.
+    const timeOn = new Map<string, number>()
+    for (const c of clips) timeOn.set(c.assetId, (timeOn.get(c.assetId) ?? 0) + clipLength(c))
+    const main = [...timeOn.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+    const thr = new Map<string, number>()
+    for (const id of used) {
+      const env = envs.current.get(id)
+      if (env) thr.set(id, suggestThreshold(env))
+    }
+    const mainEnv = main ? envs.current.get(main) : null
+    const voice = mainEnv ? voiceStats(mainEnv, thr.get(main!)!) : null
+
+    const pauses: Record<string, Range[]> = {}
+    let count = 0
+    let seconds = 0
+    for (const id of used) {
+      const env = envs.current.get(id)
+      if (!env) continue
+      const r = rangesInUse(findSilences(env, thr.get(id)!, 0.6, 0.12), clips, id)
+      pauses[id] = r
+      count += r.length
+      seconds += r.reduce((s, x) => s + x.end - x.start, 0)
+    }
+    const first = clips[0]
+    const last = clips[clips.length - 1]
+    const fEnv = envs.current.get(first.assetId)
+    const lEnv = envs.current.get(last.assetId)
+    const lead = fEnv ? quietRun(fEnv, thr.get(first.assetId)!, first.in, first.out, HOP) : 0
+    const tail = lEnv ? quietRun(lEnv, thr.get(last.assetId)!, last.in, last.out, HOP, true) : 0
+    const src = assetById.get(main ?? first.assetId)
+
+    const advice = advise({
+      duration: totalDuration(clips),
+      aspect: settings.aspect,
+      res: settings.res,
+      sourceW: src?.width ?? 1920,
+      sourceH: src?.height ?? 1080,
+      frames,
+      grade: settings.grade,
+      voice,
+      voiceVolume: settings.voiceVolume,
+      pauses: { count, seconds },
+      leadSilence: Math.min(lead, clipLength(first)),
+      tailSilence: Math.min(tail, clipLength(last)),
+      hasCaptions: used.some((id) => (project.captions[id]?.length ?? 0) > 0),
+      hasOverlays: project.overlays.length > 0,
+      hasMusic,
+      musicVolume: settings.musicVolume,
+      duck: settings.duck
+    })
+    setResult({ advice, pauses, lead, tail })
+    setBusy('')
+  }
+
+  // After a fix that changes the project, check again so the list stays true.
+  useEffect(() => {
+    if (!rerun.current) return
+    rerun.current = false
+    void run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, hasMusic])
+
+  const apply = (a: AdviceAction) => {
+    if (!result) return
+    switch (a.kind) {
+      case 'grade':
+        onSettings({ grade: { ...project.settings.grade, ...a.patch } })
+        break
+      case 'voice':
+        onSettings({ voiceVolume: a.volume })
+        break
+      case 'music':
+        onSettings({ musicVolume: a.volume, duck: a.duck })
+        break
+      case 'aspect':
+        onSettings({ aspect: a.aspect })
+        break
+      case 'res':
+        onSettings({ res: a.res })
+        break
+      case 'tab':
+        openTab(a.tab)
+        return
+      case 'cutPauses':
+        commit((p) => ({
+          ...p,
+          clips: Object.entries(result.pauses).reduce((cl, [id, ranges]) => removeRanges(cl, id, ranges), p.clips)
+        }))
+        say('Pauses cut. Undo if it feels too tight.')
+        break
+      case 'trimEdges':
+        commit((p) => {
+          if (!p.clips.length) return p
+          const clips = [...p.clips]
+          const f = clips[0]
+          const cutIn = Math.max(0, result.lead - 0.15)
+          if (cutIn > 0 && clipLength(f) - cutIn >= MIN_CLIP) clips[0] = { ...f, in: f.in + cutIn }
+          const li = clips.length - 1
+          const l = clips[li]
+          const cutOut = Math.max(0, result.tail - 0.3)
+          if (cutOut > 0 && clipLength(l) - cutOut >= MIN_CLIP) clips[li] = { ...l, out: l.out - cutOut }
+          return { ...p, clips }
+        })
+        say('Trimmed the silence at the start and end.')
+        break
+    }
+    rerun.current = true
+  }
+
+  const fixes = result?.advice.filter((a) => a.level === 'fix').length ?? 0
+  const tips = result?.advice.filter((a) => a.level === 'tip').length ?? 0
+
+  return (
+    <div className="panel-body">
+      <h2>Suggestions</h2>
+      <p className="hint">
+        Checks the picture, the sound and the edit, then suggests what would make the video look and sound better. Each
+        fix is one click, and Undo takes it back. Everything runs in your browser.
+      </p>
+      {!project.clips.length && <p className="hint warn">Import a video first.</p>}
+      {project.clips.length > 0 && (
+        <button className="primary wide" onClick={() => void run()} disabled={!!busy}>
+          <Lightbulb size={16} /> {busy || (result ? 'Check again' : 'Check my video')}
+        </button>
+      )}
+      {result && !busy && (
+        <p className="hint advice-sum">
+          {fixes || tips
+            ? `${fixes} fix${fixes === 1 ? '' : 'es'} and ${tips} tip${tips === 1 ? '' : 's'}.`
+            : 'Looks good. Nothing to fix.'}
+        </p>
+      )}
+      {result && (
+        <ul className="advice">
+          {result.advice.map((a) => (
+            <li key={a.id} className={`advice-${a.level}`}>
+              <span className="advice-icon" aria-hidden="true">
+                {a.level === 'fix' ? <TriangleAlert size={15} /> : a.level === 'tip' ? <Lightbulb size={15} /> : <CircleCheck size={15} />}
+              </span>
+              <div>
+                <b>{a.title}</b>
+                <p>{a.detail}</p>
+                {a.action && (
+                  <button className="small-btn" onClick={() => apply(a.action!.do)} disabled={!!busy}>
+                    {a.action.label}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -1206,7 +1480,8 @@ function FormatPanel({ settings, onSettings }: { settings: Settings; onSettings:
         options={[
           ['16:9', '16:9 YouTube'],
           ['9:16', '9:16 Shorts'],
-          ['1:1', '1:1 Square']
+          ['1:1', '1:1 Square'],
+          ['4:5', '4:5 Instagram']
         ]}
         onChange={(v) => onSettings({ aspect: v })}
       />
