@@ -1,0 +1,77 @@
+# Click-to-run: after you upload a video, add it to the website's /videos/ page (and the "Watch the video" box on
+# the page it demos). Actions → "Add a video" → Run workflow → fill in the form → Run.
+# To set your channel links instead, choose "Set channel links" and fill in only the channel fields.
+name: Add a video
+
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: 'What to do'
+        type: choice
+        options: [Add a video, Set channel links]
+      platform:
+        description: 'Video: where it is'
+        type: choice
+        options: [youtube, short, tiktok, instagram]
+      url:
+        description: 'Video: link (https://...)'
+        required: false
+      title:
+        description: 'Video: title'
+        required: false
+      topic:
+        description: 'Video: topic'
+        type: choice
+        options: [perf, ai-testing, ai-tips, career]
+      related:
+        description: 'Video: page it demos, e.g. /tools/jmeter-to-k6/ (optional)'
+        required: false
+      featured:
+        description: 'Video: show it first'
+        type: boolean
+        default: false
+      youtube:
+        description: 'Channel links: YouTube channel URL (optional)'
+        required: false
+      tiktok:
+        description: 'Channel links: TikTok profile URL (optional)'
+        required: false
+      instagram:
+        description: 'Channel links: Instagram profile URL (optional)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Update the JSON files
+        env:
+          WHAT: ${{ inputs.what }}
+          PLATFORM: ${{ inputs.platform }}
+          URL: ${{ inputs.url }}
+          TITLE: ${{ inputs.title }}
+          TOPIC: ${{ inputs.topic }}
+          RELATED: ${{ inputs.related }}
+          FEATURED: ${{ inputs.featured }}
+          YT: ${{ inputs.youtube }}
+          TT: ${{ inputs.tiktok }}
+          IG: ${{ inputs.instagram }}
+        run: python3 .github/scripts/add_video.py
+      - name: Check the entries (same test as the Videos check workflow)
+        run: node videos/test-videos.js
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/videos
+          git diff --cached --quiet && { echo "Nothing changed."; exit 0; }
+          git commit -m "Videos: ${{ inputs.what }} ${{ inputs.title }}"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

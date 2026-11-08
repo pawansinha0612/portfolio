@@ -105,15 +105,20 @@ def read_stream(r, deadline):
 
 
 def call_model(model, topic):
+    return chat(model, VOICE.read_text(encoding='utf-8'), FORMAT.format(topic=topic), 0.5)
+
+
+def chat(model, system, user, temperature=0.5):
+    """One chat completion from the OpenAI-compatible API, with retries. Also used by review.py."""
     # Streamed, so a slow model keeps sending words instead of looking stuck and timing out.
     body = json.dumps({
         'model': model,
-        'temperature': 0.5,
+        'temperature': temperature,
         'max_tokens': 8192,
         'stream': True,
         'messages': [
-            {'role': 'system', 'content': VOICE.read_text(encoding='utf-8')},
-            {'role': 'user', 'content': FORMAT.format(topic=topic)},
+            {'role': 'system', 'content': system},
+            {'role': 'user', 'content': user},
         ],
     }).encode()
     req = urllib.request.Request(BASE_URL.rstrip('/') + '/chat/completions', data=body, headers={
@@ -244,11 +249,13 @@ def main():
                          'variable (IDs: https://integrate.api.nvidia.com/v1/models).')
     mark_done(lines, done)
     remaining += len(skipped)
+    (ROOT / 'blog' / '.draft-files').write_text('\n'.join(n for _, _, n, _ in made), encoding='utf-8')
 
     skip_note = ('\n\nCould not draft (left in the queue): ' + '; '.join(skipped)) if skipped else ''
     rows = '\n'.join(f'| {d.strftime("%a %d %b")} | {t} | `{m}` | `blog/posts/{n}` |' for d, t, n, m in made)
     low = f'\n\n⚠️ Only {remaining} topics left in `blog/topics.md`. Add more soon.' if remaining < 7 else ''
-    SUMMARY.write_text(f'''Drafted by AI. Check facts, numbers and code carefully (smaller backup models make more mistakes). Review each post, edit anything that isn't right, then **merge** to approve.
+    SUMMARY.write_text(f'''Drafted by AI. **Don't merge until you have read every post.** Free models get facts, numbers, tool options and code wrong, and once merged each post goes out under your name.
+Check the automatic review at the bottom first, fix what it flags (pencil icon on each file under **Files changed**), then **merge** to approve.
 Each post goes live on its date at about 8am Melbourne time and is shared on LinkedIn.
 
 | Publishes | Title | Model | File |

@@ -1,0 +1,61 @@
+# Click-to-run: after you list a product on Gumroad (or anywhere), paste its link here.
+# Actions → "Set a product link" → Run workflow → pick the product, paste the link → Run.
+# It swaps the placeholder on every page, so the hidden cards and "Email me to buy" buttons become real buy buttons.
+name: Set a product link
+
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: 'Which product'
+        type: choice
+        options:
+          - k6 Starter Kit (k6-kit-url)
+          - Perf Advisor (perf-advisor-url)
+          - Portfolio Website Template (portfolio-template-url)
+          - Interview Guide (interview-guide-url)
+          - Test Templates Pack (test-templates-url)
+      url:
+        description: 'Product link, e.g. https://pawansinha.gumroad.com/l/k6-kit'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  set:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace the placeholder
+        env:
+          PRODUCT: ${{ inputs.product }}
+          URL: ${{ inputs.url }}
+        run: |
+          key=$(echo "$PRODUCT" | sed -E 's/.*\(([a-z0-9-]+)\).*/\1/')
+          url=$(echo "$URL" | tr -d '[:space:]')
+          if ! echo "$url" | grep -Eq '^https://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+$'; then
+            echo "::error::The link must start with https:// and contain no spaces or quotes. You entered: $URL"; exit 1
+          fi
+          files=$(grep -rl --include='*.html' "\[$key\]" docs || true)
+          if [ -z "$files" ]; then
+            echo "::error::No page still has [$key]. It may already be set. To change an existing link, edit the pages on github.com."; exit 1
+          fi
+          for f in $files; do
+            python3 - "$f" "[$key]" "$url" <<'PY'
+          import sys
+          path, old, new = sys.argv[1:]
+          s = open(path, encoding='utf-8').read()
+          open(path, 'w', encoding='utf-8').write(s.replace(old, new))
+          PY
+            echo "Updated $f"
+          done
+          echo "### Done: $PRODUCT now links to $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "$files" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs
+          git commit -m "Product link: ${{ inputs.product }}"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

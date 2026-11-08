@@ -47,6 +47,17 @@ jobs:
           pip install markdown
           python blog/draft.py --count "${{ inputs.count || '7' }}"
 
+      - name: Check the drafts (rules + AI fact-check)
+        if: steps.pending.outputs.open == '0'
+        continue-on-error: true   # a failed review must not stop the drafts from arriving
+        env:
+          AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          PYTHONUNBUFFERED: '1'
+        run: python blog/review.py
+
       - name: Open a pull request
         if: steps.pending.outputs.open == '0'
         env:
