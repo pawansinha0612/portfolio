@@ -1,0 +1,34 @@
+# Safety net: on every change to the site, run every test and open every page in a real browser.
+# If anything breaks, the run fails and GitHub emails the repo owner.
+name: Site tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: site-tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests (tools, games, explainers, videos)
+        run: |
+          set -e
+          for f in toolkit-tests/test-*.js toolkit-tests/*.test.js play/test-*.js explain/test-explain.js videos/test-videos.js; do
+            echo "::group::$f"; node "$f"; echo "::endgroup::"
+          done
+      - name: Install a browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.61.0
+          npx playwright install --with-deps chromium
+      - name: Open every page in the sitemap
+        run: node toolkit-tests/site-smoke.js
