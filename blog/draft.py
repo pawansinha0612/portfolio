@@ -37,7 +37,7 @@ SUMMARY = ROOT / 'blog' / '.draft-summary.md'  # pull request body, not committe
 
 BASE_URL = os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1'
 MODELS = [m.strip() for m in (os.environ.get('AI_MODEL') or
-          'google/gemma-4-31b-it,nvidia/nemotron-3-super-120b-a12b,openai/gpt-oss-20b').split(',') if m.strip()]
+          'nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3.5-super-vl-120b-a12b,mistralai/mistral-large-4-1t-a52b,minimaxai/minimax-m3.1-flash').split(',') if m.strip()]
 API_KEY = os.environ.get('AI_API_KEY', '').strip()
 used_model = MODELS[0]  # the model that actually wrote the drafts, for the pull request
 unavailable = set()     # models that 404 or time out twice; not tried again this run
