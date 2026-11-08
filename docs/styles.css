@@ -138,7 +138,7 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; }
 .legend span::before { content: ""; display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: middle; }
 .l-lat::before { background: #6d95ff; }
 .l-load::before { background: #3fd6a3; }
-.pass { color: #5fdc9b; margin: 12px 0 0; }
+.dash .pass { color: #5fdc9b; margin: 12px 0 0; }
 .dash figcaption { position: absolute; top: 12px; right: 16px; font-size: 11px; color: #5d6679; }
 
 /* Trust strip */

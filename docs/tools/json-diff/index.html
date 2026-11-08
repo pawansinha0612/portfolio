@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Response Comparer (JSON Diff) — Pawan Sinha</title>
+  <meta name="description" content="Free JSON diff for API testing. Compare two API responses by JSON path, ignore ids and timestamps, ignore array order, set a numeric tolerance and turn the differences into Playwright and k6 assertions. Runs in your browser.">
+  <meta property="og:title" content="API Response Comparer (JSON Diff) — Pawan Sinha">
+  <meta property="og:description" content="Free tool: paste two API responses and see every added, removed, changed and retyped value by JSON path. Ignore volatile fields, then copy Playwright or k6 assertions. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/json-diff/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/json-diff/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"API response comparer (JSON diff)","url":"https://pawansinha.com.au/tools/json-diff/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Is my JSON uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Both documents are parsed and compared in your browser. API responses often hold customer data, tokens and internal hostnames, so nothing is sent to a server."}},
+    {"@type":"Question","name":"Does the order of keys in an object matter?","acceptedAnswer":{"@type":"Answer","text":"No. JSON objects have no order, so {\"a\":1,\"b\":2} and {\"b\":2,\"a\":1} are equal. Arrays do have an order, and they are compared position by position unless you tick Ignore array order."}},
+    {"@type":"Question","name":"How do I ignore ids, timestamps and trace ids?","acceptedAnswer":{"@type":"Answer","text":"List them in Ignore keys, separated by commas. A plain name such as timestamp matches that key at any depth. A pattern starting with $ is a full path, such as $.meta.requestId or $.items[*].id. A * inside a name matches any characters, so created* matches createdAt and createdBy."}},
+    {"@type":"Question","name":"How large a response can it compare?","acceptedAnswer":{"@type":"Answer","text":"Responses of 5 MB or more each. Large inputs are compared in a background thread so the page stays responsive. Integers above 9,007,199,254,740,991 lose precision when JavaScript reads them, so compare very large ids as strings."}},
+    {"@type":"Question","name":"Can I turn the differences into test assertions?","acceptedAnswer":{"@type":"Answer","text":"Yes. Generate assertions writes Playwright expect() lines and a k6 check() block that assert the after values of the differences in the table. Filter the table first if you only want some of them."}}
+  ]}</script>
+  <style>
+    .sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+    .side { min-width: 0; }
+    .side-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; justify-content: space-between; margin: 0 0 8px; }
+    .side-head h3 { font-size: 16px; margin: 0; }
+    .side-head button { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+    .side textarea { display: block; width: 100%; min-height: 240px; resize: vertical; font: 500 12.5px/1.5 "JetBrains Mono", monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 10px; tab-size: 2; }
+    .side textarea:focus { outline: none; border-color: var(--accent); }
+    .side textarea.bad { border-color: var(--bad); }
+    .side-status { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; min-height: 1.5em; }
+    .side-status.ok { color: var(--ok); font-weight: 600; } .side-status.bad { color: var(--bad); font-weight: 600; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .chip-btn[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .ex-note { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--alt); border: 1px solid var(--border); font-size: 14px; max-width: 80ch; }
+    .ex-note[hidden] { display: none; }
+    .err-excerpt { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); color: var(--text); font: 500 12.5px/1.5 "JetBrains Mono", monospace;
+      white-space: pre; overflow-x: auto; max-width: 100%; }
+    .err button { font: inherit; font-size: 13px; margin-top: 8px; cursor: pointer; }
+    fieldset.opts { border: 0; padding: 0; margin: 0; min-width: 0; }
+    fieldset.opts legend { font-size: 18px; font-weight: 700; padding: 0; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px 22px; margin-top: 4px; }
+    .opt { display: block; min-width: 0; font-size: 14px; }
+    .opt > span, .opt > label > span { display: block; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .opt small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 60ch; }
+    .opt input[type=text], .opt input[type=number] { width: 100%; font: 500 13px "JetBrains Mono", monospace; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; }
+    .opt input[type=number] { max-width: 140px; font-family: inherit; font-size: 14px; }
+    .opt input:focus { outline: none; border-color: var(--accent); }
+    .opt input:disabled { opacity: .55; }
+    .opt-wide { grid-column: 1 / -1; }
+    .check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+    .check input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+    .check b { display: block; color: var(--text); }
+    .sub-field { margin: 8px 0 0 24px; }
+    .sub-field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .sub-field input[type=text] { max-width: 200px; }
+    .ja-stat.add b { color: var(--ok); } .ja-stat.del b { color: var(--bad); } .ja-stat.chg b { color: var(--warn); } .ja-stat.typ b { color: var(--accent); }
+    .ja-stat.ign b { color: var(--muted); }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
+    .filters input[type=search] { flex: 1 1 200px; min-width: 0; max-width: 340px; font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
+    .filters input[type=search]:focus { outline: none; border-color: var(--accent); }
+    table.diff th, table.diff td { text-align: left; white-space: normal; vertical-align: top; }
+    table.diff td.p { font: 500 12.5px "JetBrains Mono", monospace; min-width: 150px; max-width: 300px; overflow-wrap: anywhere; }
+    table.diff td.p small { display: block; font-family: Inter, system-ui, sans-serif; color: var(--muted); font-size: 12px; }
+    table.diff td.v { font: 500 12.5px "JetBrains Mono", monospace; min-width: 110px; max-width: 280px; overflow-wrap: anywhere; }
+    table.diff td.v em { display: block; font: 500 12px Inter, system-ui, sans-serif; color: var(--muted); font-style: normal; }
+    table.diff td.miss { color: var(--muted); font-style: italic; font-family: Inter, system-ui, sans-serif; }
+    table.diff tr.k-added td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
+    table.diff tr.k-removed td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+    table.diff tr.k-changed td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+    table.diff tr.k-type td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--alt); color: var(--muted); }
+    .pill.added { background: var(--ok-bg); color: var(--ok); } .pill.removed { background: var(--bad-bg); color: var(--bad); }
+    .pill.changed { background: var(--warn-bg); color: var(--warn); } .pill.type { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+    .code-out { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--alt); border: 1px solid var(--border); overflow: auto; max-height: 420px;
+      font: 500 12.5px/1.55 "JetBrains Mono", monospace; color: var(--text); white-space: pre; }
+    .asserts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; }
+    .asserts > div { min-width: 0; }
+    .asserts h4 { margin: 0 0 6px; font-size: 14px; display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+    .asserts h4 button { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+    .sbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; }
+    .pane { min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+    .pane h4 { margin: 0; padding: 8px 12px; font-size: 13px; background: var(--alt); border-bottom: 1px solid var(--border); color: var(--muted); }
+    .pane .lines { max-height: 560px; overflow: auto; font: 500 12.5px/1.6 "JetBrains Mono", monospace; padding: 4px 0; }
+    .pane .ln { display: flex; white-space: pre; min-width: max-content; }
+    .pane .ln i { flex: none; width: 4.5em; padding: 0 10px 0 0; text-align: right; color: var(--muted); font-style: normal; user-select: none; opacity: .7; }
+    .pane .ln span { padding-right: 12px; }
+    .pane .ln.add { background: var(--ok-bg); } .pane .ln.add i { box-shadow: inset 3px 0 0 var(--ok); }
+    .pane .ln.del { background: var(--bad-bg); } .pane .ln.del i { box-shadow: inset 3px 0 0 var(--bad); }
+    .pane .ln.chg { background: var(--warn-bg); } .pane .ln.chg i { box-shadow: inset 3px 0 0 var(--warn); }
+    .pane .ln.ign span { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+    .pane .ln.gap { color: var(--muted); font-family: Inter, system-ui, sans-serif; font-size: 12px; padding: 2px 12px; background: var(--alt); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+    .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+    .working { margin-top: 14px; font-size: 14px; color: var(--muted); }
+    .working[hidden] { display: none; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · JSON diff</p>
+      <h1>Compare two API responses</h1>
+      <p class="lead">Paste the response you expected and the one you got. See every added, removed and changed value by JSON path. Ignore ids and timestamps, then turn the differences into Playwright or k6 assertions.</p>
+      <p class="private-note">🔒 Nothing is uploaded. <span>Both documents are read and compared in your browser. API responses often hold customer data and tokens, so they never leave your computer.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Compare JSON">
+      <div class="panel">
+        <h2>Paste the two responses</h2>
+        <p class="sub">Strict JSON only. A byte order mark and blank space around the document are fine. Press Ctrl+Enter (⌘+Enter on a Mac) in either box to compare.</p>
+        <div class="examples">Try an example:
+          <button class="chip-btn" type="button" data-example="version">API change between versions</button>
+          <button class="chip-btn" type="button" data-example="order">Reordered arrays</button>
+          <button class="chip-btn" type="button" data-example="volatile">Volatile fields</button>
+        </div>
+        <p class="ex-note" id="ex-note" aria-live="polite" hidden></p>
+        <div class="sides">
+          <div class="side">
+            <div class="side-head"><h3><label for="in-a">Before (expected)</label></h3>
+              <button type="button" data-open="a">Open a file</button></div>
+            <textarea id="in-a" spellcheck="false" autocomplete="off" placeholder='{ "status": "PAID", "total": 49.95 }'></textarea>
+            <span class="side-status" id="st-a" aria-live="polite"></span>
+          </div>
+          <div class="side">
+            <div class="side-head"><h3><label for="in-b">After (actual)</label></h3>
+              <button type="button" data-open="b">Open a file</button></div>
+            <textarea id="in-b" spellcheck="false" autocomplete="off" placeholder='{ "status": "SHIPPED", "total": "49.95" }'></textarea>
+            <span class="side-status" id="st-b" aria-live="polite"></span>
+          </div>
+        </div>
+        <input type="file" id="file" accept=".json,application/json,.txt" hidden>
+        <div class="actions">
+          <button class="btn" type="button" id="go">Compare</button>
+          <button class="btn btn-ghost btn-small" type="button" id="swap">Swap sides</button>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+        </div>
+        <div class="err" id="err" role="alert" hidden></div>
+        <p class="working" id="working" aria-live="polite" hidden>Comparing in the background…</p>
+      </div>
+
+      <div class="panel">
+        <fieldset class="opts">
+          <legend>Options</legend>
+          <p class="sub">Changes apply straight away once you have compared.</p>
+          <div class="opt-grid">
+            <div class="opt opt-wide">
+              <label for="o-ignore"><span>Ignore keys</span></label>
+              <input type="text" id="o-ignore" spellcheck="false" autocomplete="off" placeholder="requestId, timestamp, *.traceId, $.items[*].id, created*">
+              <small>Separate with commas. A plain name matches that key at any depth. Start with <code>$</code> for a full path. <code>*</code> matches any characters in a name, and <code>[*]</code> matches any array position.</small>
+            </div>
+            <div class="opt">
+              <label class="check"><input type="checkbox" id="o-order"><span><b>Ignore array order</b><small>Compare arrays as multisets: the same items in any order are equal.</small></span></label>
+              <div class="sub-field"><label for="o-key">Match objects in arrays by key</label>
+                <input type="text" id="o-key" spellcheck="false" autocomplete="off" placeholder="id" disabled></div>
+            </div>
+            <div class="opt">
+              <label for="o-tol"><span>Numeric tolerance</span></label>
+              <input type="number" id="o-tol" min="0" step="any" placeholder="0" inputmode="decimal">
+              <small>Numbers this close count as equal, e.g. 0.01 for prices.</small>
+            </div>
+            <div class="opt">
+              <label class="check"><input type="checkbox" id="o-null"><span><b>Treat null and missing as equal</b><small><code>"note": null</code> on one side and no <code>note</code> on the other is not a difference.</small></span></label>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>A diff built for API testing</h2>
+      <p>A text diff shows that line 214 changed. When you test an API you want to know which field changed, from what, to what. So this tool parses both documents and walks them together.</p>
+      <ol>
+        <li><strong>Every difference has a JSON path,</strong> such as <code>$.items[2].price</code>. Keys that aren't plain names are quoted, such as <code>$.headers["x-trace-id"]</code>.</li>
+        <li><strong>Four kinds of difference.</strong> Added (only in after), removed (only in before), changed (same type, new value) and type change. A type change such as number → string is listed on its own because it breaks clients that parse the field.</li>
+        <li><strong>Objects are compared by key,</strong> so key order never matters. Arrays are compared position by position, because order is part of the data for most APIs.</li>
+        <li><strong>The options remove noise.</strong> Volatile fields, reordered lists, rounding and <code>null</code> versus missing are the usual reasons two correct responses look different.</li>
+      </ol>
+      <h3>Writing ignore patterns</h3>
+      <ul>
+        <li><code>timestamp</code> ignores every key called <code>timestamp</code>, at any depth.</li>
+        <li><code>*.id</code> does the same for <code>id</code>. <code>meta.requestId</code> ignores <code>requestId</code> only inside an object called <code>meta</code>.</li>
+        <li><code>$.meta.requestId</code> is an exact path from the root. <code>$.items[*].id</code> ignores <code>id</code> in every item.</li>
+        <li><code>created*</code> ignores <code>createdAt</code>, <code>createdBy</code> and anything else starting with <code>created</code>.</li>
+      </ul>
+      <h3>Ignoring array order</h3>
+      <p>With the box ticked, two arrays holding the same items in a different order are equal. Duplicates still count, so <code>[1, 1, 2]</code> and <code>[1, 2, 2]</code> differ. For arrays of objects, enter a key such as <code>id</code>. Objects with the same <code>id</code> are paired and compared field by field, so you see the field that changed rather than a whole object removed and another added.</p>
+      <h3>From differences to assertions</h3>
+      <p>Generate assertions writes one Playwright <code>expect()</code> line per difference, and a k6 <code>check()</code> block, using the after values. Paste them into a test that calls the same endpoint. That pins the new behaviour, so the next change gets caught.</p>
+      <pre><code>const body = await response.json();
+expect(body.status).toBe("SHIPPED");
+expect(body.total).toBe("50.95");</code></pre>
+      <p>When arrays are matched by key, the assertions find the item by that key instead of a position, such as <code>body.items.find((x) =&gt; x.id === 2).price</code>.</p>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Is my JSON uploaded anywhere?</h3>
+      <p>No. Both documents are parsed and compared in your browser. API responses often hold customer data, tokens and internal hostnames, so nothing is sent to a server.</p>
+      <h3>Does the order of keys in an object matter?</h3>
+      <p>No. JSON objects have no order, so <code>{"a":1,"b":2}</code> and <code>{"b":2,"a":1}</code> are equal. Arrays do have an order, and they are compared position by position unless you tick Ignore array order.</p>
+      <h3>How do I ignore ids, timestamps and trace ids?</h3>
+      <p>List them in Ignore keys, separated by commas. A plain name such as <code>timestamp</code> matches that key at any depth. A pattern starting with <code>$</code> is a full path. A <code>*</code> inside a name matches any characters.</p>
+      <h3>How large a response can it compare?</h3>
+      <p>Responses of 5 MB or more each. Large inputs are compared in a background thread so the page stays responsive. Integers above 9,007,199,254,740,991 lose precision when JavaScript reads them, so compare very large ids as strings.</p>
+      <h3>Can I turn the differences into test assertions?</h3>
+      <p>Yes. Generate assertions writes Playwright <code>expect()</code> lines and a k6 <code>check()</code> block for the differences in the table. Filter the table first if you only want some of them.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/openapi-to-k6/">OpenAPI → k6 converter →</a>
+        <a href="/tools/k6-results/">k6 results explainer →</a>
+        <a href="/tools/postman-to-k6/">Postman → k6 converter →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>API tests that break on every release?</h3>
+          <p>Bring a failing test and the two responses. I'll help you work out which checks matter, which fields to ignore and how to keep the suite stable. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=API%20testing#contact" data-track="json-diff-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/json-diff/diff.js"></script>
+  <script src="/tools/json-diff/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

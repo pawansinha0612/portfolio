@@ -817,6 +817,15 @@ components:
   };
 
   const api = { convert, parseSpec, listOperations: (input, yaml) => listOperations(input, yaml).map(({ id, method, path, tag, summary, deprecated }) => ({ id, method, path, tag, summary, deprecated })), sample: (spec, schema, opts) => sample(makeCtx(spec, []), schema, opts || {}), DEFAULTS, EXAMPLES };
+
+  // Shared helpers for other generators built on the same parsing (OpenAPI → Playwright). The ctx-based functions take
+  // a context from makeCtx(spec, warnings). Nothing here changes how convert() behaves.
+  Object.assign(api, {
+    METHODS, makeCtx, getRef, deref, mergeAllOf, paramValue, mergedParams, expectedStatus, acceptFor, securityFor, serverUrl,
+    requestBody, asString, lit, tpl, key, envName, jsValue, indent, oneLine, isObj,
+    sampleCtx: sample,
+    operations: listOperations,   // full entries, including the raw op and path item objects
+  });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.OpenApiToK6 = api;
 })(typeof window !== 'undefined' ? window : this);

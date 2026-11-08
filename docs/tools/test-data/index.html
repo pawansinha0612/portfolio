@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Data Generator for Load and Functional Tests (CSV, JSON, SQL) — Pawan Sinha</title>
+  <meta name="description" content="Make realistic fake test data in your browser: users with real Australian suburbs and postcodes, bank customers, orders that add up, products, load test logins and test card numbers. Seeded, up to 100,000 rows, CSV, JSON or SQL, with k6 and JMeter snippets.">
+  <meta property="og:title" content="Test Data Generator for Load and Functional Tests — Pawan Sinha">
+  <meta property="og:description" content="Free tool: seeded, realistic fake data for k6, JMeter and functional tests. Up to 100,000 rows as CSV, JSON or SQL. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/test-data/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/test-data/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Test data generator","url":"https://pawansinha.com.au/tools/test-data/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type": "Question", "name": "Is any of the generated data real?", "acceptedAnswer": {"@type": "Answer", "text": "No. Names are common first and last names put together at random. Suburbs, states and postcodes are real combinations, but street numbers and names are made up. Emails use example.com, example.net and example.org, which are reserved for testing and can't receive mail. Mobile numbers are random 04 numbers, so some may belong to real people. Never send SMS to them."}},
+    {"@type": "Question", "name": "Are the card numbers safe to use?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. By default you get the public test card numbers that payment providers publish for their sandboxes. The other option makes numbers that pass the Luhn check on well-known test BINs. Both only work in test mode, and a sandbox such as Stripe's only accepts its own listed numbers."}},
+    {"@type": "Question", "name": "Can it make tax file numbers or Medicare numbers?", "acceptedAnswer": {"@type": "Answer", "text": "Only fake ones that fail the official checksum on purpose. A number that passes could belong to a real person. The fake ones are useful for negative tests, to check your form rejects an invalid TFN or Medicare number."}},
+    {"@type": "Question", "name": "How do I give each virtual user its own row?", "acceptedAnswer": {"@type": "Answer", "text": "In k6, load the file into a SharedArray and pick rows[(exec.vu.idInTest - 1) % rows.length]. In JMeter, use a CSV Data Set Config with Sharing mode set to All threads, Recycle on EOF set to False and Stop thread on EOF set to True."}},
+    {"@type": "Question", "name": "Will I get the same data next time?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The same seed, columns and row count always give the same rows, so a failing test can be run again with exactly the same data. Change the seed for a fresh set."}},
+    {"@type": "Question", "name": "Is my data uploaded anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. The data is made in your browser and saved straight to your computer. Nothing is sent to a server."}}
+  ]}</script>
+  <style>
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .chip-btn[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+    .settings { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+    .settings .field input { width: 110px; }
+    .settings #seed { width: 150px; }
+    .settings #table { width: 140px; }
+    .settings select { width: auto; }
+    .field select, .col-row select, .col-row input:not([type=checkbox]) { font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; max-width: 100%; min-width: 0; }
+    .col-row input[type=checkbox], .field input[type=checkbox] { width: auto; accent-color: var(--accent); }
+    .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .col-row { border: 1px solid var(--border); border-radius: 12px; background: var(--alt); padding: 10px 12px; min-width: 0; }
+    .col-main { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+    .col-main .c-name { width: 170px; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+    .col-main .c-type { width: 230px; }
+    .col-tools { margin-left: auto; display: inline-flex; gap: 4px; }
+    .icon-btn { font: inherit; font-size: 14px; line-height: 1; cursor: pointer; color: var(--muted); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; }
+    .icon-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+    .icon-btn:disabled { opacity: .35; cursor: default; }
+    .col-opts { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+    .col-opts .field { font-size: 13px; flex-wrap: wrap; max-width: 100%; }
+    .col-opts .field input[type=text] { max-width: 100%; }
+    .col-opts .field input[type=number] { width: 84px; }
+    .col-opts .field input[type=date] { width: 150px; }
+    .col-hint { font-size: 13px; color: var(--muted); max-width: 66ch; }
+    .go-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    .go-row button { font: inherit; cursor: pointer; }
+    .verdict.pass { color: var(--text); margin: 0; } /* styles.css has a global .pass rule for the home page */
+    .dl-row { margin-top: 14px; }
+    .verdict code { font: 500 13px "JetBrains Mono", monospace; }
+    table.data.pv th, table.data.pv td { white-space: nowrap; }
+    table.data.pv th:first-child, table.data.pv td:first-child { min-width: 0; }
+    table.data.pv .l { text-align: left; }
+    .snips { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .snips .block { min-width: 0; }
+    pre.code { margin: 0; width: 100%; font: 500 13px/1.55 "JetBrains Mono", ui-monospace, monospace; color: var(--text);
+      background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow: auto; max-height: 520px; white-space: pre; tab-size: 2; }
+    .snip-hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; max-width: 80ch; }
+    .guide .faq { max-width: 868px; }
+    .guide .faq details p { max-width: 66ch; }
+    @media (max-width: 560px) {
+      .col-main .c-name, .col-main .c-type { width: 100%; }
+      .col-tools { margin-left: 0; }
+    }
+    main li:not(.col-row), .snip-hint { max-width: 62ch; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Test data</p>
+      <h1>Test data generator</h1>
+      <p class="lead">Realistic fake data for load tests and functional tests. Users with real Australian suburbs, bank customers, orders that add up, products, logins for virtual users and test card numbers. Download CSV, JSON or SQL, ready for k6 and JMeter.</p>
+      <p class="private-note">🔒 Nothing is uploaded. <span>The data is made in your browser and saved straight to your computer. The same seed always gives the same rows.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Test data generator">
+      <form id="form" novalidate>
+        <div class="panel">
+          <h2>1. Pick a starting point</h2>
+          <p class="sub">Each template fills in the columns below. Change any of them, or add your own.</p>
+          <div class="examples" role="group" aria-label="Templates">
+            <button class="chip-btn" type="button" data-tpl="users">Users</button>
+            <button class="chip-btn" type="button" data-tpl="customers">Customers with accounts</button>
+            <button class="chip-btn" type="button" data-tpl="orders">Orders with lines</button>
+            <button class="chip-btn" type="button" data-tpl="products">Products</button>
+            <button class="chip-btn" type="button" data-tpl="credentials">Load test logins</button>
+            <button class="chip-btn" type="button" data-tpl="cards">Test payment cards</button>
+            <button class="chip-btn" type="button" data-tpl="negative">Fake TFN and Medicare</button>
+            <button class="chip-btn" type="button" data-tpl="custom">Custom</button>
+          </div>
+          <div class="settings">
+            <label class="field" for="rows">Rows <input type="number" id="rows" value="1000" min="1" max="100000" step="1"></label>
+            <label class="field" for="seed">Seed <input type="text" id="seed" value="perf-test-1" spellcheck="false" autocomplete="off"></label>
+            <button class="btn btn-ghost btn-small" type="button" id="new-seed">New seed</button>
+            <label class="field" for="table">SQL table <input type="text" id="table" value="users" spellcheck="false" autocomplete="off"></label>
+            <label class="field" for="dialect">SQL for <select id="dialect">
+              <option value="standard">PostgreSQL, SQLite, Oracle</option>
+              <option value="mysql">MySQL, MariaDB</option>
+              <option value="sqlserver">SQL Server</option>
+            </select></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>2. Columns</h2>
+          <p class="sub">Tick <strong>Unique</strong> to stop a column repeating. If a column can't make enough different values for the rows you asked for, you'll see why before anything runs.</p>
+          <ul class="cols" id="cols" aria-label="Columns"></ul>
+          <div class="go-row">
+            <button class="btn btn-ghost btn-small" type="button" id="add-col">+ Add column</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="go-row" style="margin-top:0">
+            <button class="btn" type="submit" id="go">Generate data</button>
+            <span class="sub" style="margin:0">Up to 100,000 rows. It runs in the background, so the page stays usable.</span>
+          </div>
+          <div class="ja-progress" id="progress" hidden><div class="track"><span class="fill"></span></div><span class="ptext"></span></div>
+          <p class="err" id="err" role="alert" hidden></p>
+        </div>
+      </form>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Fake data that behaves like the real thing</h2>
+      <ul>
+        <li><strong>Rows agree with each other.</strong> The email is built from the name on the same row. The postcode and state always match the suburb. A card's brand and CVV length match its number.</li>
+        <li><strong>Orders add up.</strong> Each row is one order line. Quantity × unit price is the line total, and the order total is the sum of its lines. Order fields such as the date and status are the same on every line.</li>
+        <li><strong>Seeded.</strong> A seed is any text. The same seed, columns and row count give exactly the same file, so a failed test can be run again with the same data.</li>
+        <li><strong>Unique when you need it.</strong> IDs, emails and usernames never repeat. Any other column can be made unique. If it can't make enough values, for example <code>ABC-##</code> for 500 rows, you get an error that says so.</li>
+        <li><strong>Fast.</strong> 100,000 rows take well under a second in a background worker, so the page doesn't freeze.</li>
+      </ul>
+      <h2 style="margin-top:32px">Patterns</h2>
+      <p>The pattern type builds codes such as SKUs, references and booking numbers.</p>
+      <ul>
+        <li><code>#</code> is a digit, <code>?</code> is a capital letter and <code>*</code> is a capital letter or digit.</li>
+        <li><code>[A-F]</code> picks from a set. <code>\d</code> is a digit, and <code>\</code> before any other character makes it literal.</li>
+        <li><code>{3}</code> repeats the last item 3 times, and <code>{2,4}</code> repeats it 2 to 4 times.</li>
+        <li>Everything else is copied as is. <code>ABC-####</code> gives <code>ABC-0417</code>. <code>INV-[A-Z]{2}\d{5}</code> gives <code>INV-KQ20931</code>.</li>
+      </ul>
+      <h2 style="margin-top:32px">Using the file in a load test</h2>
+      <ul>
+        <li><strong>k6.</strong> Load the file with <code>open()</code> inside a <code>SharedArray</code>, so 1,000 virtual users share one copy instead of holding 1,000. The snippet above picks one row per virtual user with <code>exec.vu.idInTest</code>.</li>
+        <li><strong>JMeter.</strong> Leave Variable Names empty and the header row names the variables. Sharing mode All threads hands each thread the next unused row.</li>
+        <li><strong>How many rows?</strong> For logins, at least one per virtual user. If every iteration needs a fresh row, rows must cover users × iterations. Otherwise rows get reused, and caches make the test look faster than real traffic.</li>
+        <li><strong>Seeding a database.</strong> The SQL file uses multi-row <code>INSERT</code> statements of 500 rows each. Pick your database next to the table name. It changes how odd column names are quoted, how true and false are written and how backslashes are escaped. Create the table first.</li>
+      </ul>
+
+      <h2 style="margin-top:36px">FAQ</h2>
+      <div class="faq">
+        <details>
+          <summary>Is any of the generated data real?</summary>
+          <p>No. Names are common first and last names put together at random. Suburbs, states and postcodes are real combinations, but street numbers and names are made up. Emails use example.com, example.net and example.org, which are reserved for testing and can't receive mail. Mobile numbers are random 04 numbers, so some may belong to real people. Never send SMS to them.</p>
+        </details>
+        <details>
+          <summary>Are the card numbers safe to use?</summary>
+          <p>Yes. By default you get the public test card numbers that payment providers publish for their sandboxes. The other option makes numbers that pass the Luhn check on well-known test BINs. Both only work in test mode, and a sandbox such as Stripe's only accepts its own listed numbers.</p>
+        </details>
+        <details>
+          <summary>Can it make tax file numbers or Medicare numbers?</summary>
+          <p>Only fake ones that fail the official checksum on purpose. A number that passes could belong to a real person. The fake ones are useful for negative tests, to check your form rejects an invalid TFN or Medicare number.</p>
+        </details>
+        <details>
+          <summary>How do I give each virtual user its own row?</summary>
+          <p>In k6, load the file into a <code>SharedArray</code> and pick <code>rows[(exec.vu.idInTest - 1) % rows.length]</code>. In JMeter, use a CSV Data Set Config with Sharing mode set to All threads, Recycle on EOF set to False and Stop thread on EOF set to True.</p>
+        </details>
+        <details>
+          <summary>Will I get the same data next time?</summary>
+          <p>Yes. The same seed, columns and row count always give the same rows, so a failing test can be run again with exactly the same data. Change the seed for a fresh set.</p>
+        </details>
+        <details>
+          <summary>Is my data uploaded anywhere?</summary>
+          <p>No. The data is made in your browser and saved straight to your computer. Nothing is sent to a server.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/tools/curl-to-k6/">curl → k6 converter →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Test data is often the hardest part of a load test</h3>
+          <p>Logins that lock out, carts that clash and caches that hide the real cost. Bring your plan and I'll help you work out the data each user needs. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20testing#contact" data-track="testdata-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/test-data/generate.js"></script>
+  <script src="/tools/test-data/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
