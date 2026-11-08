@@ -1,0 +1,68 @@
+# Rebuilds the generated sections of the site whenever their source text changes, so you can edit them on github.com.
+# Edit the source (e.g. services/build.py, guides/pages/**, interview-prep/**), commit, and the pages update in a
+# minute or two. Also runnable by hand: Actions → "Rebuild pages" → Run workflow.
+name: Rebuild pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'compare/**'
+      - 'explain/**'
+      - 'glossary/**'
+      - 'guides/**'
+      - 'interview-prep/**'
+      - 'services/**'
+      - '.github/workflows/rebuild-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: rebuild-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build every generated section
+        run: |
+          for d in compare explain glossary guides interview-prep services; do
+            echo "::group::$d"
+            python "$d/build.py"
+            echo "::endgroup::"
+          done
+      - name: Commit and publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A docs
+          if git diff --cached --quiet; then
+            echo 'Pages unchanged.'
+            exit 0
+          fi
+          git diff --cached --stat | tail -5
+          git commit -m 'Rebuild generated pages'
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs origin main && git push origin HEAD:main; then
+              pushed=1
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$pushed" ]; then
+            echo '::error::Could not push the rebuilt pages after 3 tries.'
+            exit 1
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer ${{ github.token }}" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || echo 'Pages build request failed; it will publish on the next build.'

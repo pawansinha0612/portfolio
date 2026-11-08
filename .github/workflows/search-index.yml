@@ -7,7 +7,7 @@ on:
     branches: [main]
     paths: ['docs/**', 'search/**', '.github/workflows/search-index.yml', '!docs/search/index.json']
   workflow_run:
-    workflows: ['Blog publish', 'Jobs page']
+    workflows: ['Blog publish', 'Jobs page', 'Rebuild pages', 'Set a product link', 'Add a video']
     types: [completed]
   workflow_dispatch:
 
