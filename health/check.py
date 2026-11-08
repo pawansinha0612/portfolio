@@ -178,6 +178,33 @@ def check_ai_key():
         report.append(f'- ⚠️ AI key test gave HTTP {status or "no answer"} (the provider may be busy)')
 
 
+def check_ai_models():
+    """The key can be valid while every drafting model is gone or timing out (free models change often)."""
+    key = os.environ.get('AI_API_KEY', '').strip()
+    if not key:
+        return skip('AI models not checked (no key)')
+    base = (os.environ.get('AI_BASE_URL') or 'https://integrate.api.nvidia.com/v1').rstrip('/')
+    models = [m.strip() for m in (os.environ.get('AI_MODEL') or '').split(',') if m.strip()]
+    if not models:
+        return skip('AI_MODEL variable not set (draft.py uses its built-in list)')
+    for m in models:
+        body = json.dumps({'model': m, 'max_tokens': 2000, 'messages': [
+            {'role': 'user', 'content': 'Reply with one sentence about load testing.'}]}).encode()
+        req = urllib.request.Request(f'{base}/chat/completions', data=body, headers={
+            'Authorization': f'Bearer {key}', 'Content-Type': 'application/json', 'User-Agent': 'site-health-check'})
+        try:
+            with urllib.request.urlopen(req, timeout=90) as res:
+                text = json.loads(res.read())['choices'][0]['message'].get('content') or ''
+            if text.strip():
+                return ok(f'AI model for blog drafts answers ({m})')
+        except Exception:
+            continue
+    bad('None of the AI models for the blog drafts answered',
+        'Free models get retired or overloaded. Open Actions → **Check AI models** → Run workflow, then copy its '
+        'suggested list into Settings → Secrets and variables → Actions → Variables → **AI_MODEL** (and '
+        '**REVIEW_MODEL**). Until then the Sunday drafts will be empty or short.')
+
+
 def check_blog_queue():
     dates = []
     for f in (ROOT / 'blog' / 'posts').glob('*.md'):
@@ -188,7 +215,7 @@ def check_blog_queue():
     if len(queued) < MIN_QUEUED_POSTS:
         last = queued[-1].isoformat() if queued else 'today'
         bad(f'Only {len(queued)} blog post(s) scheduled (last one {last})',
-            'Merge the open **Blog drafts for review** pull request (ask Claude to fact-check it first), or run '
+            'Merge the open **Blog drafts for review** pull request (read its automatic review first), or run '
             'Actions → **Blog drafts** → Run workflow. When posts run out, the site stops changing, and after 60 '
             'days without commits GitHub pauses the scheduled workflows.')
     else:
@@ -253,7 +280,7 @@ def check_activity():
         ok(f'Last commit {quiet} day(s) ago')
 
 
-for check in (check_pages, check_certificate, check_admin_token, check_linkedin, check_ai_key,
+for check in (check_pages, check_certificate, check_admin_token, check_linkedin, check_ai_key, check_ai_models,
               check_blog_queue, check_drafts_pr, check_form_backend, check_activity):
     try:
         check()

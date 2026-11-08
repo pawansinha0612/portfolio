@@ -31,6 +31,7 @@ jobs:
           LINKEDIN_VERSION: ${{ vars.LINKEDIN_VERSION }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
           AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python health/check.py
 
