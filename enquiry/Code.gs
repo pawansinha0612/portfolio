@@ -1445,6 +1445,49 @@ function fetchText(url) {
   } catch (err) { return null; }
 }
 
+// "Remember you built…": one thing per day in the Daily plan email, with an idea for sharing it (added 2026-11-08).
+// Full catalogue: PRODUCTS.md in the private repo. Add a row here when you build something new.
+const SPOTLIGHT = [
+  ['Perf Advisor (A$129)', '/perf-advisor/', 'Post its 1-minute demo video on LinkedIn: "Should this change be load tested?"'],
+  ['k6 Performance Test Starter Kit (A$49)', '/shop/', 'Share one tip from the kit, e.g. why open-model scenarios beat fixed VUs'],
+  ['Performance Testing Interview Guide (A$19)', '/interview-prep/guide/', 'Post one interview question and ask people how they would answer'],
+  ['Performance Test Templates Pack (A$15)', '/templates/', 'Share a screenshot of the go-live checklist and ask what people would add'],
+  ['Portfolio Website Template (A$5)', '/portfolio-template/', 'Post the 50-second tour video for job seekers in your network'],
+  ['Peak-readiness load test + quiz', '/peak-readiness/quiz/', 'Ask online-shop owners to take the 2-minute Black Friday quiz'],
+  ['Site speed check for shops', '/site-check/', 'Run it on a shop you like and use the result as an outreach opener'],
+  ['curl → k6 converter', '/tools/curl-to-k6/', 'Show a curl command turning into a k6 test in 10 seconds'],
+  ['JMeter → k6 converter', '/tools/jmeter-to-k6/', 'Post for teams moving off JMeter: "Convert your .jmx in a minute"'],
+  ['Postman → k6 converter', '/tools/postman-to-k6/', 'Share it in a Postman or API testing group'],
+  ['OpenAPI → k6 converter', '/tools/openapi-to-k6/', 'Show a load test generated straight from a Swagger file'],
+  ['k6 results explainer', '/tools/k6-results/', 'Paste a sample summary and post the plain-English verdict'],
+  ['JMeter results analyser', '/tools/jtl-analyser/', 'Answer a JMeter question on Reddit or the k6 forum and mention it where it helps'],
+  ['Compare two test runs', '/tools/compare-runs/', 'Post about catching regressions between releases'],
+  ['Access logs → workload model', '/tools/workload-model/', 'Post: "Your load test should copy real traffic. Here is how to get it from logs"'],
+  ['Java thread dump analyser', '/tools/thread-dump/', 'Share the deadlock example and how the tool spots it'],
+  ['JVM GC log analyser', '/tools/gc-log/', 'Post one GC pause chart and what it means'],
+  ['SLO and error budget calculator', '/tools/slo-calculator/', 'Ask SREs how many minutes of downtime their 99.9% really allows'],
+  ['Capacity calculator', '/tools/capacity-calculator/', 'Post the "how many virtual users do I need?" maths'],
+  ['LLM load test generator', '/tools/llm-load-test/', 'Message an AI startup founder about load testing before launch'],
+  ['LLM capacity and cost calculator', '/tools/llm-capacity/', 'Post: "Your AI feature hits the token limit before the request limit"'],
+  ['Performance testing guides (90+ pages)', '/guides/', 'Answer a question on LinkedIn with a link to the matching guide'],
+  ['Glossary (81 terms)', '/glossary/', 'Post "term of the day" with one glossary entry'],
+  ['Tool comparisons and tool picker', '/compare/tool-picker/', 'Ask your network which load tool they use and share the picker'],
+  ['Interactive explainers', '/explain/', 'Record a 60-second Short with presenter mode (?present=1)'],
+  ['Interview prep + AI practice', '/interview-prep/practice/', 'Share it with someone preparing for a QA or performance interview'],
+  ['k6 in 7 days email course', '/course/k6/', 'Invite testers learning k6 to sign up'],
+  ['Games: Hold the Line, Spot the Bottleneck', '/play/', 'Play one round and post your score as a challenge'],
+  ['Browser Video Editor', '/projects/video-editor/', 'Edit your next LinkedIn video with it and say so in the post'],
+  ['Melbourne Deal Finder', '/projects/deal-finder/', 'Share it with friends who are house hunting in Melbourne'],
+  ['k6-performance-budget GitHub Action', 'https://github.com/pawansinha0612/k6-performance-budget', 'Post a CI screenshot of a build failing on p95 over budget'],
+  ['Hire a tester / talent pool', '/hire-a-tester/', 'Post for companies: "Need a tester I have interviewed myself?"'],
+];
+
+function spotlightToday(today) {
+  const n = Math.floor(Date.parse(today + 'T00:00:00Z') / 86400000);
+  const s = SPOTLIGHT[((n % SPOTLIGHT.length) + SPOTLIGHT.length) % SPOTLIGHT.length];
+  return { name: s[0], link: /^https?:/.test(s[1]) ? s[1] : SITE_URL + s[1], idea: s[2] };
+}
+
 // Today's "repost:" line from the post's front matter in the public repo ('' if none).
 function repostLine(today) {
   const files = ghGet('/repos/' + GH_PUBLIC + '/contents/blog/posts');
@@ -1571,7 +1614,8 @@ function buildDailyPlan() {
   let quota = null;
   try { quota = MailApp.getRemainingDailyQuota(); } catch (err) {}
   return { today: today, weekday: weekday, checks: checks, issues: issues, counts: counts, unanswered: unanswered, plan: plan,
-    quota: quota, sheetUrl: ss.getUrl ? ss.getUrl() : '', outreach: extra.outreach, sales: extra.sales };
+    quota: quota, sheetUrl: ss.getUrl ? ss.getUrl() : '', outreach: extra.outreach, sales: extra.sales,
+    spotlight: spotlightToday(today) };
 }
 
 function sendDailyPlan() {
@@ -1597,6 +1641,8 @@ function sendDailyPlan() {
   const body =
     section("Checked for you", d.checks.map(c => row(icon(c.ok), c.text, c.link, ''))) +
     section("Today's to-dos", d.plan.today.map(p => row('☐', p.task, p.link, p.notes))) +
+    section('🌟 Remember you built', [row('🏆', d.spotlight.name, d.spotlight.link, 'Idea for today: ' + d.spotlight.idea),
+      row('📒', 'Everything you have built (PRODUCTS.md)', 'https://github.com/' + GH_PRIVATE + '/blob/main/PRODUCTS.md', '')]) +
     section('New since yesterday', leads) +
     section('Sales', sales) +
     section('Outreach (Leads tab)', (d.outreach || []).map(o => row(o.icon, o.text, o.link || d.sheetUrl, ''))) +
@@ -1618,6 +1664,7 @@ function sendDailyPlan() {
   const line = (lead, text, link) => lead + ' ' + text + (link ? '\n   ' + link : '');
   const text = 'Daily plan, ' + dayLabel + '\n\nCHECKED FOR YOU\n' + d.checks.map(c => line(icon(c.ok), c.text, c.link)).join('\n') +
     '\n\nTODAY\'S TO-DOS\n' + (d.plan.today.map(p => line('-', p.task, p.link)).join('\n') || '(none)') +
+    '\n\nREMEMBER YOU BUILT\n' + line('🏆', d.spotlight.name + ': ' + d.spotlight.idea, d.spotlight.link) +
     '\n\nNEW SINCE YESTERDAY\n' + (d.counts.map(c => '- ' + c.n + ' new ' + c.label).join('\n') || '(nothing)') +
     (d.unanswered ? '\n- ' + d.unanswered + ' enquiries still marked New' : '') +
     (d.sales && !d.sales.error ? '\n\nSALES\n' + (d.sales.sales.length ? d.sales.sales.map(x => '- ' + x.product + ' ' + x.shown).join('\n') + '\nTotal: ' + d.sales.totalText : '(none since yesterday)') : '') +
