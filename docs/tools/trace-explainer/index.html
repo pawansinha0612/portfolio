@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distributed Trace Explainer: Critical Path, N+1 and Slow Services — Pawan Sinha</title>
+  <meta name="description" content="Free distributed trace analyser that runs in your browser. Drop Jaeger, Zipkin or OpenTelemetry (OTLP) JSON and get the critical path, self time per service, N+1 queries, sequential calls, retries, errors and clock skew, with a plain-English summary and fixes. Many traces give percentiles, a dependency graph and outliers.">
+  <meta property="og:title" content="Distributed Trace Explainer — Pawan Sinha">
+  <meta property="og:description" content="Free tool: paste a Jaeger, Zipkin or OpenTelemetry trace and see which service holds up the request, why, and what to fix. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/trace-explainer/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/trace-explainer/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Distributed Trace Explainer","url":"https://pawansinha.com.au/tools/trace-explainer/","description":"A free, browser-only analyser for Jaeger, Zipkin and OpenTelemetry traces: critical path, self time, N+1 queries, sequential calls, retries, errors, clock skew, percentiles, dependency graph and outlier traces.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Are my traces uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The files are read and analysed in your browser, in a background thread. Traces often hold URLs, user ids and SQL, so nothing is sent to a server."}},
+    {"@type":"Question","name":"Which trace formats does it read?","acceptedAnswer":{"@type":"Answer","text":"Jaeger JSON (the UI's Download JSON and the API's data array, with references and processes), Zipkin v2 JSON (an array of spans, or an array of traces), and OpenTelemetry OTLP JSON (resourceSpans, scopeSpans and spans, with hex or base64 ids and nanosecond times). Grafana Tempo's batches format and newline-delimited files from the OpenTelemetry Collector file exporter also work."}},
+    {"@type":"Question","name":"What is the critical path?","acceptedAnswer":{"@type":"Answer","text":"The chain of spans that decides how long the request takes. Starting from the end of the root span, it follows the child that finished last, then the child that finished before that one started, and so on. Work that runs in parallel with something slower is not on the critical path, so speeding it up does not help."}},
+    {"@type":"Question","name":"How does it handle clock skew?","acceptedAnswer":{"@type":"Answer","text":"A child span on another service that starts before its parent, or runs past its parent while being shorter, is almost always a clock difference between hosts. Those spans and everything under them are moved into the middle of the parent, the same correction Jaeger applies. You can turn this off."}},
+    {"@type":"Question","name":"Can it read many traces at once?","acceptedAnswer":{"@type":"Answer","text":"Yes. Choose several files or one export with many traces. You get latency percentiles per service and per operation, the services most often on the critical path, a dependency graph with call counts and p95, and outlier traces with the service that made each one slow."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .dropzone { position: relative; border-radius: 12px; }
+    .dropzone.over textarea { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--alt)); }
+    textarea.code { width: 100%; min-height: 200px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .filechip { display: inline-flex; gap: 8px; align-items: center; margin: 8px 0 0; padding: 4px 6px 4px 12px; background: var(--alt); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 13px; max-width: 100%; }
+    .filechip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .filechip button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .filechip[hidden] { display: none; }
+    .actions label.btn { cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .actions .check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+    .ja-stat.bad b { color: var(--bad); }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--bad); border-radius: 12px; padding: 12px 16px; margin-top: 12px; min-width: 0; }
+    .card-x.warn { border-left-color: var(--warn); } .card-x.info { border-left-color: var(--accent); }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+    .card-x p { margin: 0; font-size: 14px; color: var(--muted); max-width: 84ch; overflow-wrap: anywhere; }
+    .card-x p.fix { margin-top: 6px; color: var(--text); }
+    .card-x code, .verdict code, table.data code, .wf-detail code { font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace; color: var(--text); overflow-wrap: anywhere; }
+    .linkbtn { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; margin-top: 6px; cursor: pointer; }
+    .linkbtn[hidden] { display: none; }
+    .wf-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+    .wf-legend .cpkey { display: inline-block; width: 16px; height: 4px; background: var(--text); border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .wf-legend .errkey { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; background: var(--bad); }
+    i.dot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+    .sharebar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: var(--alt); border: 1px solid var(--border); margin-right: 8px; vertical-align: middle; overflow: hidden; }
+    .sharebar i { display: block; height: 100%; }
+    table.data td.errs { color: var(--bad); font-weight: 600; }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .exports button { font: inherit; cursor: pointer; }
+    details.ex summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .explore { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    select.pick { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; width: min(100%, 640px); }
+    /* waterfall */
+    .wf { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+    .wf-row { display: grid; grid-template-columns: minmax(120px, 34%) minmax(0, 1fr); border-bottom: 1px solid var(--border); cursor: pointer; min-height: 26px; }
+    .wf-row:last-child { border-bottom: 0; }
+    .wf-row:hover, .wf-row:focus-visible { background: var(--alt); outline: none; }
+    .wf-row.is-hl { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+    .wf-row.dim { opacity: .45; }
+    .wf-row.is-err .op { color: var(--bad); }
+    .wf-axis { cursor: default; min-height: 22px; background: var(--alt); }
+    .wf-axis:hover { background: var(--alt); }
+    .wf-axis .wf-track span { position: absolute; top: 3px; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .wf-axis .wf-track span:first-child { transform: none; }
+    .wf-axis .wf-track span:last-child { transform: translateX(-100%); }
+    .wf-label { display: flex; align-items: center; gap: 0; min-width: 0; padding: 3px 6px; font-size: 12.5px; border-right: 1px solid var(--border); white-space: nowrap; overflow: hidden; }
+    .wf-label .op { overflow: hidden; text-overflow: ellipsis; min-width: 0; font-weight: 600; }
+    .wf-label .svc { color: var(--muted); font-size: 11.5px; margin-left: 6px; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+    .wf-track { position: relative; margin: 0 8px; min-width: 0; }
+    .wf-bar { position: absolute; top: 7px; height: 12px; border-radius: 3px; opacity: .85; }
+    .wf-row.is-err .wf-bar { outline: 2px solid var(--bad); outline-offset: 0; }
+    .wf-cp { position: absolute; top: 21px; height: 3px; background: var(--text); border-radius: 2px; }
+    .wf-gap { position: absolute; top: 3px; bottom: 3px; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--warn) 45%, transparent) 0 4px, transparent 4px 8px); border-radius: 3px; }
+    .wf-dur { position: absolute; top: 5px; font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .wf-detail { padding: 10px 14px 12px; background: var(--alt); border-bottom: 1px solid var(--border); font-size: 13.5px; }
+    .wf-detail dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 14px; margin: 0; }
+    .wf-detail dt { color: var(--muted); }
+    .wf-detail dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+    .wf-detail .errtxt { color: var(--bad); font-weight: 600; }
+    .wf-detail dl.attrs { margin-top: 6px; }
+    .wf-detail ul { margin: 6px 0 0; padding-left: 20px; }
+    /* dependency graph */
+    .graph-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 8px; -webkit-overflow-scrolling: touch; }
+    svg.dep { display: block; max-width: none; }
+    svg.dep .node { fill: var(--surface); stroke-width: 1.5; }
+    svg.dep .nlab { font: 600 12.5px Inter, system-ui, sans-serif; fill: var(--text); }
+    svg.dep .elab { font: 500 11px Inter, system-ui, sans-serif; fill: var(--muted); }
+    svg.dep .edge { fill: none; stroke: var(--muted); stroke-width: 1.3; opacity: .7; }
+    svg.dep .edge.err { stroke: var(--bad); }
+    svg.dep .arrhead { fill: var(--muted); }
+    @media (max-width: 600px) {
+      .wf-row { grid-template-columns: minmax(96px, 40%) minmax(0, 1fr); }
+      .wf-label .svc { display: none; }
+      .wf-track { margin: 0 4px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Distributed tracing</p>
+      <h1>Distributed trace explainer</h1>
+      <p class="lead">Paste a Jaeger, Zipkin or OpenTelemetry trace and find out which service is holding up the request and why: the critical path, self time per service, N+1 queries, calls that could run in parallel, retries, errors and clock skew, in plain English with fixes. Load many traces for percentiles, a dependency graph and outliers.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Files are read on this page, in a background thread. Traces often hold URLs, user ids and SQL, so nothing is uploaded or stored.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Distributed trace explainer">
+      <div class="panel">
+        <h2><label for="tr-in">Paste trace JSON, or drop one or more files here</label></h2>
+        <p class="sub">Jaeger JSON (UI download or API), Zipkin v2 JSON, OpenTelemetry OTLP JSON, Grafana Tempo or Collector file-exporter output. The format is detected for you. Several files, or one file with thousands of traces, are fine.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="jaeger">Jaeger trace</button>
+          <button class="chip-btn" type="button" data-sample="zipkin">Zipkin trace</button>
+          <button class="chip-btn" type="button" data-sample="otlp">OpenTelemetry (OTLP)</button>
+          <button class="chip-btn" type="button" data-sample="many">150 traces (Jaeger)</button>
+        </div>
+        <div class="dropzone" id="drop">
+          <textarea id="tr-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder='{"data":[{"traceID":"…","spans":[…],"processes":{…}}]}'></textarea>
+        </div>
+        <div class="filechip" id="filechip" hidden><span id="fname"></span><button type="button" id="unfile" aria-label="Remove files">✕</button></div>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="trace-explain">Explain</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose files<input type="file" id="file" multiple accept=".json,.jsonl,.ndjson,.txt,application/json"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+          <label class="check" for="skew"><input type="checkbox" id="skew" checked> Correct clock skew</label>
+        </div>
+        <div class="ja-progress" id="progress" hidden><div class="track"><span class="fill" id="pfill"></span></div><span id="ptext">Reading…</span></div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>From a wall of spans to the one thing slowing the request</h2>
+      <ol>
+        <li><strong>Parse and join.</strong> Spans are read from Jaeger, Zipkin or OTLP, grouped by trace id and joined into a tree by parent id. Zipkin client and server halves that share an id are split, so each service gets its own span.</li>
+        <li><strong>Clock skew.</strong> A child on another host that starts before its parent is a clock problem, not time travel. Those spans are moved into the middle of their parent, as Jaeger does.</li>
+        <li><strong>Self time.</strong> For each span, the time not covered by any child. Big self time in a span with children is a gap: queueing, CPU work, GC or a call that is not instrumented.</li>
+        <li><strong>Critical path.</strong> From the end of the root span, follow the child that finished last, then the one that finished before it started, and so on. Only work on this path makes the request slower.</li>
+        <li><strong>Patterns.</strong> Siblings with the same operation (N+1), calls to different services that never overlap (could be parallel), the same call repeated after an error (retries), wide fan-outs and errors, with the deepest error marked as where the failure starts.</li>
+        <li><strong>Many traces.</strong> Percentiles per service and operation, how often each service is on the critical path, a caller → callee graph and outliers: traces much slower than typical for their entry point, with the service that took the extra time.</li>
+      </ol>
+      <h3>Getting a trace out of your tool</h3>
+      <ul>
+        <li><strong>Jaeger:</strong> open the trace, then the menu at the top right, then <em>Download JSON</em>. Or call <code>/api/traces/&lt;traceId&gt;</code>, or <code>/api/traces?service=checkout&amp;limit=200</code> for many.</li>
+        <li><strong>Zipkin:</strong> the JSON button on a trace, or <code>/api/v2/trace/&lt;traceId&gt;</code>; <code>/api/v2/traces?serviceName=…</code> returns many.</li>
+        <li><strong>Grafana Tempo:</strong> <code>/api/traces/&lt;traceId&gt;</code> returns OTLP JSON. In Grafana, use <em>Inspect → Data</em> and download the trace.</li>
+        <li><strong>OpenTelemetry Collector:</strong> add the <code>file</code> exporter; each line is an OTLP JSON document.</li>
+        <li><strong>Datadog, Honeycomb, New Relic:</strong> export spans as OTLP JSON where the tool allows it, or send a copy of your OpenTelemetry data to a local Jaeger.</li>
+      </ul>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Are my traces uploaded anywhere?</h3>
+      <p>No. The files are read and analysed in your browser, in a background thread. Traces often hold URLs, user ids and SQL, so nothing is sent to a server.</p>
+      <h3>Which trace formats does it read?</h3>
+      <p>Jaeger JSON (the UI's Download JSON and the API's data array, with references and processes), Zipkin v2 JSON (an array of spans, or an array of traces), and OpenTelemetry OTLP JSON (resourceSpans, scopeSpans and spans, with hex or base64 ids and nanosecond times). Grafana Tempo's batches format and newline-delimited files from the OpenTelemetry Collector file exporter also work.</p>
+      <h3>What is the critical path?</h3>
+      <p>The chain of spans that decides how long the request takes. Starting from the end of the root span, it follows the child that finished last, then the child that finished before that one started, and so on. Work that runs in parallel with something slower is not on the critical path, so speeding it up does not help.</p>
+      <h3>How does it handle clock skew?</h3>
+      <p>A child span on another service that starts before its parent, or runs past its parent while being shorter, is almost always a clock difference between hosts. Those spans and everything under them are moved into the middle of the parent, the same correction Jaeger applies. You can turn this off.</p>
+      <h3>Can it read many traces at once?</h3>
+      <p>Yes. Choose several files or one export with many traces. You get latency percentiles per service and per operation, the services most often on the critical path, a dependency graph with call counts and p95, and outlier traces with the service that made each one slow.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/db-performance-lab/">Database performance lab →</a>
+        <a href="/tools/log-analyser/">Log analyser →</a>
+        <a href="/tools/thread-dump/">Thread dump analyser →</a>
+        <a href="/tools/perf-studio/">Perf Studio →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Slow under load, and the traces don't say why?</h3>
+          <p>Bring a few traces from a slow hour. I'll help you find the service and the call that hold up the request, and design a load test that proves the fix before your users see it. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20%26%20load%20testing#contact" data-track="trace-explainer-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/trace-explainer/trace.js"></script>
+  <script src="/tools/trace-explainer/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

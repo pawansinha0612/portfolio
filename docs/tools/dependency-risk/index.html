@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dependency Risk Monitor: Free Vulnerability &amp; Licence Check — Pawan Sinha</title>
+  <meta name="description" content="Free dependency checker for npm, Python, Java, Go, Ruby, PHP and .NET. Load package-lock.json, requirements.txt, pom.xml, go.mod and more to find known vulnerabilities (OSV.dev), outdated and deprecated packages, copyleft licences, and get an upgrade plan with commands plus a free CI workflow.">
+  <meta property="og:title" content="Dependency Risk Monitor — Pawan Sinha">
+  <meta property="og:description" content="Which of your dependencies are vulnerable, deprecated, years out of date or under a licence your lawyers won't like? Load your lockfile and get a prioritised upgrade plan. Files stay in your browser; only package names and versions are checked.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/dependency-risk/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/dependency-risk/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Dependency Risk Monitor","url":"https://pawansinha.com.au/tools/dependency-risk/","description":"A free dependency checker: parse lockfiles and manifests for npm, PyPI, Maven, Gradle, Go, RubyGems, Composer and NuGet, check known vulnerabilities with OSV.dev, find outdated, deprecated and copyleft packages, and get an upgrade plan, commands and a free CI workflow.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"What is sent over the internet?","acceptedAnswer":{"@type":"Answer","text":"Your files are read in the browser and never uploaded. Only when you press Check online, package names, versions and ecosystems are sent to api.osv.dev, and the names of npm and PyPI packages to registry.npmjs.org and pypi.org. No file content, project name or paths are sent."}},
+    {"@type":"Question","name":"Where does the vulnerability data come from?","acceptedAnswer":{"@type":"Answer","text":"From OSV.dev, Google's free open source vulnerability database. It combines the GitHub Advisory Database, the Python, Go and Rust advisory databases and others, and lists the versions that fix each issue."}},
+    {"@type":"Question","name":"Which files can I use?","acceptedAnswer":{"@type":"Answer","text":"package.json, package-lock.json, yarn.lock, requirements.txt, poetry.lock, pom.xml, build.gradle, go.mod, Gemfile.lock, composer.lock and .csproj files. Lockfiles are best because they list the exact versions you install, including transitive packages."}},
+    {"@type":"Question","name":"Why does it say latest unknown for some packages?","acceptedAnswer":{"@type":"Answer","text":"The npm and PyPI registries allow a web page to ask for the latest version. Maven Central, Go, RubyGems, Packagist and NuGet do not, so for those ecosystems the latest version is not shown. Vulnerability checks work for all of them."}},
+    {"@type":"Question","name":"How is the upgrade plan ordered?","acceptedAnswer":{"@type":"Answer","text":"Security fixes come first, worst severity first. Within each group, patch and minor upgrades, which rarely break anything, come before major upgrades, which are flagged. Then deprecated packages, then plain updates."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+    .modes .chip-btn[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dropbox { border: 2px dashed var(--border); border-radius: 14px; background: var(--alt); padding: 16px; text-align: center; }
+    .dropbox.over { border-color: var(--accent); }
+    .dropbox p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+    .actions label.btn { cursor: pointer; position: relative; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .dropbox .actions { justify-content: center; margin-top: 0; }
+    details.paste { margin-top: 12px; }
+    details.paste summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; }
+    textarea.code { width: 100%; min-height: 140px; resize: vertical; display: block; margin-top: 8px; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .field input[type=checkbox] { width: auto; flex: none; }
+    select { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
+    .runs { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .runs li { display: inline-flex; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 12px; font-size: 13px; max-width: 100%; }
+    .runs li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .runs button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .net { margin-top: 16px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 12px; padding: 14px 16px; background: var(--surface); }
+    .net[hidden] { display: none; }
+    .net h3 { margin: 0 0 6px; font-size: 16px; }
+    .net p { margin: 0 0 8px; font-size: 14.5px; color: var(--muted); max-width: 84ch; }
+    .net p b, .net p code { color: var(--text); }
+    .net details summary { cursor: pointer; font-size: 13px; color: var(--accent); font-weight: 600; }
+    .net pre { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--alt); overflow-x: auto; max-height: 260px; font: 500 12px/1.5 "JetBrains Mono", ui-monospace, monospace; }
+    .dr-progress { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
+    .dr-progress[hidden] { display: none; }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 12px; }
+    .block-head .exports { margin-top: 0; }
+    .exports button { font: inherit; cursor: pointer; }
+    .ja-stat.ok b { color: var(--ok); }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data td small { color: var(--muted); }
+    table.data td.code { max-width: none; min-width: 240px; }
+    table.data td.code code { font-size: 12px; white-space: nowrap; }
+    .sev, .eff, .lic-f { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
+    .sev.critical, .sev.high { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }
+    .sev.medium, .sev.unknown { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+    .sev.low { color: var(--muted); }
+    .eff.patch, .eff.minor { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+    .eff.major { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+    .lic-f.strong { color: var(--bad); border-color: var(--bad); } .lic-f.weak { color: var(--warn); border-color: var(--warn); }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 16px; min-width: 0; }
+    .card-x + .card-x { margin-top: 10px; }
+    .card-x.bad { border-left-color: var(--bad); } .card-x.warn { border-left-color: var(--warn); }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+    .card-x h4 small { color: var(--muted); font-weight: 500; }
+    .card-x p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+    .card-x p b { color: var(--text); }
+    ul.vl { margin: 8px 0 0; padding-left: 0; list-style: none; font-size: 14px; }
+    ul.vl li { margin: 4px 0; max-width: 90ch; overflow-wrap: anywhere; }
+    ul.vl small { color: var(--muted); }
+    .lic { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lic-c { border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; font-size: 14px; background: var(--surface); }
+    .lic-c.strong b { color: var(--bad); } .lic-c.weak b, .lic-c.proprietary b { color: var(--warn); } .lic-c.permissive b { color: var(--ok); }
+    pre.gen { margin: 0; padding: 14px; border-radius: 12px; background: var(--alt); border: 1px solid var(--border); overflow-x: auto; max-height: 520px; }
+    pre.gen code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; white-space: pre; color: var(--text); }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Security</p>
+      <h1>Dependency risk monitor</h1>
+      <p class="lead">Load your lockfile or manifest and see which dependencies have known vulnerabilities, which are deprecated or far behind, and which carry a copyleft licence. Get an upgrade plan in a sensible order, the commands to run, and a free CI workflow that keeps checking.</p>
+      <p class="private-note">🔒 Your files stay in your browser. <span>They are read on this page. Only when you press Check online are package names and versions (nothing else) sent to OSV.dev and the public npm and PyPI registries.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Dependency risk monitor">
+      <div class="panel">
+        <h2>Add your dependency files</h2>
+        <p class="sub">npm (<code>package.json</code>, <code>package-lock.json</code>, <code>yarn.lock</code>), Python (<code>requirements.txt</code>, <code>poetry.lock</code>), Java (<code>pom.xml</code>, <code>build.gradle</code>), Go (<code>go.mod</code>), Ruby (<code>Gemfile.lock</code>), PHP (<code>composer.lock</code>) and .NET (<code>.csproj</code>). Lockfiles give exact versions, including transitive packages.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="node">Node.js shop (package.json + lock)</button>
+          <button class="chip-btn" type="button" data-sample="python">Python API (requirements.txt)</button>
+          <button class="chip-btn" type="button" data-sample="java">Java service (pom.xml)</button>
+        </div>
+        <div class="dropbox" id="drop">
+          <p>Drop one or more files here</p>
+          <div class="actions">
+            <label class="btn btn-ghost btn-small" for="file">Choose files<input type="file" id="file" multiple accept=".json,.lock,.txt,.in,.xml,.gradle,.kts,.mod,.csproj,.fsproj,.vbproj,.props,text/plain,application/json,application/xml"></label>
+            <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+          </div>
+        </div>
+        <details class="paste">
+          <summary>Or paste a file</summary>
+          <textarea id="paste" class="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Pasted dependency file" placeholder="Django==3.2.0&#10;requests==2.25.1"></textarea>
+          <div class="actions">
+            <label class="field">Type <select id="paste-kind"><option value="">Detect for me</option><option value="package.json">package.json</option><option value="package-lock">package-lock.json</option><option value="yarn.lock">yarn.lock</option><option value="requirements">requirements.txt</option><option value="poetry.lock">poetry.lock</option><option value="pom">pom.xml</option><option value="gradle">build.gradle</option><option value="go.mod">go.mod</option><option value="gemfile.lock">Gemfile.lock</option><option value="composer.lock">composer.lock</option><option value="csproj">.csproj</option></select></label>
+            <button class="btn btn-ghost btn-small" type="button" id="paste-add">Add pasted file</button>
+          </div>
+        </details>
+        <ul class="runs" id="files" aria-label="Loaded files"></ul>
+        <p class="err" id="err" role="alert" hidden></p>
+
+        <div class="net" id="net" hidden>
+          <h3>Check online</h3>
+          <p id="net-what"></p>
+          <p>No file contents, project names or paths are sent. As with any web request, those services see your IP address. Maven Central, Go, RubyGems, Packagist and NuGet do not allow web pages to ask for latest versions, so those show “unknown”.</p>
+          <details><summary>See the exact request</summary><pre id="net-json"></pre></details>
+          <div class="actions">
+            <button class="btn" type="button" id="check" data-track="deps-check">Check online</button>
+            <label class="field"><input type="checkbox" id="all-latest"> Also look up latest versions of transitive packages (more requests)</label>
+          </div>
+          <p class="dr-progress" id="progress" aria-live="polite" hidden></p>
+        </div>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Know what you ship</h2>
+      <p>A typical web app pulls in hundreds of open source packages, most of them through other packages. Any one of them can carry a known security hole, stop being maintained, or come with a licence that does not suit your business.</p>
+      <ol>
+        <li><strong>Read the files.</strong> Each format is parsed in your browser into a list of packages with exact versions, marked direct or transitive and runtime or dev-only.</li>
+        <li><strong>Check known vulnerabilities.</strong> The names and versions go to OSV.dev in one batch. Each match comes back with its severity and the versions that fix it.</li>
+        <li><strong>Check freshness and licences.</strong> For npm and PyPI packages, the public registries give the latest version, deprecation notices and the licence.</li>
+        <li><strong>Plan the upgrades.</strong> Security fixes first, worst first. The smallest upgrade that fixes every known issue is suggested, and majors are flagged because they can break things.</li>
+      </ol>
+      <h3>Reading the risk score</h3>
+      <p>Each package scores up to 100 from its worst vulnerability, deprecation, how far behind it is and its licence. Transitive and dev-only packages count for less, because they are harder to reach or never ship. The project score adds these up: under 20 is low, 20–49 medium, 50–79 high, 80 and over critical.</p>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>What is sent over the internet?</h3>
+      <p>Your files are read in the browser and never uploaded. Only when you press Check online, package names, versions and ecosystems are sent to api.osv.dev, and the names of npm and PyPI packages to registry.npmjs.org and pypi.org. No file content, project name or paths are sent.</p>
+      <h3>Where does the vulnerability data come from?</h3>
+      <p>From OSV.dev, Google's free open source vulnerability database. It combines the GitHub Advisory Database, the Python, Go and Rust advisory databases and others, and lists the versions that fix each issue.</p>
+      <h3>Which files can I use?</h3>
+      <p>package.json, package-lock.json, yarn.lock, requirements.txt, poetry.lock, pom.xml, build.gradle, go.mod, Gemfile.lock, composer.lock and .csproj files. Lockfiles are best because they list the exact versions you install, including transitive packages.</p>
+      <h3>Why does it say latest unknown for some packages?</h3>
+      <p>The npm and PyPI registries allow a web page to ask for the latest version. Maven Central, Go, RubyGems, Packagist and NuGet do not, so for those ecosystems the latest version is not shown. Vulnerability checks work for all of them.</p>
+      <h3>How is the upgrade plan ordered?</h3>
+      <p>Security fixes come first, worst severity first. Within each group, patch and minor upgrades, which rarely break anything, come before major upgrades, which are flagged. Then deprecated packages, then plain updates.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/ci-failure-detective/">CI/CD failure detective →</a>
+        <a href="/tools/test-coverage/">Test coverage intelligence →</a>
+        <a href="/tools/qa-copilot/">QA manager copilot →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Need security checks in your pipeline?</h3>
+          <p>I add dependency, licence and test quality gates to CI so problems are caught on the pull request, not after release, without drowning the team in alerts. Bring your repository and we'll plan it. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=CI/CD%20quality%20gates#contact" data-track="deps-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/dependency-risk/deps.js"></script>
+  <script src="/tools/dependency-risk/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

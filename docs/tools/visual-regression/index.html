@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visual Regression Checker: Free Screenshot Diff Tool — Pawan Sinha</title>
+  <meta name="description" content="Free visual regression testing in your browser. Load baseline and new screenshots, pair them by name and see a pixel diff with side-by-side, overlay and slider views, ignore areas and a pass/fail threshold. Download an HTML report, and generate a free Playwright + GitHub Actions setup.">
+  <meta property="og:title" content="Visual Regression Checker — Pawan Sinha">
+  <meta property="og:description" content="A free alternative to paid visual testing services: compare two sets of screenshots in your browser, spot every changed pixel, and set up Playwright screenshot tests on GitHub Actions in five minutes. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/visual-regression/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/visual-regression/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Visual Regression Checker","url":"https://pawansinha.com.au/tools/visual-regression/","description":"A free, browser-only visual regression checker: pixel-diff baseline and new screenshots with anti-aliasing tolerance, ignore areas and a pass/fail threshold, an HTML report, and a generator for Playwright toHaveScreenshot tests on GitHub Actions.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Are my screenshots uploaded?","acceptedAnswer":{"@type":"Answer","text":"No. Screenshots are decoded and compared in your browser tab. They never leave your computer, so it is safe for internal and unreleased pages."}},
+    {"@type":"Question","name":"How are the screenshots paired?","acceptedAnswer":{"@type":"Answer","text":"By folder and file name. home/desktop.png in the baseline is compared with home/desktop.png in the new set. Suffixes such as -expected, -actual, -baseline and -new are ignored, so Playwright and BackstopJS outputs pair up too."}},
+    {"@type":"Question","name":"Why are some changed pixels shown in yellow?","acceptedAnswer":{"@type":"Answer","text":"Yellow pixels are anti-aliasing: the soft edges of text and shapes that differ slightly between machines and browsers. They are not counted as changes unless you untick the anti-aliasing option. Red pixels are real changes."}},
+    {"@type":"Question","name":"What change threshold should I use?","acceptedAnswer":{"@type":"Answer","text":"Start with 0.1% of pixels and a colour tolerance of 0.1. Raise the threshold if fonts or shadows render slightly differently between runs; lower it for pixel-perfect components. Cover dates, ads and animations with ignore areas instead of raising the threshold."}},
+    {"@type":"Question","name":"Can I run visual tests in CI for free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Playwright's toHaveScreenshot compares pages with committed baseline images, and GitHub Actions runs it free for public repositories and within the free minutes for private ones. The generator on this page writes the config, the test file and the workflow."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+    .modes .chip-btn[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+    .set { border: 2px dashed var(--border); border-radius: 14px; background: var(--alt); padding: 14px 16px; min-width: 0; }
+    .set.over { border-color: var(--accent); }
+    .set h3 { margin: 0 0 2px; font-size: 16px; }
+    .set .count { margin: 0; font-size: 14px; color: var(--muted); }
+    .set ul { list-style: none; margin: 8px 0 0; padding: 0; font: 500 12px/1.6 "JetBrains Mono", ui-monospace, monospace; color: var(--muted); }
+    .set ul li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .set .actions { margin-top: 10px; }
+    .actions label.btn { cursor: pointer; position: relative; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .lnk { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+    .lnk[disabled] { color: var(--muted); cursor: default; }
+    .opts { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin-top: 14px; }
+    .opts select { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
+    .field input[type=checkbox] { width: auto; }
+    .field input[type=range] { width: 140px; padding: 0; }
+    .vr-st { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--alt); white-space: nowrap; }
+    .vr-st.fail, .vr-st.error { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }
+    .vr-st.pass, .vr-st.same { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data td small { color: var(--muted); }
+    table.data tr.sel td { background: var(--alt); }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+    .exports button { font: inherit; cursor: pointer; }
+    .v-tools { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 4px 0 6px; }
+    .v-tools .field[hidden] { display: none; }
+    .stage.side { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+    .stage figure { margin: 0; min-width: 0; }
+    .stage figcaption { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+    .stage .cv { border: 1px solid var(--border); border-radius: 10px; overflow: auto; max-height: 75vh; background: repeating-conic-gradient(var(--alt) 0 25%, var(--surface) 0 50%) 0 0 / 16px 16px; }
+    .stage canvas { display: block; width: 100%; height: auto; touch-action: pan-y; }
+    .stage.drawing canvas { cursor: crosshair; touch-action: none; }
+    .gen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px 20px; }
+    .gen-grid label.blk { display: block; font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+    .gen-grid input[type=url], .gen-grid input[type=number], .gen-grid textarea { width: 100%; font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; }
+    .gen-grid textarea { font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace; min-height: 96px; resize: vertical; }
+    .gen-grid fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .gen-grid legend { font-size: 14px; font-weight: 600; padding: 0; margin: 0 0 4px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+    .checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+    .row2 { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+    .row2 > div { flex: 1 1 140px; min-width: 0; }
+    pre.gen { margin: 0; padding: 14px; border-radius: 12px; background: var(--alt); border: 1px solid var(--border); overflow-x: auto; }
+    pre.gen code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; white-space: pre; color: var(--text); }
+    #g-out[hidden] { display: none; }
+    .copied { color: var(--ok); font-size: 13px; font-weight: 600; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Test automation</p>
+      <h1>Visual regression checker</h1>
+      <p class="lead">Compare screenshots of the last good build with the new one and see every pixel that changed. Pair whole folders by name, hide areas that always change, set a pass/fail threshold and download a report. Then set up the same check in CI for free with Playwright and GitHub Actions.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Screenshots are compared on this page and never uploaded, so unreleased and internal pages are safe.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Visual regression checker">
+      <div class="panel">
+        <h2>Compare two sets of screenshots</h2>
+        <p class="sub">Choose files or a whole folder for each side, or drop them on the boxes. PNG, JPEG and WebP. Screenshots are paired by folder and file name; suffixes like <code>-expected</code> and <code>-actual</code> are ignored.</p>
+        <div class="actions" style="margin:0 0 12px"><button class="chip-btn" type="button" id="sample">Try a sample: 6 shop pages</button></div>
+        <div class="sets">
+          <div class="set" id="base-zone">
+            <h3>Baseline (last good build)</h3>
+            <p class="count" id="base-count">No screenshots yet</p>
+            <ul id="base-list"></ul>
+            <div class="actions">
+              <label class="btn btn-ghost btn-small" for="base-files">Choose files<input type="file" id="base-files" multiple accept="image/png,image/jpeg,image/webp"></label>
+              <label class="btn btn-ghost btn-small" for="base-dir">Choose folder<input type="file" id="base-dir" webkitdirectory multiple></label>
+              <button class="lnk" type="button" id="base-clear">Clear</button>
+            </div>
+          </div>
+          <div class="set" id="next-zone">
+            <h3>New build</h3>
+            <p class="count" id="next-count">No screenshots yet</p>
+            <ul id="next-list"></ul>
+            <div class="actions">
+              <label class="btn btn-ghost btn-small" for="next-files">Choose files<input type="file" id="next-files" multiple accept="image/png,image/jpeg,image/webp"></label>
+              <label class="btn btn-ghost btn-small" for="next-dir">Choose folder<input type="file" id="next-dir" webkitdirectory multiple></label>
+              <button class="lnk" type="button" id="next-clear">Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="opts">
+          <label class="field">Fail when more than <input type="number" id="o-max" min="0" max="100" step="0.01" value="0.1"> % of pixels change</label>
+          <label class="field">Colour tolerance <input type="number" id="o-thr" min="0" max="1" step="0.05" value="0.1"></label>
+          <label class="field"><input type="checkbox" id="o-aa" checked> Ignore anti-aliasing</label>
+          <label class="field">Different sizes
+            <select id="o-size"><option value="pad">count the extra area as changed</option><option value="crop">compare the overlap only</option></select>
+          </label>
+        </div>
+        <div class="actions" style="margin-top:16px">
+          <button class="btn" type="button" id="go" data-track="visual-compare">Compare screenshots</button>
+        </div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+
+      <div class="panel" id="ci" style="margin-top:24px">
+        <h2>Free CI setup: Playwright screenshot tests on GitHub Actions</h2>
+        <p class="sub">List your pages and screen sizes. You get a Playwright config, a test file that calls <code>toHaveScreenshot</code> for each page, and a workflow that fails the pull request on a visual change and uploads the HTML report with the diffs.</p>
+        <div class="gen-grid">
+          <div>
+            <label class="blk" for="g-url">Base URL</label>
+            <input type="url" id="g-url" value="https://staging.example.com" spellcheck="false">
+            <label class="blk" for="g-pages" style="margin-top:12px">Pages: one per line, optionally <code>name | path</code></label>
+            <textarea id="g-pages" spellcheck="false">/
+Pricing | /pricing
+/products/sun-hat
+/contact</textarea>
+          </div>
+          <div>
+            <fieldset><legend>Screen sizes</legend><div class="checks">
+              <label><input type="checkbox" name="g-vp" value="mobile" checked> Mobile 375×812</label>
+              <label><input type="checkbox" name="g-vp" value="tablet"> Tablet 768×1024</label>
+              <label><input type="checkbox" name="g-vp" value="desktop" checked> Desktop 1280×800</label>
+              <label><input type="checkbox" name="g-vp" value="wide"> Wide 1920×1080</label>
+            </div></fieldset>
+            <fieldset style="margin-top:12px"><legend>Browsers</legend><div class="checks">
+              <label><input type="checkbox" name="g-br" value="chromium" checked> Chromium</label>
+              <label><input type="checkbox" name="g-br" value="firefox"> Firefox</label>
+              <label><input type="checkbox" name="g-br" value="webkit"> WebKit (Safari)</label>
+            </div></fieldset>
+            <div class="row2" style="margin-top:12px">
+              <div><label class="blk" for="g-ratio">Allowed change, % of pixels</label><input type="number" id="g-ratio" min="0" max="100" step="0.1" value="1"></div>
+              <div><label class="blk" for="g-thr">Colour tolerance (0–1)</label><input type="number" id="g-thr" min="0" max="1" step="0.05" value="0.1"></div>
+            </div>
+            <div class="checks" style="margin-top:12px"><label><input type="checkbox" id="g-full" checked> Full-page screenshots</label></div>
+          </div>
+          <div>
+            <label class="blk" for="g-mask">Mask (CSS selectors, one per line)</label>
+            <textarea id="g-mask" spellcheck="false" placeholder="[data-testid=&quot;last-updated&quot;]&#10;.carousel">[data-testid="last-updated"]</textarea>
+          </div>
+          <div>
+            <label class="blk" for="g-hide">Hide completely (CSS selectors)</label>
+            <textarea id="g-hide" spellcheck="false" placeholder="#cookie-banner&#10;.chat-widget">#cookie-banner</textarea>
+          </div>
+        </div>
+        <div class="actions"><button class="btn" type="button" id="g-go" data-track="visual-generate">Generate the files</button></div>
+        <p class="err" id="g-err" role="alert" hidden></p>
+        <div id="g-out" style="margin-top:16px">
+          <p class="sub" id="g-count"></p>
+          <div class="modes" role="tablist" aria-label="Generated files" id="g-tabs"></div>
+          <div class="exports" style="margin:0 0 8px"><button class="btn btn-ghost btn-small" type="button" id="g-copy">Copy</button><button class="btn btn-ghost btn-small" type="button" id="g-dl">Download</button><span class="copied" id="g-copied" aria-live="polite"></span></div>
+          <pre class="gen"><code id="g-code"></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Every changed pixel, without the noise</h2>
+      <p>A plain pixel-by-pixel comparison fails on every run, because text edges render a little differently each time. This checker compares colours the way people see them and skips the soft edges.</p>
+      <ol>
+        <li><strong>Pair.</strong> Screenshots are matched by folder and file name. Anything missing on either side is listed.</li>
+        <li><strong>Compare.</strong> Each pixel pair is compared in the YIQ colour space, which weights brightness the way the eye does. Differences under the colour tolerance are ignored.</li>
+        <li><strong>Skip anti-aliasing.</strong> A pixel that differs only because it sits on the soft edge of text or a shape is marked yellow and not counted.</li>
+        <li><strong>Decide.</strong> The share of changed pixels is checked against your threshold. Ignore areas (dates, ads, carousels) are left out of the count.</li>
+      </ol>
+      <h3>Updating baselines</h3>
+      <p>When a change is intended, accept it as the new baseline. With Playwright, run <code>npx playwright test --update-snapshots</code> and commit the new images, or run the generated workflow by hand with “update baselines” ticked. Create baselines on the same operating system that compares them (the Linux CI runner, or the Playwright Docker image), because fonts render differently on macOS and Windows.</p>
+      <h3>Tips for stable screenshots</h3>
+      <ul>
+        <li>Mask anything that changes on every load: clocks, “last updated” dates, ads, random recommendations.</li>
+        <li>Hide cookie banners and chat widgets, or dismiss them before the screenshot.</li>
+        <li>Use fixed test data. A product list that changes order will fail every run.</li>
+        <li>Animations are stopped and the text cursor hidden by the generated config.</li>
+        <li>The generated config uses a colour tolerance of 0.1. Playwright's default of 0.2 can miss a colour change between two colours of similar brightness, such as a blue button turning green.</li>
+      </ul>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Are my screenshots uploaded?</h3>
+      <p>No. Screenshots are decoded and compared in your browser tab. They never leave your computer, so it is safe for internal and unreleased pages.</p>
+      <h3>How are the screenshots paired?</h3>
+      <p>By folder and file name. home/desktop.png in the baseline is compared with home/desktop.png in the new set. Suffixes such as -expected, -actual, -baseline and -new are ignored, so Playwright and BackstopJS outputs pair up too.</p>
+      <h3>Why are some changed pixels shown in yellow?</h3>
+      <p>Yellow pixels are anti-aliasing: the soft edges of text and shapes that differ slightly between machines and browsers. They are not counted as changes unless you untick the anti-aliasing option. Red pixels are real changes.</p>
+      <h3>What change threshold should I use?</h3>
+      <p>Start with 0.1% of pixels and a colour tolerance of 0.1. Raise the threshold if fonts or shadows render slightly differently between runs; lower it for pixel-perfect components. Cover dates, ads and animations with ignore areas instead of raising the threshold.</p>
+      <h3>Can I run visual tests in CI for free?</h3>
+      <p>Yes. Playwright's toHaveScreenshot compares pages with committed baseline images, and GitHub Actions runs it free for public repositories and within the free minutes for private ones. The generator on this page writes the config, the test file and the workflow.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/openapi-to-playwright/">OpenAPI → Playwright tests →</a>
+        <a href="/tools/test-coverage/">Test coverage intelligence →</a>
+        <a href="/tools/ci-failure-detective/">CI/CD failure detective →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Want visual tests that don't cry wolf?</h3>
+          <p>I set up Playwright visual and functional tests that run on every pull request, with stable baselines, sensible thresholds and reports the team actually reads. Bring your app and we'll plan it together. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Automation%20setup#contact" data-track="visual-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/visual-regression/vr.js"></script>
+  <script src="/tools/visual-regression/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

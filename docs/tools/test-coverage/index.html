@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Coverage Intelligence: Find Risky, Untested Code — Pawan Sinha</title>
+  <meta name="description" content="Free test coverage analyser. Load LCOV, Cobertura, JaCoCo or Istanbul coverage with JUnit results, git history and requirements. See risk hotspots, untested requirements, flaky areas, coverage change since the last report, a plain-English release risk summary and CI gate snippets. Runs in your browser.">
+  <meta property="og:title" content="Test Coverage Intelligence — Pawan Sinha">
+  <meta property="og:description" content="Coverage numbers alone don't tell you where the risk is. Combine coverage, test results and change history to find the code most likely to break, the requirements nobody tests, and a release risk summary your manager can read. Free, nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/test-coverage/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/test-coverage/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Test Coverage Intelligence","url":"https://pawansinha.com.au/tools/test-coverage/","description":"A free, browser-only test coverage analyser: LCOV, Cobertura, JaCoCo and Istanbul coverage combined with JUnit results, git change history and requirements to find risk hotspots, untested requirements and coverage drops, with CI gate snippets.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Is my coverage report uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Coverage reports, test results and git history are read and analysed in your browser. Nothing is sent to a server or an AI model."}},
+    {"@type":"Question","name":"Which coverage formats does it read?","acceptedAnswer":{"@type":"Answer","text":"LCOV (lcov.info from Jest, Vitest, c8, nyc, Karma, gcov and others), Cobertura XML (coverage.py, pytest-cov, .NET Coverlet, many CI tools), JaCoCo XML (Java and Kotlin), and Istanbul coverage-summary.json or coverage-final.json."}},
+    {"@type":"Question","name":"How is the risk score worked out?","acceptedAnswer":{"@type":"Answer","text":"For each file: the share of code that no test runs, multiplied by how often the file changed (from git log --numstat) and by its size, plus extra weight when failing or flaky tests point at it. Code that is big, changes often and has few tests is where bugs usually come from."}},
+    {"@type":"Question","name":"What coverage percentage should we aim for?","acceptedAnswer":{"@type":"Answer","text":"There is no magic number. A gate that stops coverage going down, plus a stricter gate of around 80% on the lines each pull request changes, works better than a single high target that teams game with weak tests."}},
+    {"@type":"Question","name":"How does it link tests to requirements?","acceptedAnswer":{"@type":"Answer","text":"Either load a CSV of requirement IDs and test names, or tag tests with the requirement ID, for example @REQ-123 in the test title. A requirement with no test that ran is listed as untested."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+    .modes .chip-btn[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .dropzone { position: relative; border-radius: 12px; }
+    .dropzone.over textarea { border-color: var(--accent); border-style: dashed; }
+    textarea.code { width: 100%; min-height: 150px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    .actions label.btn { cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    details.opt { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+    details.opt summary { cursor: pointer; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    details.opt summary::-webkit-details-marker { display: none; }
+    details.opt summary::before { content: "▸"; color: var(--muted); }
+    details.opt[open] summary::before { content: "▾"; }
+    details.opt .sub { margin-top: 6px; }
+    .opt-b { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+    .opt-b.on { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+    .runs { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .runs li { display: inline-flex; gap: 6px; align-items: center; background: var(--alt); border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 12px; font-size: 13px; max-width: 100%; }
+    .runs li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .runs button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .busy { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+    .busy[hidden] { display: none; }
+    .verdict ul.points { margin: 8px 0 0; padding-left: 20px; }
+    .verdict ul.points li { margin: 4px 0; max-width: 84ch; }
+    .verdict .advice { margin-top: 10px; }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+    .exports button { font: inherit; cursor: pointer; }
+    .ja-stat.ok b { color: var(--ok); }
+    span.bad, b.bad { color: var(--bad); } span.warn, b.warn { color: var(--warn); } span.ok { color: var(--ok); }
+    .risk-bar { display: inline-block; width: 60px; height: 8px; border-radius: 4px; background: var(--alt); border: 1px solid var(--border); vertical-align: middle; overflow: hidden; }
+    .risk-bar i { display: block; height: 100%; background: var(--bad); }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data td small { color: var(--muted); }
+    table.data tr.flash td { background: var(--hl, var(--warn-bg)); }
+    td.st-failing, td.st-untested { color: var(--bad); font-weight: 700; } td.st-flaky { color: var(--warn); font-weight: 700; } td.st-passing { color: var(--ok); font-weight: 600; }
+    .tm-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+    .tm-wrap svg { display: block; width: 100%; height: auto; }
+    .tm-wrap text { font: 600 11px Inter, system-ui, sans-serif; fill: #fff; pointer-events: none; }
+    .tm-wrap text.p { font-weight: 500; opacity: .9; }
+    .tm-wrap text.pk { fill: var(--text); font-weight: 700; }
+    .tm-wrap .pk-b { fill: none; stroke: var(--surface); stroke-width: 2; pointer-events: none; }
+    .tm-f { cursor: pointer; }
+    .tm-f:hover rect, .tm-f:focus rect { stroke: var(--text); stroke-width: 2; }
+    .tm-f:focus { outline: none; }
+    .tm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .tm-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+    .code-box { position: relative; }
+    .code-box .copy-btn { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 13px; cursor: pointer; background: var(--surface); }
+    pre.gate { margin: 0; padding: 14px; border-radius: 12px; background: var(--alt); border: 1px solid var(--border); overflow-x: auto; max-height: 460px; }
+    pre.gate code { font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; white-space: pre; color: var(--text); }
+    .panel[hidden] { display: none; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Test quality</p>
+      <h1>Test coverage intelligence</h1>
+      <p class="lead">A coverage percentage on its own hides the risk. Load your coverage report, and optionally test results, git history and requirements. See the code most likely to break, the requirements nobody tests, what changed since the last report, and a release summary a manager can read.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Reports, test results and git history are analysed on this page. Nothing is uploaded or sent to an AI model.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Test coverage intelligence">
+      <div class="panel">
+        <h2><label for="cov">1. Coverage report</label></h2>
+        <p class="sub">LCOV (<code>lcov.info</code>), Cobertura XML (<code>coverage.xml</code>), JaCoCo XML (<code>jacoco.xml</code>) or Istanbul <code>coverage-summary.json</code> / <code>coverage-final.json</code>. The format is detected for you.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="shop">Web shop: LCOV + tests + git + requirements</button>
+          <button class="chip-btn" type="button" data-sample="cobertura">Python: Cobertura</button>
+          <button class="chip-btn" type="button" data-sample="jacoco">Java: JaCoCo</button>
+        </div>
+        <div class="dropzone">
+          <textarea id="cov" class="code" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="TN:&#10;SF:src/cart/cart.ts&#10;DA:1,4&#10;DA:2,0&#10;...&#10;end_of_record"></textarea>
+        </div>
+        <div class="actions">
+          <label class="btn btn-ghost btn-small" for="cov-file">Choose file<input type="file" id="cov-file" accept=".info,.lcov,.xml,.json,text/plain,application/xml,application/json"></label>
+        </div>
+
+        <details class="opt" id="d-junit">
+          <summary>2. Test results <span class="opt-b" id="b-junit">optional</span></summary>
+          <p class="sub">JUnit XML from Maven Surefire, Gradle, pytest <code>--junitxml</code>, Jest, Playwright or Cypress. Load one file per run, oldest first: tests that pass in one run and fail in another are flagged as flaky.</p>
+          <div class="dropzone" id="junit-drop">
+            <textarea id="junit" class="code" style="min-height:90px" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Drop JUnit XML files here, choose them below, or paste one run and press Add pasted run."></textarea>
+          </div>
+          <ul class="runs" id="runs" aria-label="Loaded test runs"></ul>
+          <div class="actions">
+            <label class="btn btn-ghost btn-small" for="junit-file">Choose files<input type="file" id="junit-file" multiple accept=".xml,application/xml,text/xml"></label>
+            <button class="btn btn-ghost btn-small" type="button" id="junit-add">Add pasted run</button>
+          </div>
+        </details>
+
+        <details class="opt">
+          <summary>3. Change history <span class="opt-b" id="b-churn">optional</span></summary>
+          <p class="sub">Files that change often and have few tests are where bugs come from. In the repository, run <code>git log --since="6 months ago" --numstat --format=</code> and paste the output, or paste a CSV of <code>path,commits</code>.</p>
+          <div class="dropzone">
+            <textarea id="churn" class="code" style="min-height:110px" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="12&#9;3&#9;src/checkout/payment.ts&#10;4&#9;0&#9;src/cart/cart.ts"></textarea>
+          </div>
+          <div class="actions"><label class="btn btn-ghost btn-small" for="churn-file">Choose file<input type="file" id="churn-file" accept=".txt,.log,.csv,text/plain,text/csv"></label></div>
+        </details>
+
+        <details class="opt">
+          <summary>4. Requirements <span class="opt-b" id="b-reqs">optional</span></summary>
+          <p class="sub">A CSV with the requirement ID, an optional title and the tests that cover it (separate several with <code>;</code>). Tests tagged like <code>@REQ-123</code> in their names are linked for you, so the tests column can stay empty.</p>
+          <div class="dropzone">
+            <textarea id="reqs" class="code" style="min-height:110px" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Requirement,Title,Tests&#10;REQ-110,Pay for an order,CheckoutTest.placesOrder;PaymentTest.savedCard&#10;REQ-112,Refund a payment,"></textarea>
+          </div>
+          <div class="actions"><label class="btn btn-ghost btn-small" for="reqs-file">Choose file<input type="file" id="reqs-file" accept=".csv,.txt,text/csv,text/plain"></label></div>
+        </details>
+
+        <details class="opt">
+          <summary>5. Baseline coverage to compare <span class="opt-b" id="b-base">optional</span></summary>
+          <p class="sub">The coverage report from the main branch or the last release. You'll see the change in coverage and the lines that lost their tests or arrived without any.</p>
+          <div class="dropzone">
+            <textarea id="base" class="code" style="min-height:110px" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Coverage report from the main branch or last release (any supported format)"></textarea>
+          </div>
+          <div class="actions"><label class="btn btn-ghost btn-small" for="base-file">Choose file<input type="file" id="base-file" accept=".info,.lcov,.xml,.json,text/plain,application/xml,application/json"></label></div>
+        </details>
+
+        <div class="actions" style="margin-top:18px">
+          <button class="btn" type="button" id="go" data-track="coverage-analyse">Analyse coverage</button>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear all</button>
+        </div>
+        <p class="busy" id="busy" hidden>Analysing…</p>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Coverage tells you what ran, not what is safe</h2>
+      <p>80% coverage sounds good until the missing 20% is the payment code that changes every week. This tool puts coverage next to the other things that predict where bugs come from.</p>
+      <ol>
+        <li><strong>Read the coverage.</strong> Line and branch counts for every file, from any of the common formats. Long CI runner paths are shortened to the repository root.</li>
+        <li><strong>Add the context you have.</strong> Test results show what is failing or flaky. Git history shows what changes often. Requirements show what the business expects to be tested.</li>
+        <li><strong>Rank the risk.</strong> Each file gets a 0–100 score: untested share × change frequency × size, plus weight for failing and flaky tests. The top of the list is where a new test pays off most.</li>
+        <li><strong>Compare and gate.</strong> Against a baseline report you see the coverage change and the newly untested lines. The CI snippets turn today's numbers into a gate so coverage can only go up.</li>
+      </ol>
+      <h3>Getting the files</h3>
+      <ul>
+        <li><strong>Jest / Vitest:</strong> <code>--coverage</code> with the <code>lcov</code> and <code>json-summary</code> reporters writes <code>coverage/lcov.info</code>.</li>
+        <li><strong>Python:</strong> <code>pytest --cov=src --cov-branch --cov-report=xml</code> writes <code>coverage.xml</code> (Cobertura).</li>
+        <li><strong>Java / Kotlin:</strong> the JaCoCo plugin writes <code>target/site/jacoco/jacoco.xml</code> (Maven) or <code>build/reports/jacoco/test/jacocoTestReport.xml</code> (Gradle).</li>
+        <li><strong>.NET:</strong> <code>dotnet test --collect:"XPlat Code Coverage"</code> writes Cobertura XML.</li>
+      </ul>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Is my coverage report uploaded anywhere?</h3>
+      <p>No. Coverage reports, test results and git history are read and analysed in your browser. Nothing is sent to a server or an AI model.</p>
+      <h3>Which coverage formats does it read?</h3>
+      <p>LCOV (lcov.info from Jest, Vitest, c8, nyc, Karma, gcov and others), Cobertura XML (coverage.py, pytest-cov, .NET Coverlet, many CI tools), JaCoCo XML (Java and Kotlin), and Istanbul coverage-summary.json or coverage-final.json.</p>
+      <h3>How is the risk score worked out?</h3>
+      <p>For each file: the share of code that no test runs, multiplied by how often the file changed (from git log --numstat) and by its size, plus extra weight when failing or flaky tests point at it. Code that is big, changes often and has few tests is where bugs usually come from.</p>
+      <h3>What coverage percentage should we aim for?</h3>
+      <p>There is no magic number. A gate that stops coverage going down, plus a stricter gate of around 80% on the lines each pull request changes, works better than a single high target that teams game with weak tests.</p>
+      <h3>How does it link tests to requirements?</h3>
+      <p>Either load a CSV of requirement IDs and test names, or tag tests with the requirement ID, for example @REQ-123 in the test title. A requirement with no test that ran is listed as untested.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/ci-failure-detective/">CI/CD failure detective →</a>
+        <a href="/tools/visual-regression/">Visual regression checker →</a>
+        <a href="/tools/qa-copilot/">QA manager copilot →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Lots of tests, still nervous about every release?</h3>
+          <p>Bring your coverage and test results. I'll help you find where the real risk sits, which tests to write first and which to delete, and how to set quality gates the team will trust. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=QA%20strategy%20%26%20setup#contact" data-track="coverage-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/ci-failure-detective/ci.js"></script>
+  <script src="/tools/test-coverage/coverage.js"></script>
+  <script src="/tools/test-coverage/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Database Performance Lab: Explain Query Plans and Slow Queries — Pawan Sinha</title>
+  <meta name="description" content="Free query plan analyser that runs in your browser. Paste PostgreSQL EXPLAIN ANALYZE (text or JSON), MySQL EXPLAIN ANALYZE or FORMAT=JSON, or SQL Server showplan XML and see where the time goes, missing indexes, bad row estimates, spills to disk and nested loops, with CREATE INDEX fixes. Also ranks pg_stat_statements and slow query logs.">
+  <meta property="og:title" content="Database Performance Lab — Pawan Sinha">
+  <meta property="og:description" content="Free tool: paste a query plan and get the slow node, the missing index and the fix in plain English. PostgreSQL, MySQL and SQL Server. Nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pawansinha.com.au/tools/db-performance-lab/">
+  <meta property="og:image" content="https://pawansinha.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/tools/db-performance-lab/">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/tools/jtl-analyser/tool.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Database Performance Lab","url":"https://pawansinha.com.au/tools/db-performance-lab/","description":"A free, browser-only query plan analyser for PostgreSQL, MySQL and SQL Server: exclusive time per node, row misestimates, index candidates with CREATE INDEX statements, spills, nested loops and JIT, plus ranking of pg_stat_statements and slow query logs.","applicationCategory":"DeveloperApplication","operatingSystem":"Any (runs in the browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"AUD"},"author":{"@type":"Person","name":"Pawan Sinha","url":"https://pawansinha.com.au/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Is my query plan uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The plan, the SQL and any file you choose are read and analysed in your browser. Plans contain table names, column names and sometimes literal values, so nothing is sent to a server."}},
+    {"@type":"Question","name":"Which plan formats does it read?","acceptedAnswer":{"@type":"Answer","text":"PostgreSQL EXPLAIN in text and FORMAT JSON, ideally with ANALYZE and BUFFERS; MySQL EXPLAIN ANALYZE and FORMAT=TREE output and EXPLAIN FORMAT=JSON (version 1 and 2); and SQL Server showplan XML (.sqlplan) with basic support. It also reads pg_stat_statements, MySQL performance_schema and slow_log exports and SQL Server query stats as CSV, and the MySQL slow query log file."}},
+    {"@type":"Question","name":"What does SQL Server basic support cover?","acceptedAnswer":{"@type":"Answer","text":"The operator tree, estimated and actual rows, executions, elapsed time and logical reads per operator, predicates, key and RID lookups, tempdb spills, missing index suggestions, implicit conversions, no-join-predicate warnings and memory grants. It analyses the most expensive statement in a batch. It does not show parallelism per thread or batch-mode details beyond operator time."}},
+    {"@type":"Question","name":"What is the difference between exclusive and inclusive time?","acceptedAnswer":{"@type":"Answer","text":"Inclusive time is what a plan node reports: its own work plus everything below it. Exclusive time subtracts the children, so it shows the work the node itself did. The node with the biggest exclusive time is where to start. Times are multiplied by loops, because PostgreSQL and MySQL report the average for one loop."}},
+    {"@type":"Question","name":"Why does a row misestimate matter?","acceptedAnswer":{"@type":"Answer","text":"The planner chooses join methods, join order and memory from its row estimates. If it expects 10 rows and gets 100,000, it may pick a nested loop that runs 100,000 times or a hash table that spills to disk. Fresh statistics (ANALYZE), extended statistics for related columns or histograms usually fix it."}}
+  ]}</script>
+  <style>
+    .wrap.project-hero, .wrap.app, .wrap.guide, .wrap.tools-end { max-width: 1120px; }
+    .wrap.app > * { max-width: 1088px; }
+    .wrap.guide > p, .wrap.guide li { max-width: 64ch; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .chip-btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); background: var(--alt);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+    .chip-btn:hover, .chip-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .dropzone { position: relative; border-radius: 12px; }
+    .dropzone.over textarea { border-color: var(--accent); border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--alt)); }
+    textarea.code { width: 100%; min-height: 220px; resize: vertical; display: block; font: 500 12.5px/1.5 "JetBrains Mono", ui-monospace, monospace;
+      color: var(--text); background: var(--alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; white-space: pre; overflow: auto; }
+    textarea.code.small { min-height: 90px; margin-top: 8px; }
+    textarea.code:focus { outline: none; border-color: var(--accent); }
+    details.sqlbox { margin-top: 10px; }
+    details.sqlbox summary { cursor: pointer; color: var(--accent); font-size: 14px; font-weight: 600; }
+    details.sqlbox p { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+    .filechip { display: inline-flex; gap: 8px; align-items: center; margin: 8px 0 0; padding: 4px 6px 4px 12px; background: var(--alt); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 13px; max-width: 100%; }
+    .filechip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .filechip button { font: inherit; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 6px; }
+    .filechip[hidden] { display: none; }
+    .actions label.btn { cursor: pointer; }
+    .actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .field select { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+    .ja-stat.bad b { color: var(--bad); }
+    .card-x { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--bad); border-radius: 12px; padding: 12px 16px; margin-top: 12px; min-width: 0; }
+    .card-x.warn { border-left-color: var(--warn); } .card-x.info { border-left-color: var(--accent); }
+    .card-x h4 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+    .card-x p { margin: 0; font-size: 14px; color: var(--muted); max-width: 84ch; overflow-wrap: anywhere; }
+    .fixbox { display: flex; flex-direction: column; margin-top: 8px; max-width: 868px; }
+    pre.sql { margin: 0; font: 500 12.5px/1.55 "JetBrains Mono", ui-monospace, monospace; background: var(--alt); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; overflow-x: auto; white-space: pre; color: var(--text); }
+    pre.stmt { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 868px; }
+    .copybtn { align-self: flex-end; margin-bottom: 4px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--accent); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; }
+    .linkbtn { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; margin-top: 8px; cursor: pointer; }
+    .exports { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .exports button { font: inherit; cursor: pointer; }
+    /* plan tree */
+    table.data.plan td.nd { text-align: left; white-space: nowrap; max-width: none; min-width: 260px; }
+    table.data.plan td.nd b { font-weight: 700; }
+    table.data .arrow { color: var(--muted); margin-right: 4px; }
+    table.data .rel { color: var(--muted); font-size: 12.5px; }
+    table.data .sub { font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; }
+    table.data .flag { margin-right: 4px; font-size: 11px; color: var(--warn); }
+    table.data .flag.high { color: var(--bad); } table.data .flag.low { color: var(--accent); }
+    table.data tr.node { cursor: pointer; }
+    table.data tr.node:hover td, table.data tr.node:focus-visible td { background: var(--alt); }
+    table.data tr.node:focus-visible { outline: none; }
+    table.data tr.is-hl td { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    table.data tr.never td { color: var(--muted); }
+    table.data tr.detail td { background: var(--alt); text-align: left; white-space: normal; }
+    table.data td.l { text-align: left; }
+    table.data td.misbad { color: var(--bad); font-weight: 700; }
+    .tbar { display: inline-block; width: 90px; height: 9px; border-radius: 5px; background: var(--alt); border: 1px solid var(--border); margin-right: 8px; vertical-align: middle; overflow: hidden; }
+    .tbar i { display: block; height: 100%; background: var(--accent); }
+    .tbar i.big { background: var(--bad); }
+    dl.nd-detail { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 4px 0; font-size: 13px; max-width: 980px; }
+    dl.nd-detail dt { color: var(--muted); }
+    dl.nd-detail dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+    dl.nd-detail code { font: 500 12.5px "JetBrains Mono", monospace; white-space: pre-wrap; }
+    /* stats */
+    table.data.stats td.msg { min-width: 280px; max-width: 520px; }
+    table.data.stats td.msg code { font: 500 12px/1.5 "JetBrains Mono", monospace; }
+    .qflags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .qflag { font-size: 11px; font-weight: 700; color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); background: var(--warn-bg); border-radius: 6px; padding: 0 6px; }
+    ul.qnotes { margin: 8px 0 0; padding-left: 20px; font-size: 13.5px; }
+    table.data tr.detail pre.sql { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 900px; }
+    table.data tr.detail .hint { white-space: normal; max-width: 90ch; }
+    .support { font-size: 14px; }
+    .support td, .support th { text-align: left !important; white-space: normal !important; }
+  </style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/" aria-current="page">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap project-hero">
+      <p class="eyebrow">Tools · Database performance</p>
+      <h1>Database performance lab</h1>
+      <p class="lead">Paste a query plan from PostgreSQL, MySQL or SQL Server and see where the time goes, node by node, with the fix: the missing index as a <code>CREATE INDEX</code> statement, stale statistics, spills to disk, runaway nested loops and more. Or paste <code>pg_stat_statements</code> or a slow query log to find the queries worth fixing first.</p>
+      <p class="private-note">🔒 Runs 100% in your browser. <span>Plans hold table names, columns and sometimes real values, so nothing is uploaded or stored.</span></p>
+    </section>
+
+    <section class="wrap app" aria-label="Database performance lab">
+      <div class="panel">
+        <h2><label for="plan-in">Paste a query plan or query statistics, or drop a file here</label></h2>
+        <p class="sub">PostgreSQL <code>EXPLAIN (ANALYZE, BUFFERS)</code> as text or JSON, MySQL <code>EXPLAIN ANALYZE</code> or <code>FORMAT=JSON</code>, SQL Server showplan XML, or a <code>pg_stat_statements</code> / slow query CSV. The format is detected for you.</p>
+        <div class="examples">Try a sample:
+          <button class="chip-btn" type="button" data-sample="pg-text">PostgreSQL text</button>
+          <button class="chip-btn" type="button" data-sample="pg-json">PostgreSQL JSON</button>
+          <button class="chip-btn" type="button" data-sample="mysql-tree">MySQL EXPLAIN ANALYZE</button>
+          <button class="chip-btn" type="button" data-sample="mysql-json">MySQL JSON</button>
+          <button class="chip-btn" type="button" data-sample="mssql-xml">SQL Server XML</button>
+          <button class="chip-btn" type="button" data-sample="stats-csv">pg_stat_statements CSV</button>
+          <button class="chip-btn" type="button" data-sample="mysql-slowlog">MySQL slow log</button>
+        </div>
+        <div class="dropzone" id="drop">
+          <textarea id="plan-in" class="code" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="Seq Scan on orders  (cost=0.00..44925.00 rows=2100 width=28) (actual time=0.031..1712.880 rows=41250 loops=1)"></textarea>
+        </div>
+        <details class="sqlbox" id="sql-box">
+          <summary>Add the SQL text (optional)</summary>
+          <p>Helps spot functions on indexed columns, leading-wildcard LIKEs and big OFFSETs, and maps table aliases to table names. Not needed if you pasted the query above the plan.</p>
+          <label class="sr-only" for="sql-in">SQL text</label>
+          <textarea id="sql-in" class="code small" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="SELECT … FROM orders o WHERE lower(o.email) = $1"></textarea>
+        </details>
+        <div class="filechip" id="filechip" hidden><span id="fname"></span><button type="button" id="unfile" aria-label="Remove file">✕</button></div>
+        <div class="actions">
+          <button class="btn" type="button" id="go" data-track="db-lab-analyse">Analyse</button>
+          <label class="btn btn-ghost btn-small" for="file">Choose file<input type="file" id="file" accept=".txt,.json,.xml,.sqlplan,.csv,.tsv,.log,text/plain,application/json,text/xml,text/csv"></label>
+          <button class="btn btn-ghost btn-small" type="button" id="clear">Clear</button>
+          <label class="field" for="fmt">Format
+            <select id="fmt">
+              <option value="auto">Detect</option>
+              <option value="pg-text">PostgreSQL text</option>
+              <option value="pg-json">PostgreSQL JSON</option>
+              <option value="mysql-tree">MySQL EXPLAIN ANALYZE / TREE</option>
+              <option value="mysql-json">MySQL JSON</option>
+              <option value="mssql-xml">SQL Server XML</option>
+              <option value="stats-csv">Statistics CSV</option>
+              <option value="mysql-slowlog">MySQL slow log</option>
+            </select>
+          </label>
+        </div>
+        <div class="ja-progress indet" id="progress" hidden><div class="track"><span class="fill"></span></div><span id="ptext">Analysing…</span></div>
+        <p class="err" id="err" role="alert" hidden></p>
+      </div>
+
+      <div id="result" class="result" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="wrap guide" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>From a wall of plan text to the one change that matters</h2>
+      <ol>
+        <li><strong>Parse.</strong> The plan becomes a tree of nodes with estimated and actual rows, loops, time, buffers and conditions. Indentation decides the tree in text plans.</li>
+        <li><strong>Exclusive time.</strong> Each node's time times its loops, minus its children. Under a parallel Gather, time is divided by the number of processes that ran it, so shares stay honest.</li>
+        <li><strong>Misestimates.</strong> Estimated versus actual rows per loop. Only the deepest wrong estimate in a chain is reported, because errors spread upwards.</li>
+        <li><strong>Rules.</strong> Each finding is a written rule: a full scan that keeps under 10% of 10,000+ rows, a nested loop running 1,000+ times, a sort or hash on disk, a lossy bitmap, a key lookup, missing parallel workers, slow JIT or planning. Each quotes the numbers that triggered it.</li>
+        <li><strong>Fixes.</strong> Index suggestions put equality columns first and only one range column after them, add <code>INCLUDE</code> columns where they avoid lookups, and use expression indexes or range rewrites for functions on columns.</li>
+      </ol>
+      <h3>Getting a plan</h3>
+      <ul>
+        <li><strong>PostgreSQL:</strong> <code>EXPLAIN (ANALYZE, BUFFERS) SELECT …;</code> in psql, or add <code>FORMAT JSON</code>. ANALYZE runs the query, so wrap writes in <code>BEGIN; … ROLLBACK;</code>. For queries in production, <code>auto_explain</code> logs plans of slow statements.</li>
+        <li><strong>MySQL 8:</strong> <code>EXPLAIN ANALYZE SELECT …;</code> (runs the query) or <code>EXPLAIN FORMAT=JSON SELECT …;</code> (estimates only). Use <code>\G</code> or the mysql client's raw output so the tree keeps its indentation.</li>
+        <li><strong>SQL Server:</strong> in SSMS, turn on <em>Include Actual Execution Plan</em> (Ctrl+M), run the query, right-click the plan and choose <em>Show Execution Plan XML</em> or save it as .sqlplan.</li>
+        <li><strong>Statistics:</strong> <code>\copy (SELECT * FROM pg_stat_statements) TO 'stats.csv' CSV HEADER</code>; for MySQL, export <code>performance_schema.events_statements_summary_by_digest</code> or <code>mysql.slow_log</code>, or drop the slow query log file itself.</li>
+      </ul>
+      <h3>What is supported</h3>
+      <div class="tbl-wrap"><table class="data support"><thead><tr><th>Input</th><th>Support</th></tr></thead><tbody>
+        <tr><td>PostgreSQL text and JSON</td><td>Full: actual and estimated rows, loops, times, buffers, I/O timings, sorts, hashes, bitmaps, parallel workers, JIT, planning, triggers, InitPlans and SubPlans.</td></tr>
+        <tr><td>MySQL EXPLAIN ANALYZE / FORMAT=TREE</td><td>Full: iterator tree with estimated and actual rows, loops and times; filters, sorts, temporary tables and joins.</td></tr>
+        <tr><td>MySQL FORMAT=JSON</td><td>Estimates only (MySQL does not put actual times in JSON v1): access types, rows examined, filtered %, keys, filesort, temporary tables, join buffers. JSON v2 is read as a tree.</td></tr>
+        <tr><td>SQL Server showplan XML</td><td>Basic: operator tree, estimated and actual rows, executions, elapsed time and reads, predicates, key lookups, spills, missing indexes, implicit conversions, memory grants. One statement (the most expensive) per batch.</td></tr>
+        <tr><td>Statistics CSV and slow logs</td><td>pg_stat_statements (PostgreSQL 13+ and older column names), MySQL digest summaries, sys schema, mysql.slow_log, the slow query log file and SQL Server query stats.</td></tr>
+      </tbody></table></div>
+
+      <h2 style="margin-top:32px">FAQ</h2>
+      <h3>Is my query plan uploaded anywhere?</h3>
+      <p>No. The plan, the SQL and any file you choose are read and analysed in your browser. Plans contain table names, column names and sometimes literal values, so nothing is sent to a server.</p>
+      <h3>Which plan formats does it read?</h3>
+      <p>PostgreSQL EXPLAIN in text and FORMAT JSON, ideally with ANALYZE and BUFFERS; MySQL EXPLAIN ANALYZE and FORMAT=TREE output and EXPLAIN FORMAT=JSON (version 1 and 2); and SQL Server showplan XML (.sqlplan) with basic support. It also reads pg_stat_statements, MySQL performance_schema and slow_log exports and SQL Server query stats as CSV, and the MySQL slow query log file.</p>
+      <h3>What does SQL Server basic support cover?</h3>
+      <p>The operator tree, estimated and actual rows, executions, elapsed time and logical reads per operator, predicates, key and RID lookups, tempdb spills, missing index suggestions, implicit conversions, no-join-predicate warnings and memory grants. It analyses the most expensive statement in a batch. It does not show parallelism per thread or batch-mode details beyond operator time.</p>
+      <h3>What is the difference between exclusive and inclusive time?</h3>
+      <p>Inclusive time is what a plan node reports: its own work plus everything below it. Exclusive time subtracts the children, so it shows the work the node itself did. The node with the biggest exclusive time is where to start. Times are multiplied by loops, because PostgreSQL and MySQL report the average for one loop.</p>
+      <h3>Why does a row misestimate matter?</h3>
+      <p>The planner chooses join methods, join order and memory from its row estimates. If it expects 10 rows and gets 100,000, it may pick a nested loop that runs 100,000 times or a hash table that spills to disk. Fresh statistics (ANALYZE), extended statistics for related columns or histograms usually fix it.</p>
+    </section>
+
+    <section class="wrap tools-end">
+      <div class="related">
+        <a href="/tools/trace-explainer/">Distributed trace explainer →</a>
+        <a href="/tools/log-analyser/">Log analyser →</a>
+        <a href="/tools/capacity-calculator/">Capacity calculator →</a>
+        <a href="/tools/perf-studio/">Perf Studio →</a>
+        <a href="/tools/">All tools →</a>
+      </div>
+      <div class="offer">
+        <div>
+          <p class="eyebrow">Free 30-minute call</p>
+          <h3>Database the bottleneck under load?</h3>
+          <p>Bring the slowest queries and a plan or two. I'll help you find the index or rewrite that matters and plan a load test that proves it before peak traffic does. No sales pitch.</p>
+        </div>
+        <div style="flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" href="/?need=Performance%20%26%20load%20testing#contact" data-track="db-lab-call">Book a free call</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© <span data-year>2026</span> Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+
+  <script src="/tools/db-performance-lab/dbplan.js"></script>
+  <script src="/tools/db-performance-lab/app.js"></script>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

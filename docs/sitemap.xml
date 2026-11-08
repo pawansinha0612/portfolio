@@ -48,6 +48,11 @@
   <url><loc>https://pawansinha.com.au/tools/qa-copilot/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/tools/ci-failure-detective/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/tools/log-analyser/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/tools/trace-explainer/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/tools/db-performance-lab/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/tools/test-coverage/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/tools/visual-regression/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pawansinha.com.au/tools/dependency-risk/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/tools/json-diff/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/tools/test-data/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pawansinha.com.au/peak-readiness/sample-report/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
