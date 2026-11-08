@@ -34,5 +34,9 @@
   "green-load-test-red-production-the-database-bottleneck": {
     "date": "2026-11-08",
     "id": "urn:li:share:7524978150762647552"
+  },
+  "every-gc-pause-met-the-goal-p99-9-still-failed": {
+    "date": "2026-11-09",
+    "id": "urn:li:share:7525340933463179264"
   }
 }
