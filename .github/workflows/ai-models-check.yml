@@ -28,7 +28,7 @@ jobs:
           key = os.environ.get('AI_API_KEY', '')
           rows = []
           for m in [x.strip() for x in os.environ['MODELS'].split(',') if x.strip()]:
-              body = json.dumps({'model': m, 'max_tokens': 300, 'temperature': 0.2, 'messages': [
+              body = json.dumps({'model': m, 'max_tokens': 3000, 'temperature': 0.2, 'messages': [
                   {'role': 'user', 'content': 'In about 150 words, explain what p99 latency means to a software engineer.'}]}).encode()
               req = urllib.request.Request(base + '/chat/completions', data=body, headers={
                   'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'})
