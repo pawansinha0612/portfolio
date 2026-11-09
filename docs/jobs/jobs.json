@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-08T00:02:04+00:00",
+ "updated": "2026-11-09T00:09:03+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -37,17 +37,17 @@
    "first_seen": "2026-11-01T12:49:52+00:00"
   },
   {
-   "title": "Software Tester",
-   "company": "Softtest pays pty ltd",
-   "location": "Australia",
-   "url": "https://himalayas.app/companies/softtest-pays-pty-ltd/jobs/software-tester?utm_source=api",
+   "title": "Senior Performance QA Engineer",
+   "company": "Description Ciklum",
+   "location": "Ukraine",
+   "url": "https://himalayas.app/companies/description-ciklum/jobs/senior-performance-qa-engineer?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/softtest-pays-pty-ltd/jobs/software-tester",
-   "posted": "2026-10-18T19:21:40+00:00",
-   "group": "qa",
-   "region": "australia",
-   "score": 24,
-   "first_seen": "2026-10-18T19:21:40+00:00"
+   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/senior-performance-qa-engineer",
+   "posted": "2026-11-08T11:04:17+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 70,
+   "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
    "title": "Senior Performance Test Engineer (Full time, Remote)",
@@ -310,6 +310,19 @@
    "first_seen": "2026-10-27T19:41:44+00:00"
   },
   {
+   "title": "AI Test Engineer III",
+   "company": "Trend Health Partners",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/trend-health-partners/jobs/ai-test-engineer-iii?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/trend-health-partners/jobs/ai-test-engineer-iii",
+   "posted": "2026-11-08T09:39:37+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
    "title": "QA Engineer – Automation",
    "company": "Bright Vision Technologies",
    "location": "United States",
@@ -466,6 +479,19 @@
    "first_seen": "2026-10-29T17:39:51+00:00"
   },
   {
+   "title": "Senior Automation QA (JavaScript) Engineer",
+   "company": "Description Ciklum",
+   "location": "India",
+   "url": "https://himalayas.app/companies/description-ciklum/jobs/senior-automation-qa-javascript-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/senior-automation-qa-javascript-engineer",
+   "posted": "2026-11-08T14:33:37+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
    "title": "Quality Assurance Engineer (Automation)",
    "company": "Lyrebird Health",
    "location": "United Kingdom",
@@ -581,6 +607,19 @@
    "region": "onsite",
    "score": 30,
    "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Expert Automation QA Engineer",
+   "company": "Description Ciklum",
+   "location": "Bulgaria",
+   "url": "https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer",
+   "posted": "2026-11-08T16:18:58+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 29,
+   "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
    "title": "Senior QA Engineer - US Remote",
@@ -815,6 +854,19 @@
    "region": "remote",
    "score": 26,
    "first_seen": "2026-10-30T23:36:38+00:00"
+  },
+  {
+   "title": "Senior Software Development Engineer in Test (SDET) - Remote",
+   "company": "Scalepex",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/scalepex/jobs/senior-software-development-engineer-in-test-sdet-remote?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/scalepex/jobs/senior-software-development-engineer-in-test-sdet-remote",
+   "posted": "2026-11-08T14:19:14+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 25,
+   "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
    "title": "Staff Quality Engineer - India",
@@ -1155,6 +1207,19 @@
    "first_seen": "2026-10-25T03:35:11+00:00"
   },
   {
+   "title": "QA Engineer (Anywhere in Europe)",
+   "company": "PadSplit",
+   "location": "Europe",
+   "url": "https://jobicy.com/jobs/154874-qa-engineer-anywhere-in-europe",
+   "source": "Jobicy",
+   "id": "Jobicy:154874",
+   "posted": "2026-11-08T03:05:23+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
    "title": "Lead QA Engineer [ATM]",
    "company": "Banco Plata, S.A., Institución de Banca Múltiple",
    "location": "Remote (worldwide)",
@@ -1218,6 +1283,45 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
+   "title": "System Test Automation Engineer",
+   "company": "Wayve",
+   "location": "London, United Kingdom",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/wayve/system-test-automation-engineer-london-united-kingdom-401378",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:system-test-automation-engineer-london-united-kingdom-401378",
+   "posted": "2026-11-08T15:40:17+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 19,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
+   "title": "Software Engineer in Test (Berlin)",
+   "company": "cresta",
+   "location": "Berlin",
+   "url": "https://www.arbeitnow.com/jobs/companies/cresta/software-engineer-in-test-berlin-40754",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:software-engineer-in-test-berlin-40754",
+   "posted": "2026-11-08T12:55:16+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 19,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
+   "title": "Quality Assurance Engineer II",
+   "company": "Bloomreach",
+   "location": "Slovakia",
+   "url": "https://jobicy.com/jobs/154875-quality-assurance-engineer-ii",
+   "source": "Jobicy",
+   "id": "Jobicy:154875",
+   "posted": "2026-11-08T03:05:12+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
    "title": "Global Head of Testing Center of Excellence",
@@ -1415,6 +1519,19 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "Quality Engineer",
+   "company": "GoHealth Urgent Care",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/gohealth-urgent-care/jobs/quality-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/gohealth-urgent-care/jobs/quality-engineer",
+   "posted": "2026-11-08T05:33:03+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 18,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
    "title": "Senior II Software Development Engineer in Test",
    "company": "Akamai Technologies",
    "location": "Canada",
@@ -1506,6 +1623,58 @@
    "first_seen": "2026-10-30T12:35:44+00:00"
   },
   {
+   "title": "Senior Software Development Engineer in Test (SDET)",
+   "company": "Pulsara",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/pulsara/jobs/senior-software-development-engineer-in-test-sdet?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/pulsara/jobs/senior-software-development-engineer-in-test-sdet",
+   "posted": "2026-11-08T13:17:19+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
+   "title": "Salesforce QA Analyst",
+   "company": "Corpay",
+   "location": "Poland",
+   "url": "https://himalayas.app/companies/corpay/jobs/salesforce-qa-analyst?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/corpay/jobs/salesforce-qa-analyst",
+   "posted": "2026-11-08T08:39:15+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
+   "title": "Software Quality Engineer",
+   "company": "Quavo, Inc.",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/quavo-inc/jobs/software-quality-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/quavo-inc/jobs/software-quality-engineer",
+   "posted": "2026-11-08T03:30:58+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
+   "title": "Senior Quality Engineer",
+   "company": "StackAdapt",
+   "location": "Canada, USA",
+   "url": "https://jobicy.com/jobs/154871-senior-quality-engineer-3",
+   "source": "Jobicy",
+   "id": "Jobicy:154871",
+   "posted": "2026-11-08T03:05:10+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-09T00:09:03+00:00"
+  },
+  {
    "title": "Power Platform Tester",
    "company": "i4DM",
    "location": "United States",
@@ -1545,19 +1714,6 @@
    "first_seen": "2026-11-08T00:02:04+00:00"
   },
   {
-   "title": "Senior QA Automation Engineer (Playwright)",
-   "company": "Valtech",
-   "location": "North Macedonia",
-   "url": "https://himalayas.app/companies/valtech-us/jobs/senior-qa-automation-engineer-playwright-6538751355?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/valtech-us/jobs/senior-qa-automation-engineer-playwright-6538751355",
-   "posted": "2026-11-07T05:23:39+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
    "title": "Senior Software Development Engineer in Test",
    "company": "Varicent",
    "location": "Canada",
@@ -1569,6 +1725,19 @@
    "region": "remote",
    "score": 17,
    "first_seen": "2026-11-08T00:02:04+00:00"
+  },
+  {
+   "title": "Senior QA Automation Engineer (Playwright)",
+   "company": "Valtech",
+   "location": "Portugal",
+   "url": "https://himalayas.app/companies/valtech-us/jobs/senior-qa-automation-engineer-playwright?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/valtech-us/jobs/senior-qa-automation-engineer-playwright",
+   "posted": "2026-11-06T23:25:55+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
    "title": "Staff QA Engineer (Spain Only)",
@@ -1790,175 +1959,6 @@
    "region": "remote",
    "score": 17,
    "first_seen": "2026-10-27T03:28:39+00:00"
-  },
-  {
-   "title": "Test Engineer (Clearance Required) - Remote US",
-   "company": "ICF",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/icf/jobs/test-engineer-clearance-required-remote-us?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/icf/jobs/test-engineer-clearance-required-remote-us",
-   "posted": "2026-11-07T17:17:00+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
-   "title": "Quality Assurance Engineer",
-   "company": "ProphetX",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/prophetx/jobs/quality-assurance-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/prophetx/jobs/quality-assurance-engineer",
-   "posted": "2026-11-07T17:04:24+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
-   "title": "Senior QA Engineer (OTE $50,000/year USD), Sparkrock",
-   "company": "Sparkrock",
-   "location": "Argentina, Brazil, Egypt, India, Mexico, Pakistan, Turkey",
-   "url": "https://himalayas.app/companies/sparkrock/jobs/senior-qa-engineer-ote-50-000-year-usd-sparkrock?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/sparkrock/jobs/senior-qa-engineer-ote-50-000-year-usd-sparkrock",
-   "posted": "2026-11-07T16:04:37+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
-   "title": "Senior Localisation Quality Engineer",
-   "company": "sonyinteractiveentertainmentglobal",
-   "location": "London",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/sonyinteractiveentertainmentglobal/senior-localisation-quality-engineer-london-416361",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-localisation-quality-engineer-london-416361",
-   "posted": "2026-11-06T18:55:27+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 16,
-   "first_seen": "2026-11-07T00:26:40+00:00"
-  },
-  {
-   "title": "Senior QA Engineer - Mobile",
-   "company": "Waracle",
-   "location": "London, England, United Kingdom",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/waracle/senior-qa-engineer-mobile-london-218254",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-qa-engineer-mobile-london-218254",
-   "posted": "2026-11-06T06:31:23+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 16,
-   "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Bulgarian Localization QA Tester / Proofreader",
-   "company": "Welo Global",
-   "location": "France, Greece, Italy, Romania, Spain",
-   "url": "https://jobicy.com/jobs/159099-bulgarian-localization-qa-tester-proofreader",
-   "source": "Jobicy",
-   "id": "Jobicy:159099",
-   "posted": "2026-11-05T04:54:20+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Staff Quality Engineer",
-   "company": "StackAdapt",
-   "location": "Canada, USA",
-   "url": "https://jobicy.com/jobs/152402-staff-quality-engineer",
-   "source": "Jobicy",
-   "id": "Jobicy:152402",
-   "posted": "2026-11-05T03:10:09+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Freelance Software Tester for Payments testing (Remote in Germany & the Netherlands)",
-   "company": "Testlio",
-   "location": "Germany, Netherlands",
-   "url": "https://jobicy.com/jobs/158931-freelance-software-tester-for-payments-testing-remote-in-germany-the-netherlands-2",
-   "source": "Jobicy",
-   "id": "Jobicy:158931",
-   "posted": "2026-11-04T13:47:37+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-05T01:07:09+00:00"
-  },
-  {
-   "title": "IT QA Engineer (Automation & End-to-End Testing)",
-   "company": "Exclusively Remote",
-   "location": "South Africa",
-   "url": "https://himalayas.app/companies/exclusively-remote/jobs/it-qa-engineer-automation-end-to-end-testing?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/exclusively-remote/jobs/it-qa-engineer-automation-end-to-end-testing",
-   "posted": "2026-11-04T09:24:19+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-05T01:07:09+00:00"
-  },
-  {
-   "title": "QA Engineer",
-   "company": "5Blue Software",
-   "location": "Bulgaria, Croatia, Germany, Montenegro, Poland, Ukraine",
-   "url": "https://himalayas.app/companies/5blue-software/jobs/qa-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/5blue-software/jobs/qa-engineer",
-   "posted": "2026-11-04T05:43:46+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-05T01:07:09+00:00"
-  },
-  {
-   "title": "Automation QA Engineer - Senior",
-   "company": "SOFTSWISS",
-   "location": "Bulgaria, Georgia, Poland, Serbia",
-   "url": "https://himalayas.app/companies/softswiss/jobs/automation-qa-engineer-senior?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/softswiss/jobs/automation-qa-engineer-senior",
-   "posted": "2026-11-03T05:41:19+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-03T09:27:42+00:00"
-  },
-  {
-   "title": "QA Engineer – Salesforce & Enterprise Applications",
-   "company": "Labcorp",
-   "location": "India",
-   "url": "https://himalayas.app/companies/labcorp/jobs/qa-engineer-salesforce-enterprise-applications?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/labcorp/jobs/qa-engineer-salesforce-enterprise-applications",
-   "posted": "2026-11-01T22:27:07+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-01T22:27:07+00:00"
-  },
-  {
-   "title": "(0211) Software Development Engineer in Test (SDET)",
-   "company": "ALTEN",
-   "location": "Mexico",
-   "url": "https://himalayas.app/companies/alten/jobs/0211-software-development-engineer-in-test-sdet?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/alten/jobs/0211-software-development-engineer-in-test-sdet",
-   "posted": "2026-11-01T11:52:30+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 16,
-   "first_seen": "2026-11-01T11:52:30+00:00"
   }
  ]
 }
