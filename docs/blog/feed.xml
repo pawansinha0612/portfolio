@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>The load tool you picked by habit can&#x27;t test gRPC</title>
+      <link>https://pawansinha.com.au/blog/the-load-tool-you-picked-by-habit-cant-test-grpc/</link>
+      <guid>https://pawansinha.com.au/blog/the-load-tool-you-picked-by-habit-cant-test-grpc/</guid>
+      <pubDate>Tue, 10 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Most teams pick a load tool by habit and find its limits mid-project. A fair comparison of k6, JMeter, Gatling, Locust and LoadRunner on the constraints that actually block you: protocol, workload model, language, scale-out cost and result fidelity.</description>
+    </item>
+    <item>
       <title>Every GC pause met the goal. p99.9 still failed.</title>
       <link>https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/</link>
       <guid>https://pawansinha.com.au/blog/every-gc-pause-met-the-goal-p99-9-still-failed/</guid>
