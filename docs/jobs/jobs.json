@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09T00:09:03+00:00",
+ "updated": "2026-11-10T02:59:38+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -180,6 +180,19 @@
    "first_seen": "2026-11-06T01:10:45+00:00"
   },
   {
+   "title": "Performance Engineer III",
+   "company": "First Citizens",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/first-citizens/jobs/performance-engineer-iii?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/first-citizens/jobs/performance-engineer-iii",
+   "posted": "2026-11-09T00:40:25+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 48,
+   "first_seen": "2026-11-10T02:59:38+00:00"
+  },
+  {
    "title": "Senior Performance Test Consultant - JMeter",
    "company": "Scube software square systems",
    "location": "India",
@@ -217,6 +230,19 @@
    "region": "remote",
    "score": 40,
    "first_seen": "2026-10-20T14:23:39+00:00"
+  },
+  {
+   "title": "Senior QA/SDET",
+   "company": "Vouched",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/vouched/jobs/senior-qa-sdet?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/vouched/jobs/senior-qa-sdet",
+   "posted": "2026-11-09T00:51:10+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 39,
+   "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
    "title": "Software Development Engineer in Test - Agentic Automation (Remote, CAN)",
@@ -611,15 +637,15 @@
   {
    "title": "Expert Automation QA Engineer",
    "company": "Description Ciklum",
-   "location": "Bulgaria",
-   "url": "https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer?utm_source=api",
+   "location": "Ukraine",
+   "url": "https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer-5546121065?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer",
-   "posted": "2026-11-08T16:18:58+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer-5546121065",
+   "posted": "2026-11-08T23:36:04+00:00",
    "group": "qa",
    "region": "remote",
    "score": 29,
-   "first_seen": "2026-11-09T00:09:03+00:00"
+   "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
    "title": "Senior QA Engineer - US Remote",
@@ -1062,6 +1088,19 @@
    "region": "remote",
    "score": 23,
    "first_seen": "2026-11-02T12:05:53+00:00"
+  },
+  {
+   "title": "Software QA Manager",
+   "company": "Health Advocate Solutions, Inc.",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/health-advocate-solutions-inc/jobs/software-qa-manager?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/health-advocate-solutions-inc/jobs/software-qa-manager",
+   "posted": "2026-11-09T09:49:10+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 22,
+   "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
    "title": "Sr. Staff SDET, Customer Engineering",
@@ -1623,6 +1662,32 @@
    "first_seen": "2026-10-30T12:35:44+00:00"
   },
   {
+   "title": "Quality Assurance Engineer",
+   "company": "Huzzle",
+   "location": "India",
+   "url": "https://himalayas.app/companies/huzzle/jobs/quality-assurance-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/huzzle/jobs/quality-assurance-engineer",
+   "posted": "2026-11-09T15:48:19+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-10T02:59:38+00:00"
+  },
+  {
+   "title": "Automation Test Engineer",
+   "company": "Tier One Technologies",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/tier-one-technologies/jobs/automation-test-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/tier-one-technologies/jobs/automation-test-engineer",
+   "posted": "2026-11-09T04:01:24+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-10T02:59:38+00:00"
+  },
+  {
    "title": "Senior Software Development Engineer in Test (SDET)",
    "company": "Pulsara",
    "location": "United States",
@@ -1894,71 +1959,6 @@
    "region": "remote",
    "score": 17,
    "first_seen": "2026-11-01T12:13:28+00:00"
-  },
-  {
-   "title": "QA Tester - Agentic Web Application (Senior)",
-   "company": "MicroSourcing",
-   "location": "Philippines",
-   "url": "https://himalayas.app/companies/microsourcing/jobs/qa-tester-agentic-web-application-senior-1710633771?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/microsourcing/jobs/qa-tester-agentic-web-application-senior-1710633771",
-   "posted": "2026-11-01T11:31:22+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-01T11:31:22+00:00"
-  },
-  {
-   "title": "QA Engineer Team Lead",
-   "company": "SupplyHouse.com",
-   "location": "India",
-   "url": "https://himalayas.app/companies/supplyhouse-com/jobs/qa-engineer-team-lead?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/supplyhouse-com/jobs/qa-engineer-team-lead",
-   "posted": "2026-11-01T03:48:10+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-01T03:48:10+00:00"
-  },
-  {
-   "title": "QA Engineer",
-   "company": "Workwize",
-   "location": "Europe",
-   "url": "https://jobicy.com/jobs/151950-qa-engineer-4",
-   "source": "Jobicy",
-   "id": "Jobicy:151950",
-   "posted": "2026-10-29T03:10:20+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-04T00:56:34+00:00"
-  },
-  {
-   "title": "SDET(Software Development Engineer in Test)",
-   "company": "NearSource Technologies",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/nearsource-technologies/jobs/sdet-software-development-engineer-in-test?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/nearsource-technologies/jobs/sdet-software-development-engineer-in-test",
-   "posted": "2026-10-28T12:26:39+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-10-28T12:26:39+00:00"
-  },
-  {
-   "title": "Software Engineer in Test",
-   "company": "Lifelancer",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/lifelancer/jobs/software-engineer-in-test?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/lifelancer/jobs/software-engineer-in-test",
-   "posted": "2026-10-27T03:28:39+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-10-27T03:28:39+00:00"
   }
  ]
 }
