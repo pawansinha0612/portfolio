@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-10T02:59:38+00:00",
+ "updated": "2026-11-11T00:56:00+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -141,32 +141,6 @@
    "first_seen": "2026-11-01T04:44:48+00:00"
   },
   {
-   "title": "Principal Performance Test Engineer",
-   "company": "BlockHires",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/blockhires/jobs/principal-performance-test-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/blockhires/jobs/principal-performance-test-engineer",
-   "posted": "2026-10-20T17:20:19+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 63,
-   "first_seen": "2026-10-20T17:20:19+00:00"
-  },
-  {
-   "title": "Senior Performance QA",
-   "company": "FinAccel",
-   "location": "Indonesia",
-   "url": "https://himalayas.app/companies/finaccel/jobs/senior-performance-qa?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/finaccel/jobs/senior-performance-qa",
-   "posted": "2026-10-20T07:20:49+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 61,
-   "first_seen": "2026-10-20T07:20:49+00:00"
-  },
-  {
    "title": "NeoLoad Performance Test Engineer",
    "company": "CACI International Inc",
    "location": "United States",
@@ -178,6 +152,19 @@
    "region": "remote",
    "score": 58,
    "first_seen": "2026-11-06T01:10:45+00:00"
+  },
+  {
+   "title": "Senior QA Engineer - Performance Testing",
+   "company": "CodeRoad",
+   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Canada, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Curaçao, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), French Guiana, Greenland, Grenada, Guadeloupe, Guatemala, Guyana, Haiti, Honduras, Jamaica, Martinique, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Barthélemy, Saint Kitts and Nevis, Saint Lucia, Saint Martin (French part), Saint Pierre and Miquelon, Saint Vincent and the Grenadines, Sint Maarten (Dutch part), Suriname, Trinidad and Tobago, Turks and Caicos Islands, United States, United States Minor Outlying Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
+   "url": "https://himalayas.app/companies/coderoad/jobs/senior-qa-engineer-performance-testing?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/coderoad/jobs/senior-qa-engineer-performance-testing",
+   "posted": "2026-11-10T20:53:46+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 48,
+   "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
    "title": "Performance Engineer III",
@@ -217,19 +204,6 @@
    "region": "remote",
    "score": 41,
    "first_seen": "2026-10-25T04:25:57+00:00"
-  },
-  {
-   "title": "Senior Perfomance Tester",
-   "company": "SavageOne",
-   "location": "South Africa",
-   "url": "https://himalayas.app/companies/savageone/jobs/senior-perfomance-tester?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/savageone/jobs/senior-perfomance-tester",
-   "posted": "2026-10-20T14:23:39+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 40,
-   "first_seen": "2026-10-20T14:23:39+00:00"
   },
   {
    "title": "Senior QA/SDET",
@@ -282,6 +256,19 @@
    "region": "remote",
    "score": 36,
    "first_seen": "2026-11-02T13:00:28+00:00"
+  },
+  {
+   "title": "QA Engineer",
+   "company": "Neuroscale AI",
+   "location": "USA",
+   "url": "https://jobicy.com/jobs/161171-qa-engineer-6",
+   "source": "Jobicy",
+   "id": "Jobicy:161171",
+   "posted": "2026-11-10T15:11:50+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 35,
+   "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
    "title": "Senior Quality Assurance Engineer",
@@ -1077,6 +1064,19 @@
    "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
+   "title": "Technical Quality Assurance Manager",
+   "company": "Bromcom Computers Plc",
+   "location": "Remote job (remote)",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/bromcom-computers-plc/remote-technical-quality-assurance-manager-bromley-326507",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:remote-technical-quality-assurance-manager-bromley-326507",
+   "posted": "2026-11-10T21:31:19+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-11T00:56:00+00:00"
+  },
+  {
    "title": "Senior Tester",
    "company": "Steampunk",
    "location": "United States",
@@ -1140,6 +1140,19 @@
    "region": "remote",
    "score": 22,
    "first_seen": "2026-11-02T07:50:39+00:00"
+  },
+  {
+   "title": "Quality Assurance Analyst (Remote - US)",
+   "company": "ICF",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/icf/jobs/quality-assurance-analyst-remote-us?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/icf/jobs/quality-assurance-analyst-remote-us",
+   "posted": "2026-11-10T20:46:34+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
    "title": "Lead Mobile QA Automation Engineer",
@@ -1558,6 +1571,19 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "QA Lead - Data Platform (TL1)",
+   "company": "Kaluza",
+   "location": "London, UK",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/kaluza/qa-lead-data-platform-tl1-london-38241",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:qa-lead-data-platform-tl1-london-38241",
+   "posted": "2026-11-10T15:40:35+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 18,
+   "first_seen": "2026-11-11T00:56:00+00:00"
+  },
+  {
    "title": "Quality Engineer",
    "company": "GoHealth Urgent Care",
    "location": "United States",
@@ -1660,6 +1686,32 @@
    "region": "remote",
    "score": 18,
    "first_seen": "2026-10-30T12:35:44+00:00"
+  },
+  {
+   "title": "Senior Test Automation Engineer",
+   "company": "Super Dispatch",
+   "location": "Armenia, Georgia, Kazakhstan, Kyrgyzstan, Uzbekistan",
+   "url": "https://himalayas.app/companies/super-dispatch/jobs/senior-test-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/super-dispatch/jobs/senior-test-automation-engineer",
+   "posted": "2026-11-10T22:49:51+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-11T00:56:00+00:00"
+  },
+  {
+   "title": "(Senior) Quality Assurance Engineer (f/m/d)",
+   "company": "Zeal Network",
+   "location": "Hamburg",
+   "url": "https://www.arbeitnow.com/jobs/companies/zeal-network/senior-quality-assurance-engineer-hamburg-20782",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:senior-quality-assurance-engineer-hamburg-20782",
+   "posted": "2026-11-10T21:40:24+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 17,
+   "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
    "title": "Quality Assurance Engineer",
@@ -1907,58 +1959,6 @@
    "region": "remote",
    "score": 17,
    "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Senior Engineer, QA",
-   "company": "Asm",
-   "location": "",
-   "url": "https://www.arbeitnow.nl/jobs/companies/asm/senior-engineer-qa-55627",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-engineer-qa-55627",
-   "posted": "2026-11-05T06:55:14+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 17,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Software Engineer in Test",
-   "company": "Veeva Systems",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/veeva-systems/jobs/software-engineer-in-test-9942025298?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/veeva-systems/jobs/software-engineer-in-test-9942025298",
-   "posted": "2026-11-05T03:34:20+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Senior Manager QA Engineering",
-   "company": "Cotiviti",
-   "location": "India",
-   "url": "https://himalayas.app/companies/cotiviti/jobs/senior-manager-qa-engineering?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/cotiviti/jobs/senior-manager-qa-engineering",
-   "posted": "2026-11-05T02:56:10+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "QA Engineer with Networking and UI automation",
-   "company": "CodiLime",
-   "location": "Poland",
-   "url": "https://himalayas.app/companies/codilime/jobs/qa-engineer-with-networking-and-ui-automation?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/codilime/jobs/qa-engineer-with-networking-and-ui-automation",
-   "posted": "2026-11-01T12:13:28+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-01T12:13:28+00:00"
   }
  ]
 }
