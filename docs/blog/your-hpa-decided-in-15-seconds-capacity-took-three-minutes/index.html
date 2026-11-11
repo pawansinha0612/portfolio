@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your HPA decided in 15 seconds. Capacity took three minutes — Pawan Sinha</title>
+  <meta name="description" content="HPA scale-out lag is metric delay, sync period, node provisioning and pod start stacked together. What the stabilisation window really does.">
+  <meta property="og:title" content="Your HPA decided in 15 seconds. Capacity took three minutes — Pawan Sinha">
+  <meta property="og:description" content="HPA scale-out lag is metric delay, sync period, node provisioning and pod start stacked together. What the stabilisation window really does.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your HPA decided in 15 seconds. Capacity took three minutes</h1>
+        <div class="post-meta"><span>11 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Kubernetes</span><span class="tag">Autoscaling</span></div></div>
+      </header>
+      <div class="article">
+<p>Traffic triples in a minute. Your HPA notices, does the maths and asks for 60 more pods. Then nothing happens. For the next three minutes the existing 25 pods take the whole surge, queues fill and p99 climbs past your client timeout.</p>
+<p>When the new pods finally go Ready, the incident is already over and the HPA gets the blame. Someone shortens the 5-minute stabilisation window. Nothing improves, because that window was never in the way.</p>
+<p>The HPA's decision is the fast part. The lag lives in the chain around it.</p>
+<h2>What the HPA actually computes</h2>
+<p>Every sync period (15 s by default, set by <code>--horizontal-pod-autoscaler-sync-period</code> on kube-controller-manager) the controller computes:</p>
+<pre><code>desiredReplicas = ceil(currentReplicas × currentMetricValue / desiredMetricValue)
+</code></pre>
+<p>If the ratio is within a tolerance of 10% (default), it does nothing. Three details matter more than the formula:</p>
+<ul>
+<li><strong>CPU utilisation is relative to the pod's CPU request</strong>, not the node or the limit. Requests set too high make the HPA react late. Requests set too low make it scale on noise.</li>
+<li><strong>Pods that are not yet Ready are treated as using 0% of the target</strong> when the controller computes a scale-up. This deliberately damps the next step while earlier pods are still starting.</li>
+<li><strong>A saturated pod cannot report demand it never received.</strong> If the work is CPU-bound and pods are pinned, measured utilisation stops at the ceiling while real demand keeps rising, so each sync under-asks. Request rate or queue depth does not have this blind spot.</li>
+</ul>
+<h2>Stabilisation windows slow scale-down, not scale-up</h2>
+<p>In <code>autoscaling/v2</code> the defaults are:</p>
+<ul>
+<li><strong>Scale-up:</strong> stabilisation window 0 s. Policies allow the larger of +100% or +4 pods every 15 s.</li>
+<li><strong>Scale-down:</strong> stabilisation window 300 s (cluster-wide default from <code>--horizontal-pod-autoscaler-downscale-stabilization</code>). The HPA uses the highest recommendation from the last five minutes, so it scales in slowly.</li>
+</ul>
+<p>The window is a look-back that holds pods up after a spike. It never delays adding them.</p>
+<p>The scale-up policy is rarely the bottleneck either. From 25 pods it allows 50, then 100, 15 s apart. Tune both directions per HPA with <code>spec.behavior</code>:</p>
+<pre><code class="language-yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: checkout
+  namespace: shop
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkout
+  minReplicas: 25
+  maxReplicas: 200
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 10
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+</code></pre>
+<p>The useful change is on the scale-down side. A longer window and a gentle rate stop the HPA removing capacity between two waves of a spike. The sync period is a controller flag you usually cannot change on managed control planes.</p>
+<h2>Where the time goes</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Typical cost</th>
+<th>Lever</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metric collection</td>
+<td>metrics-server resolution 15 s (60 s in old releases), plus the averaging window</td>
+<td>Scale on a faster signal</td>
+</tr>
+<tr>
+<td>HPA sync</td>
+<td>up to 15 s</td>
+<td>Usually fixed on managed clusters</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>under a second if a node has room</td>
+<td>Spare capacity</td>
+</tr>
+<tr>
+<td>Node provisioning</td>
+<td>usually minutes: VM boot, kubelet join, node Ready</td>
+<td>Overprovisioning, Karpenter</td>
+</tr>
+<tr>
+<td>Image pull</td>
+<td>seconds if cached, far longer for a large image on a fresh node</td>
+<td>Smaller images, pre-pulling</td>
+</tr>
+<tr>
+<td>App start and readiness</td>
+<td>seconds for a small Go service, often tens of seconds for a JVM</td>
+<td>Faster start, tuned probes</td>
+</tr>
+<tr>
+<td>Endpoint propagation</td>
+<td>pod added to EndpointSlices, then to kube-proxy or the balancer</td>
+<td>Watch balancer registration</td>
+</tr>
+</tbody>
+</table>
+<p>Cluster Autoscaler scans for unschedulable pods every 10 s by default, then scales a node group. Karpenter launches right-sized instances directly from pending pods, which is often quicker. Either way VM boot dominates, and it turns 75 seconds of lag into several minutes.</p>
+<h2>The cost of lag, in requests</h2>
+<p>During the lag, excess demand (demand minus ready capacity) accumulates every second. It becomes backlog if you queue it, or errors if you shed it.</p>
+<p>Take an example. Each pod serves 100 req/s, and 25 pods carry 2,000 req/s at 80% utilisation, so ready capacity is 2,500 req/s. Demand ramps linearly to 6,000 req/s over 60 s. Assume the first extra pods are Ready at 75 s.</p>
+<ul>
+<li>Demand crosses 2,500 req/s at 7.5 s.</li>
+<li>From 7.5 s to 60 s the excess grows from 0 to 3,500 req/s: ½ × 52.5 × 3,500 ≈ 91,900 requests.</li>
+<li>From 60 s to 75 s it holds at 3,500 req/s: another 52,500.</li>
+<li>Backlog at 75 s: about 144,000 requests.</li>
+</ul>
+<p>Little's Law (L = λW) gives the wait. With L = 144,000 queued and λ = 2,500 req/s served, the request at the back waits about 58 s. Past a 30 s client timeout, that backlog becomes timeouts and retries, and retries add demand.</p>
+<p>Run the same ramp at a 60% target (34 pods, 3,400 req/s ready) and the backlog at 75 s drops to about 90,000. Headroom helps, but it does not fix a 3× ramp on its own. The backlog also keeps growing after 75 s until enough pods arrive. Try your own numbers:</p>
+<div class="widget" data-widget="hpa"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>Fixes, in the order I'd try them</h2>
+<ol>
+<li><strong>Pre-scale known peaks.</strong> A launch or a draw is in the calendar. Raise <code>minReplicas</code> before it with a CronJob, or use KEDA's cron scaler. No reactive autoscaler beats capacity that already exists.</li>
+<li><strong>Scale on a leading signal.</strong> KEDA scales on queue length, Prometheus queries such as request rate, or schedules, and drives an HPA underneath. Request rate rises before CPU saturates and does not cap at the pod's ceiling.</li>
+<li><strong>Keep spare nodes.</strong> Overprovisioning runs low-priority placeholder pods (pause containers with a negative PriorityClass) that reserve room. Real pods preempt them and schedule in seconds, and the evicted placeholders trigger node provisioning in the background. Keep their priority at or above Cluster Autoscaler's expendable cutoff (default −10), or they won't trigger scale-up.</li>
+<li><strong>Lower the target utilisation</strong> for spiky services. You pay for idle headroom to buy reaction time.</li>
+<li><strong>Shorten pod start.</strong> Small images, a short readiness <code>periodSeconds</code> instead of a long <code>initialDelaySeconds</code>, and warm-up before Ready.</li>
+</ol>
+<h2>Proving it with a test</h2>
+<p>A closed-model test with ramping VUs and <code>sleep(1)</code> does not produce a target request rate. As latency rises, each VU sends less, which hides the lag you are trying to measure. Use an arrival-rate executor:</p>
+<pre><code class="language-javascript">import http from 'k6/http';
+import { check } from 'k6';
+
+export const options = {
+  scenarios: {
+    spike: {
+      executor: 'ramping-arrival-rate',
+      startRate: 2000,
+      timeUnit: '1s',
+      preAllocatedVUs: 500,
+      maxVUs: 3000,
+      stages: [
+        { target: 2000, duration: '5m' },  // settle at baseline
+        { target: 6000, duration: '1m' },  // the ramp
+        { target: 6000, duration: '10m' }, // watch recovery
+      ],
+    },
+  },
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],
+    http_req_duration: ['p(99)&lt;500'],
+    dropped_iterations: ['count==0'],
+  },
+};
+
+export default function () {
+  const res = http.get('https://checkout.example.com/api/cart');
+  check(res, { 'status is 200': (r) =&gt; r.status === 200 });
+}
+</code></pre>
+<p>Arrival rate keeps sending at the planned rate while the system slows down, which avoids coordinated omission (the load generator backing off exactly when the system is slow). If k6 runs out of VUs it reports <code>dropped_iterations</code> rather than hiding them.</p>
+<p>While it runs, plot the gap between what the HPA wants and what is Ready (kube-state-metrics v2):</p>
+<pre><code class="language-promql">kube_horizontalpodautoscaler_status_desired_replicas{namespace=&quot;shop&quot;, horizontalpodautoscaler=&quot;checkout&quot;}
+
+sum(kube_pod_status_ready{namespace=&quot;shop&quot;, pod=~&quot;checkout-.*&quot;, condition=&quot;true&quot;})
+
+sum(kube_pod_status_phase{namespace=&quot;shop&quot;, pod=~&quot;checkout-.*&quot;, phase=&quot;Pending&quot;})
+
+histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service=&quot;checkout&quot;}[1m])))
+</code></pre>
+<p>The latency metric name depends on your instrumentation. For per-pod lag, compare creation and Ready times:</p>
+<pre><code class="language-bash">kubectl get pods -n shop -l app=checkout -o custom-columns='NAME:.metadata.name,CREATED:.metadata.creationTimestamp,READY:.status.conditions[?(@.type==&quot;Ready&quot;)].lastTransitionTime'
+kubectl get events -n shop --field-selector involvedObject.kind=HorizontalPodAutoscaler
+</code></pre>
+<h2>Checklist</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU requests reflect real usage</td>
+<td>Compare requests with observed usage under load</td>
+</tr>
+<tr>
+<td>Decision to Ready time, with and without spare nodes</td>
+<td>Pod creation vs Ready timestamps</td>
+</tr>
+<tr>
+<td>Desired vs Ready gap during a ramp</td>
+<td>PromQL above</td>
+</tr>
+<tr>
+<td>Scale-down holds through a double spike</td>
+<td>Two ramps 3 minutes apart</td>
+</tr>
+<tr>
+<td>No coordinated omission</td>
+<td>Arrival-rate executor, <code>dropped_iterations</code> threshold</td>
+</tr>
+</tbody>
+</table>
+<p>Measure the reaction time first, then size headroom to cover it. Tuning the HPA before you know where the minutes go is guessing.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your HPA decided in 15 seconds. Capacity took three minutes", "description": "HPA scale-out lag is metric delay, sync period, node provisioning and pod start stacked together. What the stabilisation window really does.", "datePublished": "2026-11-11", "url": "https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

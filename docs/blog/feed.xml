@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your HPA decided in 15 seconds. Capacity took three minutes</title>
+      <link>https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/</link>
+      <guid>https://pawansinha.com.au/blog/your-hpa-decided-in-15-seconds-capacity-took-three-minutes/</guid>
+      <pubDate>Wed, 11 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Scale-out lag is rarely the HPA&#x27;s maths. It is metric delay, scale-up policies, node provisioning and pod start time stacked together. What the stabilisation window really does, how to size the backlog a ramp creates, and how to test it with an arrival-rate load test.</description>
+    </item>
+    <item>
       <title>The load tool you picked by habit can&#x27;t test gRPC</title>
       <link>https://pawansinha.com.au/blog/the-load-tool-you-picked-by-habit-cant-test-grpc/</link>
       <guid>https://pawansinha.com.au/blog/the-load-tool-you-picked-by-habit-cant-test-grpc/</guid>
