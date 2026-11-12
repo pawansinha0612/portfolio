@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-11T00:56:00+00:00",
+ "updated": "2026-11-12T02:01:59+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -139,6 +139,19 @@
    "region": "remote",
    "score": 65,
    "first_seen": "2026-11-01T04:44:48+00:00"
+  },
+  {
+   "title": "Performance Test Engineer",
+   "company": "Bright Vision Technologies",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/bright-vision-technologies/jobs/performance-test-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/bright-vision-technologies/jobs/performance-test-engineer",
+   "posted": "2026-11-11T12:46:29+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 61,
+   "first_seen": "2026-11-12T02:01:59+00:00"
   },
   {
    "title": "NeoLoad Performance Test Engineer",
@@ -375,19 +388,6 @@
    "first_seen": "2026-10-31T20:04:41+00:00"
   },
   {
-   "title": "Test Automation Engineer",
-   "company": "Bright Vision Technologies",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/bright-vision-technologies/jobs/test-automation-engineer-9395682959?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/bright-vision-technologies/jobs/test-automation-engineer-9395682959",
-   "posted": "2026-10-31T19:17:42+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 33,
-   "first_seen": "2026-10-31T19:17:42+00:00"
-  },
-  {
    "title": "Senior Manager, Test & Quality Assurance",
    "company": "Ellucian Company LLC",
    "location": "United States",
@@ -568,6 +568,19 @@
    "region": "remote",
    "score": 31,
    "first_seen": "2026-10-24T21:11:48+00:00"
+  },
+  {
+   "title": "Machine Learning Performance Engineer",
+   "company": "Janestreet",
+   "location": "London",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/janestreet/machine-learning-performance-engineer-london-379176",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:machine-learning-performance-engineer-london-379176",
+   "posted": "2026-11-11T21:55:30+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-12T02:01:59+00:00"
   },
   {
    "title": "System Performance Analyst",
@@ -828,6 +841,32 @@
    "region": "remote",
    "score": 27,
    "first_seen": "2026-11-01T12:21:08+00:00"
+  },
+  {
+   "title": "Quality Assurance Engineer",
+   "company": "Digital Skynet Corp",
+   "location": "Egypt",
+   "url": "https://himalayas.app/companies/digital-skynet-corp/jobs/quality-assurance-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/digital-skynet-corp/jobs/quality-assurance-engineer",
+   "posted": "2026-11-11T18:54:25+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 26,
+   "first_seen": "2026-11-12T02:01:59+00:00"
+  },
+  {
+   "title": "Quality Assurance Engineer (Desktop Solutions)",
+   "company": "CFRA",
+   "location": "India",
+   "url": "https://himalayas.app/companies/cfra/jobs/quality-assurance-engineer-desktop-solutions?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/cfra/jobs/quality-assurance-engineer-desktop-solutions",
+   "posted": "2026-11-11T12:49:00+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 26,
+   "first_seen": "2026-11-12T02:01:59+00:00"
   },
   {
    "title": "Quality Assurance Tester/Test Engineer Manual and Automation",
@@ -1688,6 +1727,45 @@
    "first_seen": "2026-10-30T12:35:44+00:00"
   },
   {
+   "title": "Lead Quality Engineer (Test Automation & Transformation)",
+   "company": "8 West Consulting",
+   "location": "Ireland",
+   "url": "https://himalayas.app/companies/8-west-consulting/jobs/lead-quality-engineer-test-automation-transformation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/8-west-consulting/jobs/lead-quality-engineer-test-automation-transformation",
+   "posted": "2026-11-11T22:24:37+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-12T02:01:59+00:00"
+  },
+  {
+   "title": "Senior Quality Engineer (Test Automation & Transformation)",
+   "company": "8 West Consulting",
+   "location": "Ireland",
+   "url": "https://himalayas.app/companies/8-west-consulting/jobs/senior-quality-engineer-test-automation-transformation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/8-west-consulting/jobs/senior-quality-engineer-test-automation-transformation",
+   "posted": "2026-11-11T21:05:14+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-12T02:01:59+00:00"
+  },
+  {
+   "title": "QA Automation Engineer",
+   "company": "Applaudo",
+   "location": "Colombia",
+   "url": "https://himalayas.app/companies/applaudo/jobs/qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/applaudo/jobs/qa-automation-engineer",
+   "posted": "2026-11-11T18:32:06+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 17,
+   "first_seen": "2026-11-12T02:01:59+00:00"
+  },
+  {
    "title": "Senior Test Automation Engineer",
    "company": "Super Dispatch",
    "location": "Armenia, Georgia, Kazakhstan, Kyrgyzstan, Uzbekistan",
@@ -1881,84 +1959,6 @@
    "region": "remote",
    "score": 17,
    "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "QA Analyst",
-   "company": "MarketFully",
-   "location": "Argentina, Colombia",
-   "url": "https://himalayas.app/companies/marketfully/jobs/qa-analyst?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/marketfully/jobs/qa-analyst",
-   "posted": "2026-11-06T07:05:23+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Analyste qualité intermédiaire en automatisation / Intermediate QA Automation An",
-   "company": "PayFacto",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/payfacto/jobs/analyste-qualite-intermediaire-en-automatisation-intermediate-qa-automation-an?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/payfacto/jobs/analyste-qualite-intermediaire-en-automatisation-intermediate-qa-automation-an",
-   "posted": "2026-11-06T04:06:43+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Quality Assurance Engineer",
-   "company": "Care Access",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/care-access/jobs/quality-assurance-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/care-access/jobs/quality-assurance-engineer",
-   "posted": "2026-11-06T00:13:29+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Junior QA Automation Engineer",
-   "company": "Element Solutions",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/element-solutions/jobs/junior-qa-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/element-solutions/jobs/junior-qa-automation-engineer",
-   "posted": "2026-11-05T19:03:10+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Senior Salesforce QA Analyst",
-   "company": "Blue Cross & Blue Shield of Rhode Island",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/blue-cross-blue-shield-of-rhode-island/jobs/senior-salesforce-qa-analyst?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/blue-cross-blue-shield-of-rhode-island/jobs/senior-salesforce-qa-analyst",
-   "posted": "2026-11-05T15:28:57+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Senior QA Automation Engineer",
-   "company": "Epiq",
-   "location": "Poland",
-   "url": "https://himalayas.app/companies/epiq/jobs/senior-qa-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/epiq/jobs/senior-qa-automation-engineer",
-   "posted": "2026-11-05T12:56:34+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-06T01:10:45+00:00"
   }
  ]
 }
