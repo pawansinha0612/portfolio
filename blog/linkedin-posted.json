@@ -46,5 +46,9 @@
   "your-hpa-decided-in-15-seconds-capacity-took-three-minutes": {
     "date": "2026-11-11",
     "id": "urn:li:share:7526080004493864960"
+  },
+  "your-1-trace-sample-threw-away-the-slow-requests": {
+    "date": "2026-11-12",
+    "id": "urn:li:share:7526462199519727616"
   }
 }
