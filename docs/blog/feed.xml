@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your iostat says fine but writes stall for 500 ms</title>
+      <link>https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/</link>
+      <guid>https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/</guid>
+      <pubDate>Fri, 13 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why %util lies on SSDs and cloud volumes, how to read await and aqu-sz with Little&#x27;s Law, why per-second averages hide stalls, what fsync and writeback really cost, and how gp2 burst credits make short load tests pass.</description>
+    </item>
+    <item>
       <title>Your 1% trace sample threw away the slow requests</title>
       <link>https://pawansinha.com.au/blog/your-1-trace-sample-threw-away-the-slow-requests/</link>
       <guid>https://pawansinha.com.au/blog/your-1-trace-sample-threw-away-the-slow-requests/</guid>

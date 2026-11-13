@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your iostat says fine but writes stall for 500 ms — Pawan Sinha</title>
+  <meta name="description" content="Why %util lies on SSDs and cloud volumes, how per-second averages hide 500 ms stalls, and how gp2 burst credits make short load tests pass.">
+  <meta property="og:title" content="Your iostat says fine but writes stall for 500 ms — Pawan Sinha">
+  <meta property="og:description" content="Why %util lies on SSDs and cloud volumes, how per-second averages hide 500 ms stalls, and how gp2 burst credits make short load tests pass.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your iostat says fine but writes stall for 500 ms</h1>
+        <div class="post-meta"><span>13 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Disk I/O</span><span class="tag">AWS</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test reports 4 ms p99 for database commits. <code>iostat</code> agrees: write latency around 2 ms, nothing alarming. Two hours into the business day, commits start stalling for 500 ms at a time, and the same <code>iostat</code> still shows a 2 ms average.</p>
+<p>Nothing is lying exactly. You are reading averages from a tool designed for spinning disks, on a cloud volume that changed speed mid-morning.</p>
+<h2>Read the right columns</h2>
+<p>Use <code>iostat -xz 1</code> (extended statistics, skip idle devices, one-second intervals). In current sysstat the columns that matter are:</p>
+<ul>
+<li><code>r/s</code>, <code>w/s</code>: completed reads and writes per second.</li>
+<li><code>rkB/s</code>, <code>wkB/s</code>: throughput.</li>
+<li><code>r_await</code>, <code>w_await</code>: average time per I/O in milliseconds, <strong>including time queued</strong> in the block layer, not just time on the device.</li>
+<li><code>aqu-sz</code>: average number of requests queued or in service (called <code>avgqu-sz</code> in older versions).</li>
+<li><code>%util</code>: the share of the interval during which at least one request was in flight.</li>
+</ul>
+<p>Ignore <code>svctm</code> on older systems. It was an unreliable derived estimate, and recent sysstat releases have removed it.</p>
+<h2>Why %util lies on SSDs and cloud volumes</h2>
+<p><code>%util</code> made sense for a disk serving one request at a time. An NVMe drive, a RAID set or an EBS volume serves many concurrently, and <code>%util</code> only counts time with <em>at least one</em> request outstanding. A device with one request permanently in flight shows 100%, and so does the same device with 30 in flight. It says nothing about how much parallel capacity remains.</p>
+<p>So 100% util on an NVMe drive is a prompt to look further, not a diagnosis. Saturation shows up as rising <code>await</code> at flat or falling throughput, a growing <code>aqu-sz</code>, or hitting a known limit such as provisioned IOPS.</p>
+<h2>Little's Law ties the columns together</h2>
+<p>Little's Law says the average number of items in a system equals arrival rate times average time in the system: L = λW. For a block device, that gives:</p>
+<p><strong>aqu-sz ≈ (r/s × r_await + w/s × w_await) / 1000</strong> (await in ms)</p>
+<p>For example, a volume doing 1,500 writes per second with <code>w_await</code> of 20 ms holds 1,500 × 0.020 = <strong>30 requests</strong> on average. If 1,500 IOPS is the volume's limit, extra load cannot raise throughput. It only lengthens the queue, and <code>await</code> rises with it.</p>
+<h2>Averages hide stalls</h2>
+<p><code>iostat</code> reports means over the interval. Imagine 1,000 writes in one second, 990 of them at 1 ms and 10 of them stuck behind a 500 ms flush. The mean is about 6 ms. Nothing looks wrong, yet ten commits waited half a second.</p>
+<p>To see the distribution, trace individual I/Os:</p>
+<ul>
+<li><code>biolatency</code> (bcc and bpftrace): a histogram of block I/O latency. Look at the tail buckets, not the mode.</li>
+<li><code>biosnoop</code>: one line per I/O with process, sector, size and latency, so you can see <em>who</em> waited and when.</li>
+<li><code>blktrace</code> with <code>btt</code>: heavier, with detail on where time goes inside the block layer.</li>
+</ul>
+<p>If the application's commit p99 spikes line up with the <code>biolatency</code> tail, the disk is involved. If they do not, the wait is above the block layer: locks, the filesystem or the page cache.</p>
+<h2>What fsync really costs</h2>
+<p><code>fsync</code> returns only when the file's data and metadata are durable. Its cost depends heavily on the device. Enterprise SSDs with power-loss protection can acknowledge a flush from protected cache very quickly. Consumer SSDs and network cloud volumes can be far slower. Measure it on your hardware with <code>fio --fsync=1</code> rather than trusting a rule of thumb.</p>
+<p>Do not multiply fsync count by fsync latency to get utilisation. Flushes from different threads run concurrently, and databases use <strong>group commit</strong>: one WAL flush makes durable every commit written to the log before it. A thousand commits per second rarely means a thousand flushes per second. PostgreSQL can widen the batch with <code>commit_delay</code>, a wait in microseconds (default 0) before the flush, applied only when at least <code>commit_siblings</code> other transactions are active.</p>
+<p>The bigger levers trade durability for latency:</p>
+<ul>
+<li>PostgreSQL <code>synchronous_commit = off</code> returns before the WAL flush. A crash can lose the last few hundred milliseconds of commits (up to three times <code>wal_writer_delay</code>), but does not corrupt the database.</li>
+<li>MySQL <code>innodb_flush_log_at_trx_commit = 2</code> writes the log to the OS at commit and flushes about once a second. A mysqld crash loses nothing, but an OS crash or power loss can lose about a second of commits.</li>
+</ul>
+<p>Both are business decisions, not tuning knobs. Agree the loss window in writing first.</p>
+<h2>Writeback and journal stalls</h2>
+<p>Buffered writes land in the page cache as dirty pages. When dirty data passes <code>vm.dirty_background_ratio</code> (commonly 10% of available memory), the kernel starts background writeback. When it passes <code>vm.dirty_ratio</code> (commonly 20%), processes that write are throttled until writeback catches up. On a large-memory host, that can be gigabytes of data flushed at once, and every <code>fsync</code> queued behind it waits too.</p>
+<p>Filesystem journals add their own ordering. On ext4 and XFS, an <code>fsync</code> may have to wait for a journal commit that includes other files' metadata. A busy logger on the database's volume can stretch commit latency.</p>
+<p>Detection: watch <code>Dirty</code> and <code>Writeback</code> in <code>/proc/meminfo</code> alongside <code>biolatency</code>. A sawtooth in <code>Dirty</code> that matches your latency spikes is the signature.</p>
+<h2>Burst credits: the test that passes for 30 minutes</h2>
+<p>On AWS, a gp2 volume gets a baseline of 3 IOPS per GiB, with a minimum of 100 and a maximum of 16,000. Volumes under 1,000 GiB can burst to 3,000 IOPS using a bucket of up to 5.4 million I/O credits that refills at the baseline rate.</p>
+<p>A 100 GiB gp2 volume has a 300 IOPS baseline. At a sustained 3,000 IOPS it drains 2,700 credits per second, so a full bucket lasts 5,400,000 / 2,700 ≈ 2,000 seconds, <strong>about 33 minutes</strong>. Then it drops to 300 IOPS, a tenfold cut. A 20-minute load test passes. Production fails mid-morning. CloudWatch's <code>BurstBalance</code> metric shows the bucket as a percentage.</p>
+<div class="widget" data-widget="burst"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<p>gp3 removes this behaviour. Every gp3 volume includes 3,000 IOPS and 125 MiB/s regardless of size, and you can provision more independently of capacity. There are no credits, so a short test and a long test see the same volume. I would move most small gp2 volumes to gp3 for predictability alone. AWS has raised gp3 maximums over time, so check the current AWS documentation for limits.</p>
+<p>The volume is not the only cap. Each EC2 instance type has its own EBS bandwidth and IOPS limits, and many smaller instances can only reach their peak EBS performance for a limited time each day. A fast volume behind a small instance is a slow volume. <code>VolumeQueueLength</code> and <code>VolumeTotalWriteTime</code> in CloudWatch help confirm where the queue forms.</p>
+<h2>Thresholds belong to the device</h2>
+<p>"Alert when await exceeds 10 ms" is meaningless without context. Local NVMe and network block storage have very different normal latencies. Set thresholds from two numbers: the device's measured latency at low load, and the application's latency budget. If a commit has a 50 ms p99 budget and four synchronous writes, the disk tail you can tolerate is far below 50 ms.</p>
+<p>Raising queue depth is rarely the fix. It helps only if the device has spare parallelism. On a capped cloud volume it just adds queueing time.</p>
+<h2>Make the test match production I/O</h2>
+<ul>
+<li>Same volume type, size and instance type as production.</li>
+<li>The same write pattern: small random writes with fsync for databases, not large sequential writes.</li>
+<li>A dataset larger than the page cache, so reads actually reach the disk.</li>
+<li>A run long enough to drain burst credits, then a steady phase after.</li>
+<li><code>biolatency</code> running during the test, with <code>/proc/meminfo</code> and <code>BurstBalance</code> captured.</li>
+</ul>
+<p>If your storage test is shorter than your credit bucket, you have measured the bucket, not the disk.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your iostat says fine but writes stall for 500 ms", "description": "Why %util lies on SSDs and cloud volumes, how per-second averages hide 500 ms stalls, and how gp2 burst credits make short load tests pass.", "datePublished": "2026-11-13", "url": "https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
