@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-13T01:32:07+00:00",
+ "updated": "2026-11-14T01:05:49+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -375,6 +375,32 @@
    "first_seen": "2026-10-27T19:41:44+00:00"
   },
   {
+   "title": "Senior BESS Performance Engineer",
+   "company": "Wizeline",
+   "location": "Colombia",
+   "url": "https://himalayas.app/companies/wizeline-ai/jobs/senior-bess-performance-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/wizeline-ai/jobs/senior-bess-performance-engineer",
+   "posted": "2026-11-13T11:09:55+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 34,
+   "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "AI Test Engineer II",
+   "company": "Trend Health Partners",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/trend-health-partners/jobs/ai-test-engineer-ii?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/trend-health-partners/jobs/ai-test-engineer-ii",
+   "posted": "2026-11-13T22:39:47+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
    "title": "AI Test Engineer III",
    "company": "Trend Health Partners",
    "location": "United States",
@@ -451,6 +477,19 @@
    "region": "remote",
    "score": 33,
    "first_seen": "2026-11-05T01:07:09+00:00"
+  },
+  {
+   "title": "[8XS] QA Automation Engineer",
+   "company": "Software Mind",
+   "location": "Costa Rica",
+   "url": "https://himalayas.app/companies/software-mind/jobs/8xs-qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/software-mind/jobs/8xs-qa-automation-engineer",
+   "posted": "2026-11-13T19:49:14+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 32,
+   "first_seen": "2026-11-14T01:05:49+00:00"
   },
   {
    "title": "[MEX] Senior QA Automation Engineer",
@@ -620,6 +659,19 @@
    "region": "remote",
    "score": 31,
    "first_seen": "2026-10-24T21:11:48+00:00"
+  },
+  {
+   "title": "Senior Software Development Engineer in Test (SDET)",
+   "company": "capco",
+   "location": "",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/capco/senior-software-development-engineer-in-test-sdet-430568",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:senior-software-development-engineer-in-test-sdet-430568",
+   "posted": "2026-11-13T15:55:19+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-14T01:05:49+00:00"
   },
   {
    "title": "Machine Learning Performance Engineer",
@@ -1285,6 +1337,19 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "[Job - 32613] QA Mid/Senior",
+   "company": "CI&T",
+   "location": "Brazil, Colombia",
+   "url": "https://himalayas.app/companies/ci-t/jobs/job-32613-qa-mid-senior?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/ci-t/jobs/job-32613-qa-mid-senior",
+   "posted": "2026-11-13T20:52:17+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
    "title": "Quality Assurance Analyst (Remote - US)",
    "company": "ICF",
    "location": "United States",
@@ -1894,71 +1959,6 @@
    "region": "remote",
    "score": 18,
    "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "QA Tester",
-   "company": "Plentific",
-   "location": "remote",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/plentific/remote-qa-tester-299386",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:remote-qa-tester-299386",
-   "posted": "2026-11-05T09:40:25+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "QA JUNIOR - REPÚBLICA DOMINICANA",
-   "company": "XKTalent Inc. - Rimutee",
-   "location": "Dominican Republic",
-   "url": "https://himalayas.app/companies/rekluti/jobs/qa-junior-republica-dominicana?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/rekluti/jobs/qa-junior-republica-dominicana",
-   "posted": "2026-11-01T02:08:58+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-01T02:08:58+00:00"
-  },
-  {
-   "title": "QA Tester",
-   "company": "OpenDataJobs",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/opendatajobs/jobs/qa-tester?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/opendatajobs/jobs/qa-tester",
-   "posted": "2026-10-30T12:35:44+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-10-30T12:35:44+00:00"
-  },
-  {
-   "title": "QA Engineer (Malaysia-based)",
-   "company": "Kinobi AI",
-   "location": "Malaysia",
-   "url": "https://himalayas.app/companies/kinobi-ai/jobs/qa-engineer-malaysia-based?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/kinobi-ai/jobs/qa-engineer-malaysia-based",
-   "posted": "2026-11-13T00:50:05+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "QA Analyst | Mid",
-   "company": "Compass UOL",
-   "location": "Brazil",
-   "url": "https://himalayas.app/companies/compass-uol/jobs/qa-analyst-mid?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/compass-uol/jobs/qa-analyst-mid",
-   "posted": "2026-11-12T02:12:41+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 17,
-   "first_seen": "2026-11-13T01:32:07+00:00"
   }
  ]
 }
