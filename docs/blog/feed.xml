@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your five-user demo is a mirage: load testing an LLM feature</title>
+      <link>https://pawansinha.com.au/blog/your-five-user-demo-is-a-mirage-how-to-load-test-an-llm-feat/</link>
+      <guid>https://pawansinha.com.au/blog/your-five-user-demo-is-a-mirage-how-to-load-test-an-llm-feat/</guid>
+      <pubDate>Sun, 15 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why an LLM feature that feels instant for five people slows down at launch (batching, KV cache, prefill, rate limits), the four numbers to measure (TTFT, TPOT, total time, tokens per minute), and a k6 test that measures them with realistic prompts.</description>
+    </item>
+    <item>
       <title>Your fan-out turns a 1% slow call into 63% slow requests</title>
       <link>https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/</link>
       <guid>https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/</guid>
