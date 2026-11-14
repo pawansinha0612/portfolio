@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your fan-out turns a 1% slow call into 63% slow requests</title>
+      <link>https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/</link>
+      <guid>https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/</guid>
+      <pubDate>Sat, 14 Nov 2026 08:00:00 +1100</pubDate>
+      <description>The maths of tail latency under fan-out from Dean and Barroso&#x27;s &quot;The Tail at Scale&quot;, why a back-end&#x27;s p99 stops being good enough, and the fixes that work: hedged and tied requests, deadlines, fewer sequential hops and load tests that report per-call percentiles.</description>
+    </item>
+    <item>
       <title>Your iostat says fine but writes stall for 500 ms</title>
       <link>https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/</link>
       <guid>https://pawansinha.com.au/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/</guid>

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your fan-out turns a 1% slow call into 63% slow requests — Pawan Sinha</title>
+  <meta name="description" content="Fan out to 100 back-ends and a 1% slow call makes 63% of requests slow. Fan-out maths, hedged and tied requests, deadlines and how to test it.">
+  <meta property="og:title" content="Your fan-out turns a 1% slow call into 63% slow requests — Pawan Sinha">
+  <meta property="og:description" content="Fan out to 100 back-ends and a 1% slow call makes 63% of requests slow. Fan-out maths, hedged and tied requests, deadlines and how to test it.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your fan-out turns a 1% slow call into 63% slow requests</h1>
+        <div class="post-meta"><span>14 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Latency</span><span class="tag">Microservices</span></div></div>
+      </header>
+      <div class="article">
+<p>Your search page queries 100 index shards in parallel and waits for all of them. Each shard answers in 10 ms almost every time, and its p99 is a respectable 50 ms. Yet the search page's median is close to a second on busy days, and nobody can find a slow component.</p>
+<p>Every component is fast. The page is slow because it waits for the slowest of 100.</p>
+<h2>The arithmetic of waiting for everyone</h2>
+<p>If one call is slow with probability p, and a request waits for N independent calls, the request is fast only if every call is fast:</p>
+<blockquote>
+<p>P(request slow) = 1 − (1 − p)^N</p>
+</blockquote>
+<p>A worked example from Jeff Dean and Luiz André Barroso's paper "The Tail at Scale" (2013): a server that is slow for 1 in 100 requests, with a fan-out of 100, makes 1 − 0.99^100 ≈ 63% of user requests slow.</p>
+<p>The growth is steep at first and then flattens, because the probability can never exceed 100%:</p>
+<table>
+<thead>
+<tr>
+<th>Fan-out</th>
+<th>Requests slow (p = 1%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1%</td>
+</tr>
+<tr>
+<td>10</td>
+<td>9.6%</td>
+</tr>
+<tr>
+<td>50</td>
+<td>39.5%</td>
+</tr>
+<tr>
+<td>100</td>
+<td>63.4%</td>
+</tr>
+<tr>
+<td>200</td>
+<td>86.6%</td>
+</tr>
+</tbody>
+</table>
+<p>Turn it around and you get the requirement. For the request's p99 to be "fast", each call must be fast with probability 0.99^(1/N). At a fan-out of 100 that is 0.9999. <strong>Each back-end has to be good at its p99.99, not its p99.</strong></p>
+<div class="widget" data-widget="fanout"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<p>Real systems are worse than the formula in one way and better in another. Slowness is often correlated (a GC pause, a noisy neighbour, a hot shard affects many calls at once), so calls are not independent. And sequential hops add their latencies on top, so a chain of five services each adds its own tail.</p>
+<h2>Why the back-end's tail exists</h2>
+<p>Variability is normal in shared systems. Common sources:</p>
+<ul>
+<li>garbage collection and other stop-the-world pauses</li>
+<li>background work such as compaction, log rotation and cache refreshes</li>
+<li>queueing behind a slow request on the same thread or connection</li>
+<li>shared resources: CPU throttling, network, disk, a noisy neighbour</li>
+<li>the occasional cold cache or page fault</li>
+</ul>
+<p>You can reduce each one, but not to zero. The paper's argument is that large systems should be <strong>tail-tolerant</strong>: designed so that individual slow calls don't become slow requests.</p>
+<h2>Hedged requests</h2>
+<p>Send the call to one replica. If it hasn't answered after a short delay, send the same call to a second replica and use whichever answer comes first.</p>
+<p>The usual delay is the call's p95. Only about 5% of calls are ever duplicated, so the extra load is small. A call is now slow only if both copies are slow, which turns p into roughly p² when replicas fail independently. The paper reports a Google benchmark where hedging after a 10 ms delay cut the 99.9th-percentile latency of a 100-server fan-out from 1,800 ms to 74 ms, at the cost of 2% more requests.</p>
+<p>Trade-offs:</p>
+<ul>
+<li><strong>Only for idempotent reads,</strong> or writes protected by an idempotency key.</li>
+<li><strong>Correlated slowness defeats it.</strong> If both replicas are slow for the same reason (a hot key, an overloaded cluster), the hedge just adds load.</li>
+<li><strong>Cap it.</strong> Under overload, hedges add work exactly when there is none to spare. Limit hedges to a small share of traffic, or turn them off when error rates rise.</li>
+</ul>
+<h2>Tied requests</h2>
+<p>Hedging waits before duplicating. A tied request sends the call to two servers at once, each copy tagged with the other's identity. Whichever server starts executing first tells the other to cancel its copy. Because most of the delay is time spent in the queue, the call gets the shorter of two queues, and the cancellation means the work usually happens only once. It needs support in the server, so it fits systems you control end to end.</p>
+<h2>Deadlines and budgets</h2>
+<p>Give every user request a deadline and pass the remaining time down with each call (gRPC deadlines do this out of the box). A shard that receives a call with 5 ms left and knows it needs 20 should fail fast rather than do work nobody will use.</p>
+<p>When results can be partial, decide what "good enough" means. A search page that returns results from 98 of 100 shards at the deadline is usually better than a complete page three seconds later. This is a product decision, so make it explicitly.</p>
+<h2>Reduce fan-out and sequential hops</h2>
+<p>The cheapest tail is the one you don't have:</p>
+<ul>
+<li><strong>Batch</strong> many small calls to the same service into one.</li>
+<li><strong>Cache</strong> the results of slow, repeated calls near the caller.</li>
+<li><strong>Flatten call chains.</strong> Five services in sequence each add their tail, and parallel calls are better than sequential ones.</li>
+<li><strong>Smaller partitions</strong> let a slow or overloaded partition be moved or split quickly, instead of slowing everything on that machine.</li>
+</ul>
+<h2>How to load test for it</h2>
+<p>Fan-out amplification is easy to miss because each service's own dashboard looks healthy.</p>
+<ol>
+<li><strong>Report per-call percentiles to p99.9 and beyond</strong> for back-ends that sit behind a fan-out, with enough samples to trust them. A p99.99 needs well over 10,000 calls per measurement window.</li>
+<li><strong>Measure at the user-request level too,</strong> and check that the request p99 matches what the formula predicts from the per-call tail. A big gap means correlated slowness, such as a shared pause or a hot shard.</li>
+<li><strong>Inject tail latency.</strong> Add a fault that makes 1% of calls to one dependency take 500 ms, and watch what it does to the user-facing p99.</li>
+<li><strong>Test hedging under overload,</strong> not just at normal load, and make sure the hedge rate stays capped.</li>
+</ol>
+<p>Avoid coordinated omission in these tests: use an open-model load generator, so slow responses don't reduce the rate of new requests and hide the tail you are trying to measure.</p>
+<h2>Checklist</h2>
+<ol>
+<li>List the fan-out (parallel) and depth (sequential) of your critical requests.</li>
+<li>Compute the per-call percentile you actually need: 0.99^(1/N).</li>
+<li>Add hedging (with a cap) for idempotent reads behind large fan-outs.</li>
+<li>Propagate deadlines on every hop, and decide where partial results are acceptable.</li>
+<li>Batch, cache and flatten to reduce N.</li>
+<li>Load test with per-call tails, user-level tails and injected slowness.</li>
+</ol>
+<p>At scale, every rare event is happening somewhere, all the time. Design for the slowest call, because every big request waits for it.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your fan-out turns a 1% slow call into 63% slow requests", "description": "Fan out to 100 back-ends and a 1% slow call makes 63% of requests slow. Fan-out maths, hedged and tied requests, deadlines and how to test it.", "datePublished": "2026-11-14", "url": "https://pawansinha.com.au/blog/your-fan-out-amplifies-p99-the-tail-at-scale/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
