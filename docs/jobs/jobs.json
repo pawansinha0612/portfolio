@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-14T01:05:49+00:00",
+ "updated": "2026-11-15T00:26:20+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -453,32 +453,6 @@
    "first_seen": "2026-10-31T20:04:41+00:00"
   },
   {
-   "title": "Senior Manager, Test & Quality Assurance",
-   "company": "Ellucian Company LLC",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/ellucian-company-llc/jobs/senior-manager-test-quality-assurance?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/ellucian-company-llc/jobs/senior-manager-test-quality-assurance",
-   "posted": "2026-10-24T23:18:52+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 33,
-   "first_seen": "2026-10-24T23:18:52+00:00"
-  },
-  {
-   "title": "QA Engineer",
-   "company": "EvoPoint Solutions",
-   "location": "Colombia",
-   "url": "https://himalayas.app/companies/evopoint-solutions/jobs/qa-engineer-3467406968?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/evopoint-solutions/jobs/qa-engineer-3467406968",
-   "posted": "2026-10-24T02:34:40+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 33,
-   "first_seen": "2026-11-05T01:07:09+00:00"
-  },
-  {
    "title": "[8XS] QA Automation Engineer",
    "company": "Software Mind",
    "location": "Costa Rica",
@@ -646,19 +620,6 @@
    "region": "remote",
    "score": 31,
    "first_seen": "2026-11-02T09:15:09+00:00"
-  },
-  {
-   "title": "QA Engineer Offshore",
-   "company": "Photon Interactive UK Limited",
-   "location": "India",
-   "url": "https://himalayas.app/companies/photon-interactive-uk-limited/jobs/qa-engineer-offshore-5741373047?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/photon-interactive-uk-limited/jobs/qa-engineer-offshore-5741373047",
-   "posted": "2026-10-24T21:11:48+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 31,
-   "first_seen": "2026-10-24T21:11:48+00:00"
   },
   {
    "title": "Senior Software Development Engineer in Test (SDET)",
@@ -919,6 +880,19 @@
    "region": "remote",
    "score": 28,
    "first_seen": "2026-11-03T05:23:40+00:00"
+  },
+  {
+   "title": "Senior QA",
+   "company": "Ryz Labs",
+   "location": "Argentina",
+   "url": "https://himalayas.app/companies/ryz-labs/jobs/senior-qa?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/ryz-labs/jobs/senior-qa",
+   "posted": "2026-11-14T04:46:25+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 27,
+   "first_seen": "2026-11-15T00:26:20+00:00"
   },
   {
    "title": "JR-223225 QA Engineer Senior",
@@ -1220,6 +1194,32 @@
    "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
+   "title": "Senior QA Manager Automation & AI - Fully Remote",
+   "company": "SOFTGAMES",
+   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
+   "url": "https://himalayas.app/companies/softgames/jobs/senior-qa-manager-automation-ai-fully-remote?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/softgames/jobs/senior-qa-manager-automation-ai-fully-remote",
+   "posted": "2026-11-14T07:22:29+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-15T00:26:20+00:00"
+  },
+  {
+   "title": "SDET / QA Automation",
+   "company": "Switch Software",
+   "location": "Uruguay",
+   "url": "https://himalayas.app/companies/switch-software/jobs/sdet-qa-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/switch-software/jobs/sdet-qa-automation",
+   "posted": "2026-11-14T00:42:40+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-15T00:26:20+00:00"
+  },
+  {
    "title": "Senior Quality Engineer - Automation (AI)",
    "company": "Alcor",
    "location": "Mexico",
@@ -1227,19 +1227,6 @@
    "source": "Himalayas",
    "id": "Himalayas:https://himalayas.app/companies/alcor/jobs/senior-quality-engineer-automation-ai",
    "posted": "2026-11-12T23:54:56+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 23,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Senior QA Manager Automation & AI - Fully Remote",
-   "company": "SOFTGAMES",
-   "location": "Remote job (remote)",
-   "url": "https://www.arbeitnow.com/jobs/companies/softgames/senior-qa-manager-automation-ai-fully-remote-berlin-71172",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-qa-manager-automation-ai-fully-remote-berlin-71172",
-   "posted": "2026-11-12T21:31:40+00:00",
    "group": "qa",
    "region": "remote",
    "score": 23,
@@ -1467,6 +1454,19 @@
    "first_seen": "2026-10-25T03:35:11+00:00"
   },
   {
+   "title": "[Job - 32612] QA Lead",
+   "company": "CI&T",
+   "location": "Brazil",
+   "url": "https://himalayas.app/companies/ci-t/jobs/job-32612-qa-lead?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/ci-t/jobs/job-32612-qa-lead",
+   "posted": "2026-11-14T08:38:27+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-15T00:26:20+00:00"
+  },
+  {
    "title": "Analista de QA Pleno",
    "company": "FCamara",
    "location": "Brazil",
@@ -1556,19 +1556,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-10-25T15:59:52+00:00"
-  },
-  {
-   "title": "Senior QA Automation Specialist",
-   "company": "Flexspring",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/flexspring/jobs/senior-qa-automation-specialist?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/flexspring/jobs/senior-qa-automation-specialist",
-   "posted": "2026-10-24T22:13:15+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
    "title": "QA Test Automation | Mid",
@@ -1959,6 +1946,19 @@
    "region": "remote",
    "score": 18,
    "first_seen": "2026-11-06T08:20:51+00:00"
+  },
+  {
+   "title": "QA JUNIOR - REPÚBLICA DOMINICANA",
+   "company": "XKTalent Inc. - Rimutee",
+   "location": "Dominican Republic",
+   "url": "https://himalayas.app/companies/rekluti/jobs/qa-junior-republica-dominicana?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/rekluti/jobs/qa-junior-republica-dominicana",
+   "posted": "2026-11-01T02:08:58+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 18,
+   "first_seen": "2026-11-15T00:26:20+00:00"
   }
  ]
 }
