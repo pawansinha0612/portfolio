@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your cloud load test passed on credit</title>
+      <link>https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/</link>
+      <guid>https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/</guid>
+      <pubDate>Mon, 16 Nov 2026 08:00:00 +1100</pubDate>
+      <description>The cloud limits that let a short load test pass and production fail: T3 CPU credits, network burst and packet allowances, single-flow limits, NAT port exhaustion, cross-AZ hops, steal time and service quotas, with the metric that exposes each one.</description>
+    </item>
+    <item>
       <title>Your five-user demo is a mirage: load testing an LLM feature</title>
       <link>https://pawansinha.com.au/blog/your-five-user-demo-is-a-mirage-how-to-load-test-an-llm-feat/</link>
       <guid>https://pawansinha.com.au/blog/your-five-user-demo-is-a-mirage-how-to-load-test-an-llm-feat/</guid>

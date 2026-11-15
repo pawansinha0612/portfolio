@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your cloud load test passed on credit — Pawan Sinha</title>
+  <meta name="description" content="Cloud load tests pass on banked credits. CPU credits, network allowances, NAT ports, cross-AZ hops and steal time, and the metric that shows each.">
+  <meta property="og:title" content="Your cloud load test passed on credit — Pawan Sinha">
+  <meta property="og:description" content="Cloud load tests pass on banked credits. CPU credits, network allowances, NAT ports, cross-AZ hops and steal time, and the metric that shows each.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your cloud load test passed on credit</h1>
+        <div class="post-meta"><span>16 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Cloud</span><span class="tag">AWS</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test runs for 30 minutes on a t3.medium at 60% CPU. p95 is flat, and the team signs off. In production the same traffic runs fine through Monday, and on Tuesday afternoon latency triples while the CPU graph shows 40%, lower than before.</p>
+<p>The instance didn't get slower. It ran out of credit.</p>
+<p>Cloud resources often have two speeds: a sustained baseline and a burst that is paid for out of a balance. A short load test only ever sees the burst. This post covers the common traps on AWS and the metric that shows each one. Other clouds have equivalents with different names.</p>
+<h2>CPU credits on burstable instances</h2>
+<p>T-family instances (T3, T3a, T4g, T2) earn CPU credits at a fixed rate and spend them when they run above a baseline. <strong>One CPU credit is one vCPU at 100% for one minute.</strong></p>
+<p>A t3.medium has 2 vCPUs and earns 24 credits an hour. That works out to a baseline of 20% per vCPU: 24 credits / 60 minutes / 2 vCPUs. It can bank up to 24 hours of earnings, 576 credits.</p>
+<p>At 60% sustained CPU it spends 2 × 0.6 × 60 = 72 credits an hour while earning 24, a net drain of 48 an hour. A full balance lasts 576 / 48 = 12 hours. A 30-minute test uses 4% of the bank and learns nothing.</p>
+<p>What happens when the balance hits zero depends on the credit mode:</p>
+<ul>
+<li><strong>Standard mode</strong> caps the instance at its baseline. At 20% per vCPU, a workload that needs 60% queues, and latency climbs without limit. CPU utilisation then <em>drops</em> to the baseline, which is why the graph looks healthier as things get worse. T2 instances launch in standard mode by default.</li>
+<li><strong>Unlimited mode</strong> keeps the speed and charges for surplus credits. T3 and later launch in unlimited mode by default. There's no slowdown, but there is a bill, and burstables that run hot all the time often cost more than a fixed-performance instance.</li>
+</ul>
+<div class="widget" data-widget="cpucredit"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<p><strong>Detect it:</strong> CloudWatch <code>CPUCreditBalance</code> (and <code>CPUSurplusCreditBalance</code> in unlimited mode), and the instance's credit specification. In a load test, either run long enough to drain the balance or start from an empty one. For anything with a steady load, I'd pick a fixed-performance instance (M, C or R family) and keep burstables for genuinely spiky, mostly idle work.</p>
+<p>Storage has the same shape. gp2 volumes burst on I/O credits, which I covered in <a href="/blog/your-iostat-says-fine-but-writes-stall-for-500-ms/">the disk I/O post</a>.</p>
+<h2>Network bandwidth is also a burst</h2>
+<p>Instance types listed with "up to" a bandwidth figure, for example "up to 5 Gigabit", have a lower baseline bandwidth and burst above it on network I/O credits. A short test bursts and passes. A long data transfer or a sustained cache warm-up drops to the baseline.</p>
+<p>Separately from bandwidth, every instance has allowances that are easy to exceed without noticing:</p>
+<ul>
+<li><strong>Packets per second.</strong> Small messages (chatty RPC, small UDP datagrams) can hit the packet limit long before the bandwidth limit.</li>
+<li><strong>Connection tracking.</strong> Security groups track connections, and the tracking table has a per-instance size. Many short-lived connections can fill it.</li>
+<li><strong>Single flow.</strong> One TCP flow is capped (5 Gbps between instances outside a cluster placement group), whatever the instance's total bandwidth. One big transfer over one connection can't use a 25 Gbps NIC.</li>
+</ul>
+<p><strong>Detect it:</strong> on instances with the ENA driver, <code>ethtool -S eth0</code> shows counters such as <code>bw_in_allowance_exceeded</code>, <code>bw_out_allowance_exceeded</code>, <code>pps_allowance_exceeded</code> and <code>conntrack_allowance_exceeded</code>. Any of them increasing during a test means packets were queued or dropped at the instance limit. Retransmits and latency spikes follow, while CPU and bandwidth graphs look normal. Collect these counters in every load test.</p>
+<h2>NAT gateway ports</h2>
+<p>Outbound traffic from private subnets often goes through a NAT gateway, which can hold about 55,000 simultaneous connections to each unique destination (IP, port and protocol). A service that opens a new connection per request to one third-party API can exhaust that at a few hundred requests a second, depending on how long connections linger.</p>
+<p><strong>Detect it:</strong> the NAT gateway's <code>ErrorPortAllocation</code> metric in CloudWatch. Fix it with connection pooling and keep-alive to the destination, or spread the traffic across more NAT gateways or addresses.</p>
+<h2>Cross-zone hops add up</h2>
+<p>Availability zones in a region are close, but a cross-AZ round trip still costs more than one inside a zone, and cross-AZ data transfer is billed. One extra hop is negligible. A request that makes 40 sequential calls, each crossing a zone, adds 40 of those round trips to every request.</p>
+<p><strong>Detect it:</strong> measure the round-trip time between zones yourself (a simple TCP ping from each zone to each other). Then count sequential cross-zone calls per request in your traces. Zone-aware routing in the load balancer or service mesh keeps chatty traffic within one zone.</p>
+<h2>Noisy neighbours and steal time</h2>
+<p>On shared hardware, another tenant can take CPU time your VM was ready to use. Inside the guest this shows up as <strong>steal time</strong>: the share of time the vCPU was runnable but the hypervisor ran something else.</p>
+<p><strong>Detect it:</strong> the <code>st</code> column in <code>top</code>, <code>vmstat 1</code> or <code>mpstat -P ALL 1</code>. A few percent of steal that comes and goes, lining up with latency spikes your own metrics can't explain, is the signature. On burstable instances, steal also rises when the instance is held at its baseline.</p>
+<h2>Service quotas</h2>
+<p>Many limits sit outside the instance entirely and only show up at production scale. Examples on AWS:</p>
+<ul>
+<li>Lambda concurrency per region (1,000 by default).</li>
+<li>DynamoDB per-partition throughput, which makes one hot key throttle while the table looks under capacity.</li>
+<li>API rate limits on control-plane calls, which autoscaling and deployment tooling depend on.</li>
+</ul>
+<p><strong>Detect it:</strong> check Service Quotas for each service on the request path before the test. In the test, alert on throttling errors (<code>ThrottlingException</code>, <code>ProvisionedThroughputExceededException</code>, <code>RequestLimitExceeded</code>), not only on 5xx.</p>
+<h2>Checklist</h2>
+<ol>
+<li>Run peak tests long enough to drain every credit bucket, or start them with empty balances.</li>
+<li>Prefer fixed-performance instances for steady load.</li>
+<li>Collect ENA allowance counters and steal time in every test.</li>
+<li>Pool and reuse outbound connections, and watch <code>ErrorPortAllocation</code>.</li>
+<li>Count cross-zone hops per request and keep chatty paths inside one zone.</li>
+<li>Review service quotas for every dependency before peak.</li>
+</ol>
+<p>In the cloud, the first half-hour of a load test measures the burst. Production runs on the baseline.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your cloud load test passed on credit", "description": "Cloud load tests pass on banked credits. CPU credits, network allowances, NAT ports, cross-AZ hops and steal time, and the metric that shows each.", "datePublished": "2026-11-16", "url": "https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
