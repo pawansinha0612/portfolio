@@ -27,13 +27,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 - [x] Concurrency bugs that only appear under load — race conditions, lock contention, deadlocks, connection and thread starvation; designing tests that provoke them
 - [x] 429 Too Many Requests: designing retries for rate-limited LLM APIs — Retry-After, exponential backoff with jitter, retry budgets, fallback models and queues; how naive retries turn 6% 429s into 25%
 - [x] You can't average percentiles — why averaging p99 across pods or time windows is wrong; mergeable histograms, Prometheus histogram_quantile bucket error, native histograms
-- [ ] Time to first token under load — why TTFT degrades first (queueing before prefill), prefill vs decode, measuring it with streaming, and why k6 time-to-first-byte is only an approximation
-- [ ] Database connection pool sizing with queueing theory — pods × pool size vs max_connections, pool wait time as the real signal, why bigger pools raise latency
-- [ ] Self-hosted LLM capacity: vLLM batching, KV cache and GPU memory — continuous batching, how throughput rises while per-user tokens/s falls, finding the concurrency knee with a load test
-- [ ] Network I/O and TCP limits that break load tests — accept queue overflow (somaxconn, ListenOverflows), SYN backlog, TIME_WAIT and ephemeral port exhaustion on load generators
-- [ ] What an AI chatbot really costs at peak — monthly token maths from DAU, calls per request and context size; prompt caching, batch discounts and the max_tokens trap; a cost model you can defend
-- [ ] The Universal Scalability Law in practice — contention (sigma) and coherency (kappa); fitting USL to throughput-vs-concurrency data to predict the peak and retrograde scaling
-- [ ] Load testing RAG pipelines end to end — embedding calls, vector search latency, reranking and the LLM call as separate hops; latency budgets per hop and where RAG really bottlenecks
+- [x] Time to first token under load — why TTFT degrades first (queueing before prefill), prefill vs decode, measuring it with streaming, and why k6 time-to-first-byte is only an approximation
+- [x] Database connection pool sizing with queueing theory — pods × pool size vs max_connections, pool wait time as the real signal, why bigger pools raise latency
+- [x] Self-hosted LLM capacity: vLLM batching, KV cache and GPU memory — continuous batching, how throughput rises while per-user tokens/s falls, finding the concurrency knee with a load test
+- [x] Network I/O and TCP limits that break load tests — accept queue overflow (somaxconn, ListenOverflows), SYN backlog, TIME_WAIT and ephemeral port exhaustion on load generators
+- [x] What an AI chatbot really costs at peak — monthly token maths from DAU, calls per request and context size; prompt caching, batch discounts and the max_tokens trap; a cost model you can defend
+- [x] The Universal Scalability Law in practice — contention (sigma) and coherency (kappa); fitting USL to throughput-vs-concurrency data to predict the peak and retrograde scaling
+- [x] Load testing RAG pipelines end to end — embedding calls, vector search latency, reranking and the LLM call as separate hops; latency budgets per hop and where RAG really bottlenecks
 - [ ] APM and observability tool choice — Dynatrace, Datadog, New Relic, Grafana stack and OpenTelemetry: agent overhead, sampling, cost at scale, vendor lock-in; how to decide
 - [ ] Prompt caching and the load test that lied — why cycling five prompts gives 100% cache hits, realistic prompt variety, measuring cached tokens, and testing with production-like context
 - [ ] Off-CPU analysis: where wall-clock time really goes — on-CPU vs off-CPU flame graphs, async-profiler wall mode, eBPF offcputime, locks and I/O waits that CPU profiles never show
