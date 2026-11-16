@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-15T00:26:20+00:00",
+ "updated": "2026-11-16T00:26:07+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -180,17 +180,17 @@
    "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
-   "title": "Senior Performance Test Consultant - JMeter",
-   "company": "Scube software square systems",
-   "location": "India",
-   "url": "https://himalayas.app/companies/scube-software-square-systems/jobs/senior-performance-test-consultant-jmeter?utm_source=api",
+   "title": "Gatling Test Automation Engineer – API & UI Integration",
+   "company": "General Dynamics Information Technology",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/general-dynamics-information-technology/jobs/gatling-test-automation-engineer-api-ui-integration?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/scube-software-square-systems/jobs/senior-performance-test-consultant-jmeter",
-   "posted": "2026-10-25T01:22:23+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/general-dynamics-information-technology/jobs/gatling-test-automation-engineer-api-ui-integration",
+   "posted": "2026-11-15T21:31:46+00:00",
    "group": "perf",
    "region": "remote",
-   "score": 44,
-   "first_seen": "2026-10-25T01:22:23+00:00"
+   "score": 43,
+   "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
    "title": "Test Automation Engineering Lead (Virtual, US)",
@@ -217,19 +217,6 @@
    "region": "remote",
    "score": 41,
    "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Lead, Software Quality Assurance",
-   "company": "Lirio",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/lirio/jobs/lead-software-quality-assurance?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/lirio/jobs/lead-software-quality-assurance",
-   "posted": "2026-10-25T04:25:57+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 41,
-   "first_seen": "2026-10-25T04:25:57+00:00"
   },
   {
    "title": "Senior QA/SDET",
@@ -386,6 +373,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Senior QA Automation Engineer",
+   "company": "Symphony Solutions",
+   "location": "Poland",
+   "url": "https://himalayas.app/companies/symphonysol/jobs/senior-qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/symphonysol/jobs/senior-qa-automation-engineer",
+   "posted": "2026-11-15T17:22:28+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
    "title": "AI Test Engineer II",
@@ -791,6 +791,19 @@
    "first_seen": "2026-10-29T09:11:28+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "Trilogy Federal",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/trilogy-federal/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/trilogy-federal/jobs/qa-engineer",
+   "posted": "2026-11-15T11:48:48+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 28,
+   "first_seen": "2026-11-16T00:26:07+00:00"
+  },
+  {
    "title": "Senior QA Automation Engineer (Platform)",
    "company": "Upgrade",
    "location": "USA",
@@ -999,6 +1012,19 @@
    "first_seen": "2026-10-30T23:36:38+00:00"
   },
   {
+   "title": "Test Automation",
+   "company": "Caixa Mágica Software",
+   "location": "Portugal",
+   "url": "https://himalayas.app/companies/caixa-magica-software/jobs/test-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/caixa-magica-software/jobs/test-automation",
+   "posted": "2026-11-15T16:55:24+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 25,
+   "first_seen": "2026-11-16T00:26:07+00:00"
+  },
+  {
    "title": "Senior Software Development Engineer in Test (SDET) - Remote",
    "company": "Scalepex",
    "location": "United States",
@@ -1090,19 +1116,6 @@
    "first_seen": "2026-10-31T23:32:30+00:00"
   },
   {
-   "title": "Software Development Test Engineer (SDET), KSM",
-   "company": "Keeper Security, Inc.",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/keeper-security-inc/jobs/software-development-test-engineer-sdet-ksm?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/keeper-security-inc/jobs/software-development-test-engineer-sdet-ksm",
-   "posted": "2026-10-25T15:57:40+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 25,
-   "first_seen": "2026-11-03T05:23:40+00:00"
-  },
-  {
    "title": "Software Development Engineer in Test - AI",
    "company": "Newfold Digital",
    "location": "India",
@@ -1179,19 +1192,6 @@
    "region": "remote",
    "score": 24,
    "first_seen": "2026-10-30T05:44:34+00:00"
-  },
-  {
-   "title": "API Test Engineer",
-   "company": "EdgeQ Technologies Private Limited",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/api-test-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/api-test-engineer",
-   "posted": "2026-10-25T15:48:14+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 24,
-   "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
    "title": "Senior QA Manager Automation & AI - Fully Remote",
@@ -1324,6 +1324,19 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "Web Automation Test Engineer",
+   "company": "Caylent",
+   "location": "Brazil",
+   "url": "https://jobicy.com/jobs/162439-web-automation-test-engineer-2",
+   "source": "Jobicy",
+   "id": "Jobicy:162439",
+   "posted": "2026-11-15T13:19:37+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-16T00:26:07+00:00"
+  },
+  {
    "title": "[Job - 32613] QA Mid/Senior",
    "company": "CI&T",
    "location": "Brazil, Colombia",
@@ -1441,17 +1454,17 @@
    "first_seen": "2026-10-29T23:45:30+00:00"
   },
   {
-   "title": "Software Development Engineer in Test",
-   "company": "insightsoftware",
-   "location": "India",
-   "url": "https://himalayas.app/companies/insightsoftware/jobs/software-development-engineer-in-test?utm_source=api",
+   "title": "Director, Quality Engineering",
+   "company": "HHAeXchange",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/hhaexchange/jobs/director-quality-engineering?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/insightsoftware/jobs/software-development-engineer-in-test",
-   "posted": "2026-10-25T03:35:11+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/hhaexchange/jobs/director-quality-engineering",
+   "posted": "2026-11-15T12:09:57+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 21,
-   "first_seen": "2026-10-25T03:35:11+00:00"
+   "score": 20,
+   "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
    "title": "[Job - 32612] QA Lead",
@@ -1543,19 +1556,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-04T00:56:34+00:00"
-  },
-  {
-   "title": "Senior QA & Automation Engineer (Python)",
-   "company": "Brady Technologies",
-   "location": "India",
-   "url": "https://himalayas.app/companies/brady-technologies/jobs/senior-qa-automation-engineer-python-7463537916?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/brady-technologies/jobs/senior-qa-automation-engineer-python-7463537916",
-   "posted": "2026-10-25T15:59:52+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-10-25T15:59:52+00:00"
   },
   {
    "title": "QA Test Automation | Mid",
@@ -1818,17 +1818,17 @@
    "first_seen": "2026-10-29T00:11:06+00:00"
   },
   {
-   "title": "Test Automation Engineer",
-   "company": "Lingaro",
-   "location": "Poland",
-   "url": "https://himalayas.app/companies/lingaro/jobs/test-automation-engineer-6892775773?utm_source=api",
+   "title": "Senior Quality Assurance Engineer (m/f/d)",
+   "company": "Ververica GmbH",
+   "location": "Italy",
+   "url": "https://himalayas.app/companies/ververica-gmbh/jobs/senior-quality-assurance-engineer-m-f-d-7219434811?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/lingaro/jobs/test-automation-engineer-6892775773",
-   "posted": "2026-10-25T13:22:47+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/ververica-gmbh/jobs/senior-quality-assurance-engineer-m-f-d-7219434811",
+   "posted": "2026-11-15T23:26:29+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-05T01:07:09+00:00"
+   "score": 18,
+   "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
    "title": "QA automation - Développeur.euse de tests automatisés",
