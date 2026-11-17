@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your AI feature will hit the token limit before the request limit</title>
+      <link>https://pawansinha.com.au/blog/your-ai-feature-will-hit-the-token-limit-before-the-request/</link>
+      <guid>https://pawansinha.com.au/blog/your-ai-feature-will-hit-the-token-limit-before-the-request/</guid>
+      <pubDate>Tue, 17 Nov 2026 08:00:00 +1100</pubDate>
+      <description>How to budget tokens per minute for an LLM feature, why reserved max_tokens and agent loops break capacity plans, and how to measure, cap and load test token usage before launch.</description>
+    </item>
+    <item>
       <title>Your cloud load test passed on credit</title>
       <link>https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/</link>
       <guid>https://pawansinha.com.au/blog/burst-bandwidth-and-noisy-neighbours-cloud-performance-traps/</guid>
