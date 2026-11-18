@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your load test passed and oversold the last 40 units — Pawan Sinha</title>
+  <meta name="description" content="Green load tests miss races, lost updates, deadlocks and pool starvation. Design tests that provoke them with hot keys and check invariants.">
+  <meta property="og:title" content="Your load test passed and oversold the last 40 units — Pawan Sinha">
+  <meta property="og:description" content="Green load tests miss races, lost updates, deadlocks and pool starvation. Design tests that provoke them with hot keys and check invariants.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your load test passed and oversold the last 40 units</h1>
+        <div class="post-meta"><span>18 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Concurrency</span><span class="tag">Testing</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test ran for an hour at twice the expected peak. p95 stayed under 300 ms and the error rate was 0.02%. Everyone signed off. The next morning the warehouse has 40 orders for a product with no stock, and two customers have been charged twice.</p>
+<p>The load test did its job. It measured speed. Nobody asked it to check whether the answers were right.</p>
+<h2>Why load tests hide concurrency bugs</h2>
+<p>Concurrency bugs need two requests touching the same state inside the same small window. A typical load test makes that unlikely on purpose. It picks random products from a catalogue of 50,000, random users from a pool of 10,000, and spreads them evenly. Real peaks don't look like that. A flash sale sends half the traffic to one product.</p>
+<p>Here are the bugs that hide, with a one-line definition of each:</p>
+<ul>
+<li><strong>Lost update.</strong> Two transactions read the same value, both compute a new value and both write it. One write silently overwrites the other. This is the overselling bug: two buyers both read "1 left", and both succeed.</li>
+<li><strong>Check-then-act race.</strong> Code checks a condition ("is this coupon unused?") and then acts on it, without holding a lock or using a unique constraint between the two steps.</li>
+<li><strong>Deadlock.</strong> Two transactions each hold a lock the other needs. The database detects the cycle and aborts one of them, which usually reaches the user as a 500 or a retry.</li>
+<li><strong>Lock contention.</strong> Correct, but slow: many requests queue for the same row lock or the same <code>synchronized</code> block, and throughput collapses for that key while the rest of the system looks healthy.</li>
+<li><strong>Pool starvation.</strong> Every connection in the pool is checked out, so new requests wait for one. If a request needs two connections at once, for example an outer transaction plus an audit write, pool starvation can turn into a deadlock inside the application.</li>
+</ul>
+<p>The first three are correctness bugs. Response time can look perfect while they happen. The last two are performance bugs that only appear when contention concentrates.</p>
+<h2>Design the test to create contention</h2>
+<p><strong>Add a hot-key scenario.</strong> Keep the realistic spread for most traffic, and add a second scenario that aims at a handful of keys. In k6 that is a separate scenario with its own data:</p>
+<pre><code class="language-js">export const options = {
+  scenarios: {
+    browse: { executor: 'constant-arrival-rate', rate: 200, timeUnit: '1s', duration: '20m', preAllocatedVUs: 200, exec: 'browse' },
+    hotProduct: {
+      executor: 'ramping-arrival-rate', startRate: 0, timeUnit: '1s', preAllocatedVUs: 300, exec: 'buyHot',
+      stages: [{ target: 150, duration: '30s' }, { target: 150, duration: '2m' }, { target: 0, duration: '10s' }],
+    },
+  },
+};
+</code></pre>
+<p><code>buyHot</code> buys from the same three product IDs, each seeded with a known stock count, for example 500 units.</p>
+<p><strong>Make arrivals simultaneous.</strong> A spike from 0 to 150 requests a second in 30 seconds packs many requests into the same few milliseconds. An open model (arrival-rate executors) keeps sending at the set rate even when the system slows. A closed model with think time would back off, and contention would drop just when it matters.</p>
+<p><strong>Repeat the same request.</strong> Send the same payment or order twice with the same idempotency key, a few milliseconds apart. A double-clicked submit button and a retrying client both look like this.</p>
+<p><strong>Don't let retries hide errors.</strong> Deadlock victims are often retried by the framework. That keeps the error rate down and hides the deadlock. Count retries as a metric of their own.</p>
+<h2>Assert invariants after the run</h2>
+<p>The most important step happens after the load stops. Query the system of record and check facts that must always be true:</p>
+<pre><code class="language-sql">-- Stock can never go negative
+SELECT product_id, stock FROM inventory WHERE stock &lt; 0;
+
+-- Units sold must match what was taken out of stock
+SELECT p.id, 500 - i.stock AS taken, COUNT(o.id) AS sold
+FROM products p JOIN inventory i ON i.product_id = p.id
+LEFT JOIN order_lines o ON o.product_id = p.id
+WHERE p.id IN (101, 102, 103)
+GROUP BY p.id, i.stock
+HAVING 500 - i.stock &lt;&gt; COUNT(o.id);
+
+-- One payment per idempotency key
+SELECT idempotency_key, COUNT(*) FROM payments GROUP BY idempotency_key HAVING COUNT(*) &gt; 1;
+</code></pre>
+<p>Then compare with what the load tool saw: the number of successful buy responses for the hot products must equal the units sold. Any mismatch is a bug, whatever the latency was. Make these checks a pass/fail gate in the pipeline, next to the latency thresholds.</p>
+<h2>Signals that prove it while it happens</h2>
+<p><strong>JVM threads.</strong> Take thread dumps during the hot-key phase with <code>jcmd &lt;pid&gt; Thread.print</code>, three dumps about five seconds apart. Many threads in <code>BLOCKED</code> state waiting on the same monitor point to lock contention. The JVM's thread dump reports Java-level deadlocks explicitly ("Found one Java-level deadlock"). For lock waits over time, record with Java Flight Recorder: <code>jcmd &lt;pid&gt; JFR.start duration=5m filename=hot.jfr</code>, then look at the <code>jdk.JavaMonitorEnter</code> and <code>jdk.ThreadPark</code> events.</p>
+<p><strong>Connection pool.</strong> With HikariCP and Micrometer, watch <code>hikaricp_connections_pending</code> (threads waiting for a connection), <code>hikaricp_connections_active</code> against the pool maximum, and <code>hikaricp_connections_acquire_seconds</code>. Pending above zero for long stretches means starvation. <code>hikaricp_connections_timeout_total</code> counts requests that gave up waiting.</p>
+<p><strong>Database locks.</strong> In PostgreSQL, sessions waiting on locks show <code>wait_event_type = 'Lock'</code> in <code>pg_stat_activity</code>, <code>pg_stat_database.deadlocks</code> counts deadlocks, and <code>log_lock_waits = on</code> logs every wait longer than <code>deadlock_timeout</code>. In MySQL, <code>SHOW ENGINE INNODB STATUS</code> shows the latest deadlock, and <code>performance_schema.data_lock_waits</code> shows current waits.</p>
+<p>Latency for the hot scenario, reported separately from the browse scenario, is the other tell. If the hot keys' p99 is ten times the rest while CPU is low, the requests are waiting on a lock, not doing work.</p>
+<div class="widget" data-widget="dbpool"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<h2>Fixes and their trade-offs</h2>
+<ul>
+<li><strong>Atomic conditional update.</strong> <code>UPDATE inventory SET stock = stock - 1 WHERE product_id = ? AND stock &gt; 0</code>, then check that one row changed. It is simple and fast, and it serialises on the row, which is correct for a single counter.</li>
+<li><strong>Optimistic locking</strong> (a version column). There is no lock while reading, and a conflict fails the write. It suits low contention. On a hot key most attempts fail and retry, and throughput collapses.</li>
+<li><strong>Pessimistic locking</strong> (<code>SELECT ... FOR UPDATE</code>). It is correct, but every buyer of that product queues. Keep the transaction short and lock rows in a consistent order to avoid deadlocks.</li>
+<li><strong>Unique constraints</strong> for check-then-act. A unique index on the idempotency key or the coupon redemption turns a race into a clean constraint violation that the code can handle.</li>
+<li><strong>Pool sizing.</strong> Never let one request hold two connections from the same pool. If it must, size the pool so that the threads that can hold one and wait for a second can't use up every connection.</li>
+</ul>
+<h2>Checklist</h2>
+<ol>
+<li>Add a hot-key scenario with known starting data to every peak test.</li>
+<li>Use arrival-rate executors so contention doesn't ease off when the system slows.</li>
+<li>Send duplicate requests with the same idempotency key.</li>
+<li>Report hot-key latency separately from the rest.</li>
+<li>Watch BLOCKED threads, pool pending count and database lock waits during the run.</li>
+<li>After the run, assert invariants in the database and fail the build on any mismatch.</li>
+</ol>
+<p>A load test that only checks status codes and latency can pass while the data is wrong. Check the data too.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your load test passed and oversold the last 40 units", "description": "Green load tests miss races, lost updates, deadlocks and pool starvation. Design tests that provoke them with hot keys and check invariants.", "datePublished": "2026-11-18", "url": "https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

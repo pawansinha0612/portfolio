@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your load test passed and oversold the last 40 units</title>
+      <link>https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/</link>
+      <guid>https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/</guid>
+      <pubDate>Wed, 18 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why green load tests miss race conditions, lost updates, deadlocks and pool starvation, how to design tests that provoke them (hot keys, contention windows, invariants), and the exact signals that prove them in the JVM, the connection pool and the database.</description>
+    </item>
+    <item>
       <title>Your AI feature will hit the token limit before the request limit</title>
       <link>https://pawansinha.com.au/blog/your-ai-feature-will-hit-the-token-limit-before-the-request/</link>
       <guid>https://pawansinha.com.au/blog/your-ai-feature-will-hit-the-token-limit-before-the-request/</guid>
