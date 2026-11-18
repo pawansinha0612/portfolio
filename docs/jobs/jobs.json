@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T03:15:20+00:00",
+ "updated": "2026-11-18T02:38:54+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -35,6 +35,19 @@
    "region": "australia",
    "score": 25,
    "first_seen": "2026-11-01T12:49:52+00:00"
+  },
+  {
+   "title": "Test Manager – Data Platforms & Cloud Testing",
+   "company": "NCS",
+   "location": "Australia",
+   "url": "https://himalayas.app/companies/ncs/jobs/test-manager-data-platforms-cloud-testing?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/ncs/jobs/test-manager-data-platforms-cloud-testing",
+   "posted": "2026-11-17T10:07:25+00:00",
+   "group": "qa",
+   "region": "australia",
+   "score": 24,
+   "first_seen": "2026-11-18T02:38:54+00:00"
   },
   {
    "title": "Senior Performance QA Engineer",
@@ -349,19 +362,6 @@
    "first_seen": "2026-11-01T12:09:43+00:00"
   },
   {
-   "title": "Software Development Engineer in Test (SDET)",
-   "company": "AAA Life Insurance Company",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/aaa-life-insurance-company/jobs/software-development-engineer-in-test-sdet?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/aaa-life-insurance-company/jobs/software-development-engineer-in-test-sdet",
-   "posted": "2026-10-27T19:41:44+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 35,
-   "first_seen": "2026-10-27T19:41:44+00:00"
-  },
-  {
    "title": "Senior BESS Performance Engineer",
    "company": "Wizeline",
    "location": "Colombia",
@@ -373,6 +373,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "QA Automation Engineer",
+   "company": "Outside",
+   "location": "Canada, United States",
+   "url": "https://himalayas.app/companies/outside/jobs/qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/outside/jobs/qa-automation-engineer",
+   "posted": "2026-11-18T00:40:35+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-18T02:38:54+00:00"
   },
   {
    "title": "Senior QA Automation Engineer",
@@ -620,6 +633,32 @@
    "region": "remote",
    "score": 31,
    "first_seen": "2026-11-02T09:15:09+00:00"
+  },
+  {
+   "title": "Staff Performance Engineer, JavaScript Engine (SpiderMonkey)",
+   "company": "mozilla",
+   "location": "",
+   "url": "https://www.arbeitnow.fr/jobs/companies/mozilla/staff-performance-engineer-javascript-engine-spidermonkey-365140",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:staff-performance-engineer-javascript-engine-spidermonkey-365140",
+   "posted": "2026-11-18T00:55:27+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-18T02:38:54+00:00"
+  },
+  {
+   "title": "System Performance Engineer",
+   "company": "Aim Solutions",
+   "location": "Headquarter",
+   "url": "https://www.arbeitnow.nl/jobs/companies/aim-solutions/system-performance-engineer-eindhoven-465958",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:system-performance-engineer-eindhoven-465958",
+   "posted": "2026-11-18T00:40:31+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-18T02:38:54+00:00"
   },
   {
    "title": "Senior Software Development Engineer in Test (SDET)",
@@ -1363,6 +1402,32 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "Principal SDET",
+   "company": "Radiant",
+   "location": "United Kingdom - Remote",
+   "url": "https://www.arbeitnow.co.uk/jobs/companies/radiant/remote-principal-sdet-12063",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:remote-principal-sdet-12063",
+   "posted": "2026-11-17T21:40:29+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-18T02:38:54+00:00"
+  },
+  {
+   "title": "Freelance QA Test Engineer – Manual & Automation",
+   "company": "Sword",
+   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
+   "url": "https://himalayas.app/companies/sword/jobs/freelance-qa-test-engineer-manual-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/sword/jobs/freelance-qa-test-engineer-manual-automation",
+   "posted": "2026-11-17T21:39:38+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-18T02:38:54+00:00"
+  },
+  {
    "title": "Web Automation Test Engineer",
    "company": "Caylent",
    "location": "Brazil",
@@ -1493,6 +1558,19 @@
    "first_seen": "2026-10-29T23:45:30+00:00"
   },
   {
+   "title": "QA Testing Analyst",
+   "company": "99brightminds",
+   "location": "Jordan",
+   "url": "https://himalayas.app/companies/99brightminds/jobs/qa-testing-analyst?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/99brightminds/jobs/qa-testing-analyst",
+   "posted": "2026-11-17T15:35:09+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-18T02:38:54+00:00"
+  },
+  {
    "title": "Director, Quality Engineering",
    "company": "HHAeXchange",
    "location": "United States",
@@ -1595,6 +1673,32 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-04T00:56:34+00:00"
+  },
+  {
+   "title": "Quality Engineering Supervisor",
+   "company": "World Travel Holdings",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-supervisor?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-supervisor",
+   "posted": "2026-11-18T00:35:57+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-18T02:38:54+00:00"
+  },
+  {
+   "title": "Quality Assurance Project Manager (QA PM)",
+   "company": "Peraton",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/peraton/jobs/quality-assurance-project-manager-qa-pm?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/peraton/jobs/quality-assurance-project-manager-qa-pm",
+   "posted": "2026-11-17T04:22:31+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-18T02:38:54+00:00"
   },
   {
    "title": "QA Test Automation | Mid",
@@ -1855,110 +1959,6 @@
    "region": "remote",
    "score": 19,
    "first_seen": "2026-10-29T00:11:06+00:00"
-  },
-  {
-   "title": "Test Engineer",
-   "company": "CACI International Inc",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/caci-international-inc/jobs/test-engineer-1067358703?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/caci-international-inc/jobs/test-engineer-1067358703",
-   "posted": "2026-11-16T06:22:08+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-17T03:15:20+00:00"
-  },
-  {
-   "title": "Senior Quality Assurance Engineer (m/f/d)",
-   "company": "Ververica GmbH",
-   "location": "Italy",
-   "url": "https://himalayas.app/companies/ververica-gmbh/jobs/senior-quality-assurance-engineer-m-f-d-7219434811?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/ververica-gmbh/jobs/senior-quality-assurance-engineer-m-f-d-7219434811",
-   "posted": "2026-11-15T23:26:29+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-16T00:26:07+00:00"
-  },
-  {
-   "title": "QA automation - Développeur.euse de tests automatisés",
-   "company": "itera",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/itera/jobs/qa-automation-developpeur-euse-de-tests-automatises?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/itera/jobs/qa-automation-developpeur-euse-de-tests-automatises",
-   "posted": "2026-11-13T00:49:52+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Senior QA Engineer",
-   "company": "Caylent",
-   "location": "Mexico",
-   "url": "https://jobicy.com/jobs/161629-senior-qa-engineer-4",
-   "source": "Jobicy",
-   "id": "Jobicy:161629",
-   "posted": "2026-11-12T13:25:53+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Automation Engineer — SDET",
-   "company": "Tilda Research",
-   "location": "India",
-   "url": "https://himalayas.app/companies/tilda-research/jobs/automation-engineer-sdet?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/tilda-research/jobs/automation-engineer-sdet",
-   "posted": "2026-11-12T07:36:50+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "QA Lead - Data Platform (TL1)",
-   "company": "Kaluza",
-   "location": "London, UK",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/kaluza/qa-lead-data-platform-tl1-london-38241",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:qa-lead-data-platform-tl1-london-38241",
-   "posted": "2026-11-10T15:40:35+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 18,
-   "first_seen": "2026-11-11T00:56:00+00:00"
-  },
-  {
-   "title": "Quality Engineer",
-   "company": "GoHealth Urgent Care",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/gohealth-urgent-care/jobs/quality-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/gohealth-urgent-care/jobs/quality-engineer",
-   "posted": "2026-11-08T05:33:03+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-09T00:09:03+00:00"
-  },
-  {
-   "title": "Senior II Software Development Engineer in Test",
-   "company": "Akamai Technologies",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/akamai-technologies/jobs/senior-ii-software-development-engineer-in-test-9720175309?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/akamai-technologies/jobs/senior-ii-software-development-engineer-in-test-9720175309",
-   "posted": "2026-11-07T14:57:34+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 18,
-   "first_seen": "2026-11-08T00:02:04+00:00"
   }
  ]
 }
