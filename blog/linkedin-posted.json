@@ -74,5 +74,9 @@
   "your-load-test-masking-concurrency-bugs": {
     "date": "2026-11-18",
     "id": "urn:li:share:7528643348392235009"
+  },
+  "your-429s-turn-6-into-25-why-naive-retries-fail": {
+    "date": "2026-11-19",
+    "id": "urn:li:share:7528998363468550144"
   }
 }
