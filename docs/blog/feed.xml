@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>One retry turned a 6% 429 rate into 25%</title>
+      <link>https://pawansinha.com.au/blog/your-429s-turn-6-into-25-why-naive-retries-fail/</link>
+      <guid>https://pawansinha.com.au/blog/your-429s-turn-6-into-25-why-naive-retries-fail/</guid>
+      <pubDate>Thu, 19 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why immediate retries against a rate limit multiply rejections without helping a single extra user, the maths behind it, and the retry design that works: Retry-After, jittered backoff, retry budgets, client-side rate limiting and queues.</description>
+    </item>
+    <item>
       <title>Your load test passed and oversold the last 40 units</title>
       <link>https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/</link>
       <guid>https://pawansinha.com.au/blog/your-load-test-masking-concurrency-bugs/</guid>
