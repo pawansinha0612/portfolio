@@ -78,5 +78,9 @@
   "your-429s-turn-6-into-25-why-naive-retries-fail": {
     "date": "2026-11-19",
     "id": "urn:li:share:7528998363468550144"
+  },
+  "your-p99-is-a-lie-when-you-average-across-pods": {
+    "date": "2026-11-20",
+    "id": "urn:li:share:7529359320417873921"
   }
 }
