@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your p99 is a lie when you average across pods — Pawan Sinha</title>
+  <meta name="description" content="Averaging p99 across pods gives a number no request had. Merge histograms instead, size buckets for your SLO, and know histogram_quantile&#x27;s error.">
+  <meta property="og:title" content="Your p99 is a lie when you average across pods — Pawan Sinha">
+  <meta property="og:description" content="Averaging p99 across pods gives a number no request had. Merge histograms instead, size buckets for your SLO, and know histogram_quantile&#x27;s error.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your p99 is a lie when you average across pods</h1>
+        <div class="post-meta"><span>20 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Prometheus</span><span class="tag">k6</span></div></div>
+      </header>
+      <div class="article">
+<p>Your service runs on four pods. Grafana shows p99 latency at 315 ms, comfortably inside the 500 ms SLO. Support tickets say checkout hangs for more than a second. Both are telling the truth about something. Only one of them is telling you about your users.</p>
+<p>The dashboard panel takes each pod's p99 and averages them. That number is not a percentile of anything.</p>
+<h2>Percentiles don't average</h2>
+<p>A percentile is a position in a sorted list of samples. The p99 of a combined set depends on how many samples each part contributes and where they fall, and an average of per-part percentiles throws both away.</p>
+<p>Here is a worked example. Pod A is the busiest pod. Its keys are hot, its node is noisy, or it got the long-lived connections.</p>
+<table>
+<thead>
+<tr>
+<th>Pod</th>
+<th>Requests</th>
+<th>Slow (1,200 ms)</th>
+<th>Pod p99</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>7,000</td>
+<td>350 (5%)</td>
+<td>1,200 ms</td>
+</tr>
+<tr>
+<td>B</td>
+<td>1,000</td>
+<td>0</td>
+<td>20 ms</td>
+</tr>
+<tr>
+<td>C</td>
+<td>1,000</td>
+<td>0</td>
+<td>20 ms</td>
+</tr>
+<tr>
+<td>D</td>
+<td>1,000</td>
+<td>0</td>
+<td>20 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Averaging the four p99 values gives (1,200 + 20 + 20 + 20) / 4 = 315 ms.</p>
+<p>Now merge the requests. There are 10,000 in total and 350 of them are slow, which is 3.5%. More than 1% of requests are slow, so the real p99 is 1,200 ms. The averaged value sits at 315 ms, a latency that not a single request experienced.</p>
+<p>It goes wrong in the other direction too. If the slow pod were the quiet one, its single vote would drag the average up while its few slow requests barely touch the real p99.</p>
+<p>One property is useful when you only have per-pod percentiles. The merged quantile always lies between the lowest and the highest per-pod quantile, because the combined distribution is a weighted mix of the parts. <strong>The worst pod's p99 is a safe upper bound.</strong> The average is not a bound of any kind.</p>
+<div class="widget" data-widget="pctmerge"><p><em>Interactive calculator: open this post on pawansinha.com.au to try it with your own numbers.</em></p></div>
+
+<p>The same mistake shows up in three other places:</p>
+<ul>
+<li><strong>Time windows.</strong> The p99 of an hour is not the average of sixty one-minute p99s. One busy minute with a long tail gets 1/60 of the vote.</li>
+<li><strong>Load generators.</strong> Run k6 on five machines and each prints its own p95. Averaging them has exactly the pod problem. Recompute from raw samples, or send the metrics somewhere that merges them.</li>
+<li><strong>Services.</strong> "Average p99 across our APIs" mixes endpoints with completely different shapes. Report them separately, or merge only endpoints that share an SLO.</li>
+</ul>
+<h2>Merge histograms, then take the quantile</h2>
+<p>A histogram counts samples per bucket. Two histograms with the same bucket boundaries merge by adding the counts bucket by bucket. The merged histogram is exactly the histogram of all samples together, so any quantile you take from it is honest (up to bucket resolution, covered below).</p>
+<p>In Prometheus, classic histograms expose one counter per bucket, labelled with its upper bound <code>le</code>. Merge across pods by summing the rates and keeping <code>le</code>:</p>
+<pre><code class="language-promql">histogram_quantile(
+  0.99,
+  sum by (le) (rate(http_request_duration_seconds_bucket{job=&quot;checkout&quot;}[5m]))
+)
+</code></pre>
+<p>Two details matter.</p>
+<ul>
+<li><strong>Keep <code>le</code> in the <code>by</code> clause.</strong> Drop it and you sum all buckets into one number, which is meaningless. Keep other labels (route, status) only if you want a separate quantile per value.</li>
+<li><strong>Every pod must use identical bucket boundaries.</strong> If one deployment changed its buckets, the sum is silently wrong until the old pods are gone.</li>
+</ul>
+<p>Summaries (the Prometheus <code>summary</code> type) calculate quantiles inside each pod. You cannot merge them correctly, and averaging their <code>quantile="0.99"</code> series is exactly the mistake above. For anything you want to aggregate across instances, use histograms.</p>
+<p>Other mergeable structures follow the same rule: HdrHistogram, t-digest and DDSketch all merge before you query. Store the sketch, never the percentile.</p>
+<h2>How wrong is histogram_quantile?</h2>
+<p><code>histogram_quantile</code> finds the bucket that contains the requested rank and interpolates linearly inside it, assuming samples are spread evenly across the bucket. The error is therefore bounded by <strong>the width of the bucket the quantile falls in</strong>, not by the widest bucket overall.</p>
+<p>A worked example. Buckets at 0.1, 0.25, 0.5, 1, 2.5 and 5 seconds. Your true p99 is 1.1 s, which falls in the 1 to 2.5 s bucket. Depending on how the samples sit inside it, the estimate can land anywhere from 1 s to 2.5 s. That is up to 1.4 s of error on a 1.1 s value.</p>
+<p>Two more traps:</p>
+<ul>
+<li><strong>The +Inf bucket.</strong> If the quantile lands above your highest finite boundary, Prometheus returns that boundary. With a top bucket of 5 s, a true p99 of 30 s reports as 5 s. Make sure your largest finite bucket is above your client timeout.</li>
+<li><strong>Boundaries away from the SLO.</strong> If your SLO is 300 ms and the nearest boundaries are 250 ms and 500 ms, you cannot say whether you met it. Put a boundary exactly at each SLO threshold. Then "share of requests under 300 ms" is an exact ratio of two counters, with no interpolation at all:</li>
+</ul>
+<pre><code class="language-promql">sum(rate(http_request_duration_seconds_bucket{le=&quot;0.3&quot;}[5m]))
+/
+sum(rate(http_request_duration_seconds_count[5m]))
+</code></pre>
+<p>For SLOs I'd alert on that ratio rather than on an interpolated p99. It is exact, it merges correctly, and it answers the question the SLO actually asks.</p>
+<h2>Native histograms</h2>
+<p>Prometheus added native histograms as an experimental feature in version 2.40, behind a feature flag. A native histogram stores all of its buckets inside a single series, using exponential bucket boundaries chosen automatically, so resolution is high everywhere and you stop hand-picking <code>le</code> values. Check your Prometheus version's documentation for its current status before you depend on it.</p>
+<p>The query changes too. You query the histogram metric itself, without the <code>_bucket</code> suffix and without <code>le</code>:</p>
+<pre><code class="language-promql">histogram_quantile(0.99, sum(rate(http_request_duration_seconds{job=&quot;checkout&quot;}[5m])))
+</code></pre>
+<p>The same merging rule still applies. You sum the histograms, then take the quantile.</p>
+<p>k6 can send its trend metrics to Prometheus as native histograms through its remote-write output (<code>K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true</code>). That is a clean way to get one correct p95 from several load generators.</p>
+<h2>Checklist</h2>
+<ol>
+<li>Search your dashboards for <code>avg(</code> or <code>avg_over_time(</code> wrapped around anything named quantile, p95 or p99. Each one is the bug.</li>
+<li>Replace them with <code>histogram_quantile</code> over <code>sum by (le)</code> of the bucket rates.</li>
+<li>Use the same bucket boundaries on every instance, and put one exactly at each SLO threshold.</li>
+<li>Make the highest finite bucket larger than your client timeout.</li>
+<li>Alert on the share of requests under the threshold, not on interpolated p99.</li>
+<li>In distributed load tests, merge raw results or histograms. Never average the per-machine percentiles.</li>
+<li>When you only have per-pod percentiles, report the worst pod's value as the upper bound.</li>
+</ol>
+<p>An averaged percentile is not a rough version of the truth. It is a different number that happens to have the same units.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your p99 is a lie when you average across pods", "description": "Averaging p99 across pods gives a number no request had. Merge histograms instead, size buckets for your SLO, and know histogram_quantile's error.", "datePublished": "2026-11-20", "url": "https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+    <script src="/widgets.js" defer></script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your p99 is a lie when you average across pods</title>
+      <link>https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/</link>
+      <guid>https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/</guid>
+      <pubDate>Fri, 20 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Why averaging p99 across pods, load generators or time windows gives a latency no request had, how to merge histograms in Prometheus, how big histogram_quantile&#x27;s bucket error really is, and what native histograms change.</description>
+    </item>
+    <item>
       <title>One retry turned a 6% 429 rate into 25%</title>
       <link>https://pawansinha.com.au/blog/your-429s-turn-6-into-25-why-naive-retries-fail/</link>
       <guid>https://pawansinha.com.au/blog/your-429s-turn-6-into-25-why-naive-retries-fail/</guid>
