@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-20T01:55:34+00:00",
+ "updated": "2026-11-21T01:50:09+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -87,19 +87,6 @@
    "region": "remote",
    "score": 70,
    "first_seen": "2026-11-01T12:22:09+00:00"
-  },
-  {
-   "title": "Performance & Resilience Test Engineer (Journeyman)",
-   "company": "DecisionPoint Corporation",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/decisionpoint-corporation/jobs/performance-resilience-test-engineer-journeyman?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/decisionpoint-corporation/jobs/performance-resilience-test-engineer-journeyman",
-   "posted": "2026-10-30T02:14:24+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 70,
-   "first_seen": "2026-10-30T02:14:24+00:00"
   },
   {
    "title": "Sr SDET - Performance Testing",
@@ -349,6 +336,32 @@
    "first_seen": "2026-11-02T13:00:28+00:00"
   },
   {
+   "title": "Senior QA Automation Developer (HELOC)",
+   "company": "Upgrade",
+   "location": "Anywhere in the World",
+   "url": "https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-heloc",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-heloc",
+   "posted": "2026-11-20T18:31:01+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 35,
+   "first_seen": "2026-11-21T01:50:09+00:00"
+  },
+  {
+   "title": "Director, Engineering - Quality Assurance",
+   "company": "Priority",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/priority/jobs/director-engineering-quality-assurance?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/priority/jobs/director-engineering-quality-assurance",
+   "posted": "2026-11-20T10:28:02+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 35,
+   "first_seen": "2026-11-21T01:50:09+00:00"
+  },
+  {
    "title": "Senior QA Engineer",
    "company": "Embrace Software Inc",
    "location": "United Kingdom",
@@ -531,6 +544,19 @@
    "first_seen": "2026-10-31T20:04:41+00:00"
   },
   {
+   "title": "QA Automation Engineer",
+   "company": "Sylogist",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/sylogist/jobs/qa-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/sylogist/jobs/qa-automation-engineer",
+   "posted": "2026-11-20T06:16:56+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 32,
+   "first_seen": "2026-11-21T01:50:09+00:00"
+  },
+  {
    "title": "QA Principal",
    "company": "CoinsPaid",
    "location": "Remote (worldwide)",
@@ -620,6 +646,19 @@
    "region": "remote",
    "score": 32,
    "first_seen": "2026-11-01T13:05:41+00:00"
+  },
+  {
+   "title": "Performance Engineer II",
+   "company": "Radian Generation",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/radian-generation/jobs/performance-engineer-ii?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/radian-generation/jobs/performance-engineer-ii",
+   "posted": "2026-11-20T18:46:29+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-21T01:50:09+00:00"
   },
   {
    "title": "Senior SDET - Framework Team",
@@ -1012,19 +1051,6 @@
    "first_seen": "2026-11-05T11:35:17+00:00"
   },
   {
-   "title": "Senior QA Automation Developer (Platform)",
-   "company": "Upgrade",
-   "location": "Canada",
-   "url": "https://jobicy.com/jobs/152334-senior-qa-automation-developer-platform",
-   "source": "Jobicy",
-   "id": "Jobicy:152334",
-   "posted": "2026-11-03T03:35:23+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 28,
-   "first_seen": "2026-11-03T09:27:42+00:00"
-  },
-  {
    "title": "Senior SDET (Manual + Playwright Automation)",
    "company": "Deque Systems",
    "location": "India",
@@ -1181,17 +1207,17 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
-   "title": "Quality Assurance Engineer",
-   "company": "Arine",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/arine/jobs/quality-assurance-engineer?utm_source=api",
+   "title": "Member of Technical Staff, Quality Engineering – Remote (Worldwide)",
+   "company": "RemoteJobsOne",
+   "location": "Canada, France, Germany, India, Netherlands, Pakistan, United Kingdom, United States",
+   "url": "https://himalayas.app/companies/remotejobsone/jobs/member-of-technical-staff-quality-engineering-remote-worldwide?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/arine/jobs/quality-assurance-engineer",
-   "posted": "2026-10-30T23:36:38+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/remotejobsone/jobs/member-of-technical-staff-quality-engineering-remote-worldwide",
+   "posted": "2026-11-20T06:39:21+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 26,
-   "first_seen": "2026-10-30T23:36:38+00:00"
+   "score": 25,
+   "first_seen": "2026-11-21T01:50:09+00:00"
   },
   {
    "title": "Test Automation",
@@ -1324,6 +1350,19 @@
    "first_seen": "2026-10-31T23:32:30+00:00"
   },
   {
+   "title": "Software Quality Assurance Engineer",
+   "company": "Peraton",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/peraton/jobs/software-quality-assurance-engineer-175529007?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/peraton/jobs/software-quality-assurance-engineer-175529007",
+   "posted": "2026-11-20T10:49:01+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 24,
+   "first_seen": "2026-11-21T01:50:09+00:00"
+  },
+  {
    "title": "QA Engineer - Backend (Golang) Junior+",
    "company": "Banco Plata, S.A., Institución de Banca Múltiple",
    "location": "Afghanistan, Albania, Algeria, American Samoa, Andorra, Angola, Antarctica, Armenia, Australia, Austria, Azerbaijan, Bahrain, Bangladesh, Belarus, Belgium, Benin, Bhutan, Bosnia and Herzegovina, Botswana, Bouvet Island, British Indian Ocean Territory, Brunei Darussalam, Bulgaria, Burkina Faso, Burundi, Cabo Verde, Cambodia, Cameroon, Central African Republic, Chad, China, Christmas Island, Cocos (Keeling) Islands, Comoros, Congo, Congo, The Democratic Republic of the, Cook Islands, Croatia, Curaçao, Cyprus, Czechia, Côte d'Ivoire, Denmark, Djibouti, Egypt, Equatorial Guinea, Eritrea, Estonia, Eswatini, Ethiopia, Faroe Islands, Fiji, Finland, France, French Guiana, French Polynesia, French Southern Territories, Gabon, Gambia, Georgia, Germany, Ghana, Gibraltar, Greece, Greenland, Guadeloupe, Guam, Guernsey, Guinea, Guinea-Bissau, Heard Island and McDonald Islands, Holy See (Vatican City State), Hong Kong, Hungary, Iceland, India, Indonesia, Iran, Iraq, Ireland, Isle of Man, Israel, Italy, Japan, Jersey, Jordan, Kazakhstan, Kenya, Kiribati, Kosovo, Kuwait, Kyrgyzstan, Lao People's Democratic Republic, Latvia, Lebanon, Lesotho, Liberia, Libya, Liechtenstein, Lithuania, Luxembourg, Macao, Madagascar, Malawi, Malaysia, Maldives, Mali, Malta, Marshall Islands, Martinique, Mauritania, Mauritius, Mayotte, Micronesia, Federated States of, Moldova, Monaco, Mongolia, Montenegro, Morocco, Mozambique, Myanmar, Namibia, Nauru, Nepal, Netherlands, New Caledonia, New Zealand, Niger, Nigeria, Niue, Norfolk Island, North Macedonia, Northern Mariana Islands, Norway, Oman, Pakistan, Palau, Palestine, State of, Papua New Guinea, Philippines, Pitcairn, Poland, Portugal, Qatar, Romania, Russian Federation, Rwanda, Réunion, Saint Barthélemy, Saint Helena, Ascension and Tristan da Cunha, Saint Martin (French part), Saint Pierre and Miquelon, Samoa, San Marino, Sao Tome and Principe, Saudi Arabia, Senegal, Serbia, Seychelles, Sierra Leone, Singapore, Sint Maarten (Dutch part), Slovakia, Slovenia, Solomon Islands, Somalia, South Africa, South Korea, South Sudan, Spain, Sri Lanka, Sudan, Svalbard and Jan Mayen, Sweden, Switzerland, Syrian Arab Republic, Taiwan, Tajikistan, Tanzania, Thailand, Timor-Leste, Togo, Tokelau, Tonga, Tunisia, Turkey, Turkmenistan, Tuvalu, Uganda, Ukraine, United Arab Emirates, United Kingdom, United States Minor Outlying Islands, Uzbekistan, Vanuatu, Vietnam, Wallis and Futuna, Western Sahara, Yemen, Zambia, Zimbabwe, Åland Islands",
@@ -1400,19 +1439,6 @@
    "region": "remote",
    "score": 24,
    "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
-   "title": "Senior Test Automation Engineer",
-   "company": "Clearwaters.IT",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/clearwaters-it/jobs/senior-test-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/clearwaters-it/jobs/senior-test-automation-engineer",
-   "posted": "2026-10-30T05:44:34+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 24,
-   "first_seen": "2026-10-30T05:44:34+00:00"
   },
   {
    "title": "Senior Quality Engineer - Automation (AI)",
@@ -1584,6 +1610,19 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "Quality Assurance Automation Engineer",
+   "company": "LeoLabs",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/leolabs/jobs/quality-assurance-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/leolabs/jobs/quality-assurance-automation-engineer",
+   "posted": "2026-11-20T03:13:51+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-21T01:50:09+00:00"
+  },
+  {
    "title": "Test Automation Engineer - KI/MCP/Agents",
    "company": "PROSTAFF Schweiz GmbH",
    "location": "Bern",
@@ -1753,19 +1792,6 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
-   "title": "QA/Test Automation Engineer (Journeyman)",
-   "company": "DecisionPoint Corporation",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/decisionpoint-corporation/jobs/qa-test-automation-engineer-journeyman?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/decisionpoint-corporation/jobs/qa-test-automation-engineer-journeyman",
-   "posted": "2026-10-30T13:04:06+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 21,
-   "first_seen": "2026-10-30T13:04:06+00:00"
-  },
-  {
    "title": "Lead QA Engineer [ATM]",
    "company": "Banco Plata, S.A., Institución de Banca Múltiple",
    "location": "Remote (worldwide)",
@@ -1933,32 +1959,6 @@
    "region": "remote",
    "score": 19,
    "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Automation QA Lead",
-   "company": "Trinetix",
-   "location": "Ukraine",
-   "url": "https://himalayas.app/companies/trinetix/jobs/automation-qa-lead?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/trinetix/jobs/automation-qa-lead",
-   "posted": "2026-11-18T09:14:16+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-19T02:05:00+00:00"
-  },
-  {
-   "title": "Quality Engineering Supervisor",
-   "company": "World Travel Holdings",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-supervisor?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-supervisor",
-   "posted": "2026-11-18T00:35:57+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-18T02:38:54+00:00"
   }
  ]
 }
