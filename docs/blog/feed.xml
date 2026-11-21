@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Why TTFT collapses before throughput drops</title>
+      <link>https://pawansinha.com.au/blog/why-ttft-collapses-before-throughput-drops/</link>
+      <guid>https://pawansinha.com.au/blog/why-ttft-collapses-before-throughput-drops/</guid>
+      <pubDate>Sat, 21 Nov 2026 08:00:00 +1100</pubDate>
+      <description>TTFT spikes while throughput looks healthy because queueing hits the prefill phase first. Streaming responses make k6 TTFB a poor proxy. Here is how to measure and fix it.</description>
+    </item>
+    <item>
       <title>Your p99 is a lie when you average across pods</title>
       <link>https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/</link>
       <guid>https://pawansinha.com.au/blog/your-p99-is-a-lie-when-you-average-across-pods/</guid>
