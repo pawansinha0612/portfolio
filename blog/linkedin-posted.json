@@ -82,5 +82,9 @@
   "your-p99-is-a-lie-when-you-average-across-pods": {
     "date": "2026-11-20",
     "id": "urn:li:share:7529359320417873921"
+  },
+  "why-ttft-collapses-before-throughput-drops": {
+    "date": "2026-11-21",
+    "id": "urn:li:share:7529715818004140032"
   }
 }
