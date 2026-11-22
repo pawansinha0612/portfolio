@@ -86,5 +86,9 @@
   "why-ttft-collapses-before-throughput-drops": {
     "date": "2026-11-21",
     "id": "urn:li:share:7529715818004140032"
+  },
+  "your-connection-pool-is-starving-the-database": {
+    "date": "2026-11-22",
+    "id": "urn:li:share:7530061578969284608"
   }
 }
