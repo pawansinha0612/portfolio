@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-21T01:50:09+00:00",
+ "updated": "2026-11-22T00:43:37+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -157,14 +157,14 @@
    "title": "NeoLoad Performance Test Engineer",
    "company": "CACI International Inc",
    "location": "United States",
-   "url": "https://himalayas.app/companies/caci-international-inc/jobs/neoload-performance-test-engineer?utm_source=api",
+   "url": "https://himalayas.app/companies/caci-international-inc/jobs/neoload-performance-test-engineer-2411508261?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/caci-international-inc/jobs/neoload-performance-test-engineer",
-   "posted": "2026-11-05T23:30:20+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/caci-international-inc/jobs/neoload-performance-test-engineer-2411508261",
+   "posted": "2026-11-21T17:50:09+00:00",
    "group": "perf",
    "region": "remote",
    "score": 58,
-   "first_seen": "2026-11-06T01:10:45+00:00"
+   "first_seen": "2026-11-22T00:43:37+00:00"
   },
   {
    "title": "Senior QA Engineer - Performance Testing",
@@ -414,6 +414,32 @@
    "first_seen": "2026-11-08T00:02:04+00:00"
   },
   {
+   "title": "AI Performance Engineer - C++ Expert",
+   "company": "mercor",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/mercor/jobs/ai-performance-engineer-c-expert?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/mercor/jobs/ai-performance-engineer-c-expert",
+   "posted": "2026-11-21T20:54:13+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 34,
+   "first_seen": "2026-11-22T00:43:37+00:00"
+  },
+  {
+   "title": "Senior QA Automation Developer (Platform)",
+   "company": "Upgrade",
+   "location": "Anywhere in the World",
+   "url": "https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-platform",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-platform",
+   "posted": "2026-11-21T06:01:43+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 34,
+   "first_seen": "2026-11-22T00:43:37+00:00"
+  },
+  {
    "title": "Senior Quality Assurance Engineer",
    "company": "Pearson",
    "location": "United States",
@@ -438,6 +464,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Lead, Quality Assurance",
+   "company": "Cardata",
+   "location": "Canada",
+   "url": "https://himalayas.app/companies/cardata/jobs/lead-quality-assurance?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/cardata/jobs/lead-quality-assurance",
+   "posted": "2026-11-21T16:27:47+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-22T00:43:37+00:00"
   },
   {
    "title": "Senior Manager, Test & Quality Assurance",
@@ -531,17 +570,17 @@
    "first_seen": "2026-11-01T04:37:18+00:00"
   },
   {
-   "title": "Senior QA Engineer",
-   "company": "Foodsmart",
+   "title": "Quality Engineering Manager",
+   "company": "World Travel Holdings",
    "location": "United States",
-   "url": "https://himalayas.app/companies/foodsmart/jobs/senior-qa-engineer?utm_source=api",
+   "url": "https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-manager?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/foodsmart/jobs/senior-qa-engineer",
-   "posted": "2026-10-31T20:04:41+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/world-travel-holdings/jobs/quality-engineering-manager",
+   "posted": "2026-11-21T07:17:32+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 33,
-   "first_seen": "2026-10-31T20:04:41+00:00"
+   "score": 32,
+   "first_seen": "2026-11-22T00:43:37+00:00"
   },
   {
    "title": "QA Automation Engineer",
@@ -1038,45 +1077,6 @@
    "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
-   "title": "Senior QA Automation Engineer (Platform)",
-   "company": "Upgrade",
-   "location": "USA",
-   "url": "https://jobicy.com/jobs/152407-senior-qa-automation-engineer-platform",
-   "source": "Jobicy",
-   "id": "Jobicy:152407",
-   "posted": "2026-11-05T03:05:06+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 28,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Senior SDET (Manual + Playwright Automation)",
-   "company": "Deque Systems",
-   "location": "India",
-   "url": "https://himalayas.app/companies/deque-systems/jobs/senior-sdet-manual-playwright-automation?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/deque-systems/jobs/senior-sdet-manual-playwright-automation",
-   "posted": "2026-10-31T17:15:48+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 28,
-   "first_seen": "2026-10-31T17:15:48+00:00"
-  },
-  {
-   "title": "Cloud Migration Test Automation Engineer",
-   "company": "AIS (Applied Information Sciences)",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/ais-applied-information-sciences/jobs/cloud-migration-test-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/ais-applied-information-sciences/jobs/cloud-migration-test-automation-engineer",
-   "posted": "2026-10-31T10:46:40+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 28,
-   "first_seen": "2026-10-31T10:46:40+00:00"
-  },
-  {
    "title": "Infrastructure QA Engineer",
    "company": "ART2HIRE",
    "location": "Ukraine",
@@ -1337,19 +1337,6 @@
    "first_seen": "2026-11-01T11:08:35+00:00"
   },
   {
-   "title": "Senior QA Engineer (Typescript, Blockchain) - OP02306-00",
-   "company": "Dev.Pro",
-   "location": "Ukraine",
-   "url": "https://himalayas.app/companies/dev-pro/jobs/senior-qa-engineer-typescript-blockchain-op02306-00?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/dev-pro/jobs/senior-qa-engineer-typescript-blockchain-op02306-00",
-   "posted": "2026-10-31T23:32:30+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 25,
-   "first_seen": "2026-10-31T23:32:30+00:00"
-  },
-  {
    "title": "Software Quality Assurance Engineer",
    "company": "Peraton",
    "location": "United States",
@@ -1439,6 +1426,19 @@
    "region": "remote",
    "score": 24,
    "first_seen": "2026-11-08T00:02:04+00:00"
+  },
+  {
+   "title": "QA Automation Lead (API & MCP) — EU-Based",
+   "company": "Codeminders",
+   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
+   "url": "https://himalayas.app/companies/codeminders/jobs/qa-automation-lead-api-mcp-eu-based?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/codeminders/jobs/qa-automation-lead-api-mcp-eu-based",
+   "posted": "2026-11-21T13:49:34+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-22T00:43:37+00:00"
   },
   {
    "title": "Senior Quality Engineer - Automation (AI)",
@@ -1543,6 +1543,19 @@
    "region": "remote",
    "score": 23,
    "first_seen": "2026-11-02T12:05:53+00:00"
+  },
+  {
+   "title": "Distributed Systems Testing Software Engineer, Python / Go",
+   "company": "Canonical",
+   "location": "Anywhere",
+   "url": "https://jobicy.com/jobs/151013-distributed-systems-testing-software-engineer-python-go",
+   "source": "Jobicy",
+   "id": "Jobicy:151013",
+   "posted": "2026-11-21T03:00:25+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 22,
+   "first_seen": "2026-11-22T00:43:37+00:00"
   },
   {
    "title": "Quality Engineer (QE)",
@@ -1792,6 +1805,32 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "allego",
+   "location": "United Kingdom",
+   "url": "https://himalayas.app/companies/allego/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/allego/jobs/qa-engineer",
+   "posted": "2026-11-21T21:37:46+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-22T00:43:37+00:00"
+  },
+  {
+   "title": "Finnish Tech Linguistic Tester",
+   "company": "Welo Global",
+   "location": "Anywhere",
+   "url": "https://jobicy.com/jobs/146757-finnish-tech-linguistic-tester",
+   "source": "Jobicy",
+   "id": "Jobicy:146757",
+   "posted": "2026-11-21T03:05:34+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-22T00:43:37+00:00"
+  },
+  {
    "title": "Lead QA Engineer [ATM]",
    "company": "Banco Plata, S.A., Institución de Banca Múltiple",
    "location": "Remote (worldwide)",
@@ -1920,45 +1959,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Test Automation Engineer (f/m/d)",
-   "company": "ecosio",
-   "location": "Austria, Croatia, Germany, Hungary, Italy, Portugal, Spain, UK",
-   "url": "https://jobicy.com/jobs/158729-test-automation-engineer-f-m-d",
-   "source": "Jobicy",
-   "id": "Jobicy:158729",
-   "posted": "2026-11-03T15:22:20+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-04T00:56:34+00:00"
-  },
-  {
-   "title": "Quality Assurance Engineer (m/f/d)",
-   "company": "ecosio",
-   "location": "Austria, Croatia, Germany, Hungary, Italy, Portugal, Spain, United Kingdom",
-   "url": "https://himalayas.app/companies/ecosio/jobs/quality-assurance-engineer-m-f-d?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/ecosio/jobs/quality-assurance-engineer-m-f-d",
-   "posted": "2026-11-19T22:54:46+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-20T01:55:34+00:00"
-  },
-  {
-   "title": "QA Tester / Analista Funcional",
-   "company": "TECDATA ENGINEERING",
-   "location": "Spain",
-   "url": "https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional",
-   "posted": "2026-11-19T16:46:25+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-13T01:32:07+00:00"
   }
  ]
 }
