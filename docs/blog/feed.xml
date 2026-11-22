@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your connection pool is starving the database</title>
+      <link>https://pawansinha.com.au/blog/your-connection-pool-is-starving-the-database/</link>
+      <guid>https://pawansinha.com.au/blog/your-connection-pool-is-starving-the-database/</guid>
+      <pubDate>Sun, 22 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Pool sizing is a queueing problem not a configuration guess. Learn why pool wait time beats throughput as a signal and how to size pods × pool against max_connections without raising latency.</description>
+    </item>
+    <item>
       <title>Why TTFT collapses before throughput drops</title>
       <link>https://pawansinha.com.au/blog/why-ttft-collapses-before-throughput-drops/</link>
       <guid>https://pawansinha.com.au/blog/why-ttft-collapses-before-throughput-drops/</guid>
