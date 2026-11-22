@@ -34,13 +34,13 @@ Lines under "Parked" use a plain `- ` so the job skips them; change one to `- [ 
 - [x] What an AI chatbot really costs at peak — monthly token maths from DAU, calls per request and context size; prompt caching, batch discounts and the max_tokens trap; a cost model you can defend
 - [x] The Universal Scalability Law in practice — contention (sigma) and coherency (kappa); fitting USL to throughput-vs-concurrency data to predict the peak and retrograde scaling
 - [x] Load testing RAG pipelines end to end — embedding calls, vector search latency, reranking and the LLM call as separate hops; latency budgets per hop and where RAG really bottlenecks
-- [ ] APM and observability tool choice — Dynatrace, Datadog, New Relic, Grafana stack and OpenTelemetry: agent overhead, sampling, cost at scale, vendor lock-in; how to decide
-- [ ] Prompt caching and the load test that lied — why cycling five prompts gives 100% cache hits, realistic prompt variety, measuring cached tokens, and testing with production-like context
-- [ ] Off-CPU analysis: where wall-clock time really goes — on-CPU vs off-CPU flame graphs, async-profiler wall mode, eBPF offcputime, locks and I/O waits that CPU profiles never show
-- [ ] Retry storms and metastable failures — why a system stays down after the trigger is gone; exponential backoff with jitter, retry budgets, circuit breakers
-- [ ] CFS throttling deep dive — cpu.cfs_quota_us / cfs_period_us (cpu.max in cgroup v2), how multi-threaded runtimes burn the quota early, nr_throttled and container_cpu_cfs_throttled_periods_total
-- [ ] Workload modelling from production data — arrival rates vs concurrency, transaction mix, peak-hour factor, Poisson vs bursty arrivals, think-time distributions
-- [ ] Safepoint bias: why some JVM profilers lie — safepoint-biased sampling vs AsyncGetCallTrace (async-profiler) and JFR; reading a flame graph correctly
+- [x] APM and observability tool choice — Dynatrace, Datadog, New Relic, Grafana stack and OpenTelemetry: agent overhead, sampling, cost at scale, vendor lock-in; how to decide
+- [x] Prompt caching and the load test that lied — why cycling five prompts gives 100% cache hits, realistic prompt variety, measuring cached tokens, and testing with production-like context
+- [x] Off-CPU analysis: where wall-clock time really goes — on-CPU vs off-CPU flame graphs, async-profiler wall mode, eBPF offcputime, locks and I/O waits that CPU profiles never show
+- [x] Retry storms and metastable failures — why a system stays down after the trigger is gone; exponential backoff with jitter, retry budgets, circuit breakers
+- [x] CFS throttling deep dive — cpu.cfs_quota_us / cfs_period_us (cpu.max in cgroup v2), how multi-threaded runtimes burn the quota early, nr_throttled and container_cpu_cfs_throttled_periods_total
+- [x] Workload modelling from production data — arrival rates vs concurrency, transaction mix, peak-hour factor, Poisson vs bursty arrivals, think-time distributions
+- [x] Safepoint bias: why some JVM profilers lie — safepoint-biased sampling vs AsyncGetCallTrace (async-profiler) and JFR; reading a flame graph correctly
 - [ ] Backpressure and adaptive concurrency limits — bounded queues, load shedding, AIMD and gradient-based limiters, CoDel-style queue management
 - [ ] Container memory: RSS, working set, page cache and the OOM killer — why container_memory_usage_bytes misleads, working_set_bytes, native vs heap memory in the JVM
 - [ ] Latency SLOs and burn-rate alerting — latency SLIs as a ratio of good events, error budgets, multi-window multi-burn-rate alerts
