@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-22T00:43:37+00:00",
+ "updated": "2026-11-23T01:10:46+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -30,7 +30,7 @@
    "url": "https://himalayas.app/companies/remote-office/jobs/senior-qa-engineer-manual-automation?utm_source=api",
    "source": "Himalayas",
    "id": "Himalayas:https://himalayas.app/companies/remote-office/jobs/senior-qa-engineer-manual-automation",
-   "posted": "2026-11-19T17:59:23+00:00",
+   "posted": "2026-11-22T16:57:59+00:00",
    "group": "qa",
    "region": "australia",
    "score": 25,
@@ -76,19 +76,6 @@
    "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
-   "title": "Senior Performance Test Engineer (Full time, Remote)",
-   "company": "Quantum Strides LLC",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/quantum-strides-llc/jobs/senior-performance-test-engineer-full-time-remote?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/quantum-strides-llc/jobs/senior-performance-test-engineer-full-time-remote",
-   "posted": "2026-11-01T12:22:09+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 70,
-   "first_seen": "2026-11-01T12:22:09+00:00"
-  },
-  {
    "title": "Sr SDET - Performance Testing",
    "company": "HighLevel",
    "location": "India",
@@ -100,45 +87,6 @@
    "region": "remote",
    "score": 66,
    "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Performance Test Engineer - LATAM-English Required",
-   "company": "DaCodes",
-   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
-   "url": "https://himalayas.app/companies/dacodes/jobs/performance-test-engineer-latam-english-required?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/dacodes/jobs/performance-test-engineer-latam-english-required",
-   "posted": "2026-11-01T11:35:38+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 66,
-   "first_seen": "2026-11-01T11:35:38+00:00"
-  },
-  {
-   "title": "Senior Performance Test Automation Engineer",
-   "company": "Sparq",
-   "location": "Chile",
-   "url": "https://himalayas.app/companies/sparq/jobs/senior-performance-test-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/sparq/jobs/senior-performance-test-automation-engineer",
-   "posted": "2026-11-01T08:10:28+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 65,
-   "first_seen": "2026-11-01T08:10:28+00:00"
-  },
-  {
-   "title": "(Contractor) Senior Performance Test Automation Engineer",
-   "company": "Sparq",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/sparq/jobs/contractor-senior-performance-test-automation-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/sparq/jobs/contractor-senior-performance-test-automation-engineer",
-   "posted": "2026-11-01T04:44:48+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 65,
-   "first_seen": "2026-11-01T04:44:48+00:00"
   },
   {
    "title": "Performance Test Engineer",
@@ -336,6 +284,19 @@
    "first_seen": "2026-11-02T13:00:28+00:00"
   },
   {
+   "title": "Senior QA Automation Engineer - HELOC (LATAM)",
+   "company": "Upgrade",
+   "location": "Anywhere in the World",
+   "url": "https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-engineer-heloc-latam",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-engineer-heloc-latam",
+   "posted": "2026-11-22T06:02:04+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 35,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
    "title": "Senior QA Automation Developer (HELOC)",
    "company": "Upgrade",
    "location": "Anywhere in the World",
@@ -414,6 +375,19 @@
    "first_seen": "2026-11-08T00:02:04+00:00"
   },
   {
+   "title": "Senior QA Automation Engineer (Platform)",
+   "company": "Upgrade",
+   "location": "Anywhere in the World",
+   "url": "https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-engineer-platform",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-engineer-platform",
+   "posted": "2026-11-22T06:02:08+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 34,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
    "title": "AI Performance Engineer - C++ Expert",
    "company": "mercor",
    "location": "United States",
@@ -422,19 +396,6 @@
    "id": "Himalayas:https://himalayas.app/companies/mercor/jobs/ai-performance-engineer-c-expert",
    "posted": "2026-11-21T20:54:13+00:00",
    "group": "perf",
-   "region": "remote",
-   "score": 34,
-   "first_seen": "2026-11-22T00:43:37+00:00"
-  },
-  {
-   "title": "Senior QA Automation Developer (Platform)",
-   "company": "Upgrade",
-   "location": "Anywhere in the World",
-   "url": "https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-platform",
-   "source": "We Work Remotely",
-   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/upgrade-senior-qa-automation-developer-platform",
-   "posted": "2026-11-21T06:01:43+00:00",
-   "group": "qa",
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-22T00:43:37+00:00"
@@ -555,19 +516,6 @@
    "region": "remote",
    "score": 33,
    "first_seen": "2026-11-09T00:09:03+00:00"
-  },
-  {
-   "title": "SDET Engineer",
-   "company": "Bright Vision Technologies",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/bright-vision-technologies/jobs/sdet-engineer-4117997796?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/bright-vision-technologies/jobs/sdet-engineer-4117997796",
-   "posted": "2026-11-01T04:37:18+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 33,
-   "first_seen": "2026-11-01T04:37:18+00:00"
   },
   {
    "title": "Quality Engineering Manager",
@@ -895,6 +843,19 @@
    "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
+   "title": "QA Engineer (Mashreq Global Network, Pakistan) - Retail Banking Group",
+   "company": "Mashreq",
+   "location": "Pakistan",
+   "url": "https://himalayas.app/companies/mashreq/jobs/qa-engineer-mashreq-global-network-pakistan-retail-banking-group?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/mashreq/jobs/qa-engineer-mashreq-global-network-pakistan-retail-banking-group",
+   "posted": "2026-11-22T07:57:33+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 29,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
    "title": "Ubuntu Linux Kernel Test Engineer",
    "company": "Canonical",
    "location": "American Samoa, Australia, Bangladesh, Bhutan, British Indian Ocean Territory, Brunei Darussalam, Cambodia, China, Christmas Island, Cocos (Keeling) Islands, Fiji, French Polynesia, Guam, Hong Kong, India, Indonesia, Japan, Kiribati, Lao People's Democratic Republic, Macao, Malaysia, Maldives, Marshall Islands, Micronesia, Federated States of, Mongolia, Myanmar, Nauru, Nepal, New Caledonia, New Zealand, Niue, Norfolk Island, Northern Mariana Islands, Pakistan, Palau, Papua New Guinea, Philippines, Pitcairn, Russian Federation, Samoa, Singapore, Solomon Islands, South Korea, Sri Lanka, Taiwan, Thailand, Timor-Leste, Tokelau, Tonga, Tuvalu, United States Minor Outlying Islands, Vanuatu, Vietnam, Wallis and Futuna",
@@ -960,19 +921,6 @@
    "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
-   "title": "Senior QA Automation Engineer - Product (LATAM)",
-   "company": "Upgrade",
-   "location": "Argentina, Brazil",
-   "url": "https://jobicy.com/jobs/153469-senior-qa-automation-engineer-product-latam",
-   "source": "Jobicy",
-   "id": "Jobicy:153469",
-   "posted": "2026-11-18T03:05:31+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 29,
-   "first_seen": "2026-11-19T02:05:00+00:00"
-  },
-  {
    "title": "Senior QA Engineer - US Remote",
    "company": "PerfectServe",
    "location": "USA",
@@ -984,19 +932,6 @@
    "region": "remote",
    "score": 29,
    "first_seen": "2026-11-07T00:26:40+00:00"
-  },
-  {
-   "title": "QA Engineer - Manual & Automation",
-   "company": "Sonatafy Technology",
-   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
-   "url": "https://himalayas.app/companies/sonatafy-technology/jobs/qa-engineer-manual-automation?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/sonatafy-technology/jobs/qa-engineer-manual-automation",
-   "posted": "2026-11-01T11:21:09+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 29,
-   "first_seen": "2026-11-01T11:21:09+00:00"
   },
   {
    "title": "Principal Quality Engineer",
@@ -1324,19 +1259,6 @@
    "first_seen": "2026-11-02T15:46:50+00:00"
   },
   {
-   "title": "Senior QA Engineer (Typescript, Blockchain) - OP02306",
-   "company": "Dev.Pro",
-   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
-   "url": "https://himalayas.app/companies/dev-pro/jobs/senior-qa-engineer-typescript-blockchain-op02306?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/dev-pro/jobs/senior-qa-engineer-typescript-blockchain-op02306",
-   "posted": "2026-11-01T11:08:35+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 25,
-   "first_seen": "2026-11-01T11:08:35+00:00"
-  },
-  {
    "title": "Software Quality Assurance Engineer",
    "company": "Peraton",
    "location": "United States",
@@ -1426,6 +1348,19 @@
    "region": "remote",
    "score": 24,
    "first_seen": "2026-11-08T00:02:04+00:00"
+  },
+  {
+   "title": "Senior Software Quality Engineer",
+   "company": "continued",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/continued/jobs/senior-software-quality-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/continued/jobs/senior-software-quality-engineer",
+   "posted": "2026-11-22T15:21:12+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-23T01:10:46+00:00"
   },
   {
    "title": "QA Automation Lead (API & MCP) — EU-Based",
@@ -1623,6 +1558,19 @@
    "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
+   "title": "Senior QA Engineer, Runtime",
+   "company": "Unqork",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/unqork/jobs/senior-qa-engineer-runtime?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/unqork/jobs/senior-qa-engineer-runtime",
+   "posted": "2026-11-22T04:41:17+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 21,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
    "title": "Quality Assurance Automation Engineer",
    "company": "LeoLabs",
    "location": "United States",
@@ -1806,6 +1754,19 @@
   },
   {
    "title": "QA Engineer",
+   "company": "Syd Life AI",
+   "location": "Remote (worldwide)",
+   "url": "https://himalayas.app/companies/syd-life-ai/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/syd-life-ai/jobs/qa-engineer",
+   "posted": "2026-11-23T00:20:28+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
+   "title": "QA Engineer",
    "company": "allego",
    "location": "United Kingdom",
    "url": "https://himalayas.app/companies/allego/jobs/qa-engineer?utm_source=api",
@@ -1959,6 +1920,45 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-06T01:10:45+00:00"
+  },
+  {
+   "title": "Senior QA Engineer",
+   "company": "DHIS2",
+   "location": "Norway",
+   "url": "https://himalayas.app/companies/dhis2/jobs/senior-qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/dhis2/jobs/senior-qa-engineer",
+   "posted": "2026-11-21T14:54:43+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
+   "title": "Senior Automated QA Engineer (LATAM, Remote)",
+   "company": "iDelsoft",
+   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
+   "url": "https://himalayas.app/companies/idelsoft/jobs/senior-automated-qa-engineer-latam-remote?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/idelsoft/jobs/senior-automated-qa-engineer-latam-remote",
+   "posted": "2026-11-21T08:46:27+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-23T01:10:46+00:00"
+  },
+  {
+   "title": "QA Tester / Analista Funcional",
+   "company": "TECDATA ENGINEERING",
+   "location": "Spain",
+   "url": "https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional",
+   "posted": "2026-11-19T16:46:25+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 19,
+   "first_seen": "2026-11-23T01:10:46+00:00"
   }
  ]
 }
