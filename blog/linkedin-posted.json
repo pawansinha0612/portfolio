@@ -90,5 +90,9 @@
   "your-connection-pool-is-starving-the-database": {
     "date": "2026-11-22",
     "id": "urn:li:share:7530061578969284608"
+  },
+  "your-self-hosted-llm-slows-down-when-more-users-arrive": {
+    "date": "2026-11-23",
+    "id": "urn:li:share:7530431430745759744"
   }
 }
