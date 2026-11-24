@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your load test is failing at the TCP layer</title>
+      <link>https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/</link>
+      <guid>https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/</guid>
+      <pubDate>Tue, 24 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Load tests often hit OS network limits before the application breaks. Here&#x27;s how to tune somaxconn, SYN backlog, TIME_WAIT and ephemeral ports so the test actually reaches your code.</description>
+    </item>
+    <item>
       <title>Your self-hosted LLM slows down when more users arrive</title>
       <link>https://pawansinha.com.au/blog/your-self-hosted-llm-slows-down-when-more-users-arrive/</link>
       <guid>https://pawansinha.com.au/blog/your-self-hosted-llm-slows-down-when-more-users-arrive/</guid>

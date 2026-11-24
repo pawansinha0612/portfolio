@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your load test is failing at the TCP layer — Pawan Sinha</title>
+  <meta name="description" content="Fix TCP accept queue, SYN backlog, TIME_WAIT and port exhaustion that silently fail load tests.">
+  <meta property="og:title" content="Your load test is failing at the TCP layer — Pawan Sinha">
+  <meta property="og:description" content="Fix TCP accept queue, SYN backlog, TIME_WAIT and port exhaustion that silently fail load tests.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your load test is failing at the TCP layer</h1>
+        <div class="post-meta"><span>24 November 2026</span><span>6 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">k6</span><span class="tag">Linux</span><span class="tag">Networking</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test ramps to 50,000 virtual users. The tool reports connection refused errors and the target service logs show nothing. The bottleneck is not your code. It is the operating system network stack dropping packets before the application ever sees them.</p>
+<p>Every TCP connection crosses a series of kernel queues and timers. When a load generator opens thousands of connections per second, the defaults tuned for web browsing become hard limits. The test fails at the transport layer and you waste hours debugging application latency that does not exist.</p>
+<h2>The accept queue and somaxconn</h2>
+<p>When a listening socket calls <code>listen(2)</code>, the kernel creates two queues. The incomplete connection queue holds SYN-RECEIVED sockets waiting for the final ACK. The complete connection queue holds ESTABLISHED sockets waiting for <code>accept(2)</code>. The <code>backlog</code> argument to <code>listen</code> historically capped the complete queue. Since Linux 2.2 the incomplete queue is sized by <code>net.ipv4.tcp_max_syn_backlog</code> and the complete queue is capped by <code>min(backlog, net.core.somaxconn)</code>.</p>
+<p>If your server calls <code>listen(fd, 128)</code> and <code>somaxconn</code> is the default 128, the complete queue holds 128 connections. A burst of 200 concurrent <code>accept</code> calls fills the queue. The 129th SYN-ACK is sent but the kernel drops the resulting ACK because the queue is full. The client retransmits. You see connection timeouts or resets.</p>
+<p><strong>Detection</strong>: <code>netstat -s | grep -i listenoverflow</code> increments each time the complete queue overflows. <code>ss -lnt</code> shows <code>Recv-Q</code> (the current complete queue depth) and <code>Send-Q</code> (the backlog limit). If <code>Recv-Q</code> equals <code>Send-Q</code> under load, you are dropping connections.</p>
+<p><strong>Fix</strong>: Raise both sides. In <code>sysctl.conf</code>:</p>
+<pre><code>net.core.somaxconn = 4096
+net.ipv4.tcp_max_syn_backlog = 8192
+</code></pre>
+<p>Then ensure the application passes a backlog at least that large. In Go <code>ln, _ := net.Listen("tcp", addr)</code> uses <code>net.core.somaxconn</code> automatically. In Java <code>new ServerSocket(port, 4096)</code> sets the backlog explicitly. In Node <code>server.listen(port, () =&gt; {})</code> defaults to 511; pass <code>server.listen(port, 4096)</code>.</p>
+<p>Trade-off: larger queues consume kernel memory for each pending socket. A full queue of 65,535 sockets at ~1 KB each is ~64 MB. Acceptable on modern hosts but watch <code>slabinfo</code> for <code>tcp*</code> caches.</p>
+<h2>SYN backlog and SYN cookies</h2>
+<p>The incomplete queue size is <code>tcp_max_syn_backlog</code>. When it fills, the kernel can either drop the SYN or, if <code>net.ipv4.tcp_syncookies=1</code> (default on), send a cryptographic SYN-ACK without allocating socket state. The client's ACK validates the cookie and the kernel reconstructs the socket.</p>
+<p>SYN cookies save memory during a SYN flood but disable TCP options negotiated in the SYN: window scaling, SACK, timestamps. Throughput drops on high latency paths because the window cannot scale beyond 65,535 bytes. For a load test that mimics real clients, you want the full option set.</p>
+<p><strong>Detection</strong>: <code>netstat -s | grep -i "syncookies"</code> shows <code>TCP SYN cookies sent</code> and <code>TCP SYN cookies received</code>. If these increment during your test, the incomplete queue is overflowing.</p>
+<p><strong>Fix</strong>: Increase <code>tcp_max_syn_backlog</code> to match your peak connection rate multiplied by the expected handshake latency. For 20,000 connections per second with a 20 ms handshake, the queue needs 400 entries. Set 8192 for headroom. Keep SYN cookies enabled as a safety net but do not rely on them for performance tests.</p>
+<h2>TIME_WAIT and ephemeral port exhaustion on the load generator</h2>
+<p>The load generator opens the client side of each connection. When it closes actively, the socket enters <code>TIME_WAIT</code> for 2 MSL (maximum segment lifetime), typically 60 seconds on Linux. During this period the 4-tuple (src IP, src port, dst IP, dst port) cannot be reused. The ephemeral port range defaults to 32768–60999, roughly 28,000 ports.</p>
+<p>At 500 connections per second, 500 ports enter <code>TIME_WAIT</code> each second. After 60 seconds, 30,000 ports are occupied. The range is exhausted. New <code>connect(2)</code> calls fail with <code>EADDRNOTAVAIL</code>. The load tool reports "address already in use" or "cannot assign requested address".</p>
+<p><strong>Detection</strong>: On the generator, <code>ss -s | grep timewait</code> shows <code>timewait sockets</code>. <code>cat /proc/sys/net/ipv4/ip_local_port_range</code> shows the range. Do the math: <code>rate * 60 &gt; (max - min)</code> means exhaustion.</p>
+<p><strong>Fixes, in order of preference</strong>:</p>
+<ol>
+<li><strong>Let the server close first</strong>. Design the protocol so the server sends FIN after the response. The client does a passive close and goes straight to <code>CLOSED</code>. No <code>TIME_WAIT</code> on the generator. This is the cleanest fix but requires application cooperation.</li>
+<li><strong>Enable <code>tcp_tw_reuse</code></strong>. <code>net.ipv4.tcp_tw_reuse = 1</code> allows a new outgoing connection to reuse a port in <code>TIME_WAIT</code> if the timestamp option is negotiated and the timestamp has advanced. Safe for client sockets. Does not work if the server disables timestamps.</li>
+<li><strong>Reduce <code>tcp_fin_timeout</code></strong>. <code>net.ipv4.tcp_fin_timeout = 15</code> shortens the <code>TIME_WAIT</code> equivalent for the <code>FIN_WAIT_2</code> state. It does not change the 60 second <code>TIME_WAIT</code> after active close but helps when the peer is slow to send the final ACK.</li>
+<li><strong>Expand the port range</strong>. <code>net.ipv4.ip_local_port_range = 1024 65535</code> gives ~64,000 ports. Combined with <code>tcp_tw_reuse</code> this handles ~1,000 connections per second sustained.</li>
+<li><strong>Add source IPs</strong>. Bind the load generator to multiple IP addresses. Each IP gets its own port space. <code>k6</code> supports <code>--local-addr</code> with a comma list. Four IPs quadruple capacity.</li>
+</ol>
+<p>Do not enable <code>net.ipv4.tcp_tw_recycle</code>. It was removed in Linux 4.12 because it broke NAT scenarios. Do not rely on <code>SO_REUSEADDR</code> on the client side; it only affects <code>bind</code>, not the <code>TIME_WAIT</code> check on <code>connect</code>.</p>
+<h2>Putting it together: a worked example</h2>
+<p>Imagine a test targeting an API at 10.0.1.50:443 from a generator at 10.0.1.10. Target rate: 5,000 connections per second. Handshake RTT: 2 ms. Request-response: 5 ms. Connection close: client sends FIN immediately after response.</p>
+<p><strong>Server side</strong>:
+- Expected concurrent ESTABLISHED: 5,000 * 0.007 = 35 sockets. Tiny.
+- But burst arrivals can spike. Set <code>somaxconn=4096</code>, <code>tcp_max_syn_backlog=8192</code>. Application backlog 4096.
+- <code>ListenOverflows</code> stays at zero.</p>
+<p><strong>Generator side</strong>:
+- Active close rate: 5,000/sec.
+- Ports needed in 60 s: 300,000.
+- Default range 28,232 ports. Exhaustion guaranteed.
+- Apply <code>tcp_tw_reuse=1</code> and expand range to 1024–65535 (64,511 ports).
+- With timestamps enabled (default), reuse works after 1 second (timestamp resolution). Effective capacity ~64,000 ports/sec. Still short of 5,000/sec? Wait, 64,000 ports reused per second means we can sustain 64,000 connections per second. 5,000 is fine.
+- Math: <code>reuse_interval = 1 second</code> (timestamp tick). <code>ports_per_second = 64,511</code>. <code>max_rate = ports_per_second</code>. 5,000 &lt; 64,511. Pass.
+- If timestamps are disabled on server, reuse fails. Then need multiple source IPs. Two IPs give 129,000 ports/sec.</p>
+<p><strong>Checklist before every load test</strong></p>
+<ul>
+<li>[ ] <code>sysctl net.core.somaxconn</code> &gt;= expected peak concurrent connections * 2</li>
+<li>[ ] <code>sysctl net.ipv4.tcp_max_syn_backlog</code> &gt;= peak connection rate * handshake_seconds * 2</li>
+<li>[ ] Application listen backlog matches or exceeds <code>somaxconn</code></li>
+<li>[ ] <code>netstat -s</code> baseline captured, <code>ListenOverflows</code> and <code>SYN cookies</code> at zero</li>
+<li>[ ] Generator <code>ip_local_port_range</code> covers at least <code>rate * 60</code> ports</li>
+<li>[ ] Generator <code>tcp_tw_reuse=1</code> and timestamps not disabled on server</li>
+<li>[ ] Generator has enough source IPs for <code>rate * 60 / port_range</code></li>
+<li>[ ] <code>ss -s</code> monitored during ramp for <code>timewait</code> and <code>orphan</code> sockets</li>
+</ul>
+<h2>What the metrics actually mean</h2>
+<p><code>ListenOverflows</code> increments when the complete accept queue is full and a new ACK arrives. The kernel drops the ACK. The client retransmits. You see latency spikes that look like GC pauses but are really retransmission timeouts.</p>
+<p><code>SYN cookies sent</code> means the incomplete queue was full. The handshake completes but without window scaling. Your 10 Gbps link tops out at 65 KB/s per connection. The test passes but measures the wrong thing.</p>
+<p><code>timewait sockets</code> climbing linearly means the generator cannot open new connections fast enough. <code>EADDRNOTAVAIL</code> appears in the load tool logs. The test throughput plateaus while CPU and memory are idle.</p>
+<p>All three are kernel accounting events. They do not appear in application logs. You must look at <code>/proc/net/netstat</code> or <code>netstat -s</code> or <code>ss -s</code> to see them.</p>
+<h2>One more thing: connection tracking</h2>
+<p>If the path crosses a stateful firewall or cloud load balancer with connection tracking (conntrack, AWS NLB, GCP Cloud Armor), the same limits apply there. The tracker has a table size and a hash bucket limit. Exhaustion shows as silent drops. <code>conntrack -L | wc -l</code> on the host or cloud metrics <code>ActiveFlowCount</code> will reveal it. Size the tracker table to <code>peak_rate * max_connection_lifetime * 2</code>.</p>
+<p>The network stack is part of your system under test. Tune it before you blame the code.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your load test is failing at the TCP layer", "description": "Fix TCP accept queue, SYN backlog, TIME_WAIT and port exhaustion that silently fail load tests.", "datePublished": "2026-11-24", "url": "https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
