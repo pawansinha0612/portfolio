@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-23T01:10:46+00:00",
+ "updated": "2026-11-24T05:01:38+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -89,6 +89,19 @@
    "first_seen": "2026-11-05T11:35:17+00:00"
   },
   {
+   "title": "Mobile Performance Test Engineer",
+   "company": "Bright Vision Technologies",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/bright-vision-technologies/jobs/mobile-performance-test-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/bright-vision-technologies/jobs/mobile-performance-test-engineer",
+   "posted": "2026-11-23T18:59:57+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 62,
+   "first_seen": "2026-11-24T05:01:38+00:00"
+  },
+  {
    "title": "Performance Test Engineer",
    "company": "Bright Vision Technologies",
    "location": "United States",
@@ -141,6 +154,19 @@
    "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
+   "title": "Performance Engineer - Benchmarking",
+   "company": "Supabase",
+   "location": "Anywhere",
+   "url": "https://jobicy.com/jobs/156582-performance-engineer-benchmarking",
+   "source": "Jobicy",
+   "id": "Jobicy:156582",
+   "posted": "2026-11-23T03:40:27+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 45,
+   "first_seen": "2026-11-24T05:01:38+00:00"
+  },
+  {
    "title": "Gatling Test Automation Engineer – API & UI Integration",
    "company": "General Dynamics Information Technology",
    "location": "United States",
@@ -152,6 +178,19 @@
    "region": "remote",
    "score": 43,
    "first_seen": "2026-11-16T00:26:07+00:00"
+  },
+  {
+   "title": "Performance Engineer - Performance Analysis & Tuning",
+   "company": "Supabase",
+   "location": "Anywhere",
+   "url": "https://jobicy.com/jobs/156581-performance-engineer-performance-analysis-tuning",
+   "source": "Jobicy",
+   "id": "Jobicy:156581",
+   "posted": "2026-11-23T03:40:25+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 42,
+   "first_seen": "2026-11-24T05:01:38+00:00"
   },
   {
    "title": "Test Automation Engineering Lead (Virtual, US)",
@@ -269,19 +308,6 @@
    "region": "remote",
    "score": 36,
    "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Senior Performance Engineer - DGX Cloud",
-   "company": "NVIDIA",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/nvidia/jobs/senior-performance-engineer-dgx-cloud?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/nvidia/jobs/senior-performance-engineer-dgx-cloud",
-   "posted": "2026-11-02T13:00:28+00:00",
-   "group": "perf",
-   "region": "remote",
-   "score": 36,
-   "first_seen": "2026-11-02T13:00:28+00:00"
   },
   {
    "title": "Senior QA Automation Engineer - HELOC (LATAM)",
@@ -425,6 +451,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Orchestration Application Performance Engineer - Mid",
+   "company": "Leidos",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/leidos/jobs/orchestration-application-performance-engineer-mid?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/leidos/jobs/orchestration-application-performance-engineer-mid",
+   "posted": "2026-11-23T22:27:51+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-24T05:01:38+00:00"
   },
   {
    "title": "Lead, Quality Assurance",
@@ -713,19 +752,6 @@
    "first_seen": "2026-11-07T00:26:40+00:00"
   },
   {
-   "title": "Senior Software Development Engineer in Test (SDET) – Digital Banking",
-   "company": "Aequilibrium",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/aequilibrium/jobs/senior-software-development-engineer-in-test-sdet-digital-banking?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/aequilibrium/jobs/senior-software-development-engineer-in-test-sdet-digital-banking",
-   "posted": "2026-11-02T09:15:09+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 31,
-   "first_seen": "2026-11-02T09:15:09+00:00"
-  },
-  {
    "title": "Sr. Test Engineer (Demo)",
    "company": "Inabia Software & Consulting Inc.",
    "location": "United States",
@@ -934,6 +960,19 @@
    "first_seen": "2026-11-07T00:26:40+00:00"
   },
   {
+   "title": "Automation QA Engineer",
+   "company": "SkyCell AG",
+   "location": "India",
+   "url": "https://himalayas.app/companies/skycell-ag/jobs/automation-qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/skycell-ag/jobs/automation-qa-engineer",
+   "posted": "2026-11-24T00:12:31+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 28,
+   "first_seen": "2026-11-24T05:01:38+00:00"
+  },
+  {
    "title": "Principal Quality Engineer",
    "company": "FreedomPay",
    "location": "United States",
@@ -1062,6 +1101,19 @@
    "region": "remote",
    "score": 27,
    "first_seen": "2026-11-15T00:26:20+00:00"
+  },
+  {
+   "title": "Principal Quality Engineer",
+   "company": "Humana",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/humana/jobs/principal-quality-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/humana/jobs/principal-quality-engineer",
+   "posted": "2026-11-23T14:55:34+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 26,
+   "first_seen": "2026-11-24T05:01:38+00:00"
   },
   {
    "title": "Associate Technical Lead, QA",
@@ -1231,32 +1283,6 @@
    "region": "remote",
    "score": 25,
    "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Senior QA Analyst",
-   "company": "The Contingent Plan",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/the-contingent-plan/jobs/senior-qa-analyst?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/the-contingent-plan/jobs/senior-qa-analyst",
-   "posted": "2026-11-03T01:42:10+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 25,
-   "first_seen": "2026-11-03T01:42:10+00:00"
-  },
-  {
-   "title": "QA Engineer - Ostro",
-   "company": "Lifelancer",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/lifelancer/jobs/qa-engineer-ostro?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/lifelancer/jobs/qa-engineer-ostro",
-   "posted": "2026-11-02T15:46:50+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 25,
-   "first_seen": "2026-11-02T15:46:50+00:00"
   },
   {
    "title": "Software Quality Assurance Engineer",
@@ -1467,19 +1493,6 @@
    "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
-   "title": "Senior Tester",
-   "company": "Steampunk",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/steampunk/jobs/senior-tester?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/steampunk/jobs/senior-tester",
-   "posted": "2026-11-02T12:05:53+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 23,
-   "first_seen": "2026-11-02T12:05:53+00:00"
-  },
-  {
    "title": "Distributed Systems Testing Software Engineer, Python / Go",
    "company": "Canonical",
    "location": "Anywhere",
@@ -1543,19 +1556,6 @@
    "region": "remote",
    "score": 22,
    "first_seen": "2026-11-07T00:26:40+00:00"
-  },
-  {
-   "title": "Automation Test Engineer",
-   "company": "Steampunk",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/steampunk/jobs/automation-test-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/steampunk/jobs/automation-test-engineer",
-   "posted": "2026-11-02T07:50:39+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 22,
-   "first_seen": "2026-11-02T07:50:39+00:00"
   },
   {
    "title": "Senior QA Engineer, Runtime",
@@ -1753,6 +1753,19 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "Professional Quality Engineer (m/w/d) - Testautomatisierung & KI (Ref.Nr.: 48375)",
+   "company": "Wavestone Germany AG",
+   "location": "Bern",
+   "url": "https://www.arbeitnow.ch/jobs/companies/wavestone-germany-ag/professional-quality-engineer-testautomatisierung-ki-refnr-48375-bern-64980",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:professional-quality-engineer-testautomatisierung-ki-refnr-48375-bern-64980",
+   "posted": "2026-11-23T22:47:32+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 20,
+   "first_seen": "2026-11-24T05:01:38+00:00"
+  },
+  {
    "title": "QA Engineer",
    "company": "Syd Life AI",
    "location": "Remote (worldwide)",
@@ -1942,19 +1955,6 @@
    "source": "Himalayas",
    "id": "Himalayas:https://himalayas.app/companies/idelsoft/jobs/senior-automated-qa-engineer-latam-remote",
    "posted": "2026-11-21T08:46:27+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-23T01:10:46+00:00"
-  },
-  {
-   "title": "QA Tester / Analista Funcional",
-   "company": "TECDATA ENGINEERING",
-   "location": "Spain",
-   "url": "https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/tecdata-engineering/jobs/qa-tester-analista-funcional",
-   "posted": "2026-11-19T16:46:25+00:00",
    "group": "qa",
    "region": "remote",
    "score": 19,
