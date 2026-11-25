@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-24T05:01:38+00:00",
+ "updated": "2026-11-25T03:50:10+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -297,6 +297,19 @@
    "first_seen": "2026-11-13T01:32:07+00:00"
   },
   {
+   "title": "QA Engineer",
+   "company": "EdgeQ Technologies Private Limited",
+   "location": "Remote (worldwide)",
+   "url": "https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/qa-engineer",
+   "posted": "2026-11-24T04:24:09+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 36,
+   "first_seen": "2026-11-05T11:35:17+00:00"
+  },
+  {
    "title": "QA Team Lead - ING532",
    "company": "INGOT Brokers",
    "location": "Ukraine",
@@ -451,6 +464,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Analista de Qualidade (QA) - Sênior",
+   "company": "FCamara",
+   "location": "Brazil",
+   "url": "https://himalayas.app/companies/fcamara/jobs/analista-de-qualidade-qa-senior?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/fcamara/jobs/analista-de-qualidade-qa-senior",
+   "posted": "2026-11-24T12:29:35+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-25T03:50:10+00:00"
   },
   {
    "title": "Orchestration Application Performance Engineer - Mid",
@@ -674,6 +700,19 @@
    "first_seen": "2026-11-01T13:05:41+00:00"
   },
   {
+   "title": "Senior QA Engineer - Europe",
+   "company": "Storyblok",
+   "location": "Anywhere in the World",
+   "url": "https://weworkremotely.com/remote-jobs/storyblok-senior-qa-engineer-europe",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/storyblok-senior-qa-engineer-europe",
+   "posted": "2026-11-24T06:02:42+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-25T03:50:10+00:00"
+  },
+  {
    "title": "Performance Engineer II",
    "company": "Radian Generation",
    "location": "United States",
@@ -841,32 +880,6 @@
    "region": "remote",
    "score": 30,
    "first_seen": "2026-11-08T00:02:04+00:00"
-  },
-  {
-   "title": "QA Engineer",
-   "company": "EdgeQ Technologies Private Limited",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/qa-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/edgeq-technologies-private-limited/jobs/qa-engineer",
-   "posted": "2026-11-05T04:41:49+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 30,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "Senior Aircraft Performance Engineer (all genders)",
-   "company": "væridion",
-   "location": "Munich HQ",
-   "url": "https://www.arbeitnow.com/jobs/companies/vaeridion/senior-aircraft-performance-engineer-all-genders-munich-287390",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-aircraft-performance-engineer-all-genders-munich-287390",
-   "posted": "2026-11-03T18:40:31+00:00",
-   "group": "perf",
-   "region": "onsite",
-   "score": 30,
-   "first_seen": "2026-11-04T00:56:34+00:00"
   },
   {
    "title": "QA Engineer (Mashreq Global Network, Pakistan) - Retail Banking Group",
@@ -1753,6 +1766,19 @@
    "first_seen": "2026-11-05T01:07:09+00:00"
   },
   {
+   "title": "Senior Automation QA Engineer (Python / Cloud Infrastructure)",
+   "company": "Acronis",
+   "location": "Czechia, Greece, Italy, Poland, Portugal, Serbia, Spain, Turkey",
+   "url": "https://himalayas.app/companies/acronis/jobs/senior-automation-qa-engineer-python-cloud-infrastructure?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/acronis/jobs/senior-automation-qa-engineer-python-cloud-infrastructure",
+   "posted": "2026-11-24T04:05:24+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-25T03:50:10+00:00"
+  },
+  {
    "title": "Professional Quality Engineer (m/w/d) - Testautomatisierung & KI (Ref.Nr.: 48375)",
    "company": "Wavestone Germany AG",
    "location": "Bern",
@@ -1933,32 +1959,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "Senior QA Engineer",
-   "company": "DHIS2",
-   "location": "Norway",
-   "url": "https://himalayas.app/companies/dhis2/jobs/senior-qa-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/dhis2/jobs/senior-qa-engineer",
-   "posted": "2026-11-21T14:54:43+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-23T01:10:46+00:00"
-  },
-  {
-   "title": "Senior Automated QA Engineer (LATAM, Remote)",
-   "company": "iDelsoft",
-   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
-   "url": "https://himalayas.app/companies/idelsoft/jobs/senior-automated-qa-engineer-latam-remote?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/idelsoft/jobs/senior-automated-qa-engineer-latam-remote",
-   "posted": "2026-11-21T08:46:27+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 19,
-   "first_seen": "2026-11-23T01:10:46+00:00"
   }
  ]
 }
