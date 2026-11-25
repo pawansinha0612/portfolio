@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your chatbot bill is 4x forecast — peak token maths you missed</title>
+      <link>https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/</link>
+      <guid>https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/</guid>
+      <pubDate>Wed, 25 Nov 2026 08:00:00 +1100</pubDate>
+      <description>Convert DAU to peak RPS, model context growth and max_tokens, apply prompt caching and batch discounts, and build a cost model that survives finance review.</description>
+    </item>
+    <item>
       <title>Your load test is failing at the TCP layer</title>
       <link>https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/</link>
       <guid>https://pawansinha.com.au/blog/your-load-test-is-failing-at-the-tcp-layer/</guid>

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your chatbot bill is 4x forecast — peak token maths you missed — Pawan Sinha</title>
+  <meta name="description" content="Peak chatbot cost model from DAU, token maths, caching, batch discounts, max_tokens trap.">
+  <meta property="og:title" content="Your chatbot bill is 4x forecast — peak token maths you missed — Pawan Sinha">
+  <meta property="og:description" content="Peak chatbot cost model from DAU, token maths, caching, batch discounts, max_tokens trap.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your chatbot bill is 4x forecast — peak token maths you missed</h1>
+        <div class="post-meta"><span>25 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">AI</span><span class="tag">Cost Optimization</span><span class="tag">LLM</span></div></div>
+      </header>
+      <div class="article">
+<p>Your chatbot serves 50,000 DAU. The monthly bill lands at $47,000. The forecast you gave finance was $12,000. You modelled average load, average context length, and average output tokens. Peak concurrency, conversation history growth, and the max_tokens parameter just rewrote your budget.</p>
+<h2>DAU to peak RPS: the conversion most teams get wrong</h2>
+<p>Start with daily active users. Multiply by sessions per user per day, then turns per session. That gives total daily requests. Divide by 86,400 for average RPS. Then apply a peak factor.</p>
+<p>For a consumer chat app, a typical day looks like this:</p>
+<ul>
+<li>50,000 DAU</li>
+<li>8 sessions per DAU per day</li>
+<li>6 turns per session (user + assistant = 1 turn)</li>
+<li>Total daily requests = 50,000 × 8 × 6 = 2,400,000</li>
+<li>Average RPS = 2,400,000 / 86,400 ≈ 27.8 RPS</li>
+</ul>
+<p>Peak factor for consumer traffic is 12× to 20×. Use 15× for planning. Peak RPS = 27.8 × 15 ≈ 417 RPS. That is the load your cost model must sustain for the busiest hour, not the average.</p>
+<h2>Tokens per request: context grows, system prompt stays</h2>
+<p>Each request sends three token buckets:</p>
+<ol>
+<li><strong>System prompt</strong> — fixed, cacheable. Example: 600 tokens.</li>
+<li><strong>Conversation history</strong> — grows linearly with turn count. Assume 180 tokens per prior turn (user + assistant). At turn 6, history = 5 × 180 = 900 tokens.</li>
+<li><strong>Current user message</strong> — variable. Budget 80 tokens.</li>
+</ol>
+<p>Input tokens at turn 6 = 600 + 900 + 80 = 1,580 tokens.</p>
+<p>Output tokens: the model generates a response. Average might be 220 tokens. But the <code>max_tokens</code> parameter sets a hard ceiling. If you set <code>max_tokens = 2,000</code>, a verbose or adversarial prompt can consume the full budget. For peak cost modelling, you must use <code>max_tokens</code>, not the average.</p>
+<h2>Prompt caching: 50% off the static prefix</h2>
+<p>OpenAI, Anthropic, and Google all discount cached prefix tokens. The system prompt and early conversation turns are identical across requests in a session. Only the new user message and the latest assistant response differ.</p>
+<p>With a 600-token system prompt cached at 50% discount:
+- Cached input tokens: 600 × 0.5 = 300 effective tokens
+- Non-cached input tokens: 900 (history) + 80 (user) = 980 tokens
+- Total effective input tokens = 300 + 980 = 1,280</p>
+<p>Without caching you would pay for 1,580 input tokens. Caching saves 300 tokens per request at peak.</p>
+<h2>Batch API: 50% off everything — if you can wait</h2>
+<p>Batch APIs (OpenAI Batch, Anthropic Message Batches) process requests asynchronously with up to 24-hour turnaround. They discount both input and output tokens by 50%. Use them for:
+- Offline summarisation
+- Embedding generation
+- Nightly report generation</p>
+<p>Do not use batch for real-time chat. The latency SLA breaks the user experience.</p>
+<h2>The max_tokens trap</h2>
+<p><code>max_tokens</code> is a hard limit on completion length. You pay for every token generated up to that limit. If you set <code>max_tokens = 4,096</code> on GPT-4o ($15 / 1M output tokens) but the typical response is 300 tokens, a single runaway request costs 13× the average. At 417 peak RPS, one pathological minute burns:</p>
+<p>417 RPS × 60 s × 4,096 tokens × $15 / 1,000,000 = $1,536 per minute.</p>
+<p>Set <code>max_tokens</code> to the 99th percentile of your actual output distribution plus a 20% buffer. Monitor <code>completion_tokens</code> in production and alert when it exceeds 80% of <code>max_tokens</code>.</p>
+<h2>A defensible monthly cost model</h2>
+<p>Build the model in a spreadsheet. Rows = turn number (1 to N). Columns = token buckets, effective tokens after caching, cost per request, requests per day at that turn, daily cost. Sum across turns and multiply by 30.</p>
+<h3>Worked example: GPT-4o pricing</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Input price</td>
+<td>$5.00 / 1M tokens</td>
+</tr>
+<tr>
+<td>Output price</td>
+<td>$15.00 / 1M tokens</td>
+</tr>
+<tr>
+<td>Cached input discount</td>
+<td>50%</td>
+</tr>
+<tr>
+<td>System prompt (cached)</td>
+<td>600 tokens</td>
+</tr>
+<tr>
+<td>Tokens per history turn</td>
+<td>180 tokens</td>
+</tr>
+<tr>
+<td>User message</td>
+<td>80 tokens</td>
+</tr>
+<tr>
+<td>max_tokens (budget)</td>
+<td>800 tokens</td>
+</tr>
+<tr>
+<td>Peak factor</td>
+<td>15×</td>
+</tr>
+<tr>
+<td>DAU</td>
+<td>50,000</td>
+</tr>
+<tr>
+<td>Sessions/DAU/day</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Turns/session</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Turn 6 (peak context) cost per request:</strong>
+- Cached input: 600 × 0.5 × $5 / 1M = $0.0015
+- Non-cached input: (5 × 180 + 80) × $5 / 1M = 980 × $5 / 1M = $0.0049
+- Output (max_tokens): 800 × $15 / 1M = $0.0120
+- <strong>Total per request = $0.0184</strong></p>
+<p><strong>Daily requests at turn 6:</strong> 50,000 DAU × 8 sessions × 1 (only the 6th turn) = 400,000 requests.
+<strong>Daily cost at turn 6:</strong> 400,000 × $0.0184 = $7,360.</p>
+<p>Repeat for turns 1–5 (lower history tokens) and sum. For this example, the 6-turn session averages $0.0142 per request across all turns. Total daily requests = 2.4M. Daily cost = 2.4M × $0.0142 = $34,080. Monthly = $1,022,400.</p>
+<p>That number looks scary. It assumes every session hits 6 turns at peak pricing every day. Reality: sessions are shorter, peak factor applies only to the busiest hour, and you can optimise.</p>
+<h2>Optimisation levers that actually work</h2>
+<ol>
+<li><strong>Summarise history</strong> — replace raw turns with a 200-token summary after turn 3. Cuts history tokens by 60%.</li>
+<li><strong>Dynamic max_tokens</strong> — set per-use-case. Code generation needs 2,000; FAQ needs 300.</li>
+<li><strong>Route simple queries to smaller models</strong> — GPT-4o-mini ($0.15 / $0.60 per 1M) handles 40% of traffic at 3% of the cost.</li>
+<li><strong>Enforce session limits</strong> — cap at 8 turns. Force new session for longer conversations.</li>
+<li><strong>Cache aggressively</strong> — use <code>prompt_cache_key</code> (Anthropic) or rely on automatic prefix caching (OpenAI). Ensure system prompt is identical across all requests.</li>
+</ol>
+<h2>Checklist before you show finance</h2>
+<ul>
+<li>[ ] Peak RPS derived from DAU × sessions × turns × peak factor (document the factor)</li>
+<li>[ ] Token counts per turn measured from production logs, not guessed</li>
+<li>[ ] Cached vs non-cached input tokens split shown explicitly</li>
+<li>[ ] max_tokens set per route, justified by p99 output length + 20%</li>
+<li>[ ] Batch API usage identified for async workloads with 50% discount applied</li>
+<li>[ ] Model routing table: which % of traffic hits which model at what price</li>
+<li>[ ] Sensitivity table: cost at peak factor 10×, 15×, 20×</li>
+<li>[ ] Monthly total = Σ (turn cost × daily requests at turn) × 30 × peak-hour-weighting</li>
+</ul>
+<h2>The number you can defend</h2>
+<p>Finance asks: "What is the worst credible month?" Your answer: "At 20× peak factor, 6-turn sessions, no summarisation, GPT-4o for all traffic: $1.4M. With summarisation, dynamic max_tokens, 40% routed to 4o-mini, and 15× peak factor: $380k. We are tracking at $320k last month."</p>
+<p>That conversation ends with a nod, not a spreadsheet audit.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your chatbot bill is 4x forecast \u2014 peak token maths you missed", "description": "Peak chatbot cost model from DAU, token maths, caching, batch discounts, max_tokens trap.", "datePublished": "2026-11-25", "url": "https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
