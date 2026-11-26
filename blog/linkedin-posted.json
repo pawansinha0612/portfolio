@@ -102,5 +102,9 @@
   "your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed": {
     "date": "2026-11-25",
     "id": "urn:li:share:7531197718732419073"
+  },
+  "your-throughput-curve-is-lying-about-the-peak": {
+    "date": "2026-11-26",
+    "id": "urn:li:share:7531548703871053826"
   }
 }
