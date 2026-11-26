@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-25T03:50:10+00:00",
+ "updated": "2026-11-26T03:14:27+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -217,6 +217,19 @@
    "region": "remote",
    "score": 41,
    "first_seen": "2026-11-13T01:32:07+00:00"
+  },
+  {
+   "title": "Performance Engineer - Open Source",
+   "company": "Canonical",
+   "location": "Anywhere",
+   "url": "https://jobicy.com/jobs/149551-performance-engineer-open-source",
+   "source": "Jobicy",
+   "id": "Jobicy:149551",
+   "posted": "2026-11-25T03:05:32+00:00",
+   "group": "perf",
+   "region": "remote",
+   "score": 40,
+   "first_seen": "2026-11-26T03:14:27+00:00"
   },
   {
    "title": "QA and DevOps Engineer",
@@ -583,6 +596,19 @@
    "first_seen": "2026-11-09T00:09:03+00:00"
   },
   {
+   "title": "Sr. QA Consultant, Amazon Connect / Contact Center QA",
+   "company": "NeuraFlash",
+   "location": "India",
+   "url": "https://himalayas.app/companies/neuraflash/jobs/sr-qa-consultant-amazon-connect-contact-center-qa?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/neuraflash/jobs/sr-qa-consultant-amazon-connect-contact-center-qa",
+   "posted": "2026-11-25T21:38:11+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 32,
+   "first_seen": "2026-11-26T03:14:27+00:00"
+  },
+  {
    "title": "Quality Engineering Manager",
    "company": "World Travel Holdings",
    "location": "United States",
@@ -687,19 +713,6 @@
    "first_seen": "2026-11-06T08:20:51+00:00"
   },
   {
-   "title": "Senior QA Engineer – Remote (Asia Pacific)",
-   "company": "InTalent Asia",
-   "location": "American Samoa, Australia, Bangladesh, Bhutan, British Indian Ocean Territory, Brunei Darussalam, Cambodia, China, Christmas Island, Cocos (Keeling) Islands, Fiji, French Polynesia, Guam, Hong Kong, India, Indonesia, Japan, Kiribati, Lao People's Democratic Republic, Macao, Malaysia, Maldives, Marshall Islands, Micronesia, Federated States of, Mongolia, Myanmar, Nauru, Nepal, New Caledonia, New Zealand, Niue, Norfolk Island, Northern Mariana Islands, Pakistan, Palau, Papua New Guinea, Philippines, Pitcairn, Russian Federation, Samoa, Singapore, Solomon Islands, South Korea, Sri Lanka, Taiwan, Thailand, Timor-Leste, Tokelau, Tonga, Tuvalu, United States Minor Outlying Islands, Vanuatu, Vietnam, Wallis and Futuna",
-   "url": "https://himalayas.app/companies/intalentglobal/jobs/senior-qa-engineer-remote-asia-pacific?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/intalentglobal/jobs/senior-qa-engineer-remote-asia-pacific",
-   "posted": "2026-11-04T19:00:12+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 32,
-   "first_seen": "2026-11-01T13:05:41+00:00"
-  },
-  {
    "title": "Senior QA Engineer - Europe",
    "company": "Storyblok",
    "location": "Anywhere in the World",
@@ -789,6 +802,19 @@
    "region": "onsite",
    "score": 31,
    "first_seen": "2026-11-07T00:26:40+00:00"
+  },
+  {
+   "title": "Quantitative Ex-ante & Ex-post Risk and Performance Analyst Asset Management",
+   "company": "coni+partner AG",
+   "location": "Zürich",
+   "url": "https://www.arbeitnow.ch/jobs/companies/conipartner-ag/quantitative-ex-ante-ex-post-risk-and-performance-analyst-asset-management-zurich-40030",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:quantitative-ex-ante-ex-post-risk-and-performance-analyst-asset-management-zurich-40030",
+   "posted": "2026-11-25T16:31:00+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-26T03:14:27+00:00"
   },
   {
    "title": "Sr. Test Engineer (Demo)",
@@ -1064,6 +1090,19 @@
    "first_seen": "2026-11-16T00:26:07+00:00"
   },
   {
+   "title": "1207 - QA Automation",
+   "company": "GoFasti",
+   "location": "Anguilla, Antigua and Barbuda, Argentina, Aruba, Bahamas, Barbados, Belize, Bermuda, Bolivia, Bonaire, Sint Eustatius and Saba, Brazil, Cayman Islands, Chile, Colombia, Costa Rica, Cuba, Dominica, Dominican Republic, Ecuador, El Salvador, Falkland Islands (Malvinas), Grenada, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Montserrat, Nicaragua, Panama, Paraguay, Peru, Puerto Rico, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, South Georgia and the South Sandwich Islands, Suriname, Trinidad and Tobago, Turks and Caicos Islands, Uruguay, Venezuela, Virgin Islands, British, Virgin Islands, U.S.",
+   "url": "https://himalayas.app/companies/gofasti/jobs/1207-qa-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/gofasti/jobs/1207-qa-automation",
+   "posted": "2026-11-25T19:47:07+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 27,
+   "first_seen": "2026-11-26T03:14:27+00:00"
+  },
+  {
    "title": "Infrastructure QA Engineer",
    "company": "ART2HIRE",
    "location": "Ukraine",
@@ -1194,17 +1233,30 @@
    "first_seen": "2026-11-13T01:32:07+00:00"
   },
   {
-   "title": "Quality Assurance Tester/Test Engineer Manual and Automation",
-   "company": "Peraton",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/peraton/jobs/quality-assurance-tester-test-engineer-manual-and-automation?utm_source=api",
+   "title": "Senior QA Engineer - Europe (m/w/d)",
+   "company": "Storyblok",
+   "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
+   "url": "https://himalayas.app/companies/storyblok/jobs/senior-qa-engineer-europe-m-w-d?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/peraton/jobs/quality-assurance-tester-test-engineer-manual-and-automation",
-   "posted": "2026-11-04T14:13:26+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/storyblok/jobs/senior-qa-engineer-europe-m-w-d",
+   "posted": "2026-11-25T19:27:28+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 26,
-   "first_seen": "2026-11-05T01:07:09+00:00"
+   "score": 25,
+   "first_seen": "2026-11-26T03:14:27+00:00"
+  },
+  {
+   "title": "1199 - QA Engineer",
+   "company": "GoFasti",
+   "location": "Mexico",
+   "url": "https://jobicy.com/jobs/164236-1199-qa-engineer",
+   "source": "Jobicy",
+   "id": "Jobicy:164236",
+   "posted": "2026-11-25T11:33:15+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 25,
+   "first_seen": "2026-11-26T03:14:27+00:00"
   },
   {
    "title": "Member of Technical Staff, Quality Engineering – Remote (Worldwide)",
@@ -1389,6 +1441,19 @@
    "first_seen": "2026-11-08T00:02:04+00:00"
   },
   {
+   "title": "Principal Software Engineer in Test",
+   "company": "Natera",
+   "location": "USA Only",
+   "url": "https://weworkremotely.com/remote-jobs/natera-principal-software-engineer-in-test",
+   "source": "We Work Remotely",
+   "id": "We Work Remotely:https://weworkremotely.com/remote-jobs/natera-principal-software-engineer-in-test",
+   "posted": "2026-11-25T21:40:10+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-26T03:14:27+00:00"
+  },
+  {
    "title": "Senior Software Quality Engineer",
    "company": "continued",
    "location": "United States",
@@ -1504,6 +1569,19 @@
    "region": "remote",
    "score": 23,
    "first_seen": "2026-11-11T00:56:00+00:00"
+  },
+  {
+   "title": "(Senior) Java Test Automation Engineer (m/f/d)",
+   "company": "ecosio",
+   "location": "Austria, Spain, UK, Italy, Hungary, Portugal, Croatia - Remote",
+   "url": "https://www.arbeitnow.com/jobs/companies/ecosio/remote-senior-java-test-automation-engineer-110894",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:remote-senior-java-test-automation-engineer-110894",
+   "posted": "2026-11-25T12:55:22+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 22,
+   "first_seen": "2026-11-26T03:14:27+00:00"
   },
   {
    "title": "Distributed Systems Testing Software Engineer, Python / Go",
@@ -1740,30 +1818,17 @@
    "first_seen": "2026-11-06T01:10:45+00:00"
   },
   {
-   "title": "QA Tester (Future Roles)",
-   "company": "Testlio",
-   "location": "Anywhere",
-   "url": "https://jobicy.com/jobs/152401-qa-tester-future-roles",
-   "source": "Jobicy",
-   "id": "Jobicy:152401",
-   "posted": "2026-11-05T03:10:07+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 21,
-   "first_seen": "2026-11-05T11:35:17+00:00"
-  },
-  {
-   "title": "QA Engineer",
-   "company": "SumatoSoft",
-   "location": "Remote (worldwide)",
-   "url": "https://himalayas.app/companies/sumatosoft/jobs/qa-engineer?utm_source=api",
+   "title": "QA Lead",
+   "company": "Mama Money",
+   "location": "South Africa",
+   "url": "https://himalayas.app/companies/mama-money/jobs/qa-lead?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/sumatosoft/jobs/qa-engineer",
-   "posted": "2026-11-04T22:19:07+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/mama-money/jobs/qa-lead",
+   "posted": "2026-11-25T23:30:37+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 21,
-   "first_seen": "2026-11-05T01:07:09+00:00"
+   "score": 20,
+   "first_seen": "2026-11-26T03:14:27+00:00"
   },
   {
    "title": "Senior Automation QA Engineer (Python / Cloud Infrastructure)",
@@ -1894,71 +1959,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-16T00:26:07+00:00"
-  },
-  {
-   "title": "[Job - 32612] QA Lead",
-   "company": "CI&T",
-   "location": "Brazil",
-   "url": "https://himalayas.app/companies/ci-t/jobs/job-32612-qa-lead?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/ci-t/jobs/job-32612-qa-lead",
-   "posted": "2026-11-14T08:38:27+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-15T00:26:20+00:00"
-  },
-  {
-   "title": "Analista de QA Pleno",
-   "company": "FCamara",
-   "location": "Brazil",
-   "url": "https://himalayas.app/companies/fcamara/jobs/analista-de-qa-pleno?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/fcamara/jobs/analista-de-qa-pleno",
-   "posted": "2026-11-12T14:05:17+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "Contract | Senior SDET (MARVEL SNAP)",
-   "company": "Second Dinner",
-   "location": "USA",
-   "url": "https://jobicy.com/jobs/161535-contract-senior-sdet-marvel-snap",
-   "source": "Jobicy",
-   "id": "Jobicy:161535",
-   "posted": "2026-11-12T10:44:48+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-13T01:32:07+00:00"
-  },
-  {
-   "title": "QA Engineer (Anywhere in Europe)",
-   "company": "PadSplit",
-   "location": "Europe",
-   "url": "https://jobicy.com/jobs/154874-qa-engineer-anywhere-in-europe",
-   "source": "Jobicy",
-   "id": "Jobicy:154874",
-   "posted": "2026-11-08T03:05:23+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-09T00:09:03+00:00"
-  },
-  {
-   "title": "Quality-Driven QA Engineer",
-   "company": "AutoScale Ventures",
-   "location": "Pakistan",
-   "url": "https://himalayas.app/companies/autoscale-ventures/jobs/quality-driven-qa-engineer?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/autoscale-ventures/jobs/quality-driven-qa-engineer",
-   "posted": "2026-11-05T22:09:48+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-06T01:10:45+00:00"
   }
  ]
 }
