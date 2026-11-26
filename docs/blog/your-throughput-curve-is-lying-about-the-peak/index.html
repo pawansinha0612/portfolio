@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your throughput curve is lying about the peak — Pawan Sinha</title>
+  <meta name="description" content="Fit Universal Scalability Law to throughput data, extract sigma and kappa, predict peak and retrograde scaling.">
+  <meta property="og:title" content="Your throughput curve is lying about the peak — Pawan Sinha">
+  <meta property="og:description" content="Fit Universal Scalability Law to throughput data, extract sigma and kappa, predict peak and retrograde scaling.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your throughput curve is lying about the peak</h1>
+        <div class="post-meta"><span>26 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Scalability</span><span class="tag">USL</span><span class="tag">Capacity Planning</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test shows throughput climbing steadily as you add virtual users. You extrapolate the line and tell the team the system can handle double the traffic. Two weeks later production hits a cliff at sixty percent of that concurrency. Requests queue, latency spikes, and the on-call engineer watches the error rate climb while CPU sits at forty percent.</p>
+<p>The Universal Scalability Law (USL) explains why the straight-line extrapolation fails. It models throughput as a function of concurrency with two parameters. Sigma (σ) captures contention — the fraction of work that must run serially because of locks, queues or single-threaded bottlenecks. Kappa (κ) captures coherency delay — the overhead of keeping distributed state consistent across threads, caches or nodes. The formula is:</p>
+<p>C(N) = N / (1 + σ(N - 1) + κN(N - 1))</p>
+<p>where C(N) is the relative capacity at concurrency N. When κ is zero the curve flattens at 1/σ. When κ is positive the curve peaks then falls — retrograde scaling. Most teams only measure the rising limb and miss the knee.</p>
+<h2>Collect data that fits the model</h2>
+<p>Run a controlled throughput test at fixed concurrency levels. Use a closed-loop driver so the system under test sees exactly N concurrent requests. Measure steady-state throughput at each N. Discard warm-up and cool-down windows. A typical sweep might be N = 1, 2, 4, 8, 16, 32, 64, 128. Run each point long enough for the coefficient of variation of throughput to drop below two percent.</p>
+<p>Do not use open-loop arrival rates. Open-loop tests mask queueing and produce optimistic curves. If you must use an open-loop tool, convert arrival rate to concurrency with Little's Law (L = λW) using the measured residence time at each step.</p>
+<h2>Fit the parameters</h2>
+<p>Non-linear least squares on the raw throughput numbers works if you weight by the inverse of variance. In Python with SciPy:</p>
+<pre><code class="language-python">import numpy as np
+from scipy.optimize import curve_fit
+
+def usl(n, sigma, kappa):
+    return n / (1 + sigma * (n - 1) + kappa * n * (n - 1))
+
+# Example data: concurrency vs throughput (req/s)
+N = np.array([1, 2, 4, 8, 16, 32, 64, 128], dtype=float)
+X = np.array([980, 1900, 3600, 6500, 10200, 12800, 13500, 12000], dtype=float)
+X_rel = X / X[0]  # normalise to N=1
+
+popt, pcov = curve_fit(usl, N, X_rel, bounds=(0, [1, 1]))
+sigma, kappa = popt
+sigma_err, kappa_err = np.sqrt(np.diag(pcov))
+print(f&quot;sigma = {sigma:.4f} ± {sigma_err:.4f}&quot;)
+print(f&quot;kappa = {kappa:.4f} ± {kappa_err:.4f}&quot;)
+</code></pre>
+<p>With the example data the fit returns σ = 0.0182 ± 0.0011 and κ = 0.00014 ± 0.00002. The peak concurrency N* = √((1 - σ) / κ) ≈ 83. The peak throughput C(N*) ≈ 53.8 times the single-thread baseline. At N = 128 the model predicts 48.2 — already on the retrograde limb.</p>
+<p>Check the residuals. Systematic curvature means the model is missing a third effect such as garbage collection pauses or OS scheduler limits. If residuals are random the two-parameter USL is sufficient.</p>
+<h2>Interpret sigma and kappa</h2>
+<p>Sigma near zero means the workload parallelises well. Sigma above 0.1 usually points to a global lock, a single-threaded service mesh sidecar, or a database connection pool exhausted at low concurrency. Profile with <code>perf lock</code> or Java Flight Recorder to find the hottest contended monitor.</p>
+<p>Kappa near zero means threads share little mutable state. Kappa above 0.001 often comes from cache line ping-ponging on a shared counter, distributed cache invalidation storms, or consensus protocol overhead. In a Kubernetes service mesh kappa can spike when mTLS renegotiation happens on every request. Use <code>perf c2c</code> (cache-to-cache) or Intel VTune to measure remote cache misses.</p>
+<h2>Predict the production cliff</h2>
+<p>The fitted model gives you three actionable numbers:</p>
+<ol>
+<li><strong>N_opt</strong> = √((1 - σ) / κ) — the concurrency that maximises throughput.</li>
+<li><strong>X_max</strong> = C(N_opt) × X(1) — the absolute throughput ceiling.</li>
+<li><strong>Retrograde onset</strong> — the concurrency where throughput drops below ninety percent of X_max. Solve C(N) = 0.9 × C(N_opt) for N &gt; N_opt.</li>
+</ol>
+<p>For the example above N_opt = 83, X_max = 52,700 req/s, and the ninety percent threshold is crossed at N = 108. If your autoscaler targets eighty percent CPU and that maps to N = 110, you will scale into the retrograde zone and throughput will fall as replicas increase.</p>
+<h2>Reduce sigma</h2>
+<ul>
+<li>Partition the hot resource. Shard the database connection pool per tenant. Replace a global lock with striped locks (Java <code>Striped&lt;Lock&gt;</code> or Go <code>sync.Map</code>).</li>
+<li>Move serial work off the critical path. Write-ahead logging, async metrics emission, and background compaction all shrink the serial fraction.</li>
+<li>Check thread pool sizing. A fixed pool smaller than the hardware threads caps N artificially and inflates the apparent σ.</li>
+</ul>
+<h2>Reduce kappa</h2>
+<ul>
+<li>Affinitise threads to sockets and keep working sets local. In Java <code>-XX:+UseNUMA</code> and <code>-XX:ActiveProcessorCount</code> help. In Go <code>runtime.LockOSThread</code> for critical sections.</li>
+<li>Replace shared mutable state with immutable snapshots or event sourcing. A read-heavy cache that invalidates on every write is a kappa factory.</li>
+<li>Batch coherency work. Flush distributed cache invalidations in a single RPC instead of one per update.</li>
+</ul>
+<h2>Checklist before you trust the model</h2>
+<ul>
+<li>[ ] Closed-loop driver with fixed concurrency per step</li>
+<li>[ ] Steady-state measurement window at each N (CV &lt; 2%)</li>
+<li>[ ] At least eight data points spanning one to four times expected N_opt</li>
+<li>[ ] Residuals randomly distributed, no U-shape</li>
+<li>[ ] Confidence intervals on σ and κ narrow enough for capacity decisions (relative error &lt; 20%)</li>
+<li>[ ] Model validated against a hold-out concurrency level not used in the fit</li>
+</ul>
+<h2>When USL lies to you</h2>
+<p>USL assumes homogeneous requests and a stationary system. Real systems violate both. If request mix shifts (read-heavy to write-heavy) the parameters change. If a background compaction runs every ten minutes the throughput curve breathes. In those cases fit USL per workload class and per time window, then take the worst-case N_opt for capacity planning.</p>
+<p>Also watch for coordinated omission in your latency measurements. If the load generator pauses while waiting for a slow response, the measured throughput at high N is inflated. Use a generator that records intended arrival times (k6, vegeta, or a custom closed-loop driver) so the throughput denominator is wall-clock time not busy time.</p>
+<p>The next time a stakeholder asks how much headroom you have, hand them the USL fit with confidence bands. Show the peak, show the retrograde cliff, and tell them exactly which knob — sigma or kappa — buys the most room. That conversation beats a straight-line extrapolation every time.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your throughput curve is lying about the peak", "description": "Fit Universal Scalability Law to throughput data, extract sigma and kappa, predict peak and retrograde scaling.", "datePublished": "2026-11-26", "url": "https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

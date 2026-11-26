@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your throughput curve is lying about the peak</title>
+      <link>https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/</link>
+      <guid>https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/</guid>
+      <pubDate>Thu, 26 Nov 2026 08:00:00 +1100</pubDate>
+      <description>USL reveals why throughput collapses before you expect it. Learn to fit contention and coherency parameters from real data and predict the true scaling limit.</description>
+    </item>
+    <item>
       <title>Your chatbot bill is 4x forecast — peak token maths you missed</title>
       <link>https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/</link>
       <guid>https://pawansinha.com.au/blog/your-chatbot-bill-is-4x-forecast-peak-token-maths-you-missed/</guid>
