@@ -106,5 +106,9 @@
   "your-throughput-curve-is-lying-about-the-peak": {
     "date": "2026-11-26",
     "id": "urn:li:share:7531548703871053826"
+  },
+  "your-rag-pipeline-p99-is-hiding-in-the-reranker": {
+    "date": "2026-11-27",
+    "id": "urn:li:share:7531911350483136512"
   }
 }
