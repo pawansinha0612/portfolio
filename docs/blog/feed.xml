@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your RAG pipeline p99 is hiding in the reranker</title>
+      <link>https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/</link>
+      <guid>https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/</guid>
+      <pubDate>Fri, 27 Nov 2026 08:00:00 +1100</pubDate>
+      <description>RAG latency budgets break down when embedding, vector search, reranking and LLM calls share one load test. Here is how to isolate each hop and find the real bottleneck.</description>
+    </item>
+    <item>
       <title>Your throughput curve is lying about the peak</title>
       <link>https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/</link>
       <guid>https://pawansinha.com.au/blog/your-throughput-curve-is-lying-about-the-peak/</guid>

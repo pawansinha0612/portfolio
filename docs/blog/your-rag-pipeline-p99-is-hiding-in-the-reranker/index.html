@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your RAG pipeline p99 is hiding in the reranker — Pawan Sinha</title>
+  <meta name="description" content="Load test RAG pipelines per hop: embedding, vector search, reranking, LLM. Find true bottlenecks with latency budgets.">
+  <meta property="og:title" content="Your RAG pipeline p99 is hiding in the reranker — Pawan Sinha">
+  <meta property="og:description" content="Load test RAG pipelines per hop: embedding, vector search, reranking, LLM. Find true bottlenecks with latency budgets.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your RAG pipeline p99 is hiding in the reranker</h1>
+        <div class="post-meta"><span>27 November 2026</span><span>7 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">RAG</span><span class="tag">k6</span><span class="tag">LLM</span></div></div>
+      </header>
+      <div class="article">
+<p>Your load test reports p99 at 2.3 seconds. The on-call engineer gets paged at 3 am because real users see 12 seconds. The test sent one request at a time and measured total wall time. It never stressed the embedding service, the vector index, the reranker and the LLM as independent hops. Each hop has its own queue, its own saturation point and its own tail latency that compounds under concurrency.</p>
+<p>A RAG pipeline is a chain of four distinct services. The embedding model turns text into vectors. The vector database runs approximate nearest neighbour search. The reranker reorders candidates with a cross-encoder. The LLM generates the final answer. Each hop adds latency and each hop can become the bottleneck when load increases. Treating the chain as a black box hides where the queue builds.</p>
+<h2>Latency budgets per hop</h2>
+<p>Start with a budget. Say your product SLO is p99 under 3 seconds end to end. Allocate headroom for network, serialisation and GC pauses. A realistic split for a 3 second budget might look like this.</p>
+<table>
+<thead>
+<tr>
+<th>Hop</th>
+<th>Target p99</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embedding</td>
+<td>300 ms</td>
+<td>Batch size 32 on GPU, cold start warmed</td>
+</tr>
+<tr>
+<td>Vector search</td>
+<td>400 ms</td>
+<td>HNSW index, efSearch tuned, single shard</td>
+</tr>
+<tr>
+<td>Reranker</td>
+<td>600 ms</td>
+<td>Cross-encoder on GPU, batch 16, top 50 in</td>
+</tr>
+<tr>
+<td>LLM generate</td>
+<td>1500 ms</td>
+<td>512 output tokens, vLLM, p99 includes queue</td>
+</tr>
+<tr>
+<td>Overhead</td>
+<td>200 ms</td>
+<td>HTTP, auth, logging, retries</td>
+</tr>
+</tbody>
+</table>
+<p>The numbers above are a worked example. Your budget changes with model size, hardware and SLO. The point is to assign a number to each hop so you can write a pass or fail check per hop.</p>
+<h2>Isolate each hop in the load test</h2>
+<p>Write four separate k6 scenarios. Each scenario calls one service directly with production shaped payloads. Use the same concurrency ramp you expect in production. Do not call the full chain in one scenario unless you are testing end to end SLO compliance after the per hop baselines are green.</p>
+<pre><code class="language-javascript">import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Rate } from 'k6/metrics';
+
+const embedFail = new Rate('embed_fail');
+const searchFail = new Rate('search_fail');
+const rerankFail = new Rate('rerank_fail');
+const llmFail = new Rate('llm_fail');
+
+export const options = {
+  scenarios: {
+    embedding: {
+      executor: 'ramping-vus',
+      startVUs: 0,
+      stages: [
+        { duration: '2m', target: 10 },
+        { duration: '5m', target: 50 },
+        { duration: '2m', target: 0 },
+      ],
+      exec: 'embedding',
+    },
+    vector_search: {
+      executor: 'ramping-vus',
+      startVUs: 0,
+      stages: [
+        { duration: '2m', target: 10 },
+        { duration: '5m', target: 50 },
+        { duration: '2m', target: 0 },
+      ],
+      exec: 'vectorSearch',
+    },
+    reranker: {
+      executor: 'ramping-vus',
+      startVUs: 0,
+      stages: [
+        { duration: '2m', target: 5 },
+        { duration: '5m', target: 25 },
+        { duration: '2m', target: 0 },
+      ],
+      exec: 'reranker',
+    },
+    llm: {
+      executor: 'ramping-vus',
+      startVUs: 0,
+      stages: [
+        { duration: '2m', target: 3 },
+        { duration: '5m', target: 15 },
+        { duration: '2m', target: 0 },
+      ],
+      exec: 'llm',
+    },
+  },
+  thresholds: {
+    'http_req_duration{scenario:embedding}': ['p(99)&lt;300'],
+    'http_req_duration{scenario:vector_search}': ['p(99)&lt;400'],
+    'http_req_duration{scenario:reranker}': ['p(99)&lt;600'],
+    'http_req_duration{scenario:llm}': ['p(99)&lt;1500'],
+  },
+};
+
+const payloads = [
+  'How do I reset my password?',
+  'What is the refund policy for international orders?',
+  'Explain the difference between RAG and fine tuning.',
+];
+
+function pick() { return payloads[Math.floor(Math.random() * payloads.length)]; }
+
+export function embedding() {
+  const res = http.post('https://embedding.internal/embed',
+    JSON.stringify({ texts: [pick()], model: 'bge-large-en-v1.5' }),
+    { headers: { 'Content-Type': 'application/json' }, tags: { scenario: 'embedding' } }
+  );
+  check(res, { 'status 200': (r) =&gt; r.status === 200 }) || embedFail.add(1);
+}
+
+export function vectorSearch() {
+  const vec = new Array(1024).fill(0).map(() =&gt; Math.random());
+  const res = http.post('https://vector.internal/search',
+    JSON.stringify({ vector: vec, top_k: 50, ef_search: 128 }),
+    { headers: { 'Content-Type': 'application/json' }, tags: { scenario: 'vector_search' } }
+  );
+  check(res, { 'status 200': (r) =&gt; r.status === 200 }) || searchFail.add(1);
+}
+
+export function reranker() {
+  const query = pick();
+  const docs = Array.from({ length: 50 }, (_, i) =&gt; `Doc ${i}: ${query} detail ${i}`);
+  const res = http.post('https://reranker.internal/rerank',
+    JSON.stringify({ query, documents: docs, top_n: 10 }),
+    { headers: { 'Content-Type': 'application/json' }, tags: { scenario: 'reranker' } }
+  );
+  check(res, { 'status 200': (r) =&gt; r.status === 200 }) || rerankFail.add(1);
+}
+
+export function llm() {
+  const res = http.post('https://llm.internal/v1/chat/completions',
+    JSON.stringify({
+      model: 'llama-3-70b-instruct',
+      messages: [{ role: 'user', content: pick() }],
+      max_tokens: 512,
+      temperature: 0.2,
+    }),
+    { headers: { 'Content-Type': 'application/json' }, tags: { scenario: 'llm' } }
+  );
+  check(res, { 'status 200': (r) =&gt; r.status === 200 }) || llmFail.add(1);
+}
+</code></pre>
+<p>Run each scenario alone first. Then run all four together to see cross contention on shared GPU nodes or network fabric. The thresholds fail fast when a hop exceeds its budget.</p>
+<h2>Where the bottleneck actually lives</h2>
+<h3>Embedding service</h3>
+<p>Embedding models are memory bound on GPU. Batch size controls throughput. A common pattern is to accumulate requests for a few milliseconds then run a single forward pass. If the accumulator window is too long you add latency. If it is too short you underutilise the GPU. Measure queue time separately from model time. Export a histogram of <code>queue_ms</code> and <code>infer_ms</code> from the embedding server. If <code>queue_ms</code> p99 exceeds 100 ms at target concurrency, increase replica count or reduce accumulator window.</p>
+<h3>Vector search</h3>
+<p>HNSW index latency grows with <code>ef_search</code> and degrades when the hot shard does not fit in memory. Run a test with <code>ef_search</code> at 64, 128, 256 and plot p99 vs recall. Pick the smallest <code>ef_search</code> that meets your recall target. Watch for CPU saturation on the index nodes. If CPU hits 80 percent, add read replicas or shard the index. Disk I/O appears as tail latency spikes when the OS evicts index pages. Use <code>iostat -x 1</code> during the test to confirm.</p>
+<h3>Reranker</h3>
+<p>Cross-encoders are the hidden killer. They run a full attention pass over query plus each candidate. Latency scales linearly with candidate count and sequence length. A reranker that takes 50 ms for 10 candidates takes 250 ms for 50. At 25 concurrent users that is 6.25 seconds of GPU time per second of wall time. You need either more GPUs or a smaller candidate set. The fix is often to reduce <code>top_k</code> from vector search or to cascade a cheap bi-encoder filter before the cross-encoder. Measure <code>rerank_latency_ms</code> per candidate and plot against concurrency. The slope tells you the GPU saturation point.</p>
+<h3>LLM generation</h3>
+<p>LLM latency is dominated by output token count and KV cache pressure. vLLM and TensorRT-LLM use paged attention to share KV blocks. Under load the scheduler queues requests when free blocks run out. The queue time is invisible to a single request test. Run a sustained load at target concurrency for 10 minutes. Export <code>time_to_first_token</code> and <code>inter_token_latency</code> percentiles. If <code>time_to_first_token</code> p99 grows linearly with concurrency, the prefill queue is saturated. Increase <code>max_num_seqs</code> or add replica pods. If <code>inter_token_latency</code> p99 spikes, the decode batch is too large for GPU memory and the scheduler is swapping blocks. Reduce <code>max_num_batched_tokens</code>.</p>
+<h2>Coordinated omission in RAG</h2>
+<p>Coordinated omission happens when the load generator waits for a response before sending the next request. If the system stalls, the generator stops sending and the measured latency distribution misses the stall. k6's default VU model avoids this because each VU runs independently. But if you use a constant arrival rate executor with <code>preAllocatedVUs</code> too low, the generator becomes the bottleneck. Set <code>preAllocatedVUs</code> to at least 2x the peak target VUs. Verify by checking that <code>vus</code> metric never plateaus below target during the sustained stage.</p>
+<h2>Checklist before you ship</h2>
+<ul>
+<li>[ ] Each hop has a p99 budget derived from the end to end SLO</li>
+<li>[ ] k6 scenarios test each hop in isolation at production concurrency</li>
+<li>[ ] Embedding server exports queue and infer histograms</li>
+<li>[ ] Vector search tuned for <code>ef_search</code> vs recall at target QPS</li>
+<li>[ ] Reranker candidate count justified by recall gain per ms</li>
+<li>[ ] LLM scheduler metrics show no prefill or decode queue growth</li>
+<li>[ ] Combined run shows no cross hop resource contention</li>
+<li>[ ] Alerting rules fire on per hop p99 breach not just end to end</li>
+</ul>
+<h2>The maths of compounding tails</h2>
+<p>If each hop has independent latency distributions, the end to end p99 is not the sum of p99s. It is the p99 of the convolution. For independent hops the variance adds. A quick approximation: if hop latencies are lognormal with geometric standard deviation σ, the end to end σ is sqrt(σ₁² + σ₂² + σ₃² + σ₄²). Say each hop has σ = 1.3. Combined σ = sqrt(4 * 1.3²) = 2.6. The tail fattens fast. This is why per hop budgets must be tighter than naive division suggests. Allocate 60 percent of the budget to the median case and 40 percent to tail absorption.</p>
+<h2>What to tell the team</h2>
+<p>Run the four scenarios in CI on every model or index change. Fail the build if any hop exceeds its budget. The end to end test runs nightly. When the on-call engineer gets paged, the dashboard shows which hop p99 breached first. That is the service to scale or optimise. No more guessing whether it was the vector index or the reranker.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your RAG pipeline p99 is hiding in the reranker", "description": "Load test RAG pipelines per hop: embedding, vector search, reranking, LLM. Find true bottlenecks with latency budgets.", "datePublished": "2026-11-27", "url": "https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>
