@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26T03:14:27+00:00",
+ "updated": "2026-11-27T03:19:16+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -310,6 +310,19 @@
    "first_seen": "2026-11-13T01:32:07+00:00"
   },
   {
+   "title": "Quality Engineer - Automation",
+   "company": "InfoTrust",
+   "location": "India",
+   "url": "https://himalayas.app/companies/infotrust/jobs/quality-engineer-automation?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/infotrust/jobs/quality-engineer-automation",
+   "posted": "2026-11-26T07:53:14+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 37,
+   "first_seen": "2026-11-27T03:19:16+00:00"
+  },
+  {
    "title": "QA Engineer",
    "company": "EdgeQ Technologies Private Limited",
    "location": "Remote (worldwide)",
@@ -334,6 +347,19 @@
    "region": "remote",
    "score": 36,
    "first_seen": "2026-11-13T01:32:07+00:00"
+  },
+  {
+   "title": "Software Development Engineer in Test",
+   "company": "Miratech",
+   "location": "Canada",
+   "url": "https://himalayas.app/companies/miratech/jobs/software-development-engineer-in-test?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/miratech/jobs/software-development-engineer-in-test",
+   "posted": "2026-11-26T08:53:04+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 35,
+   "first_seen": "2026-11-27T03:19:16+00:00"
   },
   {
    "title": "Senior QA Automation Engineer - HELOC (LATAM)",
@@ -477,6 +503,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Lead QA Engineer",
+   "company": "CSC Generation",
+   "location": "Costa Rica",
+   "url": "https://himalayas.app/companies/csc-generation/jobs/lead-qa-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/csc-generation/jobs/lead-qa-engineer",
+   "posted": "2026-11-26T02:46:39+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-27T03:19:16+00:00"
   },
   {
    "title": "Analista de Qualidade (QA) - Sênior",
@@ -700,17 +739,17 @@
    "first_seen": "2026-11-14T01:05:49+00:00"
   },
   {
-   "title": "Senior Software Engineer (Quality Engineering)",
-   "company": "Thought Machine",
-   "location": "United Kingdom, London",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/thought-machine/senior-software-engineer-quality-engineering-london-70715",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:senior-software-engineer-quality-engineering-london-70715",
-   "posted": "2026-11-06T00:40:12+00:00",
+   "title": "Lead Test Automation Engineer",
+   "company": "Commencis (Commencis Teknoloji A.Ş.)",
+   "location": "Turkey",
+   "url": "https://himalayas.app/companies/commencis-commencis-teknoloji-a-s/jobs/lead-test-automation-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/commencis-commencis-teknoloji-a-s/jobs/lead-test-automation-engineer",
+   "posted": "2026-11-26T08:35:04+00:00",
    "group": "qa",
-   "region": "onsite",
-   "score": 32,
-   "first_seen": "2026-11-06T08:20:51+00:00"
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-27T03:19:16+00:00"
   },
   {
    "title": "Senior QA Engineer - Europe",
@@ -804,13 +843,26 @@
    "first_seen": "2026-11-07T00:26:40+00:00"
   },
   {
+   "title": "(Senior) Business Performance Analyst (all genders)",
+   "company": "Foodji GmbH",
+   "location": "München, Bayern, Deutschland",
+   "url": "https://www.arbeitnow.com/jobs/companies/foodji-gmbh/senior-business-performance-analyst-all-genders-munchen-277175",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:senior-business-performance-analyst-all-genders-munchen-277175",
+   "posted": "2026-11-26T15:31:17+00:00",
+   "group": "perf",
+   "region": "onsite",
+   "score": 30,
+   "first_seen": "2026-11-27T03:19:16+00:00"
+  },
+  {
    "title": "Quantitative Ex-ante & Ex-post Risk and Performance Analyst Asset Management",
    "company": "coni+partner AG",
    "location": "Zürich",
    "url": "https://www.arbeitnow.ch/jobs/companies/conipartner-ag/quantitative-ex-ante-ex-post-risk-and-performance-analyst-asset-management-zurich-40030",
    "source": "Arbeitnow",
    "id": "Arbeitnow:quantitative-ex-ante-ex-post-risk-and-performance-analyst-asset-management-zurich-40030",
-   "posted": "2026-11-25T16:31:00+00:00",
+   "posted": "2026-11-26T09:02:42+00:00",
    "group": "perf",
    "region": "onsite",
    "score": 30,
@@ -997,6 +1049,19 @@
    "region": "remote",
    "score": 29,
    "first_seen": "2026-11-07T00:26:40+00:00"
+  },
+  {
+   "title": "[Job - 32255] Specialist SDET, Brazil",
+   "company": "CI&T",
+   "location": "Brazil",
+   "url": "https://himalayas.app/companies/ci-t/jobs/job-32255-specialist-sdet-brazil?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/ci-t/jobs/job-32255-specialist-sdet-brazil",
+   "posted": "2026-11-26T07:00:15+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 28,
+   "first_seen": "2026-11-27T03:19:16+00:00"
   },
   {
    "title": "Automation QA Engineer",
@@ -1233,6 +1298,19 @@
    "first_seen": "2026-11-13T01:32:07+00:00"
   },
   {
+   "title": "QA Automation Analyst",
+   "company": "J.D. Power",
+   "location": "Canada, United States",
+   "url": "https://himalayas.app/companies/j-d-power/jobs/qa-automation-analyst?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/j-d-power/jobs/qa-automation-analyst",
+   "posted": "2026-11-26T12:35:59+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 25,
+   "first_seen": "2026-11-27T03:19:16+00:00"
+  },
+  {
    "title": "Senior QA Engineer - Europe (m/w/d)",
    "company": "Storyblok",
    "location": "Albania, Andorra, Austria, Belarus, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Faroe Islands, Finland, France, Germany, Gibraltar, Greece, Guernsey, Holy See (Vatican City State), Hungary, Iceland, Ireland, Isle of Man, Italy, Jersey, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Moldova, Monaco, Montenegro, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, San Marino, Serbia, Slovakia, Slovenia, Spain, Svalbard and Jan Mayen, Sweden, Switzerland, Ukraine, United Kingdom, Åland Islands",
@@ -1350,6 +1428,19 @@
    "first_seen": "2026-11-06T08:20:51+00:00"
   },
   {
+   "title": "Automation Test Engineer (f/m/d)",
+   "company": "Black Semiconductor",
+   "location": "Germany",
+   "url": "https://himalayas.app/companies/blacksemi/jobs/automation-test-engineer-f-m-d?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/blacksemi/jobs/automation-test-engineer-f-m-d",
+   "posted": "2026-11-27T00:38:32+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 24,
+   "first_seen": "2026-11-27T03:19:16+00:00"
+  },
+  {
    "title": "Software Quality Assurance Engineer",
    "company": "Peraton",
    "location": "United States",
@@ -1439,6 +1530,19 @@
    "region": "remote",
    "score": 24,
    "first_seen": "2026-11-08T00:02:04+00:00"
+  },
+  {
+   "title": "Software Development Engineer in Test - Poland remote",
+   "company": "Akamai Technologies",
+   "location": "Poland",
+   "url": "https://himalayas.app/companies/akamai-technologies/jobs/software-development-engineer-in-test-poland-remote?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/akamai-technologies/jobs/software-development-engineer-in-test-poland-remote",
+   "posted": "2026-11-26T05:41:34+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 23,
+   "first_seen": "2026-11-27T03:19:16+00:00"
   },
   {
    "title": "Principal Software Engineer in Test",
@@ -1793,32 +1897,6 @@
   },
   {
    "title": "QA Lead",
-   "company": "Talentgrator",
-   "location": "Czechia",
-   "url": "https://himalayas.app/companies/talentgrator/jobs/qa-lead?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/talentgrator/jobs/qa-lead",
-   "posted": "2026-11-06T02:05:38+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 21,
-   "first_seen": "2026-11-06T08:20:51+00:00"
-  },
-  {
-   "title": "Manual QA Engineer (Game Client)",
-   "company": "Playson",
-   "location": "Europe",
-   "url": "https://jobicy.com/jobs/159157-manual-qa-engineer-game-client-2",
-   "source": "Jobicy",
-   "id": "Jobicy:159157",
-   "posted": "2026-11-05T14:03:48+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 21,
-   "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "QA Lead",
    "company": "Mama Money",
    "location": "South Africa",
    "url": "https://himalayas.app/companies/mama-money/jobs/qa-lead?utm_source=api",
@@ -1881,84 +1959,6 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-22T00:43:37+00:00"
-  },
-  {
-   "title": "Finnish Tech Linguistic Tester",
-   "company": "Welo Global",
-   "location": "Anywhere",
-   "url": "https://jobicy.com/jobs/146757-finnish-tech-linguistic-tester",
-   "source": "Jobicy",
-   "id": "Jobicy:146757",
-   "posted": "2026-11-21T03:05:34+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-22T00:43:37+00:00"
-  },
-  {
-   "title": "Lead QA Engineer [ATM]",
-   "company": "Banco Plata, S.A., Institución de Banca Múltiple",
-   "location": "Remote (worldwide)",
-   "url": "https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/lead-qa-engineer-atm?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/lead-qa-engineer-atm",
-   "posted": "2026-11-19T16:56:02+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-06T01:10:45+00:00"
-  },
-  {
-   "title": "QA Manager, EPIC Loan Systems",
-   "company": "Aquila Software Group",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/aquila-software-group/jobs/qa-manager-epic-loan-systems?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/aquila-software-group/jobs/qa-manager-epic-loan-systems",
-   "posted": "2026-11-19T16:39:06+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-19T02:05:00+00:00"
-  },
-  {
-   "title": "Senior QA Engineer",
-   "company": "Cross River",
-   "location": "Spain",
-   "url": "https://jobicy.com/jobs/163106-senior-qa-engineer-5",
-   "source": "Jobicy",
-   "id": "Jobicy:163106",
-   "posted": "2026-11-18T12:42:34+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-19T02:05:00+00:00"
-  },
-  {
-   "title": "QA Testing Analyst",
-   "company": "99brightminds",
-   "location": "Jordan",
-   "url": "https://himalayas.app/companies/99brightminds/jobs/qa-testing-analyst?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/99brightminds/jobs/qa-testing-analyst",
-   "posted": "2026-11-17T15:35:09+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-18T02:38:54+00:00"
-  },
-  {
-   "title": "Director, Quality Engineering",
-   "company": "HHAeXchange",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/hhaexchange/jobs/director-quality-engineering?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/hhaexchange/jobs/director-quality-engineering",
-   "posted": "2026-11-15T12:09:57+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 20,
-   "first_seen": "2026-11-16T00:26:07+00:00"
   }
  ]
 }
