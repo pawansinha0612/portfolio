@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your APM agent eats 30% CPU and you don&#x27;t know why — Pawan Sinha</title>
+  <meta name="description" content="Compare APM tools on overhead, sampling, cost and vendor lock‑in to pick the right stack.">
+  <meta property="og:title" content="Your APM agent eats 30% CPU and you don&#x27;t know why — Pawan Sinha">
+  <meta property="og:description" content="Compare APM tools on overhead, sampling, cost and vendor lock‑in to pick the right stack.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/">
+  <meta property="og:image" content="https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/">
+  <link rel="alternate" type="application/rss+xml" title="Pawan Sinha's blog" href="https://pawansinha.com.au/blog/feed.xml">
+  <meta name="theme-color" content="#2557d6">
+  <link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    .blog-hero { padding: 64px 16px 24px; }
+    .blog-hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; }
+    .post-meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+    .post-list { display: flex; flex-direction: column; gap: 14px; padding: 8px 16px 64px; max-width: 800px; }
+    .post-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); }
+    .post-card:hover { border-color: var(--accent); }
+    .post-card h2 { font-size: 20px; margin: 6px 0 8px; line-height: 1.3; }
+    .post-card p { margin: 0 0 10px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .article { max-width: 720px; padding: 0 16px 48px; font-size: 17px; line-height: 1.75; }
+    .article h2 { font-size: 24px; margin: 36px 0 10px; line-height: 1.3; }
+    .article h3 { font-size: 19px; margin: 28px 0 8px; }
+    .article p, .article ul, .article ol { margin: 0 0 16px; }
+    .article pre { background: var(--alt); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 500 13.5px/1.6 "JetBrains Mono", monospace; }
+    .article code { font: 500 14px "JetBrains Mono", monospace; background: var(--alt); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+    .article pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .article blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent-2); background: var(--alt); border-radius: 0 10px 10px 0; }
+    .article table { border-collapse: collapse; width: 100%; margin: 0 0 16px; font-size: 15px; display: block; overflow-x: auto; }
+    .article th, .article td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    .article th { background: var(--alt); }
+    .post-cta { max-width: 720px; margin: 0 16px 64px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .post-cta h2 { margin: 0 0 6px; font-size: 20px; }
+    .post-cta p { margin: 0 0 14px; color: var(--muted); }
+    .empty { color: var(--muted); }
+    .post-sub { max-width: 720px; margin: 0 16px; }
+    .post-sub .subscribe { margin: 0 0 64px; }
+    .blog-index-sub { max-width: 800px; padding: 0 16px; }
+    .blog-index-sub .subscribe { margin: 0 0 64px; }
+    @media (max-width: 600px) { .blog-hero { padding-top: 40px; } .article { font-size: 16px; } }
+  </style>
+  <!-- AdSense (content pages only) -->
+  <meta name="google-adsense-account" content="ca-pub-8128510632378263">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8128510632378263" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+      <nav id="site-menu" aria-label="Main">
+        <a href="/#services">Services</a>
+        <a href="/#work">Work</a>
+        <a href="/tools/">Tools</a>
+        <a href="/learn/">Learn</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/#contact" class="btn btn-small">Hire me</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </header>
+  <main class="wrap" style="padding: 0;">
+    <article>
+      <header class="blog-hero">
+        <p class="eyebrow"><a href="/blog/" style="text-decoration:none">← Blog</a></p>
+        <h1>Your APM agent eats 30% CPU and you don&#x27;t know why</h1>
+        <div class="post-meta"><span>28 November 2026</span><span>5 min read</span><div class="tags"><span class="tag">Performance</span><span class="tag">Observability</span><span class="tag">OpenTelemetry</span><span class="tag">Cost</span></div></div>
+      </header>
+      <div class="article">
+<p>Your production cluster spikes to 90 percent CPU after you enable a new APM agent. The dashboard shows latency dropping but the error rate climbs. You realise the agent is sampling only one percent of traces and the overhead is eating your headroom.</p>
+<h2>The hidden cost of agents</h2>
+<p>Agent overhead is the extra CPU, memory and network a monitoring library consumes while it instruments your code. A Java agent that rewrites bytecode at class load can add 10 to 30 percent CPU on a busy service. An eBPF based agent that attaches to kernel tracepoints typically stays under five percent but requires a recent kernel and root privileges. Dynatrace OneAgent uses a combination of bytecode instrumentation and eBPF. Datadog APM relies on language specific libraries that instrument at runtime. New Relic uses a similar library approach. The Grafana stack does not ship an agent; you decide which OpenTelemetry collector or sidecar to run.</p>
+<h2>Sampling is not free</h2>
+<p>Sampling reduces the volume of spans sent to the backend. Probabilistic sampling keeps a fixed percentage of traces. Tail based sampling decides after a request finishes whether to keep it based on latency or error status. Both add CPU work because the agent must evaluate the sampling decision for every request. If you set a one percent probabilistic rate on a service handling 100 000 requests per second the agent still processes 100 000 decisions per second. Tail based sampling needs to buffer spans until the request ends which increases memory pressure. Coordinated omission occurs when the sampler drops long requests and the remaining data no longer represents the true latency distribution. Gil Tene showed that this bias can hide the very outliers you care about.</p>
+<h2>Pricing models at scale</h2>
+<p>Dynatrace charges per host unit with a minimum commit. A host unit roughly equals one vCPU. At 500 hosts the annual bill can exceed one million dollars. Datadog bills per host for infrastructure and per million spans for APM. High cardinality tags such as request ID or user ID inflate the span count quickly. New Relic uses a usage based model with a free tier up to 100 GB ingest per month. Beyond that you pay per GB. The Grafana stack is open source; you pay for the managed Grafana Cloud tier or for your own compute and storage. OpenTelemetry itself has no cost but you must run collectors, storage and query engines. A typical cost comparison for a 200 node Kubernetes cluster ingesting 5 TB of traces per month:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Annual licence (USD)</th>
+<th>Ingest cost (USD/TB)</th>
+<th>Lock‑in risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dynatrace</td>
+<td>1 200 000</td>
+<td>included</td>
+<td>High (proprietary protocol)</td>
+</tr>
+<tr>
+<td>Datadog</td>
+<td>800 000</td>
+<td>0.10 per million spans</td>
+<td>Medium (API compatible)</td>
+</tr>
+<tr>
+<td>New Relic</td>
+<td>600 000</td>
+<td>0.25 per GB</td>
+<td>Medium (NRQL only)</td>
+</tr>
+<tr>
+<td>Grafana Cloud</td>
+<td>300 000</td>
+<td>0.50 per GB</td>
+<td>Low (open protocols)</td>
+</tr>
+<tr>
+<td>Self‑hosted OpenTelemetry + Loki + Tempo</td>
+<td>150 000 (infra)</td>
+<td>0 (storage only)</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p>Numbers are illustrative. Multiply your expected TB by the per TB rate to verify the total.</p>
+<h2>Vendor lock‑in and data portability</h2>
+<p>Lock‑in risk is the effort required to move telemetry to another backend. Dynatrace uses a proprietary binary protocol; exporting raw spans needs a dedicated exporter that may not capture all enriched metadata. Datadog and New Relic expose OTLP exporters but their SaaS dashboards rely on vendor specific query languages (Datadog query language, NRQL). Grafana Cloud accepts OTLP natively and stores data in Loki for logs, Tempo for traces and Mimir for metrics. OpenTelemetry collector can forward to any OTLP endpoint so you can switch backends by changing the exporter config. The collector also supports a file exporter for local debugging.</p>
+<h2>OpenTelemetry as the neutral layer</h2>
+<p>OpenTelemetry provides a single instrumentation API and a collector that can receive, process and export telemetry. You instrument once with the OpenTelemetry SDK. The collector runs as a DaemonSet or sidecar. It can batch spans, apply tail based sampling, scrub PII and enrich with Kubernetes metadata. Because the collector is vendor agnostic you can send the same data to Dynatrace, Datadog and Grafana simultaneously during a migration. The collector configuration is declarative YAML.</p>
+<pre><code class="language-yaml">receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+  tail_sampling:
+    decision_wait: 30s
+    num_traces: 50000
+    expected_new_traces_per_sec: 20000
+    policies:
+      - name: errors
+        type: string_attribute
+        string_attribute:
+          key: error
+          values: [&quot;true&quot;]
+      - name: latency
+        type: latency
+        latency:
+          threshold_ms: 500
+exporters:
+  otlp:
+    endpoint: &quot;tempo.grafana.cloud:4317&quot;
+    headers:
+      Authorization: &quot;Bearer ${TEMPO_TOKEN}&quot;
+  logging:
+    loglevel: debug
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, tail_sampling]
+      exporters: [otlp, logging]
+</code></pre>
+<p>The config above shows a collector that receives OTLP, batches, applies tail sampling for errors and high latency, then forwards to Tempo and logs locally.</p>
+<h2>Decision checklist</h2>
+<p>Use the following checklist when you evaluate a new APM stack.</p>
+<ul>
+<li>[ ] Measure baseline CPU and memory before installing any agent.</li>
+<li>[ ] Run a load test with the agent enabled at 100 percent sampling for ten minutes. Record the overhead.</li>
+<li>[ ] Estimate monthly trace volume. Multiply by the vendor per span or per GB rate.</li>
+<li>[ ] Verify that the vendor accepts OTLP natively or provides a certified OpenTelemetry exporter.</li>
+<li>[ ] Confirm that you can export raw spans to an object store for long term retention.</li>
+<li>[ ] Check the contract for minimum commit and price escalation clauses.</li>
+<li>[ ] Validate that the collector can run in your Kubernetes environment without privileged pods unless you need eBPF.</li>
+<li>[ ] Ensure the sampling policy you need (probabilistic, tail, rate limiting) is supported by the agent or collector.</li>
+<li>[ ] Plan a migration path: run dual export for at least two sprints before cutting over.</li>
+</ul>
+<h2>How to decide today</h2>
+<p>If you need full stack auto‑discovery with minimal engineering effort and you can absorb the host based price, Dynatrace is the fastest to value. If you already use Datadog for logs and metrics and want a single pane of glass, the APM add‑on keeps the workflow consistent. If you prefer a usage based model with a generous free tier and you can tolerate NRQL for queries, New Relic fits. If you want full control over data, avoid vendor pricing surprises and you have the ops capacity to run collectors, the Grafana stack with OpenTelemetry is the most flexible. Start by instrumenting a single service with the OpenTelemetry SDK, deploy the collector in a test namespace and compare the overhead numbers against the vendor agents. The data will tell you which trade‑off you can live with.</p>
+      </div>
+    </article>
+    <aside class="post-cta">
+      <h2>Need this done on your project?</h2>
+      <p>I help teams with testing, automation and performance engineering. Tell me what you're working on.</p>
+      <a class="btn btn-small" href="/#contact">Get in touch</a>
+      <a class="btn btn-ghost btn-small" href="/tools/">Performance calculators</a>
+    </aside>
+    <aside class="post-sub">
+      <form class="subscribe" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" hidden novalidate>
+        <div class="sub-text">
+          <h2>One performance deep dive a week</h2>
+          <p>Every Sunday: the week's posts and new calculators in one short email. Unsubscribe any time.</p>
+        </div>
+        <div class="sub-row">
+          <input type="email" name="email" required maxlength="200" placeholder="you@company.com" aria-label="Email address" autocomplete="email">
+          <button class="btn" type="submit">Subscribe</button>
+        </div>
+        <label class="hp" aria-hidden="true">Leave this empty<input name="company_site" tabindex="-1" autocomplete="off"></label>
+        <p class="sub-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your APM agent eats 30% CPU and you don't know why", "description": "Compare APM tools on overhead, sampling, cost and vendor lock\u2011in to pick the right stack.", "datePublished": "2026-11-28", "url": "https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/", "author": {"@type": "Person", "name": "Pawan Sinha", "url": "https://pawansinha.com.au/"}}</script>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-about">
+        <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>Pawan Sinha</a>
+        <p>Software testing and performance engineering for teams that can't afford to ship bugs. Melbourne, Australia. Remote, hybrid or on-site.</p>
+        <p><a href="mailto:hello@pawansinha.com.au">hello@pawansinha.com.au</a> · <a href="https://www.linkedin.com/in/pawan-sinha-b5a356b6/" target="_blank" rel="noopener">LinkedIn</a></p>
+      </div>
+      <div>
+        <h2>Work with me</h2>
+        <a href="/#services">Services</a>
+        <a href="/#engage">Engagements</a>
+        <a href="/#work">Case studies</a>
+        <a href="/peak-readiness/">Peak-readiness load test</a>
+        <a href="/performance-testing-australia/">Performance testing in Australia</a>
+        <a href="/#contact">Book a free call</a>
+        <a href="/hire/">For recruiters</a>
+      </div>
+      <div>
+        <h2>Free resources</h2>
+        <a href="/interview-prep/">Interview prep</a>
+        <a href="/guides/">Guides</a>
+        <a href="/tools/">Calculators</a>
+        <a href="/interview-prep/practice/">Interview practice</a>
+        <a href="/course/k6/">k6 email course</a>
+        <a href="/peak-readiness/quiz/">Peak-readiness quiz</a>
+        <a href="/jobs/">Testing jobs</a>
+        <a href="/blog/">Blog</a>
+        <a href="/blog/feed.xml">RSS feed</a>
+      </div>
+      <div>
+        <h2>Built by me</h2>
+        <a href="/#projects">Projects</a>
+        <a href="/projects/deal-finder/">Melbourne Deal Finder</a>
+        <a href="/portfolio-template/">Portfolio Website Template</a>
+        <a href="/perf-advisor/">Perf Advisor</a>
+        <a href="/interview-prep/guide/">Interview Guide</a>
+        <a href="/templates/">Test templates</a>
+        <a href="/shop/">Shop</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <p>© 2026 Pawan Sinha · Performance Testing Consultant</p>
+      <p><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · ABN 43 627 514 346</p>
+    </div>
+  </footer>
+  <script src="/chat.js" data-mode="services" data-endpoint="https://script.google.com/macros/s/AKfycbzvFENGzJ59oV9fx3Vc6CFzkjVpv5uFCx3Ob4zp_gfw0tNCXCI8TQYwJ9zQfkHQrARF/exec" data-booking-url="https://calendly.com/pawansinha4u/30min" defer></script>
+  <script src="/subscribe.js" defer></script>
+  <script src="/glow.js" defer></script>
+  <script src="/menu.js" defer></script>
+</body>
+</html>

@@ -8,6 +8,13 @@
     <description>Deep dives on performance engineering, load testing and capacity planning.</description>
     <language>en-au</language>
     <item>
+      <title>Your APM agent eats 30% CPU and you don&#x27;t know why</title>
+      <link>https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/</link>
+      <guid>https://pawansinha.com.au/blog/your-apm-agent-eats-30-cpu-and-you-don-t-know-why/</guid>
+      <pubDate>Sat, 28 Nov 2026 08:00:00 +1100</pubDate>
+      <description>A practical comparison of Dynatrace, Datadog, New Relic, Grafana and OpenTelemetry covering agent overhead, sampling defaults, pricing at scale and lock‑in risk.</description>
+    </item>
+    <item>
       <title>Your RAG pipeline p99 is hiding in the reranker</title>
       <link>https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/</link>
       <guid>https://pawansinha.com.au/blog/your-rag-pipeline-p99-is-hiding-in-the-reranker/</guid>
