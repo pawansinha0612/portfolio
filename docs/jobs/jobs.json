@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T03:19:16+00:00",
+ "updated": "2026-11-28T02:58:48+00:00",
  "count": 150,
  "sources": {
   "himalayas": "ok",
@@ -271,19 +271,6 @@
    "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
-   "title": "Software Development Engineer in Test - Agentic Automation (Remote, CAN)",
-   "company": "Crowdstrike",
-   "location": "Canada",
-   "url": "https://himalayas.app/companies/crowdstrike/jobs/software-development-engineer-in-test-agentic-automation-remote-can?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/crowdstrike/jobs/software-development-engineer-in-test-agentic-automation-remote-can",
-   "posted": "2026-11-06T09:41:57+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 39,
-   "first_seen": "2026-11-06T11:46:26+00:00"
-  },
-  {
    "title": "QA Analista de Pruebas de Rendimiento-Ecuador",
    "company": "Initium Software",
    "location": "Ecuador, United States",
@@ -503,6 +490,19 @@
    "region": "remote",
    "score": 34,
    "first_seen": "2026-11-14T01:05:49+00:00"
+  },
+  {
+   "title": "Lead QA Automation Engineer (FT/REMOTE) (Perm. work status req'd.)",
+   "company": "CorroHealth",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/corrohealth/jobs/lead-qa-automation-engineer-ft-remote-perm-work-status-req-d?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/corrohealth/jobs/lead-qa-automation-engineer-ft-remote-perm-work-status-req-d",
+   "posted": "2026-11-27T23:16:29+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 33,
+   "first_seen": "2026-11-28T02:58:48+00:00"
   },
   {
    "title": "Lead QA Engineer",
@@ -739,6 +739,19 @@
    "first_seen": "2026-11-14T01:05:49+00:00"
   },
   {
+   "title": "Senior Automation QA (JS) Engineer",
+   "company": "Description Ciklum",
+   "location": "India",
+   "url": "https://himalayas.app/companies/description-ciklum/jobs/senior-automation-qa-js-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/senior-automation-qa-js-engineer",
+   "posted": "2026-11-27T13:11:56+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 31,
+   "first_seen": "2026-11-28T02:58:48+00:00"
+  },
+  {
    "title": "Lead Test Automation Engineer",
    "company": "Commencis (Commencis Teknoloji A.Ş.)",
    "location": "Turkey",
@@ -828,19 +841,6 @@
    "region": "remote",
    "score": 31,
    "first_seen": "2026-11-09T00:09:03+00:00"
-  },
-  {
-   "title": "Quality Assurance Engineer (Automation)",
-   "company": "Lyrebird Health",
-   "location": "United Kingdom",
-   "url": "https://www.arbeitnow.co.uk/jobs/companies/lyrebird-health/quality-assurance-engineer-automation-united-kingdom-252282",
-   "source": "Arbeitnow",
-   "id": "Arbeitnow:quality-assurance-engineer-automation-united-kingdom-252282",
-   "posted": "2026-11-06T18:40:13+00:00",
-   "group": "qa",
-   "region": "onsite",
-   "score": 31,
-   "first_seen": "2026-11-07T00:26:40+00:00"
   },
   {
    "title": "(Senior) Business Performance Analyst (all genders)",
@@ -1023,32 +1023,6 @@
    "region": "remote",
    "score": 29,
    "first_seen": "2026-11-06T11:46:26+00:00"
-  },
-  {
-   "title": "Expert Automation QA Engineer",
-   "company": "Description Ciklum",
-   "location": "Ukraine",
-   "url": "https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer-5546121065?utm_source=api",
-   "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/description-ciklum/jobs/expert-automation-qa-engineer-5546121065",
-   "posted": "2026-11-19T16:51:16+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 29,
-   "first_seen": "2026-11-10T02:59:38+00:00"
-  },
-  {
-   "title": "Senior QA Engineer - US Remote",
-   "company": "PerfectServe",
-   "location": "USA",
-   "url": "https://jobicy.com/jobs/159357-senior-qa-engineer-us-remote",
-   "source": "Jobicy",
-   "id": "Jobicy:159357",
-   "posted": "2026-11-06T15:59:09+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 29,
-   "first_seen": "2026-11-07T00:26:40+00:00"
   },
   {
    "title": "[Job - 32255] Specialist SDET, Brazil",
@@ -1415,17 +1389,30 @@
    "first_seen": "2026-11-08T00:02:04+00:00"
   },
   {
-   "title": "QA Engineer - Ostro",
-   "company": "Veeva Systems",
+   "title": "Implementation QA Specialist",
+   "company": "Clariti",
    "location": "Canada",
-   "url": "https://himalayas.app/companies/veeva-systems/jobs/qa-engineer-ostro-1003180537?utm_source=api",
+   "url": "https://himalayas.app/companies/clariti/jobs/implementation-qa-specialist?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/veeva-systems/jobs/qa-engineer-ostro-1003180537",
-   "posted": "2026-11-06T07:26:23+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/clariti/jobs/implementation-qa-specialist",
+   "posted": "2026-11-28T00:20:34+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 25,
-   "first_seen": "2026-11-06T08:20:51+00:00"
+   "score": 24,
+   "first_seen": "2026-11-28T02:58:48+00:00"
+  },
+  {
+   "title": "Automation Test Engineer (f/m/d)",
+   "company": "Black Semiconductor GmbH",
+   "location": "Aachen, Germany",
+   "url": "https://www.arbeitnow.com/jobs/companies/black-semiconductor-gmbh/automation-test-engineer-aachen-225432",
+   "source": "Arbeitnow",
+   "id": "Arbeitnow:automation-test-engineer-aachen-225432",
+   "posted": "2026-11-27T12:40:15+00:00",
+   "group": "qa",
+   "region": "onsite",
+   "score": 24,
+   "first_seen": "2026-11-28T02:58:48+00:00"
   },
   {
    "title": "Automation Test Engineer (f/m/d)",
@@ -1727,30 +1714,17 @@
    "first_seen": "2026-11-10T02:59:38+00:00"
   },
   {
-   "title": "Sr. Staff SDET, Customer Engineering",
-   "company": "hims & hers",
-   "location": "USA",
-   "url": "https://jobicy.com/jobs/159347-sr-staff-sdet-customer-engineering",
-   "source": "Jobicy",
-   "id": "Jobicy:159347",
-   "posted": "2026-11-06T15:58:27+00:00",
-   "group": "qa",
-   "region": "remote",
-   "score": 22,
-   "first_seen": "2026-11-07T00:26:40+00:00"
-  },
-  {
-   "title": "Lead Firmware Test Automation Engineer",
-   "company": "Jabil",
-   "location": "India",
-   "url": "https://himalayas.app/companies/jabil/jobs/lead-firmware-test-automation-engineer?utm_source=api",
+   "title": "Senior Test Automation Engineer",
+   "company": "SWBC",
+   "location": "United States",
+   "url": "https://himalayas.app/companies/swbc/jobs/senior-test-automation-engineer?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/jabil/jobs/lead-firmware-test-automation-engineer",
-   "posted": "2026-11-06T12:01:48+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/swbc/jobs/senior-test-automation-engineer",
+   "posted": "2026-11-28T01:39:09+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 22,
-   "first_seen": "2026-11-07T00:26:40+00:00"
+   "score": 21,
+   "first_seen": "2026-11-28T02:58:48+00:00"
   },
   {
    "title": "Senior QA Engineer, Runtime",
@@ -1883,17 +1857,30 @@
    "first_seen": "2026-11-11T00:56:00+00:00"
   },
   {
-   "title": "Lead Mobile QA Automation Engineer",
-   "company": "Unanet",
-   "location": "United States",
-   "url": "https://himalayas.app/companies/unanet/jobs/lead-mobile-qa-automation-engineer?utm_source=api",
+   "title": "Middle QA Automation Engineer",
+   "company": "Akvelon",
+   "location": "Croatia, Poland, Portugal, Serbia",
+   "url": "https://himalayas.app/companies/akvelon/jobs/middle-qa-automation-engineer?utm_source=api",
    "source": "Himalayas",
-   "id": "Himalayas:https://himalayas.app/companies/unanet/jobs/lead-mobile-qa-automation-engineer",
-   "posted": "2026-11-06T17:30:47+00:00",
+   "id": "Himalayas:https://himalayas.app/companies/akvelon/jobs/middle-qa-automation-engineer",
+   "posted": "2026-11-28T00:56:53+00:00",
    "group": "qa",
    "region": "remote",
-   "score": 21,
-   "first_seen": "2026-11-07T00:26:40+00:00"
+   "score": 20,
+   "first_seen": "2026-11-28T02:58:48+00:00"
+  },
+  {
+   "title": "Middle SDET Engineer",
+   "company": "Akvelon",
+   "location": "Croatia, Poland, Portugal, Serbia",
+   "url": "https://himalayas.app/companies/akvelon/jobs/middle-sdet-engineer?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/akvelon/jobs/middle-sdet-engineer",
+   "posted": "2026-11-27T11:43:56+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-28T02:58:48+00:00"
   },
   {
    "title": "QA Lead",
@@ -1959,6 +1946,19 @@
    "region": "remote",
    "score": 20,
    "first_seen": "2026-11-22T00:43:37+00:00"
+  },
+  {
+   "title": "Lead QA Engineer [ATM]",
+   "company": "Banco Plata, S.A., Institución de Banca Múltiple",
+   "location": "Remote (worldwide)",
+   "url": "https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/lead-qa-engineer-atm?utm_source=api",
+   "source": "Himalayas",
+   "id": "Himalayas:https://himalayas.app/companies/banco-plata-s-a-institucion-de-banca-multiple/jobs/lead-qa-engineer-atm",
+   "posted": "2026-11-19T16:56:02+00:00",
+   "group": "qa",
+   "region": "remote",
+   "score": 20,
+   "first_seen": "2026-11-28T02:58:48+00:00"
   }
  ]
 }
